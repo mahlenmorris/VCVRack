@@ -1,0 +1,26 @@
+{
+  "slug": "StochasticTelegraph",
+  "name": "Stochastic Telegraph",
+  "version": "2.0.0",
+  "license": "proprietary",
+  "brand": "Stochastic Telegraph",
+  "author": "Mahlen Morris",
+  "authorEmail": "",
+  "authorUrl": "",
+  "pluginUrl": "",
+  "manualUrl": "",
+  "sourceUrl": "",
+  "donateUrl": "",
+  "changelogUrl": "",
+  "modules": [
+    {
+      "slug": "Drifter",
+      "name": "Drifter",
+      "description": "Varying linear function generator",
+	"tags": [
+	    "Random",
+	    "Sample and hold"
+	]
+    }
+  ]
+}
