@@ -90,18 +90,68 @@ struct Drifter : Module {
     configOutput(RANGE_OUTPUT, "The Y position on the curve at IN.");
 
     // If user decides to "bypass" the module, we can just pass IN -> OUT.
-    configBypass(DOMAIN_INPUT, RANGE_OUTPUT);
+    configBypass(DOMAIN_INPUT, RANGE_OUTPUT);    
   }
 
   // Overriding as a precaution; In case future versions need to save
   // menued config data, previous versions will already have a 'data' object.
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
-
+    if (saveCurveInRack) {
+      json_object_set_new(rootJ, "saveCurve", json_integer(1));
+      json_t* point_array_json = json_array();
+      for (point p : points) {
+	json_t* point_json = json_array();
+	json_array_append_new(point_json, json_real(p.x));
+	json_array_append_new(point_json, json_real(p.y));
+	json_array_append_new(point_array_json, point_json);
+      }
+      json_object_set(rootJ, "points", point_array_json);
+      json_decref(point_array_json);
+      json_object_set_new(rootJ, "start_y", json_real(start_point.y));
+      json_object_set_new(rootJ, "end_y", json_real(end_point.y));
+    }
     return rootJ;
   }
 
-  void reset_points() {
+  void dataFromJson(json_t* rootJ) override {
+    json_t* saveJ = json_object_get(rootJ, "saveCurve");
+    if (saveJ) {
+      saveCurveInRack = json_integer_value(saveJ) == 1;
+    }
+    if (saveCurveInRack) {  // load it.
+      json_t* pointsJ = json_object_get(rootJ, "points");
+      if (pointsJ) {
+	// 100 is far more points than we'll save; just avoiding the
+	// possibility of an infinite loop.
+	for (size_t i = 0; i < 100; i++) {
+	  json_t* point_json = json_array_get(pointsJ, i);
+	  if (point_json) {
+	    json_t* xJ = json_array_get(point_json, 0);
+	    json_t* yJ = json_array_get(point_json, 1);
+	    if (xJ && yJ) {
+	      point new_point;
+	      new_point.x = json_real_value(xJ);
+	      new_point.y = json_real_value(yJ);
+	      loaded_points.push_back(new_point);
+	    }
+	  } else {
+	    break;  // No more points to read.
+	  }
+	}
+      }
+      json_t* startJ = json_object_get(rootJ, "start_y");
+      if (startJ) {
+	loaded_start_y = json_real_value(startJ);
+      }
+      json_t* endJ = json_object_get(rootJ, "end_y");
+      if (endJ) {
+	loaded_end_y = json_real_value(endJ);
+      }
+    }
+  }
+  
+  void reset_points(bool startup) {
     // Empty it.
     while (!points.empty()) {
      points.pop_back();
@@ -111,16 +161,27 @@ struct Drifter : Module {
     float distance = 10.0f / segment_count;
     // The scale of the square is 0,0 -> 10, 10.
     bool unipolar = getOffsetUnipolar();
-    for (int i = 1; i < segment_count; i++) {
-      point p = {i * distance, unipolar ? 0.0f : 5.0f};
-      points.push_back(p);
-    }
-    if (getOffsetUnipolar()) {
-      start_point.y = 0.0f;
-      end_point.y = 0.0f;
+    if (startup && saveCurveInRack) {
+      for (point p : loaded_points) {
+	points.push_back(p);
+      }
     } else {
-      start_point.y = 5.0f;
-      end_point.y = 5.0f;
+      for (int i = 1; i < segment_count; i++) {
+	point p = {i * distance, unipolar ? 0.0f : 5.0f};
+	points.push_back(p);
+      }
+    }
+    if (startup && saveCurveInRack) {
+      start_point.y = loaded_start_y;
+      end_point.y = loaded_end_y;
+    } else {
+      if (getOffsetUnipolar()) {
+	start_point.y = 0.0f;
+	end_point.y = 0.0f;
+      } else {
+	start_point.y = 5.0f;
+	end_point.y = 5.0f;
+      }
     }
   }
 
@@ -288,7 +349,7 @@ struct Drifter : Module {
     // available in the constructor. So I wait until here, when they
     // are definitely set.
     if (!initialized) {
-      reset_points();
+      reset_points(true);
       need_to_update_graph = true;  // Yes, all y's will be zero.
       initialized = true;
     }
@@ -329,7 +390,7 @@ struct Drifter : Module {
       (reset_was_low && resetTrigger.isHigh());
 
     if (reset) {
-      reset_points();
+      reset_points(false);
       // Now that new function has been computed, update the display curve.
       need_to_update_graph = true;  // Yes, all y's will be zero.
     }
@@ -443,6 +504,12 @@ struct Drifter : Module {
 
   // Need to update display if LineType changes.
   LineType prev_line_type = STEPS_LINETYPE;
+
+  // Set by context menu.
+  bool saveCurveInRack = false;
+  // Loaded from the JSON; placed into points during reset_points.
+  std::vector<point> loaded_points;
+  float loaded_start_y, loaded_end_y;
 };
 
 struct DrifterDisplay : LedDisplay {
@@ -555,7 +622,8 @@ struct DrifterWidget : ModuleWidget {
 	Vec(box.size.x - 2 * RACK_GRID_WIDTH,
 	    RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-    DrifterDisplay* display = createWidget<DrifterDisplay>(mm2px(Vec(0.360, 11.844)));
+    DrifterDisplay* display = createWidget<DrifterDisplay>(
+	mm2px(Vec(0.360, 11.844)));
     display->box.size = mm2px(Vec(45.0, 30.0));
     display->module = module;
     display->moduleWidget = this;
@@ -624,6 +692,13 @@ struct DrifterWidget : ModuleWidget {
     // The Output
     addOutput(createOutputCentered<PJ301MPort>(
         mm2px(Vec(27.797, 112.000)), module, Drifter::RANGE_OUTPUT));
+  }
+
+  void appendContextMenu(Menu* menu) override {
+    Drifter* module = dynamic_cast<Drifter*>(this->module);
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createBoolPtrMenuItem("Save curve in rack", "",
+					  &module->saveCurveInRack));
   }
 };
 
