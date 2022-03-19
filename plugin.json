@@ -2,14 +2,14 @@
   "slug": "StochasticTelegraph",
   "name": "Stochastic Telegraph",
   "version": "2.0.0",
-  "license": "proprietary",
+  "license": "GPL-3.0-or-later",
   "brand": "Stochastic Telegraph",
   "author": "Mahlen Morris",
-  "authorEmail": "",
-  "authorUrl": "",
-  "pluginUrl": "",
+  "authorEmail": "vcv@stochastictelegraph.com",
+  "authorUrl": "https://www.youtube.com/channel/UCLKkhFpFxOwCz9aLor06cew",
+  "pluginUrl": "https://github.com/mahlenmorris/VCVRack",
   "manualUrl": "",
-  "sourceUrl": "",
+  "sourceUrl": "https://github.com/mahlenmorris/VCVRack",
   "donateUrl": "",
   "changelogUrl": "",
   "modules": [
@@ -17,7 +17,8 @@
       "slug": "Drifter",
       "name": "Drifter",
       "description": "Varying linear function generator",
-	"tags": [
+      "manualUrl": "",	
+      "tags": [
 	    "Random",
 	    "Sample and hold"
 	]
