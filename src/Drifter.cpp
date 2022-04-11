@@ -62,6 +62,7 @@ struct Drifter : Module {
                 "Plus the Total Drift input value = the maximum total drift distance per drift event");
     configParam(X_SCALE_PARAM, 0.0f, 10.0f, 10.0f,
                 "Plus the X Drift input value = the maximum x_axis drift distance per drift event");
+    // TODO: make these actual integers.
     configParam(SEGMENTS_PARAM, 1.0f, 32.0f, 8.0f,
                 "Number of sections in the curve upon next RESET event");
     // This is really an integer.
@@ -76,7 +77,7 @@ struct Drifter : Module {
                  {"Steps", "Lines", "Lines + Smoothstep"});
     // This has distinct values.
     getParamQuantity(LINETYPE_PARAM)->snapEnabled = true;
-    
+
     configSwitch(ENDPOINTS_PARAM, 0, 1, 0, "Endpoints are",
                  {"Fixed", "Drifting"});
 
@@ -90,7 +91,7 @@ struct Drifter : Module {
     configOutput(RANGE_OUTPUT, "The Y position on the curve at IN.");
 
     // If user decides to "bypass" the module, we can just pass IN -> OUT.
-    configBypass(DOMAIN_INPUT, RANGE_OUTPUT);    
+    configBypass(DOMAIN_INPUT, RANGE_OUTPUT);
   }
 
   // Overriding as a precaution; In case future versions need to save
@@ -150,7 +151,7 @@ struct Drifter : Module {
       }
     }
   }
-  
+
   void reset_points(bool startup) {
     // Empty it.
     while (!points.empty()) {
@@ -261,7 +262,7 @@ struct Drifter : Module {
     } else {
       high_x = points[i + 1].x;
     }
-    
+
     point this_point = points[i];
     point min, max;
     min.x = low_x + 0.001f;
@@ -286,7 +287,7 @@ struct Drifter : Module {
         start = prev;
         end = *it;
         found_end = true;
-        break;  
+        break;
       } else {
         prev = *it;
       }
@@ -331,7 +332,7 @@ struct Drifter : Module {
   bool getOffsetUnipolar() {
     return params[OFFSET_PARAM].getValue() > 0;
   }
-  
+
   float getDomain() {
     float domain = inputs[DOMAIN_INPUT].getVoltage();
     if (!getOffsetUnipolar()) {
@@ -339,7 +340,7 @@ struct Drifter : Module {
     }
     return clamp(domain, 0.0f, 10.0f);
   }
-  
+
   void process(const ProcessArgs& args) override {
     // Many events make us want to recompute the graph, but let's
     // only do that once per step.
@@ -364,18 +365,18 @@ struct Drifter : Module {
     }
 
     // TODO: PERF: consider reading buttons only every N samples.
-    
+
     // Y values of end points depend on the offset.
     bool offset_unipolar = getOffsetUnipolar();
     // TODO: start and end values should be set on reset, no other time.
-    
+
     int type_knob = params[LINETYPE_PARAM].getValue();
     LineType line_type = LINES[type_knob];
     if (line_type != prev_line_type) {
       need_to_update_graph = true;
       prev_line_type = line_type;
     }
-    
+
     bool endpoints_drift = params[ENDPOINTS_PARAM].getValue() > 0;
     // Test the Reset button and signal.
     bool reset_was_low = !resetTrigger.isHigh();
@@ -383,9 +384,12 @@ struct Drifter : Module {
         inputs[RESET_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
     if (reset_was_low && resetTrigger.isHigh()) {
       // Flash the reset light for a tenth of second.
-      // Compute how many samples to show the light.      
+      // Compute how many samples to show the light.
       reset_light_countdown = std::floor(args.sampleRate / 10.0f);
     }
+    // Note that we don't bother to set reset_light_countdown when the user
+    // presses the button; we just light up the button while it's
+    // being pressed.
     bool reset = (params[RESET_PARAM].getValue() > 0.1f) ||
       (reset_was_low && resetTrigger.isHigh());
 
@@ -394,7 +398,8 @@ struct Drifter : Module {
       // Now that new function has been computed, update the display curve.
       need_to_update_graph = true;  // Yes, all y's will be zero.
     }
-    
+
+    // Determine if we have a DRIFT event from button or input.
     bool drift_was_low = !driftTrigger.isHigh();
     driftTrigger.process(rescale(
         inputs[DRIFT_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
@@ -414,7 +419,10 @@ struct Drifter : Module {
     // Actually drift, if asked to.
     if (!reset && (drift_from_input || drift_from_button)) {
       // Flash the drift light for a tenth of second.
-      // Compute how many samples to show the light.      
+      // Compute how many samples to show the light.
+      // Note that, in contrast to RESET, we do set a timer on the drift
+      // light; because we want to convey that DRIFT does ONE drift per
+      // press, but RESET is just as reset no matter how long you hold it.
       drifting_light_countdown = std::floor(args.sampleRate / 10.0f);
 
       float x_drift = params[X_SCALE_PARAM].getValue();
@@ -432,7 +440,7 @@ struct Drifter : Module {
       // To avoid the bias of always calculating limits from left -> right,
       // we alternate direction.
       left_to_right = !left_to_right;
-      
+
       // Randomize locations of each point.
       for (unsigned int i = 0; i < points.size(); i++) {
         if (left_to_right) {
@@ -465,7 +473,7 @@ struct Drifter : Module {
       float range = compute_y_for_x(domain, line_type);
       if (!offset_unipolar) {
         range -= 5.0f;
-      }    
+      }
       outputs[RANGE_OUTPUT].setVoltage(range);
     }
 
@@ -473,7 +481,7 @@ struct Drifter : Module {
     if (need_to_update_graph) {
       compute_display_points();
     }
-    
+
     // Lights.
     lights[OFFSET_LIGHT].setBrightness(offset_unipolar);
     lights[RESET_LIGHT].setBrightness(
@@ -487,11 +495,11 @@ struct Drifter : Module {
   point start_point = {0.0f, 5.0f};  // Y value depends on OFFSET type.
   point end_point = {10.0f, 5.0f};  // Y value depends on OFFSET type.
   std::vector<point> points;
-  point display_points[DISPLAY_POINT_COUNT]; 
+  point display_points[DISPLAY_POINT_COUNT];
 
-  // Flipped each drift to prevent unidirectional bias. 
+  // Flipped each drift to prevent unidirectional bias.
   bool left_to_right = true;
-  
+
   // Solely so we start with the right number of points.
   bool initialized = false;
 
@@ -517,11 +525,11 @@ struct DrifterDisplay : LedDisplay {
   // We just use this to get the scope colors.
   ModuleWidget* moduleWidget;
   std::string fontPath;
-  
+
   DrifterDisplay() {
     fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
   }
-  
+
   // Transform from 0.0f -> 10.f to display point in nvg.
   Vec transform(point p, Vec bounding_box) {
     // "point" is in 0.0 -> 10.0 range.
@@ -529,10 +537,10 @@ struct DrifterDisplay : LedDisplay {
     return Vec(p.x * bounding_box.x * 0.1f,
                (10.0f - p.y) * bounding_box.y * 0.1f);
   }
-  
+
   void drawLayer(const DrawArgs& args, int layer) override {
     // TODO: add grey middle line with either zero or +5.0 annotation.
-    if ((layer == 1) && (module) && (moduleWidget) && module->initialized) {      
+    if ((layer == 1) && (module) && (moduleWidget) && module->initialized) {
       Rect r = box.zeroPos(); // .shrink(Vec(4, 5));  // TODO: ???
       Vec bounding_box = r.getBottomRight();
       Vec p0 = transform(module->display_points[0], bounding_box);
@@ -568,12 +576,12 @@ struct DrifterDisplay : LedDisplay {
         // Place a little below the top just off the left edge.
         nvgText(args.vg, 1, 12, text.c_str(), NULL);
       }
-      
+
       // Get line color from the OUT cable color, or white if not connected.
       PortWidget* output = moduleWidget->getOutput(Drifter::RANGE_OUTPUT);
       CableWidget* outputCable = APP->scene->rack->getTopCable(output);
       NVGcolor outputColor = outputCable ? outputCable->color : color::WHITE;
-      
+
       // The graph of the output function.
       nvgBeginPath(args.vg);
       nvgMoveTo(args.vg, p0.x, p0.y);
@@ -639,7 +647,7 @@ struct DrifterWidget : ModuleWidget {
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(37.224, 64.0)),
                                              module, Drifter::ENDPOINTS_PARAM,
                                              Drifter::ENDPOINTS_LIGHT));
-    
+
     // Line Count.
     addParam(createParamCentered<RoundBlackKnob>(
          mm2px(Vec(37.224, 80.0)), module, Drifter::SEGMENTS_PARAM));
@@ -657,7 +665,7 @@ struct DrifterWidget : ModuleWidget {
     // Knob.
     addParam(createParamCentered<RoundBlackKnob>(
          mm2px(Vec(22.624, 48.0)), module, Drifter::X_SCALE_PARAM));
-    
+
     // Total Drift.
     // Input.
     addInput(createInputCentered<PJ301MPort>(

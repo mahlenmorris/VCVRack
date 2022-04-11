@@ -1,7 +1,7 @@
 {
   "slug": "StochasticTelegraph",
   "name": "Stochastic Telegraph",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "license": "GPL-3.0-or-later",
   "brand": "Stochastic Telegraph",
   "author": "Mahlen Morris",
@@ -21,6 +21,16 @@
       "tags": [
 	      "Random",
 	      "Sample and hold"
+	    ]
+    },
+    {
+      "slug": "Fuse",
+      "name": "Fuse",
+      "description": "Counts triggers and blocks/allows a signal after hitting a limit",
+      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/README.md#fuse",
+      "tags": [
+        "Clock Modulator",
+        "Utility"
 	    ]
     }
   ]
