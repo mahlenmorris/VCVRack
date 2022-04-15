@@ -94,8 +94,7 @@ struct Drifter : Module {
     configBypass(DOMAIN_INPUT, RANGE_OUTPUT);
   }
 
-  // Overriding as a precaution; In case future versions need to save
-  // menued config data, previous versions will already have a 'data' object.
+  // If asked to, save the curve data in json for reading when loaded.
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     if (saveCurveInRack) {
@@ -539,7 +538,6 @@ struct DrifterDisplay : LedDisplay {
   }
 
   void drawLayer(const DrawArgs& args, int layer) override {
-    // TODO: add grey middle line with either zero or +5.0 annotation.
     if ((layer == 1) && (module) && (moduleWidget) && module->initialized) {
       Rect r = box.zeroPos(); // .shrink(Vec(4, 5));  // TODO: ???
       Vec bounding_box = r.getBottomRight();
