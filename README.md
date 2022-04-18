@@ -21,7 +21,10 @@ sample rack is just to better illustrate the idea of it being a
 transformation function; you can put whatever you like into IN. Sine wave,
 oscillator output, random,... Drifter alters signals, basically.
 
-(Someday I'll make a video or two that demonstrates these notions better.)
+[Here's a video from Pazi K.](https://www.youtube.com/watch?v=L5No8J7SPK4) showing two Drifters being used to simultaneously
+create the timbre of two sounds **and** create matching visuals in Etchaskatchoscope.
+
+(Someday I'll make a video or two that demonstrates these other notions better.)
 
 ### Controls
 #### X DRIFT Input and Button
