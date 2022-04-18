@@ -29,11 +29,11 @@ struct Fuse : Module {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 
     configSwitch(STYLE_PARAM, 0, 3, 0,
-                 "Value of OUT (before -> after) count = LIMIT",
-                 {"OUT == IN -> OUT = 0.0",
-                  "OUT = 0.0 -> OUT = IN",
-                  "OUT = IN * (1 - count/LIMIT) -> OUT = 0.0",
-                  "OUT = IN * (count/LIMIT) -> OUT = IN"
+                 "Value of OUT as count -> LIMIT",
+                 {"BLOW CLOSED (IN -> 0.0)",
+                  "BLOW OPEN (0.0 -> IN)",
+                  "NARROW (IN * (1 - count/LIMIT) -> 0.0)",
+                  "WIDEN (IN * (count/LIMIT) -> IN)"
                  }
                 );
     // Knob should snap to distinct values.
