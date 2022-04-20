@@ -71,7 +71,8 @@ The vertical position of the line at the position determined by IN.
 will be saved with the rack, and that position will be loaded along with the rack.
 * If **not** checked - when the rack is loaded, the line will always start at all zeros.
 
-## Fuse (not yet released)
+# Upcoming Modules (not yet released)
+## Fuse
 Block (or allow) a signal from passing through after a number of triggers are
 observed in a different signal.
 ### Examples
