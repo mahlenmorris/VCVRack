@@ -40,7 +40,7 @@ struct Fuse : Module {
     getParamQuantity(STYLE_PARAM)->snapEnabled = true;
 
     configParam(COUNT_PARAM, 1, 1000, 10,
-        "Number of TRIGGER events until fuse blows (see STYLE)");
+        "Number of TRIGGER events until fuse blows");
     // This is really an integer.
     getParamQuantity(COUNT_PARAM)->snapEnabled = true;
 

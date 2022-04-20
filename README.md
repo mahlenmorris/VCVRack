@@ -1,7 +1,10 @@
 # VCV Rack plugin by Stochastic Telegraph
-A module for use with VCV Rack 2.0, with an emphasis on generative and self-regulating structure. Exploring the region between random and static.
+Modules for use with VCV Rack 2.0, with an emphasis on generative and self-regulating structure. Exploring the region between random and static.
 
 ## Drifter
+Creates sequences of values that can slowly (or quickly) vary, like a series of
+points doing random walks connected into a series.
+
 ### Example
 ![Simple Example](images/simplest_example.png)
 
@@ -67,3 +70,71 @@ The vertical position of the line at the position determined by IN.
 * If checked - when the rack is saved, the current position of the line
 will be saved with the rack, and that position will be loaded along with the rack.
 * If **not** checked - when the rack is loaded, the line will always start at all zeros.
+
+## Fuse (not yet released)
+Block (or allow) a signal from passing through after a number of triggers are
+observed in a different signal.
+### Examples
+#### Counting/Clock Divider
+![Different Styles image](images/Fuse_Counting.png)
+
+Here the LIMIT is set to 7, and Fuse basically acts like a clock divider,
+sending out a trigger every seven input triggers and then resetting the count.
+
+#### The Different Styles
+![Different Styles image](images/Fuse_Styles.png)
+
+Set this up and let it run, and you'll see that each setting of STYLE
+has a different effect on the relationship between IN and OUT, especially as the
+count of TRIGGER events gets closer to LIMIT. See the STYLE Knob description
+for details.
+
+### Uses
+* Paired with other modules, can simulate modules that "wear out" or "break"
+with repeated use.
+* Allow generative patches to self-conduct behavioral changes over time.
+* Periodically reset other accumulated state in a patch (e.g., in Drifter).
+* Create fade-ins or fade-outs of signals that take hours to complete.
+
+### Controls
+Note that hovering the cursor over the colored fuse progress bar displays the
+current count of TRIGGER events seen and the percentage of the LIMIT
+has been reached
+
+#### STYLE Knob
+Selects from one of four styles of behavior:
+* **BLOW CLOSED** (IN -> 0.0)
+** While count is less than LIMIT, OUT equals IN.
+Once count >= LIMIT, OUT is set to 0.0V.
+* **BLOW OPEN** (0.0 -> IN)
+** While count is less than LIMIT, OUT equals 0.0V. Once count >= LIMIT,
+OUT equals IN.
+* **NARROW** (IN * (1 - count/LIMIT) -> 0.0)
+** Initially, OUT equals IN. As the count increases, OUT becomes an increasingly
+attenuated version of IN, until it eventually becomes 0.0V.
+* **WIDEN** (IN * (count/LIMIT) -> IN)
+** Initially, OUT is 0.0V. As the count increases, OUT becomes an increasingly
+larger version of IN, until it eventually equals IN.
+
+#### LIMIT Knob
+Specify the number of TRIGGER events (from 1 to 1000) that need to be received
+for the Fuse to blow.
+
+Hint: To count more than 1000 TRIGGER events, connect the BLOWN
+signal of a first Fuse (with LIMIT X) to the TRIGGER of a second (with LIMIT Y)
+and to the RESET of the first; then the second Fuse will blow after X*Y
+TRIGGER events.
+
+#### TRIGGER Input and Button
+A trigger to the Input or a Button press adds one to the count of accumulated
+TRIGGER events. If that count now equals LIMIT, then BLOWN will emit a
+short trigger.
+#### RESET Input and Button
+A trigger to the Input or a Button press resets the count of accumulated
+TRIGGER events to zero.
+#### BLOWN Output
+Outputs a single trigger once count == LIMIT.
+#### IN Input
+The signal being altered by Fuse.
+#### OUT Output
+The altered version of IN. See STYLE Knob for how it will be altered.
