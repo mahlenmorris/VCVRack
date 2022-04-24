@@ -25,7 +25,7 @@ transformation function; you can put whatever you like into IN. Sine wave,
 oscillator output, random,... Drifter alters signals, basically.
 
 [Here's a video from Pazi K.](https://www.youtube.com/watch?v=L5No8J7SPK4) showing two Drifters being used to simultaneously
-create the timbre of two sounds **and** create matching visuals in Etchaskatchoscope.
+create the timbre of two sounds **and** create matching visuals in Etchasketchoscope.
 
 (Someday I'll make a video or two that demonstrates these other notions better.)
 
