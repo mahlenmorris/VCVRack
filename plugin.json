@@ -30,7 +30,8 @@
       "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/README.md#fuse",
       "tags": [
         "Clock modulator",
-        "Utility"
+        "Utility",
+	"Voltage-controlled amplifier"
 	    ]
     }
   ]
