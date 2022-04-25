@@ -16,7 +16,7 @@
     {
       "slug": "Drifter",
       "name": "Drifter",
-      "description": "Varying linear function generator. Makes sequences that change in small (or large) ways, like a line of X/Y points each doing a random walk.",
+      "description": "Varying linear function generator. Makes sequences that change in small (or large) ways. A line defined by X/Y points, each doing a random walk.",
       "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/README.md#drifter",
       "tags": [
 	      "Random",
