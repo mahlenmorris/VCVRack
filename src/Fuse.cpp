@@ -6,6 +6,7 @@ struct Fuse : Module {
     STYLE_PARAM,
 		RESET_PARAM,
 		TRIGGER_PARAM,
+    SLEW_PARAM,
     PARAMS_LEN
   };
   enum InputId {
@@ -50,6 +51,8 @@ struct Fuse : Module {
     configInput(TRIGGER_INPUT, "Adds one to the count each time a trigger enters");
     configButton(TRIGGER_PARAM, "Press to add one to the count");
 
+    configParam(SLEW_PARAM, 0.0f, 5.0f, 0.0f,
+        "Rise/fall time for amplitude changes", " seconds");
     configOutput(BLOWN_OUTPUT, "Outputs a trigger when count hits LIMIT");
 
     configInput(MAIN_INPUT, "In");
@@ -61,13 +64,18 @@ struct Fuse : Module {
     count = 0;
   }
 
-  // Overriding as a precaution. In case future versions need to save
-  // menued config data, previous versions will already have a 'data' object.
-  // See https://community.vcvrack.com/t/how-to-initialize-new-params-when-and-old-patch-is-loaded
-  // for reasoning.
+  // Save and retrieve menu choice(s).
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
+    json_object_set_new(rootJ, "default_in", json_real(default_in_voltage));
     return rootJ;
+  }
+
+  void dataFromJson(json_t* rootJ) override {
+    json_t* default_inJ = json_object_get(rootJ, "default_in");
+    if (default_inJ) {
+      default_in_voltage = json_real_value(default_inJ);
+    }
   }
 
   // Returns completion from 0.0 -> 1.0.
@@ -85,6 +93,29 @@ struct Fuse : Module {
     return params[STYLE_PARAM].getValue();
   }
 
+  float get_new_envelope(float current_value, float desired_value,
+                         float sample_rate) {
+    if (current_value  < 0.0f) {
+      // Uninitialized!
+      return desired_value;
+    }
+    if (current_value == desired_value) {
+      return desired_value;
+    }
+    float slew = params[SLEW_PARAM].getValue();
+    if (slew == 0.0f) {
+      return desired_value;
+    }
+    // Compute how much we're allowed to change per sample over the 0-1
+    // range this operates in.
+    float max_move =  1.0f / (slew * sample_rate);
+    if (desired_value > current_value) {
+      return std::min(current_value + max_move, desired_value);
+    } else {
+      return std::max(current_value - max_move, desired_value);
+    }
+  }
+
   void process(const ProcessArgs& args) override {
     // Some lights are lit by triggers; these enable them to be
     // lit long enough to be seen by humans.
@@ -96,10 +127,10 @@ struct Fuse : Module {
     }
 
     // Test the RESET button and input.
-    bool reset_was_low = !resetTrigger.isHigh();
-    resetTrigger.process(rescale(
+    bool reset_was_low = !reset_trigger.isHigh();
+    reset_trigger.process(rescale(
         inputs[RESET_INPUT].getVoltage(), 0.1f, 2.0f, 0.0f, 1.0f));
-    if (reset_was_low && resetTrigger.isHigh()) {
+    if (reset_was_low && reset_trigger.isHigh()) {
       // Flash the reset light for a tenth of second.
       // Compute how many samples to show the light.
       reset_light_countdown = std::floor(args.sampleRate / 10.0f);
@@ -108,17 +139,16 @@ struct Fuse : Module {
     // presses the button; we just light up the button while it's
     // being pressed.
     bool reset = (params[RESET_PARAM].getValue() > 0.1f) ||
-      (reset_was_low && resetTrigger.isHigh());
+      (reset_was_low && reset_trigger.isHigh());
     if (reset) {
       count = 0;
     }
 
     // Test the TRIGGER button and input.
-    // TODO: should TRIGGER in UI go back to COUNTER?
-    bool trigger_was_low = !counterTrigger.isHigh();
-    counterTrigger.process(rescale(inputs[TRIGGER_INPUT].getVoltage(),
+    bool trigger_was_low = !counter_trigger.isHigh();
+    counter_trigger.process(rescale(inputs[TRIGGER_INPUT].getVoltage(),
                                    0.1f, 2.0f, 0.0f, 1.0f));
-    bool trigger_from_input = trigger_was_low && counterTrigger.isHigh();
+    bool trigger_from_input = trigger_was_low && counter_trigger.isHigh();
 
     // We only want one trigger from a button press.
     bool trigger_from_button = false;
@@ -150,41 +180,54 @@ struct Fuse : Module {
 	    }
     }
     if (!was_blown && blown) {
-      blownGenerator.trigger(1e-3f);
+      blown_generator.trigger(1e-3f);
     }
     was_blown = blown;
 
-    int style = getStyle();
-    int effective_count = count > limit ? limit : count;
-    float out_voltage = 0.0f;
+    float effective_count = 1.0f * (count > limit ? limit : count);
 
+    // Here we look at the current setting s and set what the current
+    // amount of amplitude modulation should be if we DON'T take slew control
+    // into account.
+    float desired_envelope_value = 0.0f;
+    int style = getStyle();
     if (blown) {
-      if (style != 0 && style != 2) {
-        // styles 0, 2 don't require us to have IN value.
-        out_voltage = inputs[MAIN_INPUT].getVoltage();
+      if (style == 1 || style == 3) {
+        // styles 1 and 3 have OUT == IN when blown.
+        desired_envelope_value = 1.0f;
       }
     } else {
       if (style != 1) {
-        float in_voltage = inputs[MAIN_INPUT].getVoltage();
         switch (style) {
           case 0:
-            out_voltage = in_voltage;
+            desired_envelope_value = 1.0f;
             break;
           case 2:
-            out_voltage = in_voltage * (1.0f -
-              (1.0f * effective_count / limit));
+            desired_envelope_value = 1.0f - (effective_count / limit);
             break;
           case 3:
-            out_voltage = in_voltage * (1.0f * effective_count / limit);
+            desired_envelope_value = effective_count / limit;
             break;
         }
       }
     }
-    outputs[MAIN_OUTPUT].setVoltage(out_voltage);
+    current_envelope_value =
+      get_new_envelope(current_envelope_value, desired_envelope_value,
+                       args.sampleRate);
+    if (current_envelope_value > 0.0f) {
+      // Only read IN if we need to.
+      float in_voltage = default_in_voltage;
+      if (inputs[MAIN_INPUT].isConnected()) {
+        in_voltage = inputs[MAIN_INPUT].getVoltage();
+      }
+      outputs[MAIN_OUTPUT].setVoltage(in_voltage * current_envelope_value);
+    } else {
+      outputs[MAIN_OUTPUT].setVoltage(0.0f);
+    }
 
     // Set output for BLOWN.
     outputs[BLOWN_OUTPUT].setVoltage(
-        blownGenerator.process(args.sampleTime) ? 10.0f : 0.0f);
+        blown_generator.process(args.sampleTime) ? 10.0f : 0.0f);
 
     // Button Lights.
     lights[RESET_LIGHT].setBrightness(
@@ -193,15 +236,25 @@ struct Fuse : Module {
       trigger_light_countdown > 0 ? 1.0f: 0.0f);
   }
 
-  dsp::SchmittTrigger counterTrigger, resetTrigger;
+  // Set by context menu.
+  // Value of IN when IN is not connected.
+  float default_in_voltage = 0.0f;
 
-  // On previous step, were we blown?
-  bool was_blown = false;
+  // Detects input triggers.
+  dsp::SchmittTrigger counter_trigger, reset_trigger;
+
+  // Tracks the current position of the "amplitude envelope" that STYLE
+  // helps determine. Needed to make SLEW control meaningful.
+  // Should always be in [0.0, 1.0].
+  float current_envelope_value = -1.0f;
 
   // Count of events observed since last reset.
   int count;
 
-  dsp::PulseGenerator blownGenerator;
+  // On previous step, were we blown?
+  bool was_blown = false;
+  // Makes the output trigger at BLOWN when needed.
+  dsp::PulseGenerator blown_generator;
 
   // Make sure we only trigger once when TRIGGER button is pressed.
   bool trigger_button_pressed = false;
@@ -234,10 +287,9 @@ struct FuseDisplay : Widget {
   }
 
   void drawLayer(const DrawArgs& args, int layer) override {
-    if ((layer == 1) && (module) /* TODO: ??? && module->initialized */) {
-      Rect r = box.zeroPos(); // .shrink(Vec(4, 5));  // TODO: ???
+    if ((layer == 1) && module) {
+      Rect r = box.zeroPos();
       Vec bounding_box = r.getBottomRight();
-
       float completion = module->getCompletion();
       int style = module->getStyle();
 
@@ -380,9 +432,6 @@ struct FuseWidget : ModuleWidget {
 	      Vec(box.size.x - 2 * RACK_GRID_WIDTH,
 	          RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-    addParam(createParamCentered<RoundBlackKnob>(
-        mm2px(Vec(20.971, 48.0)), module, Fuse::COUNT_PARAM));
-
     // Screen at the top.
     FuseDisplay* display = createWidget<FuseDisplay>(
       mm2px(Vec(1.240, 30.5)));
@@ -390,12 +439,16 @@ struct FuseWidget : ModuleWidget {
     display->module = module;
     addChild(display);
 
-    // style as count increase.
+    // Style.
     RoundBlackSnapKnob* style_knob = createParamCentered<RoundBlackSnapKnob>(
         mm2px(Vec(8.024, 48.0)), module, Fuse::STYLE_PARAM);
     style_knob->minAngle = -0.28f * M_PI;
     style_knob->maxAngle = 0.28f * M_PI;
     addParam(style_knob);
+
+    // Count.
+    addParam(createParamCentered<RoundBlackKnob>(
+        mm2px(Vec(20.971, 48.0)), module, Fuse::COUNT_PARAM));
 
     // Trigger
     addInput(createInputCentered<PJ301MPort>(
@@ -416,15 +469,31 @@ struct FuseWidget : ModuleWidget {
                  MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 80.0)),
                                                  module, Fuse::RESET_PARAM,
                                                  Fuse::RESET_LIGHT));
+    // Slew. Not always needed, so making it smaller.
+    addParam(createParamCentered<RoundSmallBlackKnob>(
+        mm2px(Vec(8.024, 96.0)), module, Fuse::SLEW_PARAM));
 
     addOutput(createOutputCentered<PJ301MPort>(
-	      mm2px(Vec(15.24, 96.0)), module, Fuse::BLOWN_OUTPUT));
+	      mm2px(Vec(20.971, 96.0)), module, Fuse::BLOWN_OUTPUT));
 
     addInput(createInputCentered<PJ301MPort>(
 	      mm2px(Vec(8.024, 112.0)), module, Fuse::MAIN_INPUT));
 
     addOutput(createOutputCentered<PJ301MPort>(
 	      mm2px(Vec(20.971, 112.0)), module, Fuse::MAIN_OUTPUT));
+  }
+
+  void appendContextMenu(Menu* menu) override {
+    Fuse* module = dynamic_cast<Fuse*>(this->module);
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createMenuLabel("Unplugged value of IN"));
+    float defaults[] = {-10.0f, -5.0f, -1.0f, 1.0f, 5.0f, 10.0f};
+    for (const float default_in : defaults) {
+      menu->addChild(createCheckMenuItem(string::f("%gV", default_in), "",
+          [=]() {return default_in == module->default_in_voltage;},
+          [=]() {module->default_in_voltage = default_in;}
+      ));
+    }
   }
 };
 

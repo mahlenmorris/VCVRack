@@ -71,6 +71,9 @@ The vertical position of the line at the position determined by IN.
 will be saved with the rack, and that position will be loaded along with the rack.
 * If **not** checked - when the rack is loaded, the line will always start at all zeros.
 
+### Bypass Behavior
+If this module is bypassed, then OUT will equal IN.
+
 # Upcoming Modules (not yet released)
 ## Fuse
 Block (or allow) a signal from passing through after a number of triggers are
@@ -133,9 +136,37 @@ short trigger.
 #### RESET Input and Button
 A trigger to the Input or a Button press resets the count of accumulated
 TRIGGER events to zero.
+#### SLEW Knob
+In math terms, OUT = **X** * IN. **X** is a value from 0.0 - 1.0 that is determined by
+the STYLE, LIMIT and current count of TRIGGER events.
+
+Note that this knob controls the slew on **X**, not the slew on OUT.
+At the default SLEW value (0.0), changes to **X** happen instantaneously; this
+*might* cause clicks in OUT, especially when OUT is an audio signal (e.g., a
+Sine wave) using the NARROW or WIDEN style. Values of 0.1 will
+generally prevent this click.
+
+The value of SLEW is the minimum number of seconds it takes for **X** to change
+from 0.0 -> 1.0 or from 1.0 -> 0.0. This means it will also affect how quickly
+RESET takes effect. For example, a SLEW value of 2.3 means that a RESET to a
+blown BLOW CLOSED Fuse will take 2.3 seconds to move from OUT = 0.0 -> OUT = IN.
+The change will be linear (i.e., a straight line).
 #### BLOWN Output
 Outputs a single trigger once count == LIMIT.
 #### IN Input
 The signal being altered by Fuse.
 #### OUT Output
 The altered version of IN. See STYLE Knob for how it will be altered.
+
+### Menu Options
+#### "Unplugged value of IN"
+A convenience only used when IN has no cable running into it.
+The option (-10V, -5V, -1V, 1V, 5V, 10V) that is selected (if any) is then
+assumed to be the constant value entering IN. This constant value is then
+affected by the STYLE, LIMIT, and count of TRIGGERS when computing OUT, as
+per the usual case.
+
+### Bypass Behavior
+If this module is bypassed, then OUT will equal IN. If IN has no cable running
+into it, then OUT will be 0.0V, *even if* the "Unplugged value of IN" menu
+option is set to something else.
