@@ -74,9 +74,8 @@ will be saved with the rack, and that position will be loaded along with the rac
 ### Bypass Behavior
 If this module is bypassed, then OUT will equal IN.
 
-# Upcoming Modules (not yet released)
 ## Fuse
-Block (or allow) a signal from passing through after a number of triggers are
+Block, allow, or attenuate a signal passing through, based on the number of triggers
 observed in a different signal.
 ### Examples
 #### Counting/Clock Divider
