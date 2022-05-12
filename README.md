@@ -5,7 +5,7 @@ Modules for use with VCV Rack 2.0, with an emphasis on generative and self-regul
 Creates sequences of values that can slowly (or quickly) vary, like a series of
 points doing random walks connected into a series.
 
-### Example
+### Examples
 ![Simple Example](images/simplest_example.png)
 
 * Set this up, and you'll just hear a single tone.
@@ -16,6 +16,8 @@ points doing random walks connected into a series.
 * Now press DRIFT; the line moves a lot more now!
 * Play with the STYLE knob, which changes the shape of the line in the display and hear how that changes the OUT values.
 * There are many more knobs and controls, and they are described below. They long to be twiddled!
+
+More examples can be found in [this patch](examples/AnnotatedSunlightOnSeaAnemones.vcv). You can [hear the results](https://www.youtube.com/watch?v=uagZ6GN_s1Y).
 
 ### Uses
 Creating or modifying a series of values you wish was gradually (or drastically) changing - melodies, volume levels,
@@ -91,6 +93,8 @@ Set this up and let it run, and you'll see that each setting of STYLE
 has a different effect on the relationship between IN and OUT, especially as the
 count of TRIGGER events gets closer to LIMIT. See the STYLE Knob description
 for details.
+
+More examples can be found in [this patch](examples/AnnotatedSunlightOnSeaAnemones.vcv). You can [hear the results](https://www.youtube.com/watch?v=uagZ6GN_s1Y).
 
 ### Uses
 * Paired with other modules, can simulate modules that "wear out" or "break"
