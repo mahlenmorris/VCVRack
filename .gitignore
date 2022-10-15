@@ -5,3 +5,7 @@
 /plugin.dylib
 /plugin.dll
 .DS_Store
+
+*.a
+*.o
+*.exe
