@@ -67,11 +67,18 @@ gtest.a : gtest-all.o
 gtest_main.a : gtest-all.o gtest_main.o
 	$(AR) $(ARFLAGS) $@ $^
 
-# Builds a sample test.  A test should link with either gtest.a or
+# Mahlen's additions.
+
+VPATH = .:../src
+
+parser.o : ../src/Tokenizer.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c ../src/Tokenizer.h
+
+# A test should link with either gtest.a or
 # gtest_main.a, depending on whether it defines its own main()
 # function.
 
-test_libs.o : $(USER_DIR)/test_libs.cpp $(GTEST_HEADERS)
+test_libs.o : $(USER_DIR)/test_libs.cpp parser.o $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/test_libs.cpp
 
 test_libs : test_libs.o gtest_main.a
