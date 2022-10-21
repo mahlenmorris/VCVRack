@@ -151,21 +151,18 @@ make_NUMBER (const std::string &s, const yy::parser::location_type& loc)
   return yy::parser::make_NUMBER ((int) n, loc);
 }
 
-void
-driver::scan_begin ()
+int
+driver::set_text(const std::string &text)
 {
   yy_flex_debug = trace_scanning;
-  if (file.empty () || file == "-")
-    yyin = stdin;
-  else if (!(yyin = fopen (file.c_str (), "r")))
-    {
-      std::cerr << "cannot open " << file << ": " << strerror (errno) << '\n';
-      exit (EXIT_FAILURE);
-    }
-}
-
-void
-driver::scan_end ()
-{
-  fclose (yyin);
+  // Creates a buffer from the string.
+  YY_BUFFER_STATE input_buffer = yy_scan_string(text.c_str());
+  // Tell Flex to use this buffer.
+  yy_switch_to_buffer(input_buffer);
+  yy::parser parse(*this);
+  parse.set_debug_level(trace_parsing);
+  int res = parse();
+  yy_delete_buffer(input_buffer);  // Free the buffer
+  return res;
+                   // Use the buffer
 }
