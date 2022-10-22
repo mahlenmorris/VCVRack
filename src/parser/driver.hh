@@ -21,6 +21,7 @@
 # define DRIVER_HH
 # include <string>
 # include <map>
+#include <vector>
 # include "parser.hh"
 
 // Give Flex the prototype of yylex we want ...
@@ -33,8 +34,8 @@ YY_DECL;
 class driver
 {
 public:
-  std::map<std::string, int> variables;
-  int result;
+  std::vector<Line> lines;
+  ExpressionBase result;
   // Whether to generate parser debug traces.
   bool trace_parsing;
   // Whether to generate scanner debug traces.
@@ -50,4 +51,6 @@ public:
   // Handling the scanner.
   int set_text(const std::string &text);
 };
+
+
 #endif // ! DRIVER_HH

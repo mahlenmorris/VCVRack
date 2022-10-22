@@ -19,20 +19,24 @@
 
 #include <iostream>
 #include "driver.hh"
+#include "environment.h"
 
-int
-main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
   int res = 0;
   driver drv;
+  Environment env;
   for (int i = 1; i < argc; ++i)
     if (argv[i] == std::string ("-p"))
       drv.trace_parsing = true;
     else if (argv[i] == std::string ("-s"))
       drv.trace_scanning = true;
-    else if (!drv.parse (argv[i]))
-      std::cout << drv.result << '\n';
-    else
+    else if (!drv.parse (argv[i])) {
+      std::cout << "Parsed!\n";
+      std::cout << drv.lines.size() << "\n";
+      std::cout << " first time: " << drv.lines[0].expr1.Compute(env) << '\n';
+      std::cout << "second time: " << drv.lines[0].expr1.Compute(env) << '\n';
+    } else
       res = 1;
   return res;
 }

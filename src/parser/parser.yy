@@ -29,6 +29,7 @@
 
 %code requires {
   # include <string>
+  #include "Tree.h"
   class driver;
 }
 
@@ -56,32 +57,34 @@
   RPAREN  ")"
 ;
 
-%token <std::string> IDENTIFIER "identifier"
+%token <VariableExpression> IDENTIFIER "identifier"
 %token <int> NUMBER "number"
-%nterm <int> exp
+%nterm <ExpressionBase> exp
 
 %printer { yyo << $$; } <*>;
 
 %%
 %start unit;
-unit: assignments exp  { drv.result = $2; };
+unit: assignments
 
 assignments:
   %empty                 {}
 | assignments assignment {};
 
 assignment:
-  "identifier" ":=" exp { drv.variables[$1] = $3; };
+  "identifier" ":=" exp {
+    drv.lines.push_back(Line::Assignment($1, $3));
+   };
 
 %left "+" "-";
 %left "*" "/";
 exp:
-  "number"
-| "identifier"  { $$ = drv.variables[$1]; }
-| exp "+" exp   { $$ = $1 + $3; }
-| exp "-" exp   { $$ = $1 - $3; }
-| exp "*" exp   { $$ = $1 * $3; }
-| exp "/" exp   { $$ = $1 / $3; }
+  "number"      { $$ = NumberExpression((float) $1); }
+| "identifier"  { $$ = VariableExpression($1); }
+| exp "+" exp   { $$ = BinOpExpression(yy::parser::token::token_kind_type::TOK_PLUS, $1, $3); }
+| exp "-" exp   { $$ = BinOpExpression(yy::parser::token::token_kind_type::TOK_MINUS, $1, $3); }
+| exp "*" exp   { $$ = BinOpExpression(yy::parser::token::token_kind_type::TOK_STAR, $1, $3); }
+| exp "/" exp   { $$ = BinOpExpression(yy::parser::token::token_kind_type::TOK_SLASH, $1, $3); }
 | "(" exp ")"   { $$ = $2; }
 %%
 
