@@ -150,7 +150,8 @@ private:
 
 struct Line {
   enum Type {
-    ASSIGNMENT  // str1 = expr1
+    ASSIGNMENT,  // str1 = expr1
+    WAIT         // wait expr1
   };
   Type type;
   std::string str1;
@@ -166,7 +167,13 @@ struct Line {
     line.expr1 = expr;
     std::cout << "Creating Assignment(" << expr->to_string() << ")!\n";
     return line;
-
+  }
+  static Line Wait(ExpressionBase* expr) {
+    Line line;
+    line.type = WAIT;
+    line.expr1 = expr;
+    std::cout << "Creating Wait(" << expr->to_string() << ")!\n";
+    return line;
   }
   friend std::ostream& operator<<(
     std::ostream& os, Line line) {

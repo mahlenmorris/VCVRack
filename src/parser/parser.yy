@@ -49,6 +49,7 @@
 %define api.token.prefix {TOK_}
 %token
   ASSIGN  ":="
+  WAIT    "wait"
   MINUS   "-"
   PLUS    "+"
   STAR    "*"
@@ -73,6 +74,10 @@ assignments:
 
 assignment:
   "identifier" ":=" exp { $$ = Line::Assignment($1, $3); }
+| "wait" exp            { $$ = Line::Wait($2); }
+
+/* ExpressionBase classes need to get destructors to avoid memory leaks.
+ */
 
 %left "+" "-";
 %left "*" "/";
