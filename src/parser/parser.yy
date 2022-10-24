@@ -59,32 +59,30 @@
 
 %token <VariableExpression> IDENTIFIER "identifier"
 %token <int> NUMBER "number"
-%nterm <ExpressionBase> exp
+%nterm <ExpressionBase*> exp
+%nterm <Line> assignment
 
 %printer { yyo << $$; } <*>;
 
 %%
-%start unit;
-unit: assignments
+%start assignments;
 
 assignments:
   %empty                 {}
-| assignments assignment {};
+| assignments assignment { drv.lines.push_back($2); }
 
 assignment:
-  "identifier" ":=" exp {
-    drv.lines.push_back(Line::Assignment($1, $3));
-   };
+  "identifier" ":=" exp { $$ = Line::Assignment($1, $3); }
 
 %left "+" "-";
 %left "*" "/";
 exp:
-  "number"      { $$ = NumberExpression((float) $1); }
-| "identifier"  { $$ = VariableExpression($1); }
-| exp "+" exp   { $$ = BinOpExpression(yy::parser::token::token_kind_type::TOK_PLUS, $1, $3); }
-| exp "-" exp   { $$ = BinOpExpression(yy::parser::token::token_kind_type::TOK_MINUS, $1, $3); }
-| exp "*" exp   { $$ = BinOpExpression(yy::parser::token::token_kind_type::TOK_STAR, $1, $3); }
-| exp "/" exp   { $$ = BinOpExpression(yy::parser::token::token_kind_type::TOK_SLASH, $1, $3); }
+  "number"      { $$ = new NumberExpression((float) $1); }
+| "identifier"  { $$ = new VariableExpression($1); }
+| exp "+" exp   { $$ = BinOpExpression::Plus($1, $3); }
+| exp "-" exp   { $$ = BinOpExpression::Minus($1, $3); }
+| exp "*" exp   { $$ = BinOpExpression::Times($1, $3); }
+| exp "/" exp   { $$ = BinOpExpression::Divide($1, $3); }
 | "(" exp ")"   { $$ = $2; }
 %%
 
