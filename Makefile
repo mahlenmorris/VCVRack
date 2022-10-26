@@ -21,3 +21,5 @@ DISTRIBUTABLES += $(wildcard presets)
 
 # Include the Rack plugin Makefile framework
 include $(RACK_DIR)/plugin.mk
+# For the Flex and Bison files in src/parser.
+include src/parser/parser.mk

@@ -25,8 +25,8 @@ driver::driver ()
 {
 }
 
-int
-driver::parse (const std::string &text)
+// Returns zero on success.
+int driver::parse (const std::string &text)
 {
   location.initialize();
   int res = set_text(text);

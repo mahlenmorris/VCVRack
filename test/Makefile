@@ -69,17 +69,19 @@ gtest_main.a : gtest-all.o gtest_main.o
 
 # Mahlen's additions.
 
-VPATH = .:../src
+# Need to build parser code, which has its own Make rules.
+include ../src/parser/parser.mk
+parser.o: parser.hh
+scanner.o: parser.hh
 
-parser.o : ../src/Tokenizer.h
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c ../src/Tokenizer.h
+VPATH = .:../src/parser
 
 # A test should link with either gtest.a or
 # gtest_main.a, depending on whether it defines its own main()
 # function.
 
-test_libs.o : $(USER_DIR)/test_libs.cpp parser.o $(GTEST_HEADERS)
+test_libs.o : $(USER_DIR)/test_libs.cpp $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/test_libs.cpp
 
-test_libs : test_libs.o gtest_main.a
+test_libs : test_libs.o ../src/parser/driver.o ../src/parser/parser.o ../src/parser/scanner.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@

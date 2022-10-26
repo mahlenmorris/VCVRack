@@ -29,7 +29,7 @@
 
 %code requires {
   # include <string>
-  #include "Tree.h"
+  #include "tree.hh"
   class driver;
 }
 
@@ -49,7 +49,7 @@
 %define api.token.prefix {TOK_}
 %token
   ASSIGN  ":="
-  WAIT    "wait"
+  WAIT    "wait"  /* TODO: would be nice if could accept uppercase "WAIT" */
   MINUS   "-"
   PLUS    "+"
   STAR    "*"
@@ -59,7 +59,7 @@
 ;
 
 %token <VariableExpression> IDENTIFIER "identifier"
-%token <int> NUMBER "number"
+%token <int> NUMBER "number"  /* TODO: Should be float and accept negative sign. */
 %nterm <ExpressionBase*> exp
 %nterm <Line> assignment
 

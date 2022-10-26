@@ -1,18 +1,21 @@
-#ifndef TREE_H
-#define TREE_H
+#ifndef TREE_HH
+#define TREE_HH
 
 #include <iostream>
 #include "environment.h"
+
+bool EXPR_DEBUG = false;
 
 // Base class for computing expressions.
 class ExpressionBase {
 public:
   ExpressionBase() {}
-  virtual float Compute(Environment env) {
+  virtual float Compute(Environment) {
+    // Unused 'env' argument hidden.
     return -1.0;
   }
   friend std::ostream& operator<<(
-    std::ostream& os, const ExpressionBase &dummy) {
+    std::ostream& os, const ExpressionBase &) {
     os << "ExpressionBase";
     return os;
   }
@@ -25,9 +28,11 @@ class NumberExpression : public ExpressionBase {
 public:
   NumberExpression(float the_value) {
     value = the_value;
-    std::cout << "Creating NumberExpression!\n";
+    if (EXPR_DEBUG) {
+      std::cout << "Creating NumberExpression!\n";
+    }
   }
-  float Compute(Environment env) override {
+  float Compute(Environment) override {
     return value;
   }
   friend std::ostream& operator<<(
@@ -58,8 +63,10 @@ class BinOpExpression : public ExpressionBase {
   BinOpExpression(ExpressionBase* lhs, ExpressionBase* rhs) {
     left = lhs;
     right = rhs;
-    std::cout << "Creating BinOpExpression!\n";
-    std::cout << "left = " << left->to_string() << "\n";
+    if (EXPR_DEBUG) {
+      std::cout << "Creating BinOpExpression!\n";
+      std::cout << "left = " << left->to_string() << "\n";
+    }
   }
 public:
   static ExpressionBase* Plus(ExpressionBase* lhs, ExpressionBase* rhs) {
@@ -110,23 +117,31 @@ public:
   VariableExpression(std::string name) {
     // Intentionally copying the name.
     variable_name = name;
-    std::cout << "Creating VariableExpression(string)!\n";
+    if (EXPR_DEBUG) {
+      std::cout << "Creating VariableExpression(string)!\n";
+    }
   }
   VariableExpression(char * name) {
     // Intentionally copying the name.
     variable_name = std::string(name);
-    std::cout << "Creating VariableExpression(char *)!\n";
+    if (EXPR_DEBUG) {
+      std::cout << "Creating VariableExpression(char *)!\n";
+    }
   }
   VariableExpression() {
     // Intentionally copying the name.
     variable_name = "No variable name provided! Why?";
-    std::cout << "Creating VariableExpression(void)!\n";
+    if (EXPR_DEBUG) {
+      std::cout << "Creating VariableExpression(void)!\n";
+    }
   }
 
   VariableExpression(const VariableExpression &var_expr) {
     // Intentionally copying the name.
     variable_name = var_expr.GetName();
-    std::cout << "Creating VariableExpression(VE)!\n";
+    if (EXPR_DEBUG) {
+      std::cout << "Creating VariableExpression(VE)!\n";
+    }
   }
   float Compute(Environment env) override {
     // TODO: This operation actually depends on the name. Make this correct.
@@ -165,14 +180,18 @@ struct Line {
     line.type = ASSIGNMENT;
     line.str1 = name.GetName();
     line.expr1 = expr;
-    std::cout << "Creating Assignment(" << expr->to_string() << ")!\n";
+    if (EXPR_DEBUG) {
+      std::cout << "Creating Assignment(" << expr->to_string() << ")!\n";
+    }
     return line;
   }
   static Line Wait(ExpressionBase* expr) {
     Line line;
     line.type = WAIT;
     line.expr1 = expr;
-    std::cout << "Creating Wait(" << expr->to_string() << ")!\n";
+    if (EXPR_DEBUG) {
+      std::cout << "Creating Wait(" << expr->to_string() << ")!\n";
+    }
     return line;
   }
   friend std::ostream& operator<<(
@@ -182,4 +201,4 @@ struct Line {
   }
 };
 
-#endif // TREE_H
+#endif // TREE_HH

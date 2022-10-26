@@ -35,7 +35,6 @@ class driver
 {
 public:
   std::vector<Line> lines;
-  ExpressionBase result;
   // Whether to generate parser debug traces.
   bool trace_parsing;
   // Whether to generate scanner debug traces.
