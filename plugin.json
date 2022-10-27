@@ -14,6 +14,16 @@
   "changelogUrl": "",
   "modules": [
     {
+      "slug": "BASICally",
+      "name": "BASICally",
+      "description": "Generate sequences and perform math on inputs with a simple BASIC-like language.",
+      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/README.md#basically",
+      "tags": [
+	      "Sequencer",
+	      "Utility"
+	    ]
+    },
+    {
       "slug": "Drifter",
       "name": "Drifter",
       "description": "Varying linear function generator. Makes sequences that change in small (or large) ways. A line defined by X/Y points, each doing a random walk.",
@@ -31,7 +41,7 @@
       "tags": [
         "Clock modulator",
         "Utility",
-	"Voltage-controlled amplifier"
+	      "Voltage-controlled amplifier"
 	    ]
     }
   ]
