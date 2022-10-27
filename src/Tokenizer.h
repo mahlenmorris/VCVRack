@@ -1,16 +1,23 @@
+#ifndef TOKENIZER_H_
+#define TOKENIZER_H_
+
 #include <algorithm>
 #include <iostream>
+#include <string>
 #include <stdexcept>
 
 #include "ctype.h"
 
-enum class TOKEN
-{
+/*
+ * Break up input string into labeled tokens for the Parser.
+ */
+
+enum class TOKEN {
+    NO_TOKEN_FOUND,
     KEYWORD,
     IDENT,
     ASSIGN,
     OPERATOR,
-    STRING,
     NUMBER,
     ARRAY_OPEN,
     ARRAY_CLOSE,
@@ -19,64 +26,53 @@ enum class TOKEN
 
 std::string KEYWORDS[] = {"for", "next", "wait"};  // TODO: add the real ones.
 
-struct Token
-{
+struct Token {
     std::string value;
     TOKEN type;
     std::string toString() {
         switch (type) {
-        case TOKEN::KEYWORD:
-        {
+        case TOKEN::KEYWORD: {
             return "KEYWORD: " + value;
         }
-        case TOKEN::IDENT:
-        {
+        case TOKEN::IDENT: {
             return "IDENT: " + value;
         }
-        case TOKEN::ASSIGN:
-        {
+        case TOKEN::ASSIGN: {
             return "ASSIGN";
         }
-        case TOKEN::OPERATOR:
-        {
+        case TOKEN::OPERATOR: {
             return "OPERATOR: " + value;
         }
-        case TOKEN::NUMBER:
-        {
+        case TOKEN::NUMBER: {
             return "Number: " + value;
         }
-        case TOKEN::STRING:
-        {
-            return "String: " + value;
-        }
-        case TOKEN::ARRAY_OPEN:
-        {
+        case TOKEN::ARRAY_OPEN: {
             return "Array open";
         }
-        case TOKEN::ARRAY_CLOSE:
-        {
+        case TOKEN::ARRAY_CLOSE: {
             return "Array close";
         }
-        case TOKEN::COMMA:
-        {
+        case TOKEN::COMMA: {
             return "Comma";
         }
         default:
           return "!No Token!";
-      }
+        }
     }
 };
 
-class Tokenizer
+struct Tokenizer
 {
     std::string file;
     size_t next_char;
     size_t prevPos;
+    Token pushed_back;
+    bool has_pushed_back;
 
-public:
     Tokenizer(std::string source) {
         file = source;
         next_char = 0;
+        has_pushed_back = false;
     }
 
     bool good() {
@@ -89,15 +85,30 @@ public:
       return c;
     }
 
+    char peek() {
+      return file.at(next_char);
+    }
+
+    void pushBack(Token token) {
+      if (has_pushed_back) {
+        throw std::logic_error(
+          "pushBack() called when token already pushed back.");
+      }
+      pushed_back = token;
+      has_pushed_back = true;
+    }
+
     auto getWithoutWhiteSpace()
     {
         char c = ' ';
         while ((c == ' ' || c == '\n')) {
+            if (!good()) {
+              return '\0';
+            }
             c = get();
 
             if ((c == ' ' || c == '\n') && !good()) {
-                // std::cout << file.eof() << " " << file.fail() << std::endl;
-                throw std::logic_error("Ran out of tokens");
+                return '\0';
             } else if (!good()) {
                 return c;
             }
@@ -105,26 +116,38 @@ public:
         return c;
     }
 
-    auto getToken()
-    {
+    auto getToken() {
+        if (has_pushed_back) {
+          has_pushed_back = false;
+          return pushed_back;
+        }
         char c;
+        Token token;
+        token.type = TOKEN::NO_TOKEN_FOUND;
         if (!good()) {
-            std::cout << "Exhausted tokens" << std::endl;
-            // throw std::exception("Exhausted tokens");
+          return token;
         }
         prevPos = next_char;
         c = getWithoutWhiteSpace();
+        if (c == '\0') {
+          return token;
+        }
 
-        struct Token token;
-        if (c == '"') {
-            token.type = TOKEN::STRING;
-            token.value = "";
-            c = get();
-            while (c != '"') {
-                token.value += c;
-                c = get();
-            }
-        } else if (c=='-' || (c >= '0' && c <= '9')) {
+        if (c == '-') {
+          // Could be the operator - or a negative number.
+          token.type = TOKEN::OPERATOR;
+          token.value = "-";
+          if (!good()) {
+            return token;
+          }
+          char p = peek();
+          if (isspace(p) || isalpha(p)) {
+            return token;
+          }
+          // Maybe it's a number. Fall through.
+          token.value = "";
+        }
+        if (c=='-' || (c >= '0' && c <= '9')) {
               //Check if string is numeric
               token.type = TOKEN::NUMBER;
               token.value = "";
@@ -185,21 +208,13 @@ public:
         return token;
     }
 
-    auto hasMoreTokens()
-    {
+    auto hasMoreTokens() {
         return !good();
     }
 
-    void rollBackToken()
-    {
+    void rollBackToken() {
         next_char = prevPos;
     }
-
-    /*
-        "": String begin?
-        {}: Object
-        []: List
-        num: number
-
-     */
 };
+
+#endif  // TOKENIZER_H_
