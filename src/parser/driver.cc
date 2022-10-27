@@ -29,6 +29,8 @@ driver::driver ()
 int driver::parse (const std::string &text)
 {
   location.initialize();
+  // Remove any existing lines from a previous parse().
+  lines.clear();
   int res = set_text(text);
   return res;
 }

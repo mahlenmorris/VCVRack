@@ -34,11 +34,11 @@ int main (int argc, char *argv[])
     else if (!drv.parse (argv[i])) {
       std::cout << "Parsed!\n";
       std::cout << drv.lines.size() << "\n";
-      ExpressionBase* base = drv.lines[0].expr1;
-      std::cout << "to string: " << base->to_string() << '\n';
+      const Expression &base = drv.lines[0].expr1;
+      std::cout << "to string: " << base.to_string() << '\n';
       std::cout << "to string: " << drv.lines[0].str1 << '\n';
-      std::cout << " first time: " << drv.lines[0].expr1->Compute(env) << '\n';
-      std::cout << "second time: " << drv.lines[0].expr1->Compute(env) << '\n';
+      std::cout << " first time: " << drv.lines[0].expr1.Compute(env) << '\n';
+      std::cout << "second time: " << drv.lines[0].expr1.Compute(env) << '\n';
     } else
       res = 1;
   return res;

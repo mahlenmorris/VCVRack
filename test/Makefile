@@ -80,7 +80,7 @@ VPATH = .:../src/parser
 # gtest_main.a, depending on whether it defines its own main()
 # function.
 
-test_libs.o : $(USER_DIR)/test_libs.cpp $(GTEST_HEADERS)
+test_libs.o : $(USER_DIR)/test_libs.cpp ../src/parser/parser.o ../src/parser/scanner.o ../src/parser/driver.o $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/test_libs.cpp
 
 test_libs : test_libs.o ../src/parser/driver.o ../src/parser/parser.o ../src/parser/scanner.o gtest_main.a

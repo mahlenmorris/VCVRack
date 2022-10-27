@@ -28,7 +28,7 @@
 %define parse.assert
 
 %code requires {
-  # include <string>
+  #include <string>
   #include "tree.hh"
   class driver;
 }
@@ -58,9 +58,9 @@
   RPAREN  ")"
 ;
 
-%token <VariableExpression> IDENTIFIER "identifier"
+%token <Expression> IDENTIFIER "identifier"
 %token <int> NUMBER "number"  /* TODO: Should be float and accept negative sign. */
-%nterm <ExpressionBase*> exp
+%nterm <Expression> exp
 %nterm <Line> assignment
 
 %printer { yyo << $$; } <*>;
@@ -82,12 +82,12 @@ assignment:
 %left "+" "-";
 %left "*" "/";
 exp:
-  "number"      { $$ = new NumberExpression((float) $1); }
-| "identifier"  { $$ = new VariableExpression($1); }
-| exp "+" exp   { $$ = BinOpExpression::Plus($1, $3); }
-| exp "-" exp   { $$ = BinOpExpression::Minus($1, $3); }
-| exp "*" exp   { $$ = BinOpExpression::Times($1, $3); }
-| exp "/" exp   { $$ = BinOpExpression::Divide($1, $3); }
+  "number"      { $$ = Expression::Number((float) $1); }
+| "identifier"  { $$ = Expression::Variable($1); }
+| exp "+" exp   { $$ = Expression::Plus($1, $3); }
+| exp "-" exp   { $$ = Expression::Minus($1, $3); }
+| exp "*" exp   { $$ = Expression::Times($1, $3); }
+| exp "/" exp   { $$ = Expression::Divide($1, $3); }
 | "(" exp ")"   { $$ = $2; }
 %%
 
