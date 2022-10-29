@@ -7,7 +7,7 @@ CXX = g++
 FLEX = flex
 
 %.cc %.hh %.html %.gv: %.yy tree.hh environment.h
-	$(BISON) $(BISONFLAGS) --html --graph -o $*.cc $<
+	$(BISON) $(BISONFLAGS) --html --graph -o src/parser/$*.cc $<
 
 %.cc: %.ll
 	$(FLEX) $(FLEXFLAGS) -o$@ $<

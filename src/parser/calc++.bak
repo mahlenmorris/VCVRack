@@ -1,5 +1,7 @@
 /* Main for calc++.   -*- C++ -*-
 
+Originally named calc++.cc. Occasionally useful testbed for parser changes?
+
    Copyright (C) 2005-2015, 2018-2021 Free Software Foundation, Inc.
 
    This file is part of Bison, the GNU Compiler Compiler.

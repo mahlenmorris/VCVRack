@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "plugin.hpp"
+#include "parser/driver.hh"
 
 // While I should probably replace "point" with Vec, this struct comes
 // with less baggage.
@@ -92,6 +93,8 @@ struct Basically : Module {
 
     // If user decides to "bypass" the module, we can just pass IN -> OUT.
     configBypass(DOMAIN_INPUT, RANGE_OUTPUT);
+
+    drv.parse("out1 := 3 + 1 / 3");
   }
 
   // If asked to, save the curve data in json for reading when loaded.
@@ -151,206 +154,12 @@ struct Basically : Module {
     }
   }
 
-  void reset_points(bool startup) {
-    // Empty it.
-    while (!points.empty()) {
-     points.pop_back();
-    }
-    // How many segments (we make one fewer point).
-    int segment_count = std::floor(params[SEGMENTS_PARAM].getValue());
-    float distance = 10.0f / segment_count;
-    // The scale of the square is 0,0 -> 10, 10.
-    bool unipolar = getOffsetUnipolar();
-    if (startup && saveCurveInRack) {
-      for (point p : loaded_points) {
-        points.push_back(p);
-      }
-    } else {
-      for (int i = 1; i < segment_count; i++) {
-        point p = {i * distance, unipolar ? 0.0f : 5.0f};
-        points.push_back(p);
-      }
-    }
-    if (startup && saveCurveInRack) {
-      start_point.y = loaded_start_y;
-      end_point.y = loaded_end_y;
-    } else {
-      if (getOffsetUnipolar()) {
-        start_point.y = 0.0f;
-        end_point.y = 0.0f;
-      } else {
-        start_point.y = 5.0f;
-        end_point.y = 5.0f;
-      }
-    }
-  }
-
-  // Given two points that define a line, find y for the given x.
-  float find_y(point point_0, point point_1, float x) {
-    // Need to be careful if x1 == x0.
-    float x_diff = std::max(point_1.x - point_0.x, 0.00001f);
-    float a = (point_1.y - point_0.y) / x_diff;
-    float b = point_0.y - a * point_0.x;
-    return a * x + b;
-  }
-
-  // Given two points that define a line, find y for the given x.
-  // Uses Smoothstep (https://en.wikipedia.org/wiki/Smoothstep) to smooth
-  // out the lines.
-  float find_smooth_y(point point_0, point point_1, float x) {
-    // Need to be careful if x1 == x0.
-    float x_diff = std::max(point_1.x - point_0.x, 0.00001f);
-    float a = (point_1.y - point_0.y) / x_diff;
-    float b = point_0.y - a * point_0.x;
-    float raw_y = a * x + b;
-
-
-    // Scale so that the lower y value is zero and the higher y value is one.
-    // Remember the scaling factor, so you can transform back.
-    float low_y = std::min(point_0.y, point_1.y);
-    float high_y = std::max(point_0.y, point_1.y);
-    if (std::abs(high_y - low_y) < 0.001f) {
-      // Avoid divide by zero error.
-      return raw_y;
-    }
-    float cooked_y = (raw_y - low_y) * (1.0f / (high_y - low_y));
-    float smooth_y = (3.0f * cooked_y * cooked_y) -
-      (2.0f * cooked_y * cooked_y * cooked_y);
-    // Return to original coordinate space.
-    return smooth_y * (high_y - low_y) + low_y;
-  }
-
-  // Given the two drift scales, current point, and a min and max point that
-  // bounds the region, return a point in that region that is no more than
-  // 'total drift' away from the current point and whose delta along the x_axis
-  // is no more than 'x drift'.
-  point uniform_region_value(float total_drift, float x_drift, point current,
-                             point min, point max) {
-    // We run this by creating points and seeing if they are close enough.
-    // See https://www.youtube.com/watch?v=4y_nmpv-9lI for why.
-    float x_range = std::min(x_drift, std::min(total_drift, max.x - min.x));
-    float y_range = std::min(total_drift, max.y - min.y);
-    point result;
-    while (true) {
-      float x_diff = random::uniform() * x_range - (x_range / 2.0f);
-      float y_diff = random::uniform() * y_range - (y_range / 2.0f);
-      // Test with Pythagorean theorem.
-      if ((x_diff * x_diff) + (y_diff * y_diff) <= (total_drift * total_drift)) {
-        result.x = current.x + x_diff;
-        result.y = current.y + y_diff;
-        // And test the boundaries.
-        if ((min.x <= result.x) && (result.x <= max.x) &&
-            (min.y <= result.y) && (result.y <= max.y)) {
-          return result;
-        }
-      }
-    }
-  }
-
-  void drift_point(float total_drift, float x_drift, unsigned int i) {
-    float low_x, high_x;
-    if (i == 0) {
-      low_x = 0.0f;
-    } else {
-      // I think this has some bias to it, since the previous point will
-      // have already moved.
-      low_x = points[i - 1].x;
-    }
-    if (i == points.size() - 1) {
-      high_x = 10.0f;
-    } else {
-      high_x = points[i + 1].x;
-    }
-
-    point this_point = points[i];
-    point min, max;
-    min.x = low_x + 0.001f;
-    min.y = 0.0f;
-    max.x = high_x - 0.001f;
-    max.y = 10.0f;
-    points[i] = uniform_region_value(total_drift, x_drift, this_point, min, max);
-  }
-
-  float compute_y_for_x(float domain, LineType line_type) {
-    // Figure out which segment we are in.
-    point prev = start_point, start, end;
-    bool found_end = false;
-    // For performance sake, make this a binary search?
-    // Seems not, didn't look faster.
-
-    // FYI: How much CPU is saved if I don't actually send output?
-    // Surprisingly, it only goes from 0.7-8% -> 0.4-5%.
-    for (std::vector<point>::iterator it = points.begin();
-         it != points.end(); ++it) {
-      if (domain < it->x) {
-        start = prev;
-        end = *it;
-        found_end = true;
-        break;
-      } else {
-        prev = *it;
-      }
-    }
-    if (!found_end) {
-      start = prev;
-      end = end_point;
-    }
-
-    switch (line_type) {
-    case LINES_LINETYPE:
-      // Straight lines.
-      return find_y(start, end, domain);
-    case SMOOTHSTEP_LINETYPE:
-      // Smoothed version of LINES_DOOMED.
-      return find_smooth_y(start, end, domain);
-    case STEPS_LINETYPE:
-      // Steps.
-      return start.y;
-    default:
-      // Something broken, should not happen!
-      return 0.0f;
-    }
-  }
-
-  void compute_display_points() {
-    // Fill in display_points with the desired number of points to draw in the
-    // display. We do this separately from the actual drawing, since this is
-    // expensive and only needs to happen when the funtion actually changes.
-    // We fill in in unipolar mode; the draw part can shift as needed.
-    int type_knob = params[LINETYPE_PARAM].getValue();
-    LineType line_type = LINES_DOOMED[type_knob];
-    for (int i = 0; i < DISPLAY_POINT_COUNT; i++) {
-      // "- 1" because need both ends.
-      float x = i * (10.0f / (DISPLAY_POINT_COUNT - 1));
-      float y = compute_y_for_x(x, line_type);
-      display_points[i].x = x;
-      display_points[i].y = y;
-    }
-  }
-
-  bool getOffsetUnipolar() {
-    return params[OFFSET_PARAM].getValue() > 0;
-  }
-
-  float getDomain() {
-    float domain = inputs[DOMAIN_INPUT].getVoltage();
-    if (!getOffsetUnipolar()) {
-      domain += 5.0f;
-    }
-    return clamp(domain, 0.0f, 10.0f);
-  }
-
   void process(const ProcessArgs& args) override {
-    // Many events make us want to recompute the graph, but let's
-    // only do that once per step.
-    bool need_to_update_graph = false;
     // I'd have preferred to initialize 'points' in the constructor,
     // but it seems that the values of knobs (i.e., params) aren't
     // available in the constructor. So I wait until here, when they
     // are definitely set.
     if (!initialized) {
-      reset_points(true);
-      need_to_update_graph = true;  // Yes, all y's will be zero.
       initialized = true;
     }
 
@@ -363,16 +172,9 @@ struct Basically : Module {
       reset_light_countdown--;
     }
 
-    // TODO: PERF: consider reading buttons only every N samples.
-
-    // Y values of end points depend on the offset.
-    bool offset_unipolar = getOffsetUnipolar();
-    // TODO: start and end values should be set on reset, no other time.
-
     int type_knob = params[LINETYPE_PARAM].getValue();
     LineType line_type = LINES_DOOMED[type_knob];
     if (line_type != prev_line_type) {
-      need_to_update_graph = true;
       prev_line_type = line_type;
     }
 
@@ -392,97 +194,14 @@ struct Basically : Module {
     bool reset = (params[RESET_PARAM].getValue() > 0.1f) ||
       (reset_was_low && resetTrigger.isHigh());
 
-    if (reset) {
-      reset_points(false);
-      // Now that new function has been computed, update the display curve.
-      need_to_update_graph = true;  // Yes, all y's will be zero.
-    }
-
-    // Determine if we have a DRIFT event from button or input.
-    bool drift_was_low = !driftTrigger.isHigh();
-    driftTrigger.process(rescale(
-        inputs[DRIFT_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
-    bool drift_from_input = drift_was_low && driftTrigger.isHigh();
-
-    // We only want one drift from a button press.
-    bool drift_from_button = false;
-    if (params[DRIFT_PARAM].getValue() > 0.1f) {
-      if (!drift_button_pressed) {
-        drift_from_button = true;
-        drift_button_pressed = true;
-      }
-    } else {
-      drift_button_pressed = false;
-    }
-
-    // Actually drift, if asked to.
-    if (!reset && (drift_from_input || drift_from_button)) {
-      // Flash the drift light for a tenth of second.
-      // Compute how many samples to show the light.
-      // Note that, in contrast to RESET, we do set a timer on the drift
-      // light; because we want to convey that DRIFT does ONE drift per
-      // press, but RESET is just as reset no matter how long you hold it.
-      drifting_light_countdown = std::floor(args.sampleRate / 10.0f);
-
-      float x_drift = params[X_SCALE_PARAM].getValue();
-      if (inputs[X_SCALE_INPUT].isConnected()) {
-        // Don't allow x_drift to be negative.
-        x_drift = clamp(x_drift + inputs[X_SCALE_INPUT].getVoltage(), 0.0f, 10.0f);
-      }
-
-      float total_drift = params[SCALE_PARAM].getValue();
-      if (inputs[SCALE_INPUT].isConnected()) {
-        // Don't allow total_drift to be negative.
-        total_drift = clamp(total_drift + inputs[SCALE_INPUT].getVoltage(), 0.0f, 10.0f);
-      }
-
-      // To avoid the bias of always calculating limits from left -> right,
-      // we alternate direction.
-      left_to_right = !left_to_right;
-
-      // Randomize locations of each point.
-      for (unsigned int i = 0; i < points.size(); i++) {
-        if (left_to_right) {
-          drift_point(total_drift, x_drift, i);
-        } else {
-          drift_point(total_drift, x_drift, points.size() - 1 - i);
-        }
-      }
-      if (endpoints_drift) {
-        point min, max;
-        min = {0.0f, 0.0f};
-        max = {0.0f, 10.0f};
-        point result = uniform_region_value(total_drift, 0.0f, start_point, min, max);
-        start_point.y = result.y;
-
-        min = {10.0f, 0.0f};
-        max = {10.0f, 10.0f};
-        result = uniform_region_value(total_drift, 0.0f, end_point, min, max);
-        end_point.y = result.y;
-      }
-
-      // Now that new function has been computed, update the display curve.
-      need_to_update_graph = true;  // Yes, all y's will be zero.
-    }
-
-    if (inputs[DOMAIN_INPUT].isConnected() &&
-        outputs[RANGE_OUTPUT].isConnected()) {
-      // Only need to compute the output if input and output are connected!
-      float domain = getDomain();
-      float range = compute_y_for_x(domain, line_type);
-      if (!offset_unipolar) {
-        range -= 5.0f;
-      }
-      outputs[RANGE_OUTPUT].setVoltage(range);
-    }
-
-    // All the reasons we might need to recompute the display graph.
-    if (need_to_update_graph) {
-      compute_display_points();
-    }
+    // Compute the current value of OUT.
+    // TODO: Use notion of line pointer.
+    float range = drv.lines[0].expr1.Compute(environment);
+    // Limit to -10 <= x < = 10.
+    range = std::max(-10.0f, std::min(10.0f, range));
+    outputs[RANGE_OUTPUT].setVoltage(range);
 
     // Lights.
-    lights[OFFSET_LIGHT].setBrightness(offset_unipolar);
     lights[RESET_LIGHT].setBrightness(
         reset || reset_light_countdown > 0 ? 1.0f : 0.0f);
     lights[ENDPOINTS_LIGHT].setBrightness(endpoints_drift);
@@ -514,104 +233,10 @@ struct Basically : Module {
 
   // Set by context menu.
   bool saveCurveInRack = false;
-  // Loaded from the JSON; placed into points during reset_points.
   std::vector<point> loaded_points;
   float loaded_start_y, loaded_end_y;
-};
-
-struct BasicallyDisplay : LedDisplay {
-  Basically* module;
-  // We just use this to get the scope colors.
-  ModuleWidget* moduleWidget;
-  std::string fontPath;
-
-  BasicallyDisplay() {
-    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
-  }
-
-  // Transform from 0.0f -> 10.f to display point in nvg.
-  Vec transform(point p, Vec bounding_box) {
-    // "point" is in 0.0 -> 10.0 range.
-    // Display has 0.0 in upper left corner.
-    return Vec(p.x * bounding_box.x * 0.1f,
-               (10.0f - p.y) * bounding_box.y * 0.1f);
-  }
-
-  void drawLayer(const DrawArgs& args, int layer) override {
-    if ((layer == 1) && (module) && (moduleWidget) && module->initialized) {
-      Rect r = box.zeroPos(); // .shrink(Vec(4, 5));  // TODO: ???
-      Vec bounding_box = r.getBottomRight();
-      Vec p0 = transform(module->display_points[0], bounding_box);
-
-      // Draw middle line.
-      nvgBeginPath(args.vg);
-      nvgMoveTo(args.vg, 0.0, bounding_box.y / 2.0);
-      nvgLineTo(args.vg, bounding_box.x, bounding_box.y / 2.0);
-      nvgLineCap(args.vg, NVG_ROUND);
-      nvgMiterLimit(args.vg, 2.f);
-      nvgStrokeWidth(args.vg, 1.5f);
-      nvgStrokeColor(args.vg, nvgRGBA(0xff, 0xff, 0xff, 0x80));
-      nvgStroke(args.vg);
-
-      // Draw voltage numbers, to make the IN and OUT range more obvious.
-      std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
-      if (font) {
-        nvgFontSize(args.vg, 13);
-        nvgFontFaceId(args.vg, font->handle);
-
-        nvgTextLetterSpacing(args.vg, -2);
-
-        std::string text = module->getOffsetUnipolar() ? "5" : "0";
-        // Place on the line just off the left edge.
-        nvgText(args.vg, 1, bounding_box.y / 2.0 + 4, text.c_str(), NULL);
-
-        text = module->getOffsetUnipolar() ? "0" : "-5";
-        // Place a little above the bottom just off the left edge.
-        nvgText(args.vg, 1, bounding_box.y - 5, text.c_str(), NULL);
-
-        text = module->getOffsetUnipolar() ? "10" : "5";
-        // Place a little above the bottom just off the right edge.
-        nvgText(args.vg, bounding_box.x - 12, bounding_box.y - 5, text.c_str(), NULL);
-        // Place a little below the top just off the left edge.
-        nvgText(args.vg, 1, 12, text.c_str(), NULL);
-      }
-
-      // Get line color from the OUT cable color, or white if not connected.
-      PortWidget* output = moduleWidget->getOutput(Basically::RANGE_OUTPUT);
-      CableWidget* outputCable = APP->scene->rack->getTopCable(output);
-      NVGcolor outputColor = outputCable ? outputCable->color : color::WHITE;
-      // The graph of the output function.
-      nvgBeginPath(args.vg);
-      nvgMoveTo(args.vg, p0.x, p0.y);
-      for (int i = 1; i < DISPLAY_POINT_COUNT; i++) {
-        Vec next = transform(module->display_points[i], bounding_box);
-        nvgLineTo(args.vg, next.x, next.y);
-      }
-      nvgLineCap(args.vg, NVG_ROUND);
-      nvgMiterLimit(args.vg, 2.f);
-      nvgStrokeWidth(args.vg, 1.5f);
-      nvgStrokeColor(args.vg, outputColor);
-      nvgStroke(args.vg);
-
-      // And a short vertical line indicating the position of IN.
-      if (module->inputs[Basically::DOMAIN_INPUT].isConnected()) {
-        // Get line color from the IN cable color.
-        PortWidget* input = moduleWidget->getInput(Basically::DOMAIN_INPUT);
-        CableWidget* inputCable = APP->scene->rack->getTopCable(input);
-        NVGcolor inputColor = inputCable ? inputCable->color : color::WHITE;
-        float x = module->getDomain() * bounding_box.x * 0.1f;
-        nvgBeginPath(args.vg);
-        nvgMoveTo(args.vg, x, bounding_box.y);
-        nvgLineTo(args.vg, x, bounding_box.y * 0.8);
-        nvgLineCap(args.vg, NVG_ROUND);
-        nvgMiterLimit(args.vg, 2.f);
-        nvgStrokeWidth(args.vg, 1.5f);
-        nvgStrokeColor(args.vg, inputColor);
-        nvgStroke(args.vg);
-      }
-    }
-    LedDisplay::drawLayer(args, layer);
-  }
+  driver drv;
+  Environment environment;
 };
 
 struct BasicallyWidget : ModuleWidget {
@@ -627,13 +252,6 @@ struct BasicallyWidget : ModuleWidget {
     addChild(createWidget<ScrewSilver>(
         Vec(box.size.x - 2 * RACK_GRID_WIDTH,
             RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-
-    BasicallyDisplay* display = createWidget<BasicallyDisplay>(
-        mm2px(Vec(0.360, 11.844)));
-    display->box.size = mm2px(Vec(45.0, 30.0));
-    display->module = module;
-    display->moduleWidget = this;
-    addChild(display);
 
     // OFST
     addParam(createLightParamCentered<VCVLightLatch<
