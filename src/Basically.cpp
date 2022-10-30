@@ -94,9 +94,10 @@ struct Basically : Module {
     // If user decides to "bypass" the module, we can just pass IN -> OUT.
     configBypass(DOMAIN_INPUT, RANGE_OUTPUT);
 
-    drv.parse("foo := in1 * 1 /2 \n out1 := foo * (0 - 1)");
+    drv.parse("out1 := in1 / 2 \n wait 500 \n out1 := in1 * 2 wait 300");
     environment.variables["out1"] = 0.0f;  // Default value to start.
     current_line = 0;
+    ticks_remaining = 0;
   }
 
   // If asked to, save the curve data in json for reading when loaded.
@@ -205,6 +206,7 @@ struct Basically : Module {
     // Run the line.
     // TODO: does this belong in Line class?
     bool waiting = false;
+    //INFO("current_line=%i, ticks_remaining=%i", current_line, ticks_remaining);
     while (!waiting) {
       switch (drv.lines[current_line].type) {
         case Line::ASSIGNMENT: {
@@ -212,14 +214,30 @@ struct Basically : Module {
           environment.variables[assignment->str1] =
               assignment->expr1.Compute(&environment);
           current_line++;
-          if (current_line >= drv.lines.size()) {
-            current_line = 0;
-            waiting = true;  // Implicit WAIT at end of program.
+        }
+        break;
+        case Line::WAIT: {
+          if (ticks_remaining > 0) {
+            // We're currently running through the current wait period.
+            ticks_remaining--;
+            if (ticks_remaining == 0) {
+              current_line++;
+            }
+          } else {
+            // First time at this WAIT statement.
+            Line* wait = &(drv.lines[current_line]);
+            ticks_remaining = (int) (wait->expr1.Compute(&environment) *
+                args.sampleRate / 1000.0f);
+          }
+          if (ticks_remaining > 0) {
+            waiting = true;
           }
         }
         break;
-        case Line::WAIT:
-          break;
+      }
+      if (current_line >= drv.lines.size()) {
+        current_line = 0;
+        waiting = true;  // Implicit WAIT at end of program.
       }
     }
 
@@ -264,6 +282,7 @@ struct Basically : Module {
   Driver drv;
   Environment environment;
   unsigned int current_line;
+  unsigned int ticks_remaining;
 };
 
 struct BasicallyWidget : ModuleWidget {
