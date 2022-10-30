@@ -49,7 +49,7 @@
 
   #include <string>
   #include "tree.hh"
-  class driver;
+  class Driver;
 
 #line 55 "parser.hh"
 
@@ -795,7 +795,7 @@ switch (yykind)
     };
 
     /// Build a parser object.
-    parser (driver& drv_yyarg);
+    parser (Driver& drv_yyarg);
     virtual ~parser ();
 
 #if 201103L <= YY_CPLUSPLUS
@@ -1386,7 +1386,7 @@ switch (yykind)
 
 
     // User arguments.
-    driver& drv;
+    Driver& drv;
 
   };
 

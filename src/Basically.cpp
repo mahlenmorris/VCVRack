@@ -261,7 +261,7 @@ struct Basically : Module {
   bool saveCurveInRack = false;
   std::vector<point> loaded_points;
   float loaded_start_y, loaded_end_y;
-  driver drv;
+  Driver drv;
   Environment environment;
   unsigned int current_line;
 };

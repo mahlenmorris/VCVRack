@@ -141,7 +141,7 @@ namespace yy {
 #line 142 "parser.cc"
 
   /// Build a parser object.
-  parser::parser (driver& drv_yyarg)
+  parser::parser (Driver& drv_yyarg)
 #if YYDEBUG
     : yydebug_ (false),
       yycdebug_ (&std::cerr),

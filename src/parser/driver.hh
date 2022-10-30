@@ -18,20 +18,19 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 #ifndef DRIVER_HH
-# define DRIVER_HH
-# include <string>
-# include <map>
+#define DRIVER_HH
+#include <string>
 #include <vector>
-# include "parser.hh"
+#include "parser.hh"
 
 // Give Flex the prototype of yylex we want ...
 # define YY_DECL \
-  yy::parser::symbol_type yylex (driver& drv)
+  yy::parser::symbol_type yylex (Driver& drv)
 // ... and declare it for the parser's sake.
 YY_DECL;
 
 // Conducting the whole scanning and parsing of Calc++.
-class driver
+class Driver
 {
 public:
   std::vector<Line> lines;
@@ -42,7 +41,7 @@ public:
   // The token's location used by the scanner.
   yy::location location;
 
-  driver();
+  Driver();
 
   // Run the parser on file F.  Return 0 on success.
   int parse(const std::string& f);

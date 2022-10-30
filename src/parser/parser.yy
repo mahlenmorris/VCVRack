@@ -30,11 +30,11 @@
 %code requires {
   #include <string>
   #include "tree.hh"
-  class driver;
+  class Driver;
 }
 
 // The parsing context.
-%param { driver& drv }
+%param { Driver& drv }
 
 %locations
 

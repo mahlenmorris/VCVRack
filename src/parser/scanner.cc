@@ -2208,7 +2208,7 @@ make_NUMBER (const std::string &s, const yy::parser::location_type& loc)
 }
 
 int
-driver::set_text(const std::string &text)
+Driver::set_text(const std::string &text)
 {
   yy_flex_debug = trace_scanning;
   // Creates a buffer from the string.
@@ -2220,6 +2220,5 @@ driver::set_text(const std::string &text)
   int res = parse();
   yy_delete_buffer(input_buffer);  // Free the buffer
   return res;
-                   // Use the buffer
 }
 

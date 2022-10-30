@@ -20,13 +20,13 @@
 #include "driver.hh"
 #include "parser.hh"
 
-driver::driver ()
+Driver::Driver ()
   : trace_parsing (false), trace_scanning (false)
 {
 }
 
 // Returns zero on success.
-int driver::parse (const std::string &text)
+int Driver::parse (const std::string &text)
 {
   location.initialize();
   // Remove any existing lines from a previous parse().
