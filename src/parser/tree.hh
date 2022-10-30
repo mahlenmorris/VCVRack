@@ -70,13 +70,13 @@ public:
     return Variable(std::string(var_name).c_str());
   }
 
-  float Compute(Environment env) {
+  float Compute(Environment* env) {
     switch (type) {
       case NUMBER: return float_value;
       case BINOP: return binop_compute(env);
       case VARIABLE: {
         // TODO: This operation actually depends on the name. Make this correct.
-        return env.variables.at(name);
+        return env->variables.at(name);
       }
       default: return 1.2345;
     }
@@ -104,7 +104,7 @@ private:
     ex.operation = op;
     return ex;
   }
-  float binop_compute(Environment env){
+  float binop_compute(Environment* env){
     float lhs = left_right[0].Compute(env);
     float rhs = left_right[1].Compute(env);
     switch (operation) {

@@ -94,7 +94,9 @@ struct Basically : Module {
     // If user decides to "bypass" the module, we can just pass IN -> OUT.
     configBypass(DOMAIN_INPUT, RANGE_OUTPUT);
 
-    drv.parse("out1 := 3 + 1 / 3");
+    drv.parse("foo := in1 * 1 /2 \n out1 := foo * (0 - 1)");
+    environment.variables["out1"] = 0.0f;  // Default value to start.
+    current_line = 0;
   }
 
   // If asked to, save the curve data in json for reading when loaded.
@@ -196,10 +198,34 @@ struct Basically : Module {
 
     // Compute the current value of OUT.
     // TODO: Use notion of line pointer.
-    float range = drv.lines[0].expr1.Compute(environment);
+    // Update environment with current inputs.
+    if (inputs[DOMAIN_INPUT].isConnected()) {
+      environment.variables["in1"] = inputs[DOMAIN_INPUT].getVoltage();
+    }
+    // Run the line.
+    // TODO: does this belong in Line class?
+    bool waiting = false;
+    while (!waiting) {
+      switch (drv.lines[current_line].type) {
+        case Line::ASSIGNMENT: {
+          Line* assignment = &(drv.lines[current_line]);
+          environment.variables[assignment->str1] =
+              assignment->expr1.Compute(&environment);
+          current_line++;
+          if (current_line >= drv.lines.size()) {
+            current_line = 0;
+            waiting = true;  // Implicit WAIT at end of program.
+          }
+        }
+        break;
+        case Line::WAIT:
+          break;
+      }
+    }
+
     // Limit to -10 <= x < = 10.
-    range = std::max(-10.0f, std::min(10.0f, range));
-    outputs[RANGE_OUTPUT].setVoltage(range);
+    float out1 = std::max(-10.0f, std::min(10.0f, environment.variables["out1"]));
+    outputs[RANGE_OUTPUT].setVoltage(out1);
 
     // Lights.
     lights[RESET_LIGHT].setBrightness(
@@ -237,6 +263,7 @@ struct Basically : Module {
   float loaded_start_y, loaded_end_y;
   driver drv;
   Environment environment;
+  unsigned int current_line;
 };
 
 struct BasicallyWidget : ModuleWidget {
