@@ -30,7 +30,7 @@ DISTRIBUTABLES += $(wildcard presets)
 include $(RACK_DIR)/plugin.mk
 
 # For the Flex and Bison files in src/parser.
-include ./src/parser/parser.mk
+#include ./src/parser/parser.mk
 # Need to build parser code, which has its own Make rules.
 #parser.o: parser.hh
 #scanner.o: parser.hh
