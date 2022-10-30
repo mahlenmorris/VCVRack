@@ -76,7 +76,14 @@ public:
       case BINOP: return binop_compute(env);
       case VARIABLE: {
         // TODO: This operation actually depends on the name. Make this correct.
-        return env->variables.at(name);
+        // If we compile as user types, many spurious variable names will be
+        // asked for. Make sure we don't create spurious entries.
+        auto found = env->variables.find(name);
+        if (found != env->variables.end()) {
+          return found->second;
+        } else {
+          return 0.0f;
+        }
       }
       default: return 1.2345;
     }
