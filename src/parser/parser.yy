@@ -76,13 +76,13 @@ assignment:
   "identifier" ":=" exp { $$ = Line::Assignment($1, $3); }
 | "wait" exp            { $$ = Line::Wait($2); }
 
-/* ExpressionBase classes need to get destructors to avoid memory leaks.
- */
-
 %left "+" "-";
 %left "*" "/";
+%precedence NEG;   /* unary minus */
+
 exp:
   "number"      { $$ = Expression::Number((float) $1); }
+| MINUS "number" %prec NEG { $$ = Expression::Number(-1 * (float) $2);}
 | "identifier"  { $$ = Expression::Variable($1); }
 | exp "+" exp   { $$ = Expression::Plus($1, $3); }
 | exp "-" exp   { $$ = Expression::Minus($1, $3); }

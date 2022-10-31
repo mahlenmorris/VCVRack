@@ -658,49 +658,55 @@ namespace yy {
     break;
 
   case 6: // exp: "number"
-#line 85 "parser.yy"
+#line 84 "parser.yy"
                 { yylhs.value.as < Expression > () = Expression::Number((float) yystack_[0].value.as < float > ()); }
 #line 664 "parser.cc"
     break;
 
-  case 7: // exp: "identifier"
-#line 86 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::Variable(yystack_[0].value.as < Expression > ()); }
+  case 7: // exp: "-" "number"
+#line 85 "parser.yy"
+                           { yylhs.value.as < Expression > () = Expression::Number(-1 * (float) yystack_[0].value.as < float > ());}
 #line 670 "parser.cc"
     break;
 
-  case 8: // exp: exp "+" exp
-#line 87 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::Plus(yystack_[2].value.as < Expression > (), yystack_[0].value.as < Expression > ()); }
+  case 8: // exp: "identifier"
+#line 86 "parser.yy"
+                { yylhs.value.as < Expression > () = Expression::Variable(yystack_[0].value.as < Expression > ()); }
 #line 676 "parser.cc"
     break;
 
-  case 9: // exp: exp "-" exp
-#line 88 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::Minus(yystack_[2].value.as < Expression > (), yystack_[0].value.as < Expression > ()); }
+  case 9: // exp: exp "+" exp
+#line 87 "parser.yy"
+                { yylhs.value.as < Expression > () = Expression::Plus(yystack_[2].value.as < Expression > (), yystack_[0].value.as < Expression > ()); }
 #line 682 "parser.cc"
     break;
 
-  case 10: // exp: exp "*" exp
-#line 89 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::Times(yystack_[2].value.as < Expression > (), yystack_[0].value.as < Expression > ()); }
+  case 10: // exp: exp "-" exp
+#line 88 "parser.yy"
+                { yylhs.value.as < Expression > () = Expression::Minus(yystack_[2].value.as < Expression > (), yystack_[0].value.as < Expression > ()); }
 #line 688 "parser.cc"
     break;
 
-  case 11: // exp: exp "/" exp
-#line 90 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::Divide(yystack_[2].value.as < Expression > (), yystack_[0].value.as < Expression > ()); }
+  case 11: // exp: exp "*" exp
+#line 89 "parser.yy"
+                { yylhs.value.as < Expression > () = Expression::Times(yystack_[2].value.as < Expression > (), yystack_[0].value.as < Expression > ()); }
 #line 694 "parser.cc"
     break;
 
-  case 12: // exp: "(" exp ")"
-#line 91 "parser.yy"
-                { yylhs.value.as < Expression > () = yystack_[1].value.as < Expression > (); }
+  case 12: // exp: exp "/" exp
+#line 90 "parser.yy"
+                { yylhs.value.as < Expression > () = Expression::Divide(yystack_[2].value.as < Expression > (), yystack_[0].value.as < Expression > ()); }
 #line 700 "parser.cc"
     break;
 
+  case 13: // exp: "(" exp ")"
+#line 91 "parser.yy"
+                { yylhs.value.as < Expression > () = yystack_[1].value.as < Expression > (); }
+#line 706 "parser.cc"
+    break;
 
-#line 704 "parser.cc"
+
+#line 710 "parser.cc"
 
             default:
               break;
@@ -885,7 +891,7 @@ namespace yy {
     static const char *const yy_sname[] =
     {
     "end of file", "error", "invalid token", ":=", "wait", "-", "+", "*",
-  "/", "(", ")", "identifier", "number", "$accept", "assignments",
+  "/", "(", ")", "identifier", "number", "NEG", "$accept", "assignments",
   "assignment", "exp", YY_NULLPTR
     };
     return yy_sname[yysymbol];
@@ -1155,74 +1161,76 @@ namespace yy {
   }
 
 
-  const signed char parser::yypact_ninf_ = -6;
+  const signed char parser::yypact_ninf_ = -10;
 
   const signed char parser::yytable_ninf_ = -1;
 
   const signed char
   parser::yypact_[] =
   {
-      -6,     0,    -6,    14,    -1,    -6,    14,    -6,    -6,    13,
-      14,     7,    14,    14,    14,    14,    13,    -6,    20,    20,
-      -6,    -6
+     -10,     0,   -10,    11,     3,   -10,    -9,    11,   -10,   -10,
+      25,    11,   -10,    19,    11,    11,    11,    11,    25,   -10,
+      -6,    -6,   -10,   -10
   };
 
   const signed char
   parser::yydefact_[] =
   {
-       2,     0,     1,     0,     0,     3,     0,     7,     6,     5,
-       0,     0,     0,     0,     0,     0,     4,    12,     9,     8,
-      10,    11
+       2,     0,     1,     0,     0,     3,     0,     0,     8,     6,
+       5,     0,     7,     0,     0,     0,     0,     0,     4,    13,
+      10,     9,    11,    12
   };
 
   const signed char
   parser::yypgoto_[] =
   {
-      -6,    -6,    -6,    -5
+     -10,   -10,   -10,    -2
   };
 
   const signed char
   parser::yydefgoto_[] =
   {
-       0,     1,     5,     9
+       0,     1,     5,    10
   };
 
   const signed char
   parser::yytable_[] =
   {
-       2,    11,    10,     0,     3,    16,     0,    18,    19,    20,
-      21,     4,    12,    13,    14,    15,     0,    17,    12,    13,
-      14,    15,     0,     6,     0,     7,     8,    14,    15
+       2,    16,    17,    12,     3,    13,    11,     0,     0,    18,
+       0,     4,    20,    21,    22,    23,     6,     0,     0,     0,
+       7,     0,     8,     9,    14,    15,    16,    17,     0,    19,
+      14,    15,    16,    17
   };
 
   const signed char
   parser::yycheck_[] =
   {
-       0,     6,     3,    -1,     4,    10,    -1,    12,    13,    14,
-      15,    11,     5,     6,     7,     8,    -1,    10,     5,     6,
-       7,     8,    -1,     9,    -1,    11,    12,     7,     8
+       0,     7,     8,    12,     4,     7,     3,    -1,    -1,    11,
+      -1,    11,    14,    15,    16,    17,     5,    -1,    -1,    -1,
+       9,    -1,    11,    12,     5,     6,     7,     8,    -1,    10,
+       5,     6,     7,     8
   };
 
   const signed char
   parser::yystos_[] =
   {
-       0,    14,     0,     4,    11,    15,     9,    11,    12,    16,
-       3,    16,     5,     6,     7,     8,    16,    10,    16,    16,
-      16,    16
+       0,    15,     0,     4,    11,    16,     5,     9,    11,    12,
+      17,     3,    12,    17,     5,     6,     7,     8,    17,    10,
+      17,    17,    17,    17
   };
 
   const signed char
   parser::yyr1_[] =
   {
-       0,    13,    14,    14,    15,    15,    16,    16,    16,    16,
-      16,    16,    16
+       0,    14,    15,    15,    16,    16,    17,    17,    17,    17,
+      17,    17,    17,    17
   };
 
   const signed char
   parser::yyr2_[] =
   {
-       0,     2,     0,     2,     3,     2,     1,     1,     3,     3,
-       3,     3,     3
+       0,     2,     0,     2,     3,     2,     1,     2,     1,     3,
+       3,     3,     3,     3
   };
 
 
@@ -1232,8 +1240,8 @@ namespace yy {
   const signed char
   parser::yyrline_[] =
   {
-       0,    72,    72,    73,    76,    77,    85,    86,    87,    88,
-      89,    90,    91
+       0,    72,    72,    73,    76,    77,    84,    85,    86,    87,
+      88,    89,    90,    91
   };
 
   void
@@ -1265,7 +1273,7 @@ namespace yy {
 
 
 } // yy
-#line 1269 "parser.cc"
+#line 1277 "parser.cc"
 
 #line 92 "parser.yy"
 

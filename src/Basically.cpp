@@ -1,29 +1,10 @@
 #include <algorithm>
+#include <cctype>
+#include <unordered_map>
 #include <vector>
 
 #include "plugin.hpp"
 #include "parser/driver.hh"
-
-// While I should probably replace "point" with Vec, this struct comes
-// with less baggage.
-struct point {
-  float x;
-  float y;
-};
-
-enum LineType {
-  STEPS_LINETYPE,
-  LINES_LINETYPE,
-  SMOOTHSTEP_LINETYPE
-};
-
-LineType LINES_DOOMED[] = {
-  STEPS_LINETYPE,
-  LINES_LINETYPE,
-  SMOOTHSTEP_LINETYPE
-};
-
-const int DISPLAY_POINT_COUNT = 100;
 
 struct Basically : Module {
   enum ParamId {
@@ -40,6 +21,9 @@ struct Basically : Module {
   enum LightId {
     LIGHTS_LEN
   };
+
+  std::unordered_map<std::string, OutputId> out_map { {"out1", OUT1_OUTPUT}
+                                                    };
 
   Basically() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -80,13 +64,23 @@ struct Basically : Module {
     if (!initialized) {
       initialized = true;
     }
-
-    if (!text.empty() && user_has_changed) {
+    // If the program has just recompiled, certain optimizations may no
+    // longer apply. "recompiled" tells us that the program is new.
+    bool recompiled = false;
+    if (user_has_changed && !text.empty()) {
       user_has_changed = false;  // TODO: race condition?
-      ok_to_run = !drv.parse(text);
+      std::string lowercase;
+      lowercase.resize(text.size());
+      std::transform(text.begin(), text.end(),
+                     lowercase.begin(), ::tolower);
+      ok_to_run = !drv.parse(lowercase);
+      if (ok_to_run) {
+        recompiled = true;
+      }
     }
 
     // Update environment with current inputs.
+    // TODO: avoid calling this if ticks_remaining > 1?
     if (inputs[IN1_INPUT].isConnected()) {
       environment.variables["in1"] = inputs[IN1_INPUT].getVoltage();
     }
@@ -98,12 +92,19 @@ struct Basically : Module {
       switch (drv.lines[current_line].type) {
         case Line::ASSIGNMENT: {
           Line* assignment = &(drv.lines[current_line]);
-          environment.variables[assignment->str1] =
-              assignment->expr1.Compute(&environment);
+          float rhs = assignment->expr1.Compute(&environment);
+          environment.variables[assignment->str1] = rhs;
+          auto found = out_map.find(assignment->str1);
+          if (found != out_map.end()) {
+            // Limit to -10 <= x < = 10.
+            outputs[found->second].setVoltage(
+              std::max(-10.0f, std::min(10.0f, rhs)));
+          }
           current_line++;
         }
         break;
         case Line::WAIT: {
+          // TODO: Need a way for user to say "wait exactly one step"
           if (ticks_remaining > 0) {
             // We're currently running through the current wait period.
             ticks_remaining--;
@@ -127,10 +128,6 @@ struct Basically : Module {
         waiting = true;  // Implicit WAIT at end of program.
       }
     }
-
-    // Limit to -10 <= x < = 10.
-    outputs[OUT1_OUTPUT].setVoltage(
-      std::max(-10.0f, std::min(10.0f, environment.variables["out1"])));
 
     // Lights.
   }

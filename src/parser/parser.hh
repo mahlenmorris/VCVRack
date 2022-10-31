@@ -480,7 +480,8 @@ namespace yy {
     TOK_LPAREN = 9,                // "("
     TOK_RPAREN = 10,               // ")"
     TOK_IDENTIFIER = 11,           // "identifier"
-    TOK_NUMBER = 12                // "number"
+    TOK_NUMBER = 12,               // "number"
+    TOK_NEG = 13                   // NEG
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -497,7 +498,7 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 13, ///< Number of tokens.
+        YYNTOKENS = 14, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -512,10 +513,11 @@ namespace yy {
         S_RPAREN = 10,                           // ")"
         S_IDENTIFIER = 11,                       // "identifier"
         S_NUMBER = 12,                           // "number"
-        S_YYACCEPT = 13,                         // $accept
-        S_assignments = 14,                      // assignments
-        S_assignment = 15,                       // assignment
-        S_exp = 16                               // exp
+        S_NEG = 13,                              // NEG
+        S_YYACCEPT = 14,                         // $accept
+        S_assignments = 15,                      // assignments
+        S_assignment = 16,                       // assignment
+        S_exp = 17                               // exp
       };
     };
 
@@ -765,7 +767,8 @@ switch (yykind)
       {
 #if !defined _MSC_VER || defined __clang__
         YY_ASSERT (tok == token::TOK_YYEOF
-                   || (token::TOK_YYerror <= tok && tok <= token::TOK_RPAREN));
+                   || (token::TOK_YYerror <= tok && tok <= token::TOK_RPAREN)
+                   || tok == token::TOK_NEG);
 #endif
       }
 #if 201103L <= YY_CPLUSPLUS
@@ -1033,6 +1036,21 @@ switch (yykind)
       make_NUMBER (const float& v, const location_type& l)
       {
         return symbol_type (token::TOK_NUMBER, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_NEG (location_type l)
+      {
+        return symbol_type (token::TOK_NEG, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_NEG (const location_type& l)
+      {
+        return symbol_type (token::TOK_NEG, l);
       }
 #endif
 
@@ -1379,7 +1397,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 28,     ///< Last index in yytable_.
+      yylast_ = 33,     ///< Last index in yytable_.
       yynnts_ = 4,  ///< Number of nonterminal symbols.
       yyfinal_ = 2 ///< Termination state number.
     };
@@ -1529,7 +1547,7 @@ switch (yykind)
 
 
 } // yy
-#line 1533 "parser.hh"
+#line 1551 "parser.hh"
 
 
 

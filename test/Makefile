@@ -69,11 +69,6 @@ gtest_main.a : gtest-all.o gtest_main.o
 
 # Mahlen's additions.
 
-# Need to build parser code, which has its own Make rules.
-include ../src/parser/parser.mk
-parser.o: parser.hh
-scanner.o: parser.hh
-
 VPATH = .:../src/parser
 
 # A test should link with either gtest.a or
