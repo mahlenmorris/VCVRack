@@ -59,7 +59,7 @@
 ;
 
 %token <Expression> IDENTIFIER "identifier"
-%token <int> NUMBER "number"  /* TODO: Should be float and accept negative sign. */
+%token <float> NUMBER "number"
 %nterm <Expression> exp
 %nterm <Line> assignment
 

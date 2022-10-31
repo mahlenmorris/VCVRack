@@ -106,7 +106,7 @@
       <terminal symbol-number="9" token-number="264" name="&quot;(&quot;" type="" usefulness="useful"/>
       <terminal symbol-number="10" token-number="265" name="&quot;)&quot;" type="" usefulness="useful"/>
       <terminal symbol-number="11" token-number="266" name="&quot;identifier&quot;" type="Expression" usefulness="useful"/>
-      <terminal symbol-number="12" token-number="267" name="&quot;number&quot;" type="int" usefulness="useful"/>
+      <terminal symbol-number="12" token-number="267" name="&quot;number&quot;" type="float" usefulness="useful"/>
     </terminals>
     <nonterminals>
       <nonterminal symbol-number="13" name="$accept" type="" usefulness="useful"/>

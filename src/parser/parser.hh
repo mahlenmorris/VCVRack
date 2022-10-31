@@ -418,7 +418,7 @@ namespace yy {
       char dummy2[sizeof (Line)];
 
       // "number"
-      char dummy3[sizeof (int)];
+      char dummy3[sizeof (float)];
     };
 
     /// The size of the largest semantic type.
@@ -562,7 +562,7 @@ namespace yy {
         break;
 
       case symbol_kind::S_NUMBER: // "number"
-        value.move< int > (std::move (that.value));
+        value.move< float > (std::move (that.value));
         break;
 
       default:
@@ -617,13 +617,13 @@ namespace yy {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, int&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, float&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const int& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const float& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -664,7 +664,7 @@ switch (yykind)
         break;
 
       case symbol_kind::S_NUMBER: // "number"
-        value.template destroy< int > ();
+        value.template destroy< float > ();
         break;
 
       default:
@@ -781,10 +781,10 @@ switch (yykind)
 #endif
       }
 #if 201103L <= YY_CPLUSPLUS
-      symbol_type (int tok, int v, location_type l)
+      symbol_type (int tok, float v, location_type l)
         : super_type (token_kind_type (tok), std::move (v), std::move (l))
 #else
-      symbol_type (int tok, const int& v, const location_type& l)
+      symbol_type (int tok, const float& v, const location_type& l)
         : super_type (token_kind_type (tok), v, l)
 #endif
       {
@@ -1023,14 +1023,14 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_NUMBER (int v, location_type l)
+      make_NUMBER (float v, location_type l)
       {
         return symbol_type (token::TOK_NUMBER, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_NUMBER (const int& v, const location_type& l)
+      make_NUMBER (const float& v, const location_type& l)
       {
         return symbol_type (token::TOK_NUMBER, v, l);
       }
@@ -1416,7 +1416,7 @@ switch (yykind)
         break;
 
       case symbol_kind::S_NUMBER: // "number"
-        value.copy< int > (YY_MOVE (that.value));
+        value.copy< float > (YY_MOVE (that.value));
         break;
 
       default:
@@ -1460,7 +1460,7 @@ switch (yykind)
         break;
 
       case symbol_kind::S_NUMBER: // "number"
-        value.move< int > (YY_MOVE (s.value));
+        value.move< float > (YY_MOVE (s.value));
         break;
 
       default:

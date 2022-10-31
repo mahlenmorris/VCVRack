@@ -217,7 +217,7 @@ namespace yy {
         break;
 
       case symbol_kind::S_NUMBER: // "number"
-        value.YY_MOVE_OR_COPY< int > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< float > (YY_MOVE (that.value));
         break;
 
       default:
@@ -245,7 +245,7 @@ namespace yy {
         break;
 
       case symbol_kind::S_NUMBER: // "number"
-        value.move< int > (YY_MOVE (that.value));
+        value.move< float > (YY_MOVE (that.value));
         break;
 
       default:
@@ -273,7 +273,7 @@ namespace yy {
         break;
 
       case symbol_kind::S_NUMBER: // "number"
-        value.copy< int > (that.value);
+        value.copy< float > (that.value);
         break;
 
       default:
@@ -300,7 +300,7 @@ namespace yy {
         break;
 
       case symbol_kind::S_NUMBER: // "number"
-        value.move< int > (that.value);
+        value.move< float > (that.value);
         break;
 
       default:
@@ -347,7 +347,7 @@ namespace yy {
 
       case symbol_kind::S_NUMBER: // "number"
 #line 66 "parser.yy"
-                 { yyo << yysym.value.template as < int > (); }
+                 { yyo << yysym.value.template as < float > (); }
 #line 352 "parser.cc"
         break;
 
@@ -610,7 +610,7 @@ namespace yy {
         break;
 
       case symbol_kind::S_NUMBER: // "number"
-        yylhs.value.emplace< int > ();
+        yylhs.value.emplace< float > ();
         break;
 
       default:
@@ -659,7 +659,7 @@ namespace yy {
 
   case 6: // exp: "number"
 #line 85 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::Number((float) yystack_[0].value.as < int > ()); }
+                { yylhs.value.as < Expression > () = Expression::Number((float) yystack_[0].value.as < float > ()); }
 #line 664 "parser.cc"
     break;
 
