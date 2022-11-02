@@ -1,6 +1,7 @@
 #ifndef TREE_HH
 #define TREE_HH
 
+#include <cmath>
 #include <iostream>
 #include <vector>
 #include "environment.h"
@@ -124,6 +125,69 @@ private:
   }
 };
 
+// Should this be folded into Expression? How?
+class BoolExpression;
+class BoolExpression {
+public:
+  // The six boolean comparison operators can be composed from Direction
+  // and equality.
+  enum Direction {
+    GT,
+    LT,
+    NONE
+  };
+  Direction direction;
+  bool equality;
+  std::vector<Expression> left_right;
+
+  BoolExpression(const Expression &lhs, const std::string &op,
+                 const Expression &rhs) {
+    left_right.push_back(lhs);
+    left_right.push_back(rhs);
+    // Deduce direction and equality.
+    if (op == "<" || op == "<=") {
+      direction = LT;
+      equality = op == "<=";
+    } else if (op == ">" || op == ">=") {
+      direction = GT;
+      equality = op == ">=";
+    } else {
+      direction = NONE;
+      equality = op == "==";
+    }
+  }
+
+  bool Compute(Environment* env) {
+    float lhs = left_right[0].Compute(env);
+    float rhs = left_right[1].Compute(env);
+    bool are_equal = std::fabs(lhs - rhs) <=
+                     std::numeric_limits<float>::epsilon();
+    if (equality && are_equal) {
+      return true;
+    }
+    switch (direction) {
+      case LT: return lhs < rhs;
+      case GT: return lhs > rhs;
+      case NONE: {
+        if (equality) {
+          return false;
+        } else {
+          return !are_equal;
+        }
+      }
+    }
+  }
+  friend std::ostream& operator<<(std::ostream& os, const BoolExpression &ex) {
+    os << ex.to_string();
+    return os;
+  }
+  std::string to_string() const {
+  return "BoolExpression(" + std::to_string(direction) + ", " +
+      std::to_string(equality) + ", " +
+      left_right[0].to_string() + ", " + left_right[1].to_string() + ")";
+  }
+};
+
 struct Line {
   enum Type {
     ASSIGNMENT,  // str1 = expr1
@@ -154,6 +218,19 @@ struct Line {
   friend std::ostream& operator<<(
     std::ostream& os, Line line) {
     os << "Line(" << line.str1 << ", " << line.expr1.to_string() << ")";
+    return os;
+  }
+};
+
+struct Statements {
+  std::vector<Line> lines;
+
+  Statements add(Line new_line) {
+    lines.push_back(new_line);
+    return *this;
+  }
+  friend std::ostream& operator<<(std::ostream& os, Statements statements) {
+    os << "Statements(" << std::to_string(statements.lines.size()) << " statements )";
     return os;
   }
 };

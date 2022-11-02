@@ -124,14 +124,20 @@ blank [ \t\r]
 {blank}+   loc.step ();
 \n+        loc.lines (yyleng); loc.step ();
 
-"-"        return yy::parser::make_MINUS  (loc);
-"+"        return yy::parser::make_PLUS   (loc);
-"*"        return yy::parser::make_STAR   (loc);
-"/"        return yy::parser::make_SLASH  (loc);
-"("        return yy::parser::make_LPAREN (loc);
-")"        return yy::parser::make_RPAREN (loc);
-":="       return yy::parser::make_ASSIGN (loc);
-"wait"     return yy::parser::make_WAIT (loc);
+"-"        return yy::parser::make_MINUS  (yytext, loc);
+"+"        return yy::parser::make_PLUS   (yytext, loc);
+"*"        return yy::parser::make_STAR   (yytext, loc);
+"/"        return yy::parser::make_SLASH  (yytext, loc);
+"("        return yy::parser::make_LPAREN (yytext, loc);
+")"        return yy::parser::make_RPAREN (yytext, loc);
+"="        return yy::parser::make_ASSIGN (yytext, loc);
+"=="       return yy::parser::make_EQUALS (yytext, loc);
+"!="       return yy::parser::make_NOT_EQUALS (yytext, loc);
+"<"        return yy::parser::make_LT     (yytext, loc);
+"<="       return yy::parser::make_LTE    (yytext, loc);
+">"        return yy::parser::make_GT     (yytext, loc);
+">="       return yy::parser::make_GTE    (yytext, loc);
+"wait"     return yy::parser::make_WAIT   (yytext, loc);
 
 {float}    return make_NUMBER (yytext, loc);
 {id}       return yy::parser::make_IDENTIFIER (yytext, loc);

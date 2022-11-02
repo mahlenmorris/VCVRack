@@ -1,21 +1,8 @@
-/* Parser for calc++.   -*- C++ -*-
+/* Parser for BASICally.   -*- C++ -*-
+  TODO: Do I need to mark this as a %pure_parser? Saw something that says
+  this is needed to make the parser reentrant.
 
-   Copyright (C) 2005-2015, 2018-2021 Free Software Foundation, Inc.
-
-   This file is part of Bison, the GNU Compiler Compiler.
-
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
+*/
 
 %skeleton "lalr1.cc" // -*- C++ -*-
 %require "3.8.2"
@@ -47,34 +34,58 @@
 }
 
 %define api.token.prefix {TOK_}
-%token
-  ASSIGN  ":="
-  WAIT    "wait"  /* TODO: would be nice if could accept uppercase "WAIT" */
+%token <std::string>
+  ASSIGN  "="
+  WAIT    "wait"
   MINUS   "-"
   PLUS    "+"
   STAR    "*"
   SLASH   "/"
   LPAREN  "("
   RPAREN  ")"
+  EQUALS  "=="
+  NOT_EQUALS "!="
+  LT      "<"
+  LTE     "<="
+  GT      ">"
+  GTE     ">="
 ;
 
 %token <Expression> IDENTIFIER "identifier"
 %token <float> NUMBER "number"
 %nterm <Expression> exp
+%nterm <BoolExpression> bool_exp
+%nterm <Statements> statements
 %nterm <Line> assignment
+%nterm <Line> wait_statement
+/* %nterm <Line> if_statement */
 
 %printer { yyo << $$; } <*>;
 
 %%
-%start assignments;
+%start program;
 
-assignments:
-  %empty                 {}
-| assignments assignment { drv.lines.push_back($2); }
+program:
+  statements YYEOF { drv.lines = $1.lines; }
+
+statements:
+  %empty                     {}
+| statements assignment      { $$ = $1.add($2); }
+| statements wait_statement  { $$ = $1.add($2); }
+
+/* | statements if_statement  { drv.lines.push_back($2); }  */
 
 assignment:
-  "identifier" ":=" exp { $$ = Line::Assignment($1, $3); }
-| "wait" exp            { $$ = Line::Wait($2); }
+  "identifier" "=" exp  { $$ = Line::Assignment($1, $3); }
+
+wait_statement:
+  "wait" exp            { $$ = Line::Wait($2); }
+
+/*
+if_statement:
+  "if" bool_exp "then" statements "endif"
+| "if" bool_exp "then" statements "else" statements "endif"
+*/
 
 %left "+" "-";
 %left "*" "/";
@@ -89,6 +100,14 @@ exp:
 | exp "*" exp   { $$ = Expression::Times($1, $3); }
 | exp "/" exp   { $$ = Expression::Divide($1, $3); }
 | "(" exp ")"   { $$ = $2; }
+
+bool_exp:
+  exp "<" exp   { $$ = BoolExpression($1, $2, $3); }
+| exp "<=" exp  { $$ = BoolExpression($1, $2, $3); }
+| exp ">" exp   { $$ = BoolExpression($1, $2, $3); }
+| exp ">=" exp  { $$ = BoolExpression($1, $2, $3); }
+| exp "==" exp  { $$ = BoolExpression($1, $2, $3); }
+| exp "!=" exp  { $$ = BoolExpression($1, $2, $3); }
 %%
 
 void
