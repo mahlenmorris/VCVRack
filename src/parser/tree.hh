@@ -126,7 +126,6 @@ private:
 };
 
 // Should this be folded into Expression? How?
-class BoolExpression;
 class BoolExpression {
 public:
   // The six boolean comparison operators can be composed from Direction
@@ -139,6 +138,8 @@ public:
   Direction direction;
   bool equality;
   std::vector<Expression> left_right;
+
+  BoolExpression() {}
 
   BoolExpression(const Expression &lhs, const std::string &op,
                  const Expression &rhs) {
@@ -175,6 +176,7 @@ public:
           return !are_equal;
         }
       }
+      default: return false;
     }
   }
   friend std::ostream& operator<<(std::ostream& os, const BoolExpression &ex) {
@@ -188,14 +190,20 @@ public:
   }
 };
 
+struct Statements;
+
 struct Line {
   enum Type {
     ASSIGNMENT,  // str1 = expr1
-    WAIT         // wait expr1
+    WAIT,        // wait expr1
+    IFTHEN,      // if bool1 then state1 endif
+    IFTHENELSE   // if bool1 then state1 else state2 endif
   };
   Type type;
   std::string str1;
   Expression expr1;
+  BoolExpression bool1;
+  std::vector<Statements> statements;
 
   // identifiers on both right hand and left hand side of := look the same.
   // So the lhs will get turned into a VariableExpression. We need to pull
@@ -215,6 +223,25 @@ struct Line {
     //  std::cout << "Creating Wait(" << expr->to_string() << ")!\n";
     return line;
   }
+  static Line IfThen(const BoolExpression &bool_expr,
+                     const Statements &state1) {
+    Line line;
+    line.type = IFTHEN;
+    line.bool1 = bool_expr;
+    line.statements.push_back(state1);
+    return line;
+  }
+  static Line IfThenElse(const BoolExpression &bool_expr,
+                         const Statements &state1,
+                         const Statements &state2) {
+    Line line;
+    line.type = IFTHEN;
+    line.bool1 = bool_expr;
+    line.statements.push_back(state1);
+    line.statements.push_back(state2);
+    return line;
+  }
+
   friend std::ostream& operator<<(
     std::ostream& os, Line line) {
     os << "Line(" << line.str1 << ", " << line.expr1.to_string() << ")";

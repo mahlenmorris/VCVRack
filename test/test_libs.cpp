@@ -71,3 +71,14 @@ TEST(ParserTest, NegativeTest)
     env.variables["in2"] = 1.0f;
     EXPECT_FLOAT_EQ(1.33, drv.lines[0].expr1.Compute(&env));
 }
+
+TEST(ParserTest, IfThenTest)
+{
+    Driver drv;
+    Environment env;
+
+    EXPECT_EQ(0, drv.parse("if 5 > 3 then out1 = 5 - 3 endif"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(true, drv.lines[0].bool1.Compute(&env));
+    ASSERT_EQ(1, drv.lines[0].statements.size());
+}

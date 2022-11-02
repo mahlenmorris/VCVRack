@@ -37,6 +37,10 @@
 %token <std::string>
   ASSIGN  "="
   WAIT    "wait"
+  IF      "if"
+  THEN    "then"
+  ELSE    "else"
+  ENDIF   "endif"
   MINUS   "-"
   PLUS    "+"
   STAR    "*"
@@ -58,7 +62,7 @@
 %nterm <Statements> statements
 %nterm <Line> assignment
 %nterm <Line> wait_statement
-/* %nterm <Line> if_statement */
+%nterm <Line> if_statement
 
 %printer { yyo << $$; } <*>;
 
@@ -72,8 +76,7 @@ statements:
   %empty                     {}
 | statements assignment      { $$ = $1.add($2); }
 | statements wait_statement  { $$ = $1.add($2); }
-
-/* | statements if_statement  { drv.lines.push_back($2); }  */
+| statements if_statement    { $$ = $1.add($2); }
 
 assignment:
   "identifier" "=" exp  { $$ = Line::Assignment($1, $3); }
@@ -81,11 +84,9 @@ assignment:
 wait_statement:
   "wait" exp            { $$ = Line::Wait($2); }
 
-/*
 if_statement:
-  "if" bool_exp "then" statements "endif"
-| "if" bool_exp "then" statements "else" statements "endif"
-*/
+  "if" bool_exp "then" statements "endif"                    { $$ = Line::IfThen($2, $4); }
+| "if" bool_exp "then" statements "else" statements "endif"  { $$ = Line::IfThenElse($2, $4, $6); }
 
 %left "+" "-";
 %left "*" "/";

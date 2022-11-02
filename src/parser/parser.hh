@@ -410,22 +410,30 @@ namespace yy {
     /// An auxiliary type to compute the largest semantic type.
     union union_type
     {
+      // bool_exp
+      char dummy1[sizeof (BoolExpression)];
+
       // "identifier"
       // exp
-      char dummy1[sizeof (Expression)];
+      char dummy2[sizeof (Expression)];
 
       // assignment
       // wait_statement
-      char dummy2[sizeof (Line)];
+      // if_statement
+      char dummy3[sizeof (Line)];
 
       // statements
-      char dummy3[sizeof (Statements)];
+      char dummy4[sizeof (Statements)];
 
       // "number"
-      char dummy4[sizeof (float)];
+      char dummy5[sizeof (float)];
 
       // "="
       // "wait"
+      // "if"
+      // "then"
+      // "else"
+      // "endif"
       // "-"
       // "+"
       // "*"
@@ -438,7 +446,7 @@ namespace yy {
       // "<="
       // ">"
       // ">="
-      char dummy5[sizeof (std::string)];
+      char dummy6[sizeof (std::string)];
     };
 
     /// The size of the largest semantic type.
@@ -493,21 +501,25 @@ namespace yy {
     TOK_YYUNDEF = 2,               // "invalid token"
     TOK_ASSIGN = 3,                // "="
     TOK_WAIT = 4,                  // "wait"
-    TOK_MINUS = 5,                 // "-"
-    TOK_PLUS = 6,                  // "+"
-    TOK_STAR = 7,                  // "*"
-    TOK_SLASH = 8,                 // "/"
-    TOK_LPAREN = 9,                // "("
-    TOK_RPAREN = 10,               // ")"
-    TOK_EQUALS = 11,               // "=="
-    TOK_NOT_EQUALS = 12,           // "!="
-    TOK_LT = 13,                   // "<"
-    TOK_LTE = 14,                  // "<="
-    TOK_GT = 15,                   // ">"
-    TOK_GTE = 16,                  // ">="
-    TOK_IDENTIFIER = 17,           // "identifier"
-    TOK_NUMBER = 18,               // "number"
-    TOK_NEG = 19                   // NEG
+    TOK_IF = 5,                    // "if"
+    TOK_THEN = 6,                  // "then"
+    TOK_ELSE = 7,                  // "else"
+    TOK_ENDIF = 8,                 // "endif"
+    TOK_MINUS = 9,                 // "-"
+    TOK_PLUS = 10,                 // "+"
+    TOK_STAR = 11,                 // "*"
+    TOK_SLASH = 12,                // "/"
+    TOK_LPAREN = 13,               // "("
+    TOK_RPAREN = 14,               // ")"
+    TOK_EQUALS = 15,               // "=="
+    TOK_NOT_EQUALS = 16,           // "!="
+    TOK_LT = 17,                   // "<"
+    TOK_LTE = 18,                  // "<="
+    TOK_GT = 19,                   // ">"
+    TOK_GTE = 20,                  // ">="
+    TOK_IDENTIFIER = 21,           // "identifier"
+    TOK_NUMBER = 22,               // "number"
+    TOK_NEG = 23                   // NEG
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -524,34 +536,40 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 20, ///< Number of tokens.
+        YYNTOKENS = 24, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
         S_YYUNDEF = 2,                           // "invalid token"
         S_ASSIGN = 3,                            // "="
         S_WAIT = 4,                              // "wait"
-        S_MINUS = 5,                             // "-"
-        S_PLUS = 6,                              // "+"
-        S_STAR = 7,                              // "*"
-        S_SLASH = 8,                             // "/"
-        S_LPAREN = 9,                            // "("
-        S_RPAREN = 10,                           // ")"
-        S_EQUALS = 11,                           // "=="
-        S_NOT_EQUALS = 12,                       // "!="
-        S_LT = 13,                               // "<"
-        S_LTE = 14,                              // "<="
-        S_GT = 15,                               // ">"
-        S_GTE = 16,                              // ">="
-        S_IDENTIFIER = 17,                       // "identifier"
-        S_NUMBER = 18,                           // "number"
-        S_NEG = 19,                              // NEG
-        S_YYACCEPT = 20,                         // $accept
-        S_program = 21,                          // program
-        S_statements = 22,                       // statements
-        S_assignment = 23,                       // assignment
-        S_wait_statement = 24,                   // wait_statement
-        S_exp = 25                               // exp
+        S_IF = 5,                                // "if"
+        S_THEN = 6,                              // "then"
+        S_ELSE = 7,                              // "else"
+        S_ENDIF = 8,                             // "endif"
+        S_MINUS = 9,                             // "-"
+        S_PLUS = 10,                             // "+"
+        S_STAR = 11,                             // "*"
+        S_SLASH = 12,                            // "/"
+        S_LPAREN = 13,                           // "("
+        S_RPAREN = 14,                           // ")"
+        S_EQUALS = 15,                           // "=="
+        S_NOT_EQUALS = 16,                       // "!="
+        S_LT = 17,                               // "<"
+        S_LTE = 18,                              // "<="
+        S_GT = 19,                               // ">"
+        S_GTE = 20,                              // ">="
+        S_IDENTIFIER = 21,                       // "identifier"
+        S_NUMBER = 22,                           // "number"
+        S_NEG = 23,                              // NEG
+        S_YYACCEPT = 24,                         // $accept
+        S_program = 25,                          // program
+        S_statements = 26,                       // statements
+        S_assignment = 27,                       // assignment
+        S_wait_statement = 28,                   // wait_statement
+        S_if_statement = 29,                     // if_statement
+        S_exp = 30,                              // exp
+        S_bool_exp = 31                          // bool_exp
       };
     };
 
@@ -588,6 +606,10 @@ namespace yy {
       {
         switch (this->kind ())
     {
+      case symbol_kind::S_bool_exp: // bool_exp
+        value.move< BoolExpression > (std::move (that.value));
+        break;
+
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.move< Expression > (std::move (that.value));
@@ -595,6 +617,7 @@ namespace yy {
 
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_wait_statement: // wait_statement
+      case symbol_kind::S_if_statement: // if_statement
         value.move< Line > (std::move (that.value));
         break;
 
@@ -608,6 +631,10 @@ namespace yy {
 
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_WAIT: // "wait"
+      case symbol_kind::S_IF: // "if"
+      case symbol_kind::S_THEN: // "then"
+      case symbol_kind::S_ELSE: // "else"
+      case symbol_kind::S_ENDIF: // "endif"
       case symbol_kind::S_MINUS: // "-"
       case symbol_kind::S_PLUS: // "+"
       case symbol_kind::S_STAR: // "*"
@@ -642,6 +669,20 @@ namespace yy {
 #else
       basic_symbol (typename Base::kind_type t, const location_type& l)
         : Base (t)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, BoolExpression&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const BoolExpression& v, const location_type& l)
+        : Base (t)
+        , value (v)
         , location (l)
       {}
 #endif
@@ -740,6 +781,10 @@ namespace yy {
         // Value type destructor.
 switch (yykind)
     {
+      case symbol_kind::S_bool_exp: // bool_exp
+        value.template destroy< BoolExpression > ();
+        break;
+
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.template destroy< Expression > ();
@@ -747,6 +792,7 @@ switch (yykind)
 
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_wait_statement: // wait_statement
+      case symbol_kind::S_if_statement: // if_statement
         value.template destroy< Line > ();
         break;
 
@@ -760,6 +806,10 @@ switch (yykind)
 
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_WAIT: // "wait"
+      case symbol_kind::S_IF: // "if"
+      case symbol_kind::S_THEN: // "then"
+      case symbol_kind::S_ELSE: // "else"
+      case symbol_kind::S_ENDIF: // "endif"
       case symbol_kind::S_MINUS: // "-"
       case symbol_kind::S_PLUS: // "+"
       case symbol_kind::S_STAR: // "*"
@@ -1034,6 +1084,66 @@ switch (yykind)
       make_WAIT (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOK_WAIT, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_IF (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_IF, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_IF (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_IF, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_THEN (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_THEN, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_THEN (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_THEN, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_ELSE (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_ELSE, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_ELSE (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_ELSE, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_ENDIF (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_ENDIF, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_ENDIF (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_ENDIF, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1605,8 +1715,8 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 27,     ///< Last index in yytable_.
-      yynnts_ = 6,  ///< Number of nonterminal symbols.
+      yylast_ = 61,     ///< Last index in yytable_.
+      yynnts_ = 8,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
 
@@ -1632,6 +1742,10 @@ switch (yykind)
   {
     switch (this->kind ())
     {
+      case symbol_kind::S_bool_exp: // bool_exp
+        value.copy< BoolExpression > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.copy< Expression > (YY_MOVE (that.value));
@@ -1639,6 +1753,7 @@ switch (yykind)
 
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_wait_statement: // wait_statement
+      case symbol_kind::S_if_statement: // if_statement
         value.copy< Line > (YY_MOVE (that.value));
         break;
 
@@ -1652,6 +1767,10 @@ switch (yykind)
 
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_WAIT: // "wait"
+      case symbol_kind::S_IF: // "if"
+      case symbol_kind::S_THEN: // "then"
+      case symbol_kind::S_ELSE: // "else"
+      case symbol_kind::S_ENDIF: // "endif"
       case symbol_kind::S_MINUS: // "-"
       case symbol_kind::S_PLUS: // "+"
       case symbol_kind::S_STAR: // "*"
@@ -1698,6 +1817,10 @@ switch (yykind)
     super_type::move (s);
     switch (this->kind ())
     {
+      case symbol_kind::S_bool_exp: // bool_exp
+        value.move< BoolExpression > (YY_MOVE (s.value));
+        break;
+
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.move< Expression > (YY_MOVE (s.value));
@@ -1705,6 +1828,7 @@ switch (yykind)
 
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_wait_statement: // wait_statement
+      case symbol_kind::S_if_statement: // if_statement
         value.move< Line > (YY_MOVE (s.value));
         break;
 
@@ -1718,6 +1842,10 @@ switch (yykind)
 
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_WAIT: // "wait"
+      case symbol_kind::S_IF: // "if"
+      case symbol_kind::S_THEN: // "then"
+      case symbol_kind::S_ELSE: // "else"
+      case symbol_kind::S_ENDIF: // "endif"
       case symbol_kind::S_MINUS: // "-"
       case symbol_kind::S_PLUS: // "+"
       case symbol_kind::S_STAR: // "*"
@@ -1799,7 +1927,7 @@ switch (yykind)
 
 
 } // yy
-#line 1803 "parser.hh"
+#line 1931 "parser.hh"
 
 
 
