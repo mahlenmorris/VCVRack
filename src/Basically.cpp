@@ -77,14 +77,25 @@ struct Basically : Module {
       ok_to_run = !drv.parse(lowercase);
       if (ok_to_run) {
         PCode::LinesToPCode(drv.lines, &pcodes);
+
+
+        for (auto &pcode : pcodes) {
+          // Add to log, for debugging.
+          INFO("%s", pcode.to_string().c_str());
+        }
+
+
         recompiled = true;
       }
     }
 
     // Update environment with current inputs.
-    // TODO: avoid calling this if ticks_remaining > 1?
-    if (inputs[IN1_INPUT].isConnected()) {
-      environment.variables["in1"] = inputs[IN1_INPUT].getVoltage();
+    // If we're just waiting this tick, nothing will read the environment, so
+    // no point in updating it.
+    if (ticks_remaining < 2) {
+      if (inputs[IN1_INPUT].isConnected()) {
+        environment.variables["in1"] = inputs[IN1_INPUT].getVoltage();
+      }
     }
     // Run the PCode vector from the current spot in it.
     bool waiting = false;
@@ -93,6 +104,7 @@ struct Basically : Module {
 
     if (recompiled) {
       current_line = 0;
+      // TODO: Consider resetting ticks_remaining and clearing "environment"?
     }
     while (ok_to_run && !waiting) {
       switch (pcodes[current_line].type) {
@@ -144,6 +156,12 @@ struct Basically : Module {
           } else {
             current_line++;
           }
+        }
+        break;
+        case PCode::RELATIVE_JUMP: {
+          // This just specifies a jump of the current_line.
+          PCode* jump = &(pcodes[current_line]);
+          current_line += jump->jump_count;
         }
         break;
       }

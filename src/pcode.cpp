@@ -19,6 +19,11 @@ void PCode::LinesToPCode(const std::vector<Line> &lines,
   }
 }
 
+std::string PCode::to_string() {
+  return "PCode(" + std::to_string(type) + ", " + std::to_string(jump_count) +
+    ")";
+}
+
 void PCode::AddLineToPCode(const Line &line, std::vector<PCode> *pcodes) {
   switch (line.type) {
     case Line::ASSIGNMENT: {
@@ -50,6 +55,40 @@ void PCode::AddLineToPCode(const Line &line, std::vector<PCode> *pcodes) {
         AddLineToPCode(loop_line, pcodes);
       }
       pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
+    }
+    break;
+    case Line::IFTHENELSE: {
+      // IFNOT
+      // then Statements
+      // ...
+      // RELATIVE_JUMP
+      // else Statements
+      PCode ifnot;
+      ifnot.type = PCode::IFNOT;
+      ifnot.bool1 = line.bool1;
+      pcodes->push_back(ifnot);
+      // Need to find this IFNOT PCode later, so I can fill in jump_count
+      // after adding all of the statements.
+      int ifnot_position = pcodes->size() - 1;
+      // Add all of the THEN-clause Lines. Note that some of these might
+      // also be control-flow Lines of unknown PCode length.
+      for (auto &loop_line : line.statements[0].lines) {
+        AddLineToPCode(loop_line, pcodes);
+      }
+      // After THEN statements, need to skip over the ELSE statements.
+      PCode jump;
+      jump.type = PCode::RELATIVE_JUMP;
+      pcodes->push_back(jump);
+      // Need to find jump later.
+      int jump_position = pcodes->size() - 1;
+      // Finish the ifnot.
+      pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
+      // Add the ELSE clause.
+      for (auto &loop_line : line.statements[1].lines) {
+        AddLineToPCode(loop_line, pcodes);
+      }
+      // Finish the jump.
+      pcodes->at(jump_position).jump_count = pcodes->size() - jump_position;
     }
     break;
   }

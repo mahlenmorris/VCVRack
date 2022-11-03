@@ -236,7 +236,7 @@ struct Line {
                          const Statements &state1,
                          const Statements &state2) {
     Line line;
-    line.type = IFTHEN;
+    line.type = IFTHENELSE;
     line.bool1 = bool_expr;
     line.statements.push_back(state1);
     line.statements.push_back(state2);

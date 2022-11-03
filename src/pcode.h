@@ -31,11 +31,14 @@ struct PCode {
   BoolExpression bool1;
   int jump_count;
 
-  PCode() {};
+  PCode() {
+    jump_count = 0;
+  };
 
   static void LinesToPCode(const std::vector<Line> &lines,
                            std::vector<PCode> *pcodes);
   static void AddLineToPCode(const Line &line, std::vector<PCode> *pcodes);
+  std::string to_string();
 };
 
 #endif // PCODE_H
