@@ -22,18 +22,20 @@ struct PCode {
   enum Type {
     ASSIGNMENT,  // str1 = expr1
     WAIT,        // wait expr1
-    IFNOT,       // ifnot
+    IFNOT,       // ifnot bool1 jump jump_count
     RELATIVE_JUMP
   };
   Type type;
   std::string str1;
   Expression expr1;
   BoolExpression bool1;
+  int jump_count;
 
   PCode() {};
 
   static void LinesToPCode(const std::vector<Line> &lines,
                            std::vector<PCode> *pcodes);
+  static void AddLineToPCode(const Line &line, std::vector<PCode> *pcodes);
 };
 
 #endif // PCODE_H

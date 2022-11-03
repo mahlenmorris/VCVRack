@@ -88,7 +88,9 @@ struct Basically : Module {
     }
     // Run the PCode vector from the current spot in it.
     bool waiting = false;
-    INFO("current_line=%i, ticks_remaining=%i", current_line, ticks_remaining);
+
+    //INFO("current_line=%i, ticks_remaining=%i", current_line, ticks_remaining);
+
     if (recompiled) {
       current_line = 0;
     }
@@ -130,6 +132,17 @@ struct Basically : Module {
           }
           if (ticks_remaining > 0) {
             waiting = true;
+          }
+        }
+        break;
+        case PCode::IFNOT: {
+          // All this PCode does is determine where to move current_line to.
+          PCode* ifnot = &(pcodes[current_line]);
+          bool expr_val = ifnot->bool1.Compute(&environment);
+          if (!expr_val) {
+            current_line += ifnot->jump_count;
+          } else {
+            current_line++;
           }
         }
         break;
