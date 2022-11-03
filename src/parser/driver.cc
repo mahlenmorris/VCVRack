@@ -26,11 +26,13 @@ Driver::Driver ()
 }
 
 // Returns zero on success.
-int Driver::parse (const std::string &text)
+int Driver::parse(const std::string &text)
 {
   location.initialize();
   // Remove any existing lines from a previous parse().
   lines.clear();
-  int res = set_text(text);
-  return res;
+  int success_on_zero = set_text(text);
+  // If it succeeded, then caller needs to translate the Line objects into
+  // the pseudo-code that runs.
+  return success_on_zero;
 }

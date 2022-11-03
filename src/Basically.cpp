@@ -5,6 +5,7 @@
 
 #include "plugin.hpp"
 #include "parser/driver.hh"
+#include "pcode.h"
 
 struct Basically : Module {
   enum ParamId {
@@ -75,6 +76,7 @@ struct Basically : Module {
                      lowercase.begin(), ::tolower);
       ok_to_run = !drv.parse(lowercase);
       if (ok_to_run) {
+        PCode::LinesToPCode(drv.lines, &pcodes);
         recompiled = true;
       }
     }
@@ -84,14 +86,16 @@ struct Basically : Module {
     if (inputs[IN1_INPUT].isConnected()) {
       environment.variables["in1"] = inputs[IN1_INPUT].getVoltage();
     }
-    // Run the line.
-    // TODO: does this belong in Line class?
+    // Run the PCode vector from the current spot in it.
     bool waiting = false;
-    //INFO("current_line=%i, ticks_remaining=%i", current_line, ticks_remaining);
+    INFO("current_line=%i, ticks_remaining=%i", current_line, ticks_remaining);
+    if (recompiled) {
+      current_line = 0;
+    }
     while (ok_to_run && !waiting) {
-      switch (drv.lines[current_line].type) {
-        case Line::ASSIGNMENT: {
-          Line* assignment = &(drv.lines[current_line]);
+      switch (pcodes[current_line].type) {
+        case PCode::ASSIGNMENT: {
+          PCode* assignment = &(pcodes[current_line]);
           float rhs = assignment->expr1.Compute(&environment);
           environment.variables[assignment->str1] = rhs;
           auto found = out_map.find(assignment->str1);
@@ -103,19 +107,26 @@ struct Basically : Module {
           current_line++;
         }
         break;
-        case Line::WAIT: {
+        case PCode::WAIT: {
           // TODO: Need a way for user to say "wait exactly one step"
           if (ticks_remaining > 0) {
             // We're currently running through the current wait period.
             ticks_remaining--;
-            if (ticks_remaining == 0) {
+            if (ticks_remaining <= 0) {
               current_line++;
             }
           } else {
-            // First time at this WAIT statement.
-            Line* wait = &(drv.lines[current_line]);
+            // Just arriving at this WAIT statement.
+            PCode* wait = &(pcodes[current_line]);
             ticks_remaining = (int) (wait->expr1.Compute(&environment) *
                 args.sampleRate / 1000.0f);
+            // A "WAIT 0" (or WAIT -1!) means we should push to next line and
+            // stop running for this process() call.
+            if (ticks_remaining <= 0) {
+              ticks_remaining = 0;
+              current_line++;
+              waiting = true;
+            }
           }
           if (ticks_remaining > 0) {
             waiting = true;
@@ -123,7 +134,7 @@ struct Basically : Module {
         }
         break;
       }
-      if (current_line >= drv.lines.size()) {
+      if (current_line >= pcodes.size()) {
         current_line = 0;
         waiting = true;  // Implicit WAIT at end of program.
       }
@@ -140,9 +151,10 @@ struct Basically : Module {
   bool user_has_changed = false;
   bool ok_to_run = false;
   Driver drv;
+  std::vector<PCode> pcodes;  // What actually gets executed.
   Environment environment;
   unsigned int current_line;
-  unsigned int ticks_remaining;
+  int ticks_remaining;
 };
 
 struct BasicallyTextField : LedDisplayTextField {

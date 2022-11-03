@@ -43,10 +43,11 @@ public:
 
   Driver();
 
-  // Run the parser on file F.  Return 0 on success.
+  // Run the parser on the text of string f.  Return 0 on success.
   int parse(const std::string& f);
 
   // Handling the scanner.
+  // Defined in scanner.ll, for odd reasons. Maybe shouldn't be.
   int set_text(const std::string &text);
 };
 

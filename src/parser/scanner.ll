@@ -138,16 +138,14 @@ blank [ \t\r]
 %%
 
 yy::parser::symbol_type
-make_NUMBER (const std::string &s, const yy::parser::location_type& loc)
-{
+make_NUMBER (const std::string &s, const yy::parser::location_type& loc) {
   errno = 0;
-  float n = strtof (s.c_str(), NULL);
+  float n = strtof(s.c_str(), NULL);
   return yy::parser::make_NUMBER (n, loc);
 }
 
 int
-Driver::set_text(const std::string &text)
-{
+Driver::set_text(const std::string &text) {
   yy_flex_debug = trace_scanning;
   // Creates a buffer from the string.
   YY_BUFFER_STATE input_buffer = yy_scan_string(text.c_str());
