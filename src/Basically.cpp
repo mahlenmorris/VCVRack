@@ -224,6 +224,91 @@ struct BasicallyTextField : LedDisplayTextField {
 		}
 	}
 
+  // Return the zero-offset column.
+  int GetCurrentColumn(int position) {
+    std::string text = TextField::getText();
+    // Work to the left until hit /n or position == 0;
+    int column = 0;
+    while (position > 0 && text.at(position - 1) != '\n') {
+      column++;
+      position--;
+    }
+    return column;
+  }
+
+  int CursorForColumn(int current_column, bool up) {
+    int position = cursor;
+    if (up) {
+      // current_column is a hint how many chars to go back.
+      position -= current_column;
+      if (position == 0) {
+        // At top of buffer, can't go up.
+        return cursor;
+      }
+      position--;  // Now positioned before the previous line's '\n'
+      int line_length = GetCurrentColumn(position);
+      if (line_length <= current_column) {
+        // If previous line is too short, just stay here.
+        return position;
+      }
+      return position - (line_length - current_column);
+    } else {
+      // Down one line.
+      int text_size = text.size();
+      bool on_next_line;
+      for (; position < text_size; position++) {
+        if (text.at(position) == '\n') {
+          on_next_line = true;
+          break;
+        }
+      }
+      if (!on_next_line) {
+        // Must be on last line, cannot go down.
+        return cursor;
+      }
+      position++;  // Now at column zero of next line.
+      int goal = std::min(position + current_column, text_size);
+      // We want to advance current_column chars, but not go past any '\n'.
+      while (position <= goal) {
+        // Cannot call .at(position) when position == text_size.
+        if ((position == text_size) || text.at(position) == '\n') {
+          return position;
+        }
+        if (position == goal) return position;
+        position++;
+      }
+    }
+    // Shouldn't get here, but this won't crash anything.
+    return cursor;
+  }
+
+  // So we can handle up and down keys.
+  void onSelectKey(const SelectKeyEvent& e) override {
+    if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) {
+      // Up (placeholder)
+  		if (e.key == GLFW_KEY_UP) {
+        // Move to same column, in previous line.
+        int column = GetCurrentColumn(cursor);
+        cursor = CursorForColumn(column, true);
+        if (!(e.mods & GLFW_MOD_SHIFT)) {
+  				selection = cursor;  // Otherwise we select the line.
+  			}
+  			e.consume(this);
+  		}
+  		// Down (placeholder)
+  		if (e.key == GLFW_KEY_DOWN) {
+        // Move to same column, in next line.
+        int column = GetCurrentColumn(cursor);
+        cursor = CursorForColumn(column, false);
+        if (!(e.mods & GLFW_MOD_SHIFT)) {
+  				selection = cursor;  // Otherwise we select the line.
+  			}
+  			e.consume(this);
+  		}
+    }
+    TextField::onSelectKey(e);
+  }
+
   // User has updated the text.
 	void onChange(const ChangeEvent& e) override {
 		if (module)
