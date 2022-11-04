@@ -26,6 +26,7 @@ struct Basically : Module {
     OUTPUTS_LEN
   };
   enum LightId {
+    RUNNING_LIGHT,
     LIGHTS_LEN
   };
 
@@ -95,6 +96,9 @@ struct Basically : Module {
       std::transform(text.begin(), text.end(),
                      lowercase.begin(), ::tolower);
       ok_to_run = !drv.parse(lowercase);
+      // Only time this light changes is when it compiles. That might not
+      // always be true in the future.
+      lights[RUNNING_LIGHT].setBrightness(ok_to_run ? 1.f : 0.f);
       INFO("code = %s", lowercase.c_str());
       if (ok_to_run) {
         PCode::LinesToPCode(drv.lines, &pcodes);
@@ -277,6 +281,11 @@ struct BasicallyWidget : ModuleWidget {
       module, Basically::OUT3_OUTPUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(52.728, 118.574)),
       module, Basically::OUT4_OUTPUT));
+
+    // Lights
+    addChild(createLightCentered<MediumLight<RedLight>>(
+      mm2px(Vec(5.292, 91.848)), module, Basically::RUNNING_LIGHT));
+
   }
 };
 
