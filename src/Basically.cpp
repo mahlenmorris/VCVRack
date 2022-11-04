@@ -13,23 +13,43 @@ struct Basically : Module {
   };
   enum InputId {
     IN1_INPUT,
+    IN2_INPUT,
+    IN3_INPUT,
+    IN4_INPUT,
     INPUTS_LEN
   };
   enum OutputId {
     OUT1_OUTPUT,
+    OUT2_OUTPUT,
+    OUT3_OUTPUT,
+    OUT4_OUTPUT,
     OUTPUTS_LEN
   };
   enum LightId {
     LIGHTS_LEN
   };
 
-  std::unordered_map<std::string, OutputId> out_map { {"out1", OUT1_OUTPUT}
+  std::unordered_map<std::string, OutputId> out_map { {"out1", OUT1_OUTPUT},
+                                                      {"out2", OUT2_OUTPUT},
+                                                      {"out3", OUT3_OUTPUT},
+                                                      {"out4", OUT4_OUTPUT}
                                                     };
+  std::vector<std::pair<std::string, InputId> > in_list { {"in1", IN1_INPUT},
+                                                          {"in2", IN2_INPUT},
+                                                          {"in3", IN3_INPUT},
+                                                          {"in4", IN4_INPUT}
+                                                        };
 
   Basically() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configInput(IN1_INPUT, "IN1 input.");
+    configInput(IN2_INPUT, "IN2 input.");
+    configInput(IN3_INPUT, "IN3 input.");
+    configInput(IN4_INPUT, "IN4 input.");
     configOutput(OUT1_OUTPUT, "OUT1 output.");
+    configOutput(OUT2_OUTPUT, "OUT2 output.");
+    configOutput(OUT3_OUTPUT, "OUT3 output.");
+    configOutput(OUT4_OUTPUT, "OUT4 output.");
 
     // If user decides to "bypass" the module, we can just pass IN -> OUT.
     // TODO: reconsider this Bypass behavior.
@@ -75,16 +95,15 @@ struct Basically : Module {
       std::transform(text.begin(), text.end(),
                      lowercase.begin(), ::tolower);
       ok_to_run = !drv.parse(lowercase);
+      INFO("code = %s", lowercase.c_str());
       if (ok_to_run) {
         PCode::LinesToPCode(drv.lines, &pcodes);
-
-
+        /*
         for (auto &pcode : pcodes) {
           // Add to log, for debugging.
           INFO("%s", pcode.to_string().c_str());
         }
-
-
+        */
         recompiled = true;
       }
     }
@@ -93,8 +112,10 @@ struct Basically : Module {
     // If we're just waiting this tick, nothing will read the environment, so
     // no point in updating it.
     if (ticks_remaining < 2) {
-      if (inputs[IN1_INPUT].isConnected()) {
-        environment.variables["in1"] = inputs[IN1_INPUT].getVoltage();
+      for (auto input : in_list) {
+        if (inputs[input.second].isConnected()) {
+          environment.variables[input.first] = inputs[input.second].getVoltage();
+        }
       }
     }
     // Run the PCode vector from the current spot in it.
@@ -233,17 +254,29 @@ struct BasicallyWidget : ModuleWidget {
 
     BasicallyDisplay* codeDisplay = createWidget<BasicallyDisplay>(
       mm2px(Vec(0.360, 11.844)));
-		codeDisplay->box.size = mm2px(Vec(45.0, 84.0));
+		codeDisplay->box.size = mm2px(Vec(60.0, 75.0));
 		codeDisplay->setModule(module);
 		addChild(codeDisplay);
 
-    // Input
-    addInput(createInputCentered<PJ301MPort>(
-        mm2px(Vec(13.905, 112.000)), module, Basically::IN1_INPUT));
+    // Inputs
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(23.246, 103.24)),
+      module, Basically::IN1_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(33.073, 103.24)),
+      module, Basically::IN2_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(42.9, 103.24)),
+      module, Basically::IN3_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(52.728, 103.24)),
+      module, Basically::IN4_INPUT));
 
-    // The Output
-    addOutput(createOutputCentered<PJ301MPort>(
-        mm2px(Vec(27.797, 112.000)), module, Basically::OUT1_OUTPUT));
+    // The Outputs
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(23.246, 118.574)),
+      module, Basically::OUT1_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(33.073, 118.574)),
+      module, Basically::OUT2_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(42.9, 118.574)),
+      module, Basically::OUT3_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(52.728, 118.574)),
+      module, Basically::OUT4_OUTPUT));
   }
 };
 
