@@ -7,8 +7,24 @@
 #include "parser/driver.hh"
 #include "pcode.h"
 
+enum Style {
+  ALWAYS_STYLE,
+  TRIGGER_LOOP_STYLE,
+  TRIGGER_NO_LOOP_STYLE,
+  GATE
+};
+
+Style STYLES[] = {
+  ALWAYS_STYLE,
+  TRIGGER_LOOP_STYLE,
+  TRIGGER_NO_LOOP_STYLE,
+  GATE
+};
+
 struct Basically : Module {
   enum ParamId {
+    RUN_PARAM,
+    STYLE_PARAM,
     PARAMS_LEN
   };
   enum InputId {
@@ -16,6 +32,7 @@ struct Basically : Module {
     IN2_INPUT,
     IN3_INPUT,
     IN4_INPUT,
+    RUN_INPUT,
     INPUTS_LEN
   };
   enum OutputId {
@@ -26,7 +43,8 @@ struct Basically : Module {
     OUTPUTS_LEN
   };
   enum LightId {
-    RUNNING_LIGHT,
+    RUN_LIGHT,   // Currently running.
+    GOOD_LIGHT,  // Code compiles and can run.
     LIGHTS_LEN
   };
 
@@ -43,14 +61,25 @@ struct Basically : Module {
 
   Basically() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
+    configButton(RUN_PARAM, "Press to run");
+    configSwitch(STYLE_PARAM, 0, 3, 0, "When to run",
+                 {"Always run", "Start on trigger, loop",
+                  "Start on trigger, don't loop",
+                  "Run when gate is open"});
+    // This has distinct values.
+    getParamQuantity(STYLE_PARAM)->snapEnabled = true;
     configInput(IN1_INPUT, "IN1 input.");
     configInput(IN2_INPUT, "IN2 input.");
     configInput(IN3_INPUT, "IN3 input.");
     configInput(IN4_INPUT, "IN4 input.");
+    configInput(RUN_INPUT, "Trigger to start or Gate to start/stop (See Style)");
     configOutput(OUT1_OUTPUT, "OUT1 output.");
     configOutput(OUT2_OUTPUT, "OUT2 output.");
     configOutput(OUT3_OUTPUT, "OUT3 output.");
     configOutput(OUT4_OUTPUT, "OUT4 output.");
+    configLight(RUN_LIGHT, "Lit when code is currently running.");
+    configLight(GOOD_LIGHT, "Lit when code compiles and could run.");
+
 
     // If user decides to "bypass" the module, we can just pass IN -> OUT.
     // TODO: reconsider this Bypass behavior.
@@ -78,29 +107,27 @@ struct Basically : Module {
 		dirty = true;
   }
 
+  void ResetToProgramStart() {
+    current_line = 0;
+    ticks_remaining = 0;
+    // TODO: Consider resetting ticks_remaining and clearing "environment"?
+  }
+
   void process(const ProcessArgs& args) override {
-    // I'd have preferred to initialize 'points' in the constructor,
-    // but it seems that the values of knobs (i.e., params) aren't
-    // available in the constructor. So I wait until here, when they
-    // are definitely set.
-    if (!initialized) {
-      initialized = true;
-    }
-    // If the program has just recompiled, certain optimizations may no
-    // longer apply. "recompiled" tells us that the program is new.
-    bool recompiled = false;
+    Style style = STYLES[(int) params[STYLE_PARAM].getValue()];
+    bool loops = (style != TRIGGER_NO_LOOP_STYLE);
+
     if (user_has_changed && !text.empty()) {
       user_has_changed = false;  // TODO: race condition?
       std::string lowercase;
       lowercase.resize(text.size());
       std::transform(text.begin(), text.end(),
                      lowercase.begin(), ::tolower);
-      ok_to_run = !drv.parse(lowercase);
+      compiles = !drv.parse(lowercase);
       // Only time this light changes is when it compiles. That might not
       // always be true in the future.
-      lights[RUNNING_LIGHT].setBrightness(ok_to_run ? 1.f : 0.f);
-      INFO("code = %s", lowercase.c_str());
-      if (ok_to_run) {
+      lights[GOOD_LIGHT].setBrightness(compiles ? 1.f : 0.f);
+      if (compiles) {
         PCode::LinesToPCode(drv.lines, &pcodes);
         /*
         for (auto &pcode : pcodes) {
@@ -108,8 +135,38 @@ struct Basically : Module {
           INFO("%s", pcode.to_string().c_str());
         }
         */
-        recompiled = true;
+        // Recompiled; cannot trust program state.
+        ResetToProgramStart();
       }
+    }
+
+    // Determine if we are running or not.
+    // TODO: This doesn't need to run under some conditions.
+    bool run_was_low = !runTrigger.isHigh();
+    runTrigger.process(rescale(
+        inputs[RUN_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+    bool run_button_pressed = params[RUN_PARAM].getValue() > 0.1f;
+    bool asked_to_start_run = (run_button_pressed ||
+                               (run_was_low && runTrigger.isHigh()));
+
+    switch (style) {
+      case ALWAYS_STYLE: {
+        if (compiles) running = true;
+      }
+      break;
+      case TRIGGER_LOOP_STYLE:
+      case TRIGGER_NO_LOOP_STYLE: {
+        // If we're already running, keep running.
+        if (!running && asked_to_start_run) {
+          running = true;
+          ResetToProgramStart();
+        }
+      }
+      break;
+      case GATE: {
+        running = runTrigger.isHigh() || run_button_pressed;
+      }
+      break;
     }
 
     // Update environment with current inputs.
@@ -125,13 +182,9 @@ struct Basically : Module {
     // Run the PCode vector from the current spot in it.
     bool waiting = false;
 
-    //INFO("current_line=%i, ticks_remaining=%i", current_line, ticks_remaining);
-
-    if (recompiled) {
-      current_line = 0;
-      // TODO: Consider resetting ticks_remaining and clearing "environment"?
-    }
-    while (ok_to_run && !waiting) {
+    // TODO: Could just decrement and skip this whole thing if
+    // ticks_remaining > 2?
+    while (running && !waiting) {
       switch (pcodes[current_line].type) {
         case PCode::ASSIGNMENT: {
           PCode* assignment = &(pcodes[current_line]);
@@ -193,19 +246,23 @@ struct Basically : Module {
       if (current_line >= pcodes.size()) {
         current_line = 0;
         waiting = true;  // Implicit WAIT at end of program.
+        if (!loops) {
+          running = false;
+        }
       }
     }
 
     // Lights.
+    lights[RUN_LIGHT].setBrightness(running ? 1.0f : 0.0f);
+
   }
 
-  // Solely so we start with the right number of points.
-  bool initialized = false;
-
+  dsp::SchmittTrigger runTrigger;
   std::string text;
   bool dirty = false;  // Set when module changes the text (like at start).
-  bool user_has_changed = false;
-  bool ok_to_run = false;
+  bool user_has_changed = true;
+  bool compiles = false;
+  bool running = false;
   Driver drv;
   std::vector<PCode> pcodes;  // What actually gets executed.
   Environment environment;
@@ -347,7 +404,23 @@ struct BasicallyWidget : ModuleWidget {
 		codeDisplay->setModule(module);
 		addChild(codeDisplay);
 
-    // Inputs
+    // Controls.
+    // Run button/trigger/gate.
+    addInput(createInputCentered<PJ301MPort>(
+        mm2px(Vec(6.496, 103.24)), module, Basically::RUN_INPUT));
+    // Making this a Button and not a Latch means that it pops back up
+    // when you let go.
+    addParam(createLightParamCentered<VCVLightButton<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(6.496, 90.781)),
+                                             module, Basically::RUN_PARAM,
+                                             Basically::RUN_LIGHT));
+    RoundBlackSnapKnob* style_knob = createParamCentered<RoundBlackSnapKnob>(
+        mm2px(Vec(6.496, 114.863)), module, Basically::STYLE_PARAM);
+    style_knob->minAngle = -0.28f * M_PI;
+    style_knob->maxAngle = 0.28f * M_PI;
+    addParam(style_knob);
+
+    // Data Inputs
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(23.246, 103.24)),
       module, Basically::IN1_INPUT));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(33.073, 103.24)),
@@ -368,8 +441,8 @@ struct BasicallyWidget : ModuleWidget {
       module, Basically::OUT4_OUTPUT));
 
     // Lights
-    addChild(createLightCentered<MediumLight<RedLight>>(
-      mm2px(Vec(5.292, 91.848)), module, Basically::RUNNING_LIGHT));
+    addChild(createLightCentered<MediumLight<GreenLight>>(
+      mm2px(Vec(42.9, 90.781)), module, Basically::GOOD_LIGHT));
 
   }
 };
