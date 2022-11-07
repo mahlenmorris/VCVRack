@@ -113,6 +113,16 @@ struct Basically : Module {
     // TODO: Consider resetting ticks_remaining and clearing "environment"?
   }
 
+  void UpdateOutsIfNeeded(const std::string var_name, float value) {
+    auto found = out_map.find(var_name);
+    if (found != out_map.end()) {
+      // Limit to -10 <= x < = 10.
+      outputs[found->second].setVoltage(
+        std::max(-10.0f, std::min(10.0f, value)));
+    }
+  }
+
+
   void process(const ProcessArgs& args) override {
     Style style = STYLES[(int) params[STYLE_PARAM].getValue()];
     bool loops = (style != TRIGGER_NO_LOOP_STYLE);
@@ -185,17 +195,12 @@ struct Basically : Module {
     // TODO: Could just decrement and skip this whole thing if
     // ticks_remaining > 2?
     while (running && !waiting) {
-      switch (pcodes[current_line].type) {
+      PCode* pcode = &(pcodes[current_line]);
+      switch (pcode->type) {
         case PCode::ASSIGNMENT: {
-          PCode* assignment = &(pcodes[current_line]);
-          float rhs = assignment->expr1.Compute(&environment);
-          environment.variables[assignment->str1] = rhs;
-          auto found = out_map.find(assignment->str1);
-          if (found != out_map.end()) {
-            // Limit to -10 <= x < = 10.
-            outputs[found->second].setVoltage(
-              std::max(-10.0f, std::min(10.0f, rhs)));
-          }
+          float rhs = pcode->expr1.Compute(&environment);
+          environment.variables[pcode->str1] = rhs;
+          UpdateOutsIfNeeded(pcode->str1, rhs);
           current_line++;
         }
         break;
@@ -209,8 +214,7 @@ struct Basically : Module {
             }
           } else {
             // Just arriving at this WAIT statement.
-            PCode* wait = &(pcodes[current_line]);
-            ticks_remaining = (int) (wait->expr1.Compute(&environment) *
+            ticks_remaining = (int) (pcode->expr1.Compute(&environment) *
                 args.sampleRate / 1000.0f);
             // A "WAIT 0" (or WAIT -1!) means we should push to next line and
             // stop running for this process() call.
@@ -227,10 +231,9 @@ struct Basically : Module {
         break;
         case PCode::IFNOT: {
           // All this PCode does is determine where to move current_line to.
-          PCode* ifnot = &(pcodes[current_line]);
-          bool expr_val = ifnot->bool1.Compute(&environment);
+          bool expr_val = pcode->bool1.Compute(&environment);
           if (!expr_val) {
-            current_line += ifnot->jump_count;
+            current_line += pcode->jump_count;
           } else {
             current_line++;
           }
@@ -238,11 +241,33 @@ struct Basically : Module {
         break;
         case PCode::RELATIVE_JUMP: {
           // This just specifies a jump of the current_line.
-          PCode* jump = &(pcodes[current_line]);
-          current_line += jump->jump_count;
+          current_line += pcode->jump_count;
         }
         break;
+        case PCode::FORLOOP: {
+          if (state == PCode::ENTERING_FOR_LOOP) {
+            pcode->limit = pcode->expr1.Compute(&environment);
+            pcode->step = pcode->expr2.Compute(&environment);
+          } else {
+            float new_value = environment.variables[pcode->str1] + pcode->step;
+            environment.variables[pcode->str1] = new_value;
+            UpdateOutsIfNeeded(pcode->str1, new_value);
+          }
+          bool done = false;
+          // If "Step" is negative, we wait until value is below limit.
+          if (pcode->step >= 0.0f) {
+            done = environment.variables[pcode->str1] > pcode->limit;
+          } else {
+            done = environment.variables[pcode->str1] < pcode->limit;
+          }
+          if (done) {
+            current_line += pcode->jump_count;
+          } else {
+            current_line++;
+          }
+        }
       }
+      state = pcode->state;
       if (current_line >= pcodes.size()) {
         current_line = 0;
         waiting = true;  // Implicit WAIT at end of program.
@@ -268,6 +293,9 @@ struct Basically : Module {
   Environment environment;
   unsigned int current_line;
   int ticks_remaining;
+  // Some PCodes are reentrant, but with different behaviors. state helps
+  // determine the behavior.
+  PCode::State state;
 };
 
 struct BasicallyTextField : LedDisplayTextField {

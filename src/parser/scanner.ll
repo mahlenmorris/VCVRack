@@ -122,11 +122,17 @@ blank [ \t\r]
 "<="       return yy::parser::make_LTE    (yytext, loc);
 ">"        return yy::parser::make_GT     (yytext, loc);
 ">="       return yy::parser::make_GTE    (yytext, loc);
-"wait"     return yy::parser::make_WAIT   (yytext, loc);
-"if"       return yy::parser::make_IF     (yytext, loc);
-"then"     return yy::parser::make_THEN   (yytext, loc);
+"continue" return yy::parser::make_CONTINUE  (yytext, loc);
 "else"     return yy::parser::make_ELSE   (yytext, loc);
 "endif"    return yy::parser::make_ENDIF  (yytext, loc);
+"exit"     return yy::parser::make_EXIT   (yytext, loc);
+"for"      return yy::parser::make_FOR    (yytext, loc);
+"if"       return yy::parser::make_IF     (yytext, loc);
+"next"     return yy::parser::make_NEXT   (yytext, loc);
+"step"     return yy::parser::make_STEP   (yytext, loc);
+"then"     return yy::parser::make_THEN   (yytext, loc);
+"to"       return yy::parser::make_TO     (yytext, loc);
+"wait"     return yy::parser::make_WAIT   (yytext, loc);
 
 {float}    return make_NUMBER (yytext, loc);
 {id}       return yy::parser::make_IDENTIFIER (yytext, loc);

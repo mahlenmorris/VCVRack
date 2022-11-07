@@ -36,11 +36,17 @@
 %define api.token.prefix {TOK_}
 %token <std::string>
   ASSIGN  "="
-  WAIT    "wait"
-  IF      "if"
-  THEN    "then"
+  CONTINUE "continue"
   ELSE    "else"
   ENDIF   "endif"
+  EXIT    "exit"
+  FOR     "for"
+  IF      "if"
+  NEXT    "next"
+  THEN    "then"
+  TO      "to"
+  STEP    "step"
+  WAIT    "wait"
   MINUS   "-"
   PLUS    "+"
   STAR    "*"
@@ -63,6 +69,7 @@
 %nterm <Line> assignment
 %nterm <Line> wait_statement
 %nterm <Line> if_statement
+%nterm <Line> for_statement
 
 %printer { yyo << $$; } <*>;
 
@@ -77,6 +84,7 @@ statements:
 | statements assignment      { $$ = $1.add($2); }
 | statements wait_statement  { $$ = $1.add($2); }
 | statements if_statement    { $$ = $1.add($2); }
+| statements for_statement   { $$ = $1.add($2); }
 
 assignment:
   "identifier" "=" exp  { $$ = Line::Assignment($1, $3); }
@@ -87,6 +95,10 @@ wait_statement:
 if_statement:
   "if" bool_exp "then" statements "endif"                    { $$ = Line::IfThen($2, $4); }
 | "if" bool_exp "then" statements "else" statements "endif"  { $$ = Line::IfThenElse($2, $4, $6); }
+
+for_statement:
+  "for" assignment "to" exp statements "next"  { $$ = Line::ForTo($2, $4, Expression::Number(1.0), $5); }
+| "for" assignment "to" exp "step" exp statements "next" { $$ = Line::ForTo($2, $4, $6, $7); }
 
 %left "+" "-";
 %left "*" "/";

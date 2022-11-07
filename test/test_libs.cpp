@@ -118,8 +118,6 @@ TEST(ParserTest, BooleanTest)
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].bool1.Compute(&env));
     ASSERT_EQ(1, drv.lines[0].statements.size());
-
-
 }
 
 TEST(ParserTest, IfThenTest)
@@ -131,4 +129,33 @@ TEST(ParserTest, IfThenTest)
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].bool1.Compute(&env));
     ASSERT_EQ(1, drv.lines[0].statements.size());
+}
+
+TEST(ParserTest, ForTest)
+{
+    Driver drv;
+    Environment env;
+
+    EXPECT_EQ(0, drv.parse("for a = 1 to 10 out1 = a / 10 next"));
+    ASSERT_EQ(1, drv.lines.size());
+    Line line = drv.lines[0];
+    EXPECT_EQ(Line::FORTO, line.type);
+    EXPECT_EQ("a", line.str1);
+    EXPECT_EQ(1, line.expr1.Compute(&env));
+    EXPECT_EQ(10, line.expr2.Compute(&env));
+    EXPECT_EQ(1, line.expr3.Compute(&env));
+    ASSERT_EQ(1, line.statements.size());
+    ASSERT_EQ(1, line.statements[0].size());
+
+    EXPECT_EQ(0, drv.parse("for a = 10 to 1 step -.4 out1 = a / 10 next"));
+    ASSERT_EQ(1, drv.lines.size());
+    line = drv.lines[0];
+    EXPECT_EQ(Line::FORTO, line.type);
+    EXPECT_EQ("a", line.str1);
+    EXPECT_EQ(10, line.expr1.Compute(&env));
+    EXPECT_EQ(1, line.expr2.Compute(&env));
+    EXPECT_FLOAT_EQ(-0.4, line.expr3.Compute(&env));
+    ASSERT_EQ(1, line.statements.size());
+    ASSERT_EQ(1, line.statements[0].size());
+
 }

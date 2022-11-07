@@ -198,11 +198,12 @@ struct Line {
     ASSIGNMENT,  // str1 = expr1
     WAIT,        // wait expr1
     IFTHEN,      // if bool1 then state1 endif
-    IFTHENELSE   // if bool1 then state1 else state2 endif
+    IFTHENELSE,  // if bool1 then state1 else state2 endif
+    FORTO        // for str1 = expr1 to expr2 state1 next
   };
   Type type;
   std::string str1;
-  Expression expr1;
+  Expression expr1, expr2, expr3;
   BoolExpression bool1;
   std::vector<Statements> statements;
 
@@ -214,14 +215,12 @@ struct Line {
     line.type = ASSIGNMENT;
     line.str1 = variable_expr.name;
     line.expr1 = expr;
-    //  std::cout << "Creating Assignment(" << expr->to_string() << ")!\n";
     return line;
   }
   static Line Wait(const Expression &expr) {
     Line line;
     line.type = WAIT;
     line.expr1 = expr;
-    //  std::cout << "Creating Wait(" << expr->to_string() << ")!\n";
     return line;
   }
   static Line IfThen(const BoolExpression &bool_expr,
@@ -242,6 +241,17 @@ struct Line {
     line.statements.push_back(state2);
     return line;
   }
+  static Line ForTo(const Line &assign, const Expression &limit,
+                    const Expression &step, const Statements &state) {
+    Line line;
+    line.type = FORTO;
+    line.str1 = assign.str1;
+    line.expr1 = assign.expr1;
+    line.expr2 = limit;
+    line.expr3 = step;
+    line.statements.push_back(state);
+    return line;
+  }
 
   friend std::ostream& operator<<(
     std::ostream& os, Line line) {
@@ -256,6 +266,9 @@ struct Statements {
   Statements add(Line new_line) {
     lines.push_back(new_line);
     return *this;
+  }
+  int size() {
+    return lines.size();
   }
   friend std::ostream& operator<<(std::ostream& os, Statements statements) {
     os << "Statements(" << std::to_string(statements.lines.size()) << " statements )";
