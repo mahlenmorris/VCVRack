@@ -108,7 +108,7 @@ blank [ \t\r]
 %}
 {blank}+   loc.step ();
 \n+        loc.lines (yyleng); loc.step ();
-
+"' ".*     // Comments, skip over. Hint: '.' will not match \n. But location might need fixing.
 "-"        return yy::parser::make_MINUS  (yytext, loc);
 "+"        return yy::parser::make_PLUS   (yytext, loc);
 "*"        return yy::parser::make_STAR   (yytext, loc);

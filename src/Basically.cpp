@@ -279,7 +279,6 @@ struct Basically : Module {
 
     // Lights.
     lights[RUN_LIGHT].setBrightness(running ? 1.0f : 0.0f);
-
   }
 
   dsp::SchmittTrigger runTrigger;
@@ -396,9 +395,10 @@ struct BasicallyTextField : LedDisplayTextField {
 
   // User has updated the text.
 	void onChange(const ChangeEvent& e) override {
-		if (module)
+		if (module) {
 			module->text = getText();
       module->user_has_changed = true;
+    }
 	}
 };
 

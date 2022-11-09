@@ -14,6 +14,16 @@ TEST(ParserTest, RunsAtAll)
     EXPECT_EQ(27, drv.lines[0].expr1.Compute(&env));
 }
 
+TEST(ParserTest, Comments)
+{
+    Driver drv;
+    Environment env;
+    EXPECT_EQ(0, drv.parse("' I'm a comment! Look at me \nf=3+4*6 ' Me Too!'"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ("f", drv.lines[0].str1);
+    EXPECT_EQ(27, drv.lines[0].expr1.Compute(&env));
+}
+
 TEST(ParserTest, SimpleTest)
 {
     Driver drv;
