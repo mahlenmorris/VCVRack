@@ -418,9 +418,10 @@ namespace yy {
       char dummy2[sizeof (Expression)];
 
       // assignment
-      // wait_statement
-      // if_statement
+      // continue_statement
       // for_statement
+      // if_statement
+      // wait_statement
       char dummy3[sizeof (Line)];
 
       // statements
@@ -585,11 +586,12 @@ namespace yy {
         S_program = 31,                          // program
         S_statements = 32,                       // statements
         S_assignment = 33,                       // assignment
-        S_wait_statement = 34,                   // wait_statement
-        S_if_statement = 35,                     // if_statement
-        S_for_statement = 36,                    // for_statement
-        S_exp = 37,                              // exp
-        S_bool_exp = 38                          // bool_exp
+        S_continue_statement = 34,               // continue_statement
+        S_for_statement = 35,                    // for_statement
+        S_if_statement = 36,                     // if_statement
+        S_wait_statement = 37,                   // wait_statement
+        S_exp = 38,                              // exp
+        S_bool_exp = 39                          // bool_exp
       };
     };
 
@@ -636,9 +638,10 @@ namespace yy {
         break;
 
       case symbol_kind::S_assignment: // assignment
-      case symbol_kind::S_wait_statement: // wait_statement
-      case symbol_kind::S_if_statement: // if_statement
+      case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_for_statement: // for_statement
+      case symbol_kind::S_if_statement: // if_statement
+      case symbol_kind::S_wait_statement: // wait_statement
         value.move< Line > (std::move (that.value));
         break;
 
@@ -818,9 +821,10 @@ switch (yykind)
         break;
 
       case symbol_kind::S_assignment: // assignment
-      case symbol_kind::S_wait_statement: // wait_statement
-      case symbol_kind::S_if_statement: // if_statement
+      case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_for_statement: // for_statement
+      case symbol_kind::S_if_statement: // if_statement
+      case symbol_kind::S_wait_statement: // wait_statement
         value.template destroy< Line > ();
         break;
 
@@ -1603,7 +1607,7 @@ switch (yykind)
 
 #if YYDEBUG
     // YYRLINE[YYN] -- Source line where rule number YYN was defined.
-    static const signed char yyrline_[];
+    static const unsigned char yyrline_[];
     /// Report on the debug stream that the rule \a r is going to be reduced.
     virtual void yy_reduce_print_ (int r) const;
     /// Print the state stack on the debug stream.
@@ -1839,8 +1843,8 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 92,     ///< Last index in yytable_.
-      yynnts_ = 9,  ///< Number of nonterminal symbols.
+      yylast_ = 105,     ///< Last index in yytable_.
+      yynnts_ = 10,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
 
@@ -1876,9 +1880,10 @@ switch (yykind)
         break;
 
       case symbol_kind::S_assignment: // assignment
-      case symbol_kind::S_wait_statement: // wait_statement
-      case symbol_kind::S_if_statement: // if_statement
+      case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_for_statement: // for_statement
+      case symbol_kind::S_if_statement: // if_statement
+      case symbol_kind::S_wait_statement: // wait_statement
         value.copy< Line > (YY_MOVE (that.value));
         break;
 
@@ -1958,9 +1963,10 @@ switch (yykind)
         break;
 
       case symbol_kind::S_assignment: // assignment
-      case symbol_kind::S_wait_statement: // wait_statement
-      case symbol_kind::S_if_statement: // if_statement
+      case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_for_statement: // for_statement
+      case symbol_kind::S_if_statement: // if_statement
+      case symbol_kind::S_wait_statement: // wait_statement
         value.move< Line > (YY_MOVE (s.value));
         break;
 
@@ -2065,7 +2071,7 @@ switch (yykind)
 
 
 } // yy
-#line 2069 "parser.hh"
+#line 2075 "parser.hh"
 
 
 

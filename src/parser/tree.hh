@@ -196,10 +196,11 @@ struct Statements;
 struct Line {
   enum Type {
     ASSIGNMENT,  // str1 = expr1
-    WAIT,        // wait expr1
+    CONTINUE,    // continue str1
+    FORNEXT,     // for str1 = expr1 to expr2 state1 next
     IFTHEN,      // if bool1 then state1 endif
     IFTHENELSE,  // if bool1 then state1 else state2 endif
-    FORNEXT        // for str1 = expr1 to expr2 state1 next
+    WAIT         // wait expr1
   };
   Type type;
   std::string str1;
@@ -217,12 +218,27 @@ struct Line {
     line.expr1 = expr;
     return line;
   }
-  static Line Wait(const Expression &expr) {
+
+  // loop_type is the string identifying the loop type; e.g., "for".
+  static Line Continue(const std::string &loop_type) {
     Line line;
-    line.type = WAIT;
-    line.expr1 = expr;
+    line.type = CONTINUE;
+    line.str1 = loop_type;
     return line;
   }
+
+  static Line ForNext(const Line &assign, const Expression &limit,
+                      const Expression &step, const Statements &state) {
+    Line line;
+    line.type = FORNEXT;
+    line.str1 = assign.str1;
+    line.expr1 = assign.expr1;
+    line.expr2 = limit;
+    line.expr3 = step;
+    line.statements.push_back(state);
+    return line;
+  }
+
   static Line IfThen(const BoolExpression &bool_expr,
                      const Statements &state1) {
     Line line;
@@ -231,6 +247,7 @@ struct Line {
     line.statements.push_back(state1);
     return line;
   }
+
   static Line IfThenElse(const BoolExpression &bool_expr,
                          const Statements &state1,
                          const Statements &state2) {
@@ -241,15 +258,11 @@ struct Line {
     line.statements.push_back(state2);
     return line;
   }
-  static Line ForNext(const Line &assign, const Expression &limit,
-                    const Expression &step, const Statements &state) {
+
+  static Line Wait(const Expression &expr) {
     Line line;
-    line.type = FORNEXT;
-    line.str1 = assign.str1;
-    line.expr1 = assign.expr1;
-    line.expr2 = limit;
-    line.expr3 = step;
-    line.statements.push_back(state);
+    line.type = WAIT;
+    line.expr1 = expr;
     return line;
   }
 

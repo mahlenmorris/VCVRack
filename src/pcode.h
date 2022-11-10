@@ -51,6 +51,13 @@ struct PCode {
   std::string to_string();
 };
 
+struct Loop {
+  const std::string loop_type;
+  const int line_number;
+
+  Loop(const std::string type, int line) : loop_type{type}, line_number{line} {}
+};
+
 // Class for turning nested vector of Line objects into a flat vector of
 // PCode objects.
 class PCodeTranslator {
@@ -61,6 +68,7 @@ private:
   void AddLineToPCode(const Line &line);
 
   std::vector<PCode> *pcodes;
+  std::vector<Loop> loops;
 };
 
 #endif // PCODE_H

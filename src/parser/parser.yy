@@ -70,6 +70,7 @@
 %nterm <Line> wait_statement
 %nterm <Line> if_statement
 %nterm <Line> for_statement
+%nterm <Line> continue_statement
 
 %printer { yyo << $$; } <*>;
 
@@ -81,24 +82,29 @@ program:
 
 statements:
   %empty                     {}
-| statements assignment      { $$ = $1.add($2); }
-| statements wait_statement  { $$ = $1.add($2); }
-| statements if_statement    { $$ = $1.add($2); }
-| statements for_statement   { $$ = $1.add($2); }
+| statements assignment           { $$ = $1.add($2); }
+| statements continue_statement   { $$ = $1.add($2); }
+| statements for_statement        { $$ = $1.add($2); }
+| statements if_statement         { $$ = $1.add($2); }
+| statements wait_statement       { $$ = $1.add($2); }
 
 assignment:
   "identifier" "=" exp  { $$ = Line::Assignment($1, $3); }
 
-wait_statement:
-  "wait" exp            { $$ = Line::Wait($2); }
+continue_statement:
+  "continue" "for"      { $$ = Line::Continue($2); }
+
+for_statement:
+  "for" assignment "to" exp statements "next"  { $$ = Line::ForNext($2, $4, Expression::Number(1.0), $5); }
+| "for" assignment "to" exp "step" exp statements "next" { $$ = Line::ForNext($2, $4, $6, $7); }
 
 if_statement:
   "if" bool_exp "then" statements "endif"                    { $$ = Line::IfThen($2, $4); }
 | "if" bool_exp "then" statements "else" statements "endif"  { $$ = Line::IfThenElse($2, $4, $6); }
 
-for_statement:
-  "for" assignment "to" exp statements "next"  { $$ = Line::ForNext($2, $4, Expression::Number(1.0), $5); }
-| "for" assignment "to" exp "step" exp statements "next" { $$ = Line::ForNext($2, $4, $6, $7); }
+wait_statement:
+  "wait" exp            { $$ = Line::Wait($2); }
+
 
 %left "+" "-";
 %left "*" "/";

@@ -168,4 +168,9 @@ TEST(ParserTest, ForTest)
     ASSERT_EQ(1, line.statements.size());
     ASSERT_EQ(1, line.statements[0].size());
 
+    EXPECT_EQ(0, drv.parse("continue for"));
+    ASSERT_EQ(1, drv.lines.size());
+    line = drv.lines[0];
+    EXPECT_EQ(Line::CONTINUE, line.type);
+    EXPECT_EQ("for", line.str1);
 }

@@ -3,7 +3,7 @@
 
 // First order of business is to turn a vector of Lines (which may have
 // nested Lines) into a flat vector of PCodes.
-
+#include <algorithm>
 #include <vector>
 
 #include "parser/tree.hh"
@@ -44,6 +44,26 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
   switch (line.type) {
     case Line::ASSIGNMENT: {
       pcodes->push_back(PCode::Assignment(line.str1, line.expr1));
+    }
+    break;
+    case Line::CONTINUE: {
+      // See what type of continue this is, and then see what the latest
+      // loop of that type I can find. Then jump to it.
+      std::string loop_type = line.str1;
+      auto result = std::find_if(loops.rbegin(), loops.rend(),
+          [loop_type](Loop l) { return loop_type == l.loop_type; });
+      if (result != loops.rend()) {  // Found it, which is to be expected.
+        int jump_to = result->line_number;
+        PCode jump_back;
+        jump_back.type = PCode::RELATIVE_JUMP;
+        // jump_count must be negative to go backwards in program to FORLOOP.
+        jump_back.jump_count = jump_to - pcodes->size();
+        pcodes->push_back(jump_back);
+      } else {
+        // This is really an error, but we'll note it and let it go for now?
+        //INFO("BASICally error: 'continue for' statement seen outside of for loop.");
+        // TODO: Maybe give a way for this to register errors later?
+      }
     }
     break;
     case Line::WAIT: {
@@ -122,9 +142,14 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       // Need to find this FORLOOP PCode later, so I can fill in jump_count
       // after adding all of the statements.
       int forloop_position = pcodes->size() - 1;
+      // Add to stack.
+      loops.push_back(Loop("for", forloop_position));
       for (auto &loop_line : line.statements[0].lines) {
         AddLineToPCode(loop_line);
       }
+      // Remove from stack.
+      loops.pop_back();  // TODO: confirm it is the "for" item we placed?
+      // Insert smallest possible WAIT.
       pcodes->push_back(PCode::Wait(Expression::Number(0.0f)));
       PCode jump_back;
       jump_back.type = PCode::RELATIVE_JUMP;
