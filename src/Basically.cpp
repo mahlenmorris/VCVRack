@@ -138,7 +138,8 @@ struct Basically : Module {
       // always be true in the future.
       lights[GOOD_LIGHT].setBrightness(compiles ? 1.f : 0.f);
       if (compiles) {
-        PCode::LinesToPCode(drv.lines, &pcodes);
+        PCodeTranslator translator;
+        translator.LinesToPCode(drv.lines, &pcodes);
         /*
         for (auto &pcode : pcodes) {
           // Add to log, for debugging.

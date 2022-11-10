@@ -149,7 +149,7 @@ TEST(ParserTest, ForTest)
     EXPECT_EQ(0, drv.parse("for a = 1 to 10 out1 = a / 10 next"));
     ASSERT_EQ(1, drv.lines.size());
     Line line = drv.lines[0];
-    EXPECT_EQ(Line::FORTO, line.type);
+    EXPECT_EQ(Line::FORNEXT, line.type);
     EXPECT_EQ("a", line.str1);
     EXPECT_EQ(1, line.expr1.Compute(&env));
     EXPECT_EQ(10, line.expr2.Compute(&env));
@@ -160,7 +160,7 @@ TEST(ParserTest, ForTest)
     EXPECT_EQ(0, drv.parse("for a = 10 to 1 step -.4 out1 = a / 10 next"));
     ASSERT_EQ(1, drv.lines.size());
     line = drv.lines[0];
-    EXPECT_EQ(Line::FORTO, line.type);
+    EXPECT_EQ(Line::FORNEXT, line.type);
     EXPECT_EQ("a", line.str1);
     EXPECT_EQ(10, line.expr1.Compute(&env));
     EXPECT_EQ(1, line.expr2.Compute(&env));

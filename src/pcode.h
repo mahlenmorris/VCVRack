@@ -46,12 +46,21 @@ struct PCode {
     state = NONE;
   };
 
-  static void LinesToPCode(const std::vector<Line> &lines,
-                           std::vector<PCode> *pcodes);
-  static void AddLineToPCode(const Line &line, std::vector<PCode> *pcodes);
   static PCode Assignment(const std::string str1, const Expression &expr1);
   static PCode Wait(const Expression &expr1);
   std::string to_string();
+};
+
+// Class for turning nested vector of Line objects into a flat vector of
+// PCode objects.
+class PCodeTranslator {
+public:
+  PCodeTranslator() { }
+  void LinesToPCode(const std::vector<Line> &lines, std::vector<PCode> *pcodes);
+private:
+  void AddLineToPCode(const Line &line);
+
+  std::vector<PCode> *pcodes;
 };
 
 #endif // PCODE_H

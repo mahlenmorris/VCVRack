@@ -97,8 +97,8 @@ if_statement:
 | "if" bool_exp "then" statements "else" statements "endif"  { $$ = Line::IfThenElse($2, $4, $6); }
 
 for_statement:
-  "for" assignment "to" exp statements "next"  { $$ = Line::ForTo($2, $4, Expression::Number(1.0), $5); }
-| "for" assignment "to" exp "step" exp statements "next" { $$ = Line::ForTo($2, $4, $6, $7); }
+  "for" assignment "to" exp statements "next"  { $$ = Line::ForNext($2, $4, Expression::Number(1.0), $5); }
+| "for" assignment "to" exp "step" exp statements "next" { $$ = Line::ForNext($2, $4, $6, $7); }
 
 %left "+" "-";
 %left "*" "/";

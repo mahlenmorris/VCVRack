@@ -1046,7 +1046,7 @@ loc.lines (yyleng); loc.step ();
 case 3:
 YY_RULE_SETUP
 #line 112 "scanner.ll"
-// Comments, skip over. Hint: '.' will not match \n. But location might need fixing.                               { /* DO NOTHING */ }
+// Comments, skip over. Hint: '.' will not match \n. But location might need fixing.
 	YY_BREAK
 case 4:
 YY_RULE_SETUP

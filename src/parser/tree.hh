@@ -199,7 +199,7 @@ struct Line {
     WAIT,        // wait expr1
     IFTHEN,      // if bool1 then state1 endif
     IFTHENELSE,  // if bool1 then state1 else state2 endif
-    FORTO        // for str1 = expr1 to expr2 state1 next
+    FORNEXT        // for str1 = expr1 to expr2 state1 next
   };
   Type type;
   std::string str1;
@@ -241,10 +241,10 @@ struct Line {
     line.statements.push_back(state2);
     return line;
   }
-  static Line ForTo(const Line &assign, const Expression &limit,
+  static Line ForNext(const Line &assign, const Expression &limit,
                     const Expression &step, const Statements &state) {
     Line line;
-    line.type = FORTO;
+    line.type = FORNEXT;
     line.str1 = assign.str1;
     line.expr1 = assign.expr1;
     line.expr2 = limit;

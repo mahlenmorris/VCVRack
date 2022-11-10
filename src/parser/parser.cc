@@ -1059,13 +1059,13 @@ namespace yy {
 
   case 12: // for_statement: "for" assignment "to" exp statements "next"
 #line 100 "parser.yy"
-                                               { yylhs.value.as < Line > () = Line::ForTo(yystack_[4].value.as < Line > (), yystack_[2].value.as < Expression > (), Expression::Number(1.0), yystack_[1].value.as < Statements > ()); }
+                                               { yylhs.value.as < Line > () = Line::ForNext(yystack_[4].value.as < Line > (), yystack_[2].value.as < Expression > (), Expression::Number(1.0), yystack_[1].value.as < Statements > ()); }
 #line 1064 "parser.cc"
     break;
 
   case 13: // for_statement: "for" assignment "to" exp "step" exp statements "next"
 #line 101 "parser.yy"
-                                                         { yylhs.value.as < Line > () = Line::ForTo(yystack_[6].value.as < Line > (), yystack_[4].value.as < Expression > (), yystack_[2].value.as < Expression > (), yystack_[1].value.as < Statements > ()); }
+                                                         { yylhs.value.as < Line > () = Line::ForNext(yystack_[6].value.as < Line > (), yystack_[4].value.as < Expression > (), yystack_[2].value.as < Expression > (), yystack_[1].value.as < Statements > ()); }
 #line 1070 "parser.cc"
     break;
 

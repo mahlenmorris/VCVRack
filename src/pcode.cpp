@@ -9,13 +9,29 @@
 #include "parser/tree.hh"
 #include "pcode.h"
 
+PCode PCode::Assignment(const std::string str1, const Expression &expr1) {
+  PCode assign;
+  assign.type = PCode::ASSIGNMENT;
+  assign.str1 = str1;
+  assign.expr1 = expr1;
+  return assign;
+}
+
+PCode PCode::Wait(const Expression &expr1) {
+  PCode new_pcode;
+  new_pcode.type = PCode::WAIT;
+  new_pcode.expr1 = expr1;
+  return new_pcode;
+}
+
 // Note; caller should _probably_ reset the line position after this.
-// And should definitely NOT access pcodes while this is running.
-void PCode::LinesToPCode(const std::vector<Line> &lines,
-                         std::vector<PCode> *pcodes) {
+// And should definitely NOT access 'pcodes' while this is running.
+void PCodeTranslator::LinesToPCode(const std::vector<Line> &lines,
+                                   std::vector<PCode> *new_pcodes) {
+  pcodes = new_pcodes;
   pcodes->clear();
   for (auto &line : lines) {
-    AddLineToPCode(line, pcodes);
+    AddLineToPCode(line);
   }
 }
 
@@ -24,7 +40,7 @@ std::string PCode::to_string() {
     ")";
 }
 
-void PCode::AddLineToPCode(const Line &line, std::vector<PCode> *pcodes) {
+void PCodeTranslator::AddLineToPCode(const Line &line) {
   switch (line.type) {
     case Line::ASSIGNMENT: {
       pcodes->push_back(PCode::Assignment(line.str1, line.expr1));
@@ -48,7 +64,7 @@ void PCode::AddLineToPCode(const Line &line, std::vector<PCode> *pcodes) {
       // Add all of the THEN-clause Lines. Note that some of these might
       // also be control-flow Lines of unknown PCode length.
       for (auto &loop_line : line.statements[0].lines) {
-        AddLineToPCode(loop_line, pcodes);
+        AddLineToPCode(loop_line);
       }
       pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
     }
@@ -69,7 +85,7 @@ void PCode::AddLineToPCode(const Line &line, std::vector<PCode> *pcodes) {
       // Add all of the THEN-clause Lines. Note that some of these might
       // also be control-flow Lines of unknown PCode length.
       for (auto &loop_line : line.statements[0].lines) {
-        AddLineToPCode(loop_line, pcodes);
+        AddLineToPCode(loop_line);
       }
       // After THEN statements, need to skip over the ELSE statements.
       PCode jump;
@@ -81,13 +97,13 @@ void PCode::AddLineToPCode(const Line &line, std::vector<PCode> *pcodes) {
       pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
       // Add the ELSE clause.
       for (auto &loop_line : line.statements[1].lines) {
-        AddLineToPCode(loop_line, pcodes);
+        AddLineToPCode(loop_line);
       }
       // Finish the jump.
       pcodes->at(jump_position).jump_count = pcodes->size() - jump_position;
     }
     break;
-    case Line::FORTO: {
+    case Line::FORNEXT: {
       // ASSIGNMENT var = Expression
       // FORLOOP (var, expr1, expr2)
       // statements
@@ -107,7 +123,7 @@ void PCode::AddLineToPCode(const Line &line, std::vector<PCode> *pcodes) {
       // after adding all of the statements.
       int forloop_position = pcodes->size() - 1;
       for (auto &loop_line : line.statements[0].lines) {
-        AddLineToPCode(loop_line, pcodes);
+        AddLineToPCode(loop_line);
       }
       pcodes->push_back(PCode::Wait(Expression::Number(0.0f)));
       PCode jump_back;
@@ -119,19 +135,4 @@ void PCode::AddLineToPCode(const Line &line, std::vector<PCode> *pcodes) {
       pcodes->at(forloop_position).jump_count = pcodes->size() - forloop_position;
     }
   }
-}
-
-PCode PCode::Assignment(const std::string str1, const Expression &expr1) {
-  PCode assign;
-  assign.type = PCode::ASSIGNMENT;
-  assign.str1 = str1;
-  assign.expr1 = expr1;
-  return assign;
-}
-
-PCode PCode::Wait(const Expression &expr1) {
-  PCode new_pcode;
-  new_pcode.type = PCode::WAIT;
-  new_pcode.expr1 = expr1;
-  return new_pcode;
 }
