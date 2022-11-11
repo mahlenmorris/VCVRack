@@ -49,20 +49,29 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
     case Line::CONTINUE: {
       // See what type of continue this is, and then see what the latest
       // loop of that type I can find. Then jump to it.
-      std::string loop_type = line.str1;
-      auto result = std::find_if(loops.rbegin(), loops.rend(),
-          [loop_type](Loop l) { return loop_type == l.loop_type; });
-      if (result != loops.rend()) {  // Found it, which is to be expected.
-        int jump_to = result->line_number;
+      if (line.str1 == "all") {
+        // Jump to beginning of program.
         PCode jump_back;
         jump_back.type = PCode::RELATIVE_JUMP;
         // jump_count must be negative to go backwards in program to FORLOOP.
-        jump_back.jump_count = jump_to - pcodes->size();
+        jump_back.jump_count = 0 - pcodes->size();
         pcodes->push_back(jump_back);
       } else {
-        // This is really an error, but we'll note it and let it go for now?
-        //INFO("BASICally error: 'continue for' statement seen outside of for loop.");
-        // TODO: Maybe give a way for this to register errors later?
+        std::string loop_type = line.str1;
+        auto result = std::find_if(loops.rbegin(), loops.rend(),
+            [loop_type](Loop l) { return loop_type == l.loop_type; });
+        if (result != loops.rend()) {  // Found it, which is to be expected.
+          int jump_to = result->line_number;
+          PCode jump_back;
+          jump_back.type = PCode::RELATIVE_JUMP;
+          // jump_count must be negative to go backwards in program to FORLOOP.
+          jump_back.jump_count = jump_to - pcodes->size();
+          pcodes->push_back(jump_back);
+        } else {
+          // This is really an error, but we'll note it and let it go for now?
+          //INFO("BASICally error: 'continue for' statement seen outside of for loop.");
+          // TODO: Maybe give a way for this to register errors later?
+        }
       }
     }
     break;

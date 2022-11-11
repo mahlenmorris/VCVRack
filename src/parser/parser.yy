@@ -35,6 +35,7 @@
 
 %define api.token.prefix {TOK_}
 %token <std::string>
+  ALL     "all"
   ASSIGN  "="
   CONTINUE "continue"
   ELSE    "else"
@@ -93,6 +94,7 @@ assignment:
 
 continue_statement:
   "continue" "for"      { $$ = Line::Continue($2); }
+| "continue" "all"      { $$ = Line::Continue($2); }
 
 for_statement:
   "for" assignment "to" exp statements "next"  { $$ = Line::ForNext($2, $4, Expression::Number(1.0), $5); }

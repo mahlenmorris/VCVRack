@@ -174,3 +174,15 @@ TEST(ParserTest, ForTest)
     EXPECT_EQ(Line::CONTINUE, line.type);
     EXPECT_EQ("for", line.str1);
 }
+
+TEST(ParserTest, AllTest)
+{
+    Driver drv;
+    Environment env;
+
+    EXPECT_EQ(0, drv.parse("continue all"));
+    ASSERT_EQ(1, drv.lines.size());
+    Line line = drv.lines[0];
+    EXPECT_EQ(Line::CONTINUE, line.type);
+    EXPECT_EQ("all", line.str1);
+}

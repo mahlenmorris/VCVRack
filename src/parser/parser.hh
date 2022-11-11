@@ -430,6 +430,7 @@ namespace yy {
       // "number"
       char dummy5[sizeof (float)];
 
+      // "all"
       // "="
       // "continue"
       // "else"
@@ -507,33 +508,34 @@ namespace yy {
     TOK_YYEOF = 0,                 // "end of file"
     TOK_YYerror = 1,               // error
     TOK_YYUNDEF = 2,               // "invalid token"
-    TOK_ASSIGN = 3,                // "="
-    TOK_CONTINUE = 4,              // "continue"
-    TOK_ELSE = 5,                  // "else"
-    TOK_ENDIF = 6,                 // "endif"
-    TOK_EXIT = 7,                  // "exit"
-    TOK_FOR = 8,                   // "for"
-    TOK_IF = 9,                    // "if"
-    TOK_NEXT = 10,                 // "next"
-    TOK_THEN = 11,                 // "then"
-    TOK_TO = 12,                   // "to"
-    TOK_STEP = 13,                 // "step"
-    TOK_WAIT = 14,                 // "wait"
-    TOK_MINUS = 15,                // "-"
-    TOK_PLUS = 16,                 // "+"
-    TOK_STAR = 17,                 // "*"
-    TOK_SLASH = 18,                // "/"
-    TOK_LPAREN = 19,               // "("
-    TOK_RPAREN = 20,               // ")"
-    TOK_EQUALS = 21,               // "=="
-    TOK_NOT_EQUALS = 22,           // "!="
-    TOK_LT = 23,                   // "<"
-    TOK_LTE = 24,                  // "<="
-    TOK_GT = 25,                   // ">"
-    TOK_GTE = 26,                  // ">="
-    TOK_IDENTIFIER = 27,           // "identifier"
-    TOK_NUMBER = 28,               // "number"
-    TOK_NEG = 29                   // NEG
+    TOK_ALL = 3,                   // "all"
+    TOK_ASSIGN = 4,                // "="
+    TOK_CONTINUE = 5,              // "continue"
+    TOK_ELSE = 6,                  // "else"
+    TOK_ENDIF = 7,                 // "endif"
+    TOK_EXIT = 8,                  // "exit"
+    TOK_FOR = 9,                   // "for"
+    TOK_IF = 10,                   // "if"
+    TOK_NEXT = 11,                 // "next"
+    TOK_THEN = 12,                 // "then"
+    TOK_TO = 13,                   // "to"
+    TOK_STEP = 14,                 // "step"
+    TOK_WAIT = 15,                 // "wait"
+    TOK_MINUS = 16,                // "-"
+    TOK_PLUS = 17,                 // "+"
+    TOK_STAR = 18,                 // "*"
+    TOK_SLASH = 19,                // "/"
+    TOK_LPAREN = 20,               // "("
+    TOK_RPAREN = 21,               // ")"
+    TOK_EQUALS = 22,               // "=="
+    TOK_NOT_EQUALS = 23,           // "!="
+    TOK_LT = 24,                   // "<"
+    TOK_LTE = 25,                  // "<="
+    TOK_GT = 26,                   // ">"
+    TOK_GTE = 27,                  // ">="
+    TOK_IDENTIFIER = 28,           // "identifier"
+    TOK_NUMBER = 29,               // "number"
+    TOK_NEG = 30                   // NEG
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -550,48 +552,49 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 30, ///< Number of tokens.
+        YYNTOKENS = 31, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
         S_YYUNDEF = 2,                           // "invalid token"
-        S_ASSIGN = 3,                            // "="
-        S_CONTINUE = 4,                          // "continue"
-        S_ELSE = 5,                              // "else"
-        S_ENDIF = 6,                             // "endif"
-        S_EXIT = 7,                              // "exit"
-        S_FOR = 8,                               // "for"
-        S_IF = 9,                                // "if"
-        S_NEXT = 10,                             // "next"
-        S_THEN = 11,                             // "then"
-        S_TO = 12,                               // "to"
-        S_STEP = 13,                             // "step"
-        S_WAIT = 14,                             // "wait"
-        S_MINUS = 15,                            // "-"
-        S_PLUS = 16,                             // "+"
-        S_STAR = 17,                             // "*"
-        S_SLASH = 18,                            // "/"
-        S_LPAREN = 19,                           // "("
-        S_RPAREN = 20,                           // ")"
-        S_EQUALS = 21,                           // "=="
-        S_NOT_EQUALS = 22,                       // "!="
-        S_LT = 23,                               // "<"
-        S_LTE = 24,                              // "<="
-        S_GT = 25,                               // ">"
-        S_GTE = 26,                              // ">="
-        S_IDENTIFIER = 27,                       // "identifier"
-        S_NUMBER = 28,                           // "number"
-        S_NEG = 29,                              // NEG
-        S_YYACCEPT = 30,                         // $accept
-        S_program = 31,                          // program
-        S_statements = 32,                       // statements
-        S_assignment = 33,                       // assignment
-        S_continue_statement = 34,               // continue_statement
-        S_for_statement = 35,                    // for_statement
-        S_if_statement = 36,                     // if_statement
-        S_wait_statement = 37,                   // wait_statement
-        S_exp = 38,                              // exp
-        S_bool_exp = 39                          // bool_exp
+        S_ALL = 3,                               // "all"
+        S_ASSIGN = 4,                            // "="
+        S_CONTINUE = 5,                          // "continue"
+        S_ELSE = 6,                              // "else"
+        S_ENDIF = 7,                             // "endif"
+        S_EXIT = 8,                              // "exit"
+        S_FOR = 9,                               // "for"
+        S_IF = 10,                               // "if"
+        S_NEXT = 11,                             // "next"
+        S_THEN = 12,                             // "then"
+        S_TO = 13,                               // "to"
+        S_STEP = 14,                             // "step"
+        S_WAIT = 15,                             // "wait"
+        S_MINUS = 16,                            // "-"
+        S_PLUS = 17,                             // "+"
+        S_STAR = 18,                             // "*"
+        S_SLASH = 19,                            // "/"
+        S_LPAREN = 20,                           // "("
+        S_RPAREN = 21,                           // ")"
+        S_EQUALS = 22,                           // "=="
+        S_NOT_EQUALS = 23,                       // "!="
+        S_LT = 24,                               // "<"
+        S_LTE = 25,                              // "<="
+        S_GT = 26,                               // ">"
+        S_GTE = 27,                              // ">="
+        S_IDENTIFIER = 28,                       // "identifier"
+        S_NUMBER = 29,                           // "number"
+        S_NEG = 30,                              // NEG
+        S_YYACCEPT = 31,                         // $accept
+        S_program = 32,                          // program
+        S_statements = 33,                       // statements
+        S_assignment = 34,                       // assignment
+        S_continue_statement = 35,               // continue_statement
+        S_for_statement = 36,                    // for_statement
+        S_if_statement = 37,                     // if_statement
+        S_wait_statement = 38,                   // wait_statement
+        S_exp = 39,                              // exp
+        S_bool_exp = 40                          // bool_exp
       };
     };
 
@@ -653,6 +656,7 @@ namespace yy {
         value.move< float > (std::move (that.value));
         break;
 
+      case symbol_kind::S_ALL: // "all"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
@@ -836,6 +840,7 @@ switch (yykind)
         value.template destroy< float > ();
         break;
 
+      case symbol_kind::S_ALL: // "all"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
@@ -998,7 +1003,7 @@ switch (yykind)
 #endif
       {
 #if !defined _MSC_VER || defined __clang__
-        YY_ASSERT ((token::TOK_ASSIGN <= tok && tok <= token::TOK_GTE));
+        YY_ASSERT ((token::TOK_ALL <= tok && tok <= token::TOK_GTE));
 #endif
       }
     };
@@ -1092,6 +1097,21 @@ switch (yykind)
       make_YYUNDEF (const location_type& l)
       {
         return symbol_type (token::TOK_YYUNDEF, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_ALL (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_ALL, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_ALL (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_ALL, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1843,7 +1863,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 105,     ///< Last index in yytable_.
+      yylast_ = 106,     ///< Last index in yytable_.
       yynnts_ = 10,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
@@ -1895,6 +1915,7 @@ switch (yykind)
         value.copy< float > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_ALL: // "all"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
@@ -1978,6 +1999,7 @@ switch (yykind)
         value.move< float > (YY_MOVE (s.value));
         break;
 
+      case symbol_kind::S_ALL: // "all"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
@@ -2071,7 +2093,7 @@ switch (yykind)
 
 
 } // yy
-#line 2075 "parser.hh"
+#line 2097 "parser.hh"
 
 
 

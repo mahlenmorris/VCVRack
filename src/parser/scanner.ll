@@ -122,6 +122,7 @@ blank [ \t\r]
 "<="       return yy::parser::make_LTE    (yytext, loc);
 ">"        return yy::parser::make_GT     (yytext, loc);
 ">="       return yy::parser::make_GTE    (yytext, loc);
+"all"      return yy::parser::make_ALL    (yytext, loc);
 "continue" return yy::parser::make_CONTINUE  (yytext, loc);
 "else"     return yy::parser::make_ELSE   (yytext, loc);
 "endif"    return yy::parser::make_ENDIF  (yytext, loc);
