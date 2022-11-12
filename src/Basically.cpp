@@ -80,7 +80,6 @@ struct Basically : Module {
     configLight(RUN_LIGHT, "Lit when code is currently running.");
     configLight(GOOD_LIGHT, "Lit when code compiles and could run.");
 
-
     // If user decides to "bypass" the module, we can just pass IN -> OUT.
     // TODO: reconsider this Bypass behavior.
     configBypass(IN1_INPUT, OUT1_OUTPUT);
@@ -102,9 +101,10 @@ struct Basically : Module {
 
   void dataFromJson(json_t* rootJ) override {
     json_t* textJ = json_object_get(rootJ, "text");
-		if (textJ)
+		if (textJ) {
 			text = json_string_value(textJ);
-		dirty = true;
+  		dirty = true;
+    }
   }
 
   void ResetToProgramStart() {
@@ -303,6 +303,36 @@ struct Basically : Module {
   PCode::State state;
 };
 
+// Adds support for undo/redo in the text field where people type programs.
+struct TextEditAction : history::ModuleAction {
+  std::string old_text;
+  std::string new_text;
+
+  TextEditAction(int64_t id, std::string oldText, std::string newText) {
+    moduleId = id;
+    name = "edit code";
+    old_text = oldText;
+    new_text = newText;
+  }
+  void undo() override {
+    Basically *module = dynamic_cast<Basically*>(APP->engine->getModule(moduleId));
+    if (module) {
+      module->text = this->old_text;
+      module->dirty = true;  // Tell UI it needs to reload 'text'.
+      module->user_has_changed = true;  // Tell compiler it needs to re-evaluate 'text'.
+    }
+  }
+
+  void redo() override {
+    Basically *module = dynamic_cast<Basically*>(APP->engine->getModule(moduleId));
+    if (module) {
+      module->text = this->new_text;
+      module->dirty = true;  // Tell UI it needs to reload 'text'.
+      module->user_has_changed = true;  // Tell compiler it needs to re-evaluate 'text'.
+    }
+  }
+};
+
 struct BasicallyTextField : LedDisplayTextField {
 	Basically* module;
 
@@ -402,7 +432,14 @@ struct BasicallyTextField : LedDisplayTextField {
   // User has updated the text.
 	void onChange(const ChangeEvent& e) override {
 		if (module) {
-			module->text = getText();
+      // Create a ModuleAction so this can undo/redo is aware of it.
+      std::string new_text = getText();
+      // If I don't check this, I get spurious history events.
+      if (module->text != new_text) {
+        APP->history->push(
+          new TextEditAction(module->id, module->text, new_text));
+      }
+			module->text = new_text;
       module->user_has_changed = true;
     }
 	}
