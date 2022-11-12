@@ -30,8 +30,11 @@ void PCodeTranslator::LinesToPCode(const std::vector<Line> &lines,
                                    std::vector<PCode> *new_pcodes) {
   pcodes = new_pcodes;
   pcodes->clear();
+  loops.clear();
+  exits.clear();
+  Exit dummy_exit("dummy", -1);
   for (auto &line : lines) {
-    AddLineToPCode(line);
+    AddLineToPCode(line, dummy_exit);
   }
 }
 
@@ -40,7 +43,8 @@ std::string PCode::to_string() {
     ")";
 }
 
-void PCodeTranslator::AddLineToPCode(const Line &line) {
+void PCodeTranslator::AddLineToPCode(const Line &line,
+                                     const Exit &innermost_loop) {
   switch (line.type) {
     case Line::ASSIGNMENT: {
       pcodes->push_back(PCode::Assignment(line.str1, line.expr1));
@@ -75,6 +79,27 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       }
     }
     break;
+    case Line::EXIT: {
+      // Like a CONTINUE, but different. We place a RELATIVE_JUMP, but we don't
+      // know where to jump to until we've placed the entire loop.
+      // So, the loop will look in 'exits' for any
+      // unfinished EXIT lines it needs to complete.
+      // Add distinct behavior for "exit all".
+      PCode jump_out;
+      jump_out.type = PCode::RELATIVE_JUMP;
+      if (line.str1 == "all") {
+        // Tell program to stop running.
+        jump_out.stop_execution = true;
+        // TODO: I think runner will reset the line to zero.
+        pcodes->push_back(jump_out);
+      } else {
+        Exit this_exit(innermost_loop);
+        this_exit.exit_line_number = pcodes->size();
+        pcodes->push_back(jump_out);
+        exits.push_back(this_exit);
+      }
+    }
+    break;
     case Line::WAIT: {
       pcodes->push_back(PCode::Wait(line.expr1));
     }
@@ -93,7 +118,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       // Add all of the THEN-clause Lines. Note that some of these might
       // also be control-flow Lines of unknown PCode length.
       for (auto &loop_line : line.statements[0].lines) {
-        AddLineToPCode(loop_line);
+        AddLineToPCode(loop_line, innermost_loop);
       }
       pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
     }
@@ -114,7 +139,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       // Add all of the THEN-clause Lines. Note that some of these might
       // also be control-flow Lines of unknown PCode length.
       for (auto &loop_line : line.statements[0].lines) {
-        AddLineToPCode(loop_line);
+        AddLineToPCode(loop_line, innermost_loop);
       }
       // After THEN statements, need to skip over the ELSE statements.
       PCode jump;
@@ -126,7 +151,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
       // Add the ELSE clause.
       for (auto &loop_line : line.statements[1].lines) {
-        AddLineToPCode(loop_line);
+        AddLineToPCode(loop_line, innermost_loop);
       }
       // Finish the jump.
       pcodes->at(jump_position).jump_count = pcodes->size() - jump_position;
@@ -153,8 +178,11 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       int forloop_position = pcodes->size() - 1;
       // Add to stack.
       loops.push_back(Loop("for", forloop_position));
+      // Any "exit for" statements we add must be pointed back to the end of
+      // *this* loop.
+      Exit exit("for", forloop_position);
       for (auto &loop_line : line.statements[0].lines) {
-        AddLineToPCode(loop_line);
+        AddLineToPCode(loop_line, exit);
       }
       // Remove from stack.
       loops.pop_back();  // TODO: confirm it is the "for" item we placed?
@@ -166,7 +194,18 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       jump_back.jump_count = forloop_position - pcodes->size();
       pcodes->push_back(jump_back);
       // Tell the FORLOOP where to go when exiting loop.
-      pcodes->at(forloop_position).jump_count = pcodes->size() - forloop_position;
+      pcodes->at(forloop_position).jump_count =
+          pcodes->size() - forloop_position;
+      // Now resolve any relevant EXIT jumps.
+      for (Exit exit : exits) {
+        if (exit.exit_type == "for" &&
+            exit.loop_start_Line_number == forloop_position) {
+          pcodes->at(exit.exit_line_number).jump_count =
+              pcodes->size() - exit.exit_line_number;
+          // We _could_ erase this item in 'exits', but that invalidates
+          // iterators, so we'll just leave it. It won't get matched again.
+        }
+      }
     }
   }
 }

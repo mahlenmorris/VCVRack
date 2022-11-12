@@ -197,6 +197,7 @@ struct Line {
   enum Type {
     ASSIGNMENT,  // str1 = expr1
     CONTINUE,    // continue str1
+    EXIT,        // exit str1
     FORNEXT,     // for str1 = expr1 to expr2 state1 next
     IFTHEN,      // if bool1 then state1 endif
     IFTHENELSE,  // if bool1 then state1 else state2 endif
@@ -219,10 +220,18 @@ struct Line {
     return line;
   }
 
-  // loop_type is the string identifying the loop type; e.g., "for".
+  // loop_type is the string identifying the loop type; e.g., "for" or "all".
   static Line Continue(const std::string &loop_type) {
     Line line;
     line.type = CONTINUE;
+    line.str1 = loop_type;
+    return line;
+  }
+
+  // loop_type is the string identifying the loop type; e.g., "for" or "all".
+  static Line Exit(const std::string &loop_type) {
+    Line line;
+    line.type = EXIT;
     line.str1 = loop_type;
     return line;
   }

@@ -68,10 +68,11 @@
 %nterm <BoolExpression> bool_exp
 %nterm <Statements> statements
 %nterm <Line> assignment
-%nterm <Line> wait_statement
-%nterm <Line> if_statement
-%nterm <Line> for_statement
 %nterm <Line> continue_statement
+%nterm <Line> exit_statement
+%nterm <Line> for_statement
+%nterm <Line> if_statement
+%nterm <Line> wait_statement
 
 %printer { yyo << $$; } <*>;
 
@@ -85,6 +86,7 @@ statements:
   %empty                     {}
 | statements assignment           { $$ = $1.add($2); }
 | statements continue_statement   { $$ = $1.add($2); }
+| statements exit_statement       { $$ = $1.add($2); }
 | statements for_statement        { $$ = $1.add($2); }
 | statements if_statement         { $$ = $1.add($2); }
 | statements wait_statement       { $$ = $1.add($2); }
@@ -95,6 +97,10 @@ assignment:
 continue_statement:
   "continue" "for"      { $$ = Line::Continue($2); }
 | "continue" "all"      { $$ = Line::Continue($2); }
+
+exit_statement:
+  "exit" "for"          { $$ = Line::Exit($2); }
+| "exit" "all"          { $$ = Line::Exit($2); }
 
 for_statement:
   "for" assignment "to" exp statements "next"  { $$ = Line::ForNext($2, $4, Expression::Number(1.0), $5); }

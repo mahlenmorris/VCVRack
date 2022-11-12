@@ -419,6 +419,7 @@ namespace yy {
 
       // assignment
       // continue_statement
+      // exit_statement
       // for_statement
       // if_statement
       // wait_statement
@@ -590,11 +591,12 @@ namespace yy {
         S_statements = 33,                       // statements
         S_assignment = 34,                       // assignment
         S_continue_statement = 35,               // continue_statement
-        S_for_statement = 36,                    // for_statement
-        S_if_statement = 37,                     // if_statement
-        S_wait_statement = 38,                   // wait_statement
-        S_exp = 39,                              // exp
-        S_bool_exp = 40                          // bool_exp
+        S_exit_statement = 36,                   // exit_statement
+        S_for_statement = 37,                    // for_statement
+        S_if_statement = 38,                     // if_statement
+        S_wait_statement = 39,                   // wait_statement
+        S_exp = 40,                              // exp
+        S_bool_exp = 41                          // bool_exp
       };
     };
 
@@ -642,6 +644,7 @@ namespace yy {
 
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_continue_statement: // continue_statement
+      case symbol_kind::S_exit_statement: // exit_statement
       case symbol_kind::S_for_statement: // for_statement
       case symbol_kind::S_if_statement: // if_statement
       case symbol_kind::S_wait_statement: // wait_statement
@@ -826,6 +829,7 @@ switch (yykind)
 
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_continue_statement: // continue_statement
+      case symbol_kind::S_exit_statement: // exit_statement
       case symbol_kind::S_for_statement: // for_statement
       case symbol_kind::S_if_statement: // if_statement
       case symbol_kind::S_wait_statement: // wait_statement
@@ -1863,8 +1867,8 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 106,     ///< Last index in yytable_.
-      yynnts_ = 10,  ///< Number of nonterminal symbols.
+      yylast_ = 108,     ///< Last index in yytable_.
+      yynnts_ = 11,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
 
@@ -1901,6 +1905,7 @@ switch (yykind)
 
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_continue_statement: // continue_statement
+      case symbol_kind::S_exit_statement: // exit_statement
       case symbol_kind::S_for_statement: // for_statement
       case symbol_kind::S_if_statement: // if_statement
       case symbol_kind::S_wait_statement: // wait_statement
@@ -1985,6 +1990,7 @@ switch (yykind)
 
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_continue_statement: // continue_statement
+      case symbol_kind::S_exit_statement: // exit_statement
       case symbol_kind::S_for_statement: // for_statement
       case symbol_kind::S_if_statement: // if_statement
       case symbol_kind::S_wait_statement: // wait_statement
@@ -2093,7 +2099,7 @@ switch (yykind)
 
 
 } // yy
-#line 2097 "parser.hh"
+#line 2103 "parser.hh"
 
 
 

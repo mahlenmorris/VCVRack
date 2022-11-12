@@ -241,8 +241,13 @@ struct Basically : Module {
         }
         break;
         case PCode::RELATIVE_JUMP: {
-          // This just specifies a jump of the current_line.
-          current_line += pcode->jump_count;
+          if (pcode->stop_execution) {
+            ResetToProgramStart();
+            running = false;  // TODO: is the the correct behavior for all Styles?
+          } else {
+            // This just specifies a jump of the current_line.
+            current_line += pcode->jump_count;
+          }
         }
         break;
         case PCode::FORLOOP: {

@@ -35,8 +35,11 @@ struct PCode {
   BoolExpression bool1;
   int jump_count;
   float step, limit;
+  bool stop_execution;
   enum State {
     NONE,
+    // When a FORLOOP line receives ENTERING_FOR_LOOP, it must Compute() the
+    // step and limit values.
     ENTERING_FOR_LOOP
   };
   State state;
@@ -44,6 +47,7 @@ struct PCode {
   PCode() {
     jump_count = 0;
     state = NONE;
+    stop_execution = false;
   };
 
   static PCode Assignment(const std::string str1, const Expression &expr1);
@@ -51,11 +55,24 @@ struct PCode {
   std::string to_string();
 };
 
+// Helps resolve "continue" statements.
 struct Loop {
-  const std::string loop_type;
-  const int line_number;
-
+  const std::string loop_type;  // E.g., "for".
+  const int line_number;        // Position of the loop start (e.g., FORLOOP).
   Loop(const std::string type, int line) : loop_type{type}, line_number{line} {}
+};
+
+// Helps resolve "exit" statements.
+struct Exit {
+  const std::string exit_type;  // E.g., "for".
+  // Position of the unfinished RELATIVE_JUMP for this "exit" statement.
+  int exit_line_number;
+  // Position of the loop start (e.g., FORLOOP) that this exit statement
+  // is exiting.
+  const int loop_start_Line_number;
+  // When an Exit is created, we typically do not know the exit_line_number.
+  Exit(const std::string type, int loop_pos) : exit_type{type},
+      loop_start_Line_number{loop_pos} {}
 };
 
 // Class for turning nested vector of Line objects into a flat vector of
@@ -65,10 +82,11 @@ public:
   PCodeTranslator() { }
   void LinesToPCode(const std::vector<Line> &lines, std::vector<PCode> *pcodes);
 private:
-  void AddLineToPCode(const Line &line);
+  void AddLineToPCode(const Line &line, const Exit &innermost_loop);
 
   std::vector<PCode> *pcodes;
   std::vector<Loop> loops;
+  std::vector<Exit> exits;
 };
 
 #endif // PCODE_H
