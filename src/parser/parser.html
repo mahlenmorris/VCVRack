@@ -80,8 +80,8 @@
   <a name="rule_14" id="rule_14"> 14</a> <span class="i">for_statement</span> → <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <span class="i">statements</span> <b>"next"</b>
   <a name="rule_15" id="rule_15"> 15</a>               | <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <b>"step"</b> <span class="i">exp</span> <span class="i">statements</span> <b>"next"</b>
 
-  <a name="rule_16" id="rule_16"> 16</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"endif"</b>
-  <a name="rule_17" id="rule_17"> 17</a>              | <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"endif"</b>
+  <a name="rule_16" id="rule_16"> 16</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
+  <a name="rule_17" id="rule_17"> 17</a>              | <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
 
   <a name="rule_18" id="rule_18"> 18</a> <span class="i">wait_statement</span> → <b>"wait"</b> <span class="i">exp</span>
 
@@ -111,7 +111,7 @@
   <li><b>"="</b> &lt;std::string&gt; (259) <a href="#rule_9">9</a></li>
   <li><b>"continue"</b> &lt;std::string&gt; (260) <a href="#rule_10">10</a> <a href="#rule_11">11</a></li>
   <li><b>"else"</b> &lt;std::string&gt; (261) <a href="#rule_17">17</a></li>
-  <li><b>"endif"</b> &lt;std::string&gt; (262) <a href="#rule_16">16</a> <a href="#rule_17">17</a></li>
+  <li><b>"end"</b> &lt;std::string&gt; (262) <a href="#rule_16">16</a> <a href="#rule_17">17</a></li>
   <li><b>"exit"</b> &lt;std::string&gt; (263) <a href="#rule_12">12</a> <a href="#rule_13">13</a></li>
   <li><b>"for"</b> &lt;std::string&gt; (264) <a href="#rule_10">10</a> <a href="#rule_12">12</a> <a href="#rule_14">14</a> <a href="#rule_15">15</a></li>
   <li><b>"if"</b> &lt;std::string&gt; (265) <a href="#rule_16">16</a> <a href="#rule_17">17</a></li>
@@ -248,8 +248,8 @@
   <a href="#rule_13"> 13</a>                | <span class="dot">•</span> <b>"exit"</b> <b>"all"</b>
   <a href="#rule_14"> 14</a> <span class="i">for_statement</span> → <span class="dot">•</span> <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <span class="i">statements</span> <b>"next"</b>
   <a href="#rule_15"> 15</a>               | <span class="dot">•</span> <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <b>"step"</b> <span class="i">exp</span> <span class="i">statements</span> <b>"next"</b>
-  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"endif"</b>
-  <a href="#rule_17"> 17</a>              | <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"endif"</b>
+  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
+  <a href="#rule_17"> 17</a>              | <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
   <a href="#rule_18"> 18</a> <span class="i">wait_statement</span> → <span class="dot">•</span> <b>"wait"</b> <span class="i">exp</span>
 
     $end          <a href="#state_4">shift, and go to state 4</a>
@@ -313,8 +313,8 @@
 
 <h3><a name="state_8" id="state_8"></a>State 8</h3>
 
-<p class="pre">  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="dot">•</span> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"endif"</b>
-  <a href="#rule_17"> 17</a>              | <b>"if"</b> <span class="dot">•</span> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"endif"</b>
+<p class="pre">  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="dot">•</span> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
+  <a href="#rule_17"> 17</a>              | <b>"if"</b> <span class="dot">•</span> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
   <a href="#rule_19"> 19</a> <span class="i">exp</span> → <span class="dot">•</span> <b>"number"</b>
   <a href="#rule_20"> 20</a>     | <span class="dot">•</span> <b>"-"</b> <b>"number"</b>
   <a href="#rule_21"> 21</a>     | <span class="dot">•</span> <b>"identifier"</b>
@@ -512,15 +512,15 @@
 
 <h3><a name="state_27" id="state_27"></a>State 27</h3>
 
-<p class="pre">  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="i">bool_exp</span> <span class="dot">•</span> <b>"then"</b> <span class="i">statements</span> <b>"endif"</b>
-  <a href="#rule_17"> 17</a>              | <b>"if"</b> <span class="i">bool_exp</span> <span class="dot">•</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"endif"</b>
+<p class="pre">  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="i">bool_exp</span> <span class="dot">•</span> <b>"then"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
+  <a href="#rule_17"> 17</a>              | <b>"if"</b> <span class="i">bool_exp</span> <span class="dot">•</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
 
     "then"  <a href="#state_43">shift, and go to state 43</a>
 </p>
 
 <h3><a name="state_28" id="state_28"></a>State 28</h3>
 
-<p class="pre">  <a href="#rule_18"> 18</a> <span class="i">wait_statement</span> → <b>"wait"</b> <span class="i">exp</span> <span class="dot">•</span>  [$end, "continue", "else", "endif", "exit", "for", "if", "next", "wait", "identifier"]
+<p class="pre">  <a href="#rule_18"> 18</a> <span class="i">wait_statement</span> → <b>"wait"</b> <span class="i">exp</span> <span class="dot">•</span>  [$end, "continue", "else", "end", "exit", "for", "if", "next", "wait", "identifier"]
   <a href="#rule_22"> 22</a> <span class="i">exp</span> → <span class="i">exp</span> <span class="dot">•</span> <b>"+"</b> <span class="i">exp</span>
   <a href="#rule_23"> 23</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"-"</b> <span class="i">exp</span>
   <a href="#rule_24"> 24</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"*"</b> <span class="i">exp</span>
@@ -806,8 +806,8 @@
   <a href="#rule_6">  6</a>            | <span class="dot">•</span> <span class="i">statements</span> <span class="i">for_statement</span>
   <a href="#rule_7">  7</a>            | <span class="dot">•</span> <span class="i">statements</span> <span class="i">if_statement</span>
   <a href="#rule_8">  8</a>            | <span class="dot">•</span> <span class="i">statements</span> <span class="i">wait_statement</span>
-  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="dot">•</span> <span class="i">statements</span> <b>"endif"</b>
-  <a href="#rule_17"> 17</a>              | <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="dot">•</span> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"endif"</b>
+  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="dot">•</span> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
+  <a href="#rule_17"> 17</a>              | <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="dot">•</span> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
 
     $default  <a href="#rule_2">reduce using rule 2</a> (statements)
 
@@ -816,7 +816,7 @@
 
 <h3><a name="state_44" id="state_44"></a>State 44</h3>
 
-<p class="pre">  <a href="#rule_9">  9</a> <span class="i">assignment</span> → <b>"identifier"</b> <b>"="</b> <span class="i">exp</span> <span class="dot">•</span>  [$end, "continue", "else", "endif", "exit", "for", "if", "next", "to", "wait", "identifier"]
+<p class="pre">  <a href="#rule_9">  9</a> <span class="i">assignment</span> → <b>"identifier"</b> <b>"="</b> <span class="i">exp</span> <span class="dot">•</span>  [$end, "continue", "else", "end", "exit", "for", "if", "next", "to", "wait", "identifier"]
   <a href="#rule_22"> 22</a> <span class="i">exp</span> → <span class="i">exp</span> <span class="dot">•</span> <b>"+"</b> <span class="i">exp</span>
   <a href="#rule_23"> 23</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"-"</b> <span class="i">exp</span>
   <a href="#rule_24"> 24</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"*"</b> <span class="i">exp</span>
@@ -868,7 +868,7 @@
 
 <p class="pre">  <a href="#rule_22"> 22</a> <span class="i">exp</span> → <span class="i">exp</span> <span class="dot">•</span> <b>"+"</b> <span class="i">exp</span>
   <a href="#rule_23"> 23</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"-"</b> <span class="i">exp</span>
-  <a href="#rule_23"> 23</a>     | <span class="i">exp</span> <b>"-"</b> <span class="i">exp</span> <span class="dot">•</span>  [$end, "continue", "else", "endif", "exit", "for", "if", "next", "then", "to", "step", "wait", "-", "+", ")", "==", "!=", "&lt;", "&lt;=", "&gt;", "&gt;=", "identifier"]
+  <a href="#rule_23"> 23</a>     | <span class="i">exp</span> <b>"-"</b> <span class="i">exp</span> <span class="dot">•</span>  [$end, "continue", "else", "end", "exit", "for", "if", "next", "then", "to", "step", "wait", "-", "+", ")", "==", "!=", "&lt;", "&lt;=", "&gt;", "&gt;=", "identifier"]
   <a href="#rule_24"> 24</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"*"</b> <span class="i">exp</span>
   <a href="#rule_25"> 25</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"/"</b> <span class="i">exp</span>
 
@@ -886,7 +886,7 @@
 <h3><a name="state_48" id="state_48"></a>State 48</h3>
 
 <p class="pre">  <a href="#rule_22"> 22</a> <span class="i">exp</span> → <span class="i">exp</span> <span class="dot">•</span> <b>"+"</b> <span class="i">exp</span>
-  <a href="#rule_22"> 22</a>     | <span class="i">exp</span> <b>"+"</b> <span class="i">exp</span> <span class="dot">•</span>  [$end, "continue", "else", "endif", "exit", "for", "if", "next", "then", "to", "step", "wait", "-", "+", ")", "==", "!=", "&lt;", "&lt;=", "&gt;", "&gt;=", "identifier"]
+  <a href="#rule_22"> 22</a>     | <span class="i">exp</span> <b>"+"</b> <span class="i">exp</span> <span class="dot">•</span>  [$end, "continue", "else", "end", "exit", "for", "if", "next", "then", "to", "step", "wait", "-", "+", ")", "==", "!=", "&lt;", "&lt;=", "&gt;", "&gt;=", "identifier"]
   <a href="#rule_23"> 23</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"-"</b> <span class="i">exp</span>
   <a href="#rule_24"> 24</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"*"</b> <span class="i">exp</span>
   <a href="#rule_25"> 25</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"/"</b> <span class="i">exp</span>
@@ -907,7 +907,7 @@
 <p class="pre">  <a href="#rule_22"> 22</a> <span class="i">exp</span> → <span class="i">exp</span> <span class="dot">•</span> <b>"+"</b> <span class="i">exp</span>
   <a href="#rule_23"> 23</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"-"</b> <span class="i">exp</span>
   <a href="#rule_24"> 24</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"*"</b> <span class="i">exp</span>
-  <a href="#rule_24"> 24</a>     | <span class="i">exp</span> <b>"*"</b> <span class="i">exp</span> <span class="dot">•</span>  [$end, "continue", "else", "endif", "exit", "for", "if", "next", "then", "to", "step", "wait", "-", "+", "*", "/", ")", "==", "!=", "&lt;", "&lt;=", "&gt;", "&gt;=", "identifier"]
+  <a href="#rule_24"> 24</a>     | <span class="i">exp</span> <b>"*"</b> <span class="i">exp</span> <span class="dot">•</span>  [$end, "continue", "else", "end", "exit", "for", "if", "next", "then", "to", "step", "wait", "-", "+", "*", "/", ")", "==", "!=", "&lt;", "&lt;=", "&gt;", "&gt;=", "identifier"]
   <a href="#rule_25"> 25</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"/"</b> <span class="i">exp</span>
 
     $default  <a href="#rule_24">reduce using rule 24</a> (exp)
@@ -924,7 +924,7 @@
   <a href="#rule_23"> 23</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"-"</b> <span class="i">exp</span>
   <a href="#rule_24"> 24</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"*"</b> <span class="i">exp</span>
   <a href="#rule_25"> 25</a>     | <span class="i">exp</span> <span class="dot">•</span> <b>"/"</b> <span class="i">exp</span>
-  <a href="#rule_25"> 25</a>     | <span class="i">exp</span> <b>"/"</b> <span class="i">exp</span> <span class="dot">•</span>  [$end, "continue", "else", "endif", "exit", "for", "if", "next", "then", "to", "step", "wait", "-", "+", "*", "/", ")", "==", "!=", "&lt;", "&lt;=", "&gt;", "&gt;=", "identifier"]
+  <a href="#rule_25"> 25</a>     | <span class="i">exp</span> <b>"/"</b> <span class="i">exp</span> <span class="dot">•</span>  [$end, "continue", "else", "end", "exit", "for", "if", "next", "then", "to", "step", "wait", "-", "+", "*", "/", ")", "==", "!=", "&lt;", "&lt;=", "&gt;", "&gt;=", "identifier"]
 
     $default  <a href="#rule_25">reduce using rule 25</a> (exp)
 
@@ -1045,15 +1045,15 @@
   <a href="#rule_13"> 13</a>                | <span class="dot">•</span> <b>"exit"</b> <b>"all"</b>
   <a href="#rule_14"> 14</a> <span class="i">for_statement</span> → <span class="dot">•</span> <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <span class="i">statements</span> <b>"next"</b>
   <a href="#rule_15"> 15</a>               | <span class="dot">•</span> <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <b>"step"</b> <span class="i">exp</span> <span class="i">statements</span> <b>"next"</b>
-  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"endif"</b>
-  <a href="#rule_16"> 16</a>              | <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <span class="dot">•</span> <b>"endif"</b>
-  <a href="#rule_17"> 17</a>              | <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"endif"</b>
-  <a href="#rule_17"> 17</a>              | <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <span class="dot">•</span> <b>"else"</b> <span class="i">statements</span> <b>"endif"</b>
+  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
+  <a href="#rule_16"> 16</a>              | <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <span class="dot">•</span> <b>"end"</b> <b>"if"</b>
+  <a href="#rule_17"> 17</a>              | <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
+  <a href="#rule_17"> 17</a>              | <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <span class="dot">•</span> <b>"else"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
   <a href="#rule_18"> 18</a> <span class="i">wait_statement</span> → <span class="dot">•</span> <b>"wait"</b> <span class="i">exp</span>
 
     "continue"    <a href="#state_5">shift, and go to state 5</a>
     "else"        <a href="#state_60">shift, and go to state 60</a>
-    "endif"       <a href="#state_61">shift, and go to state 61</a>
+    "end"         <a href="#state_61">shift, and go to state 61</a>
     "exit"        <a href="#state_6">shift, and go to state 6</a>
     "for"         <a href="#state_7">shift, and go to state 7</a>
     "if"          <a href="#state_8">shift, and go to state 8</a>
@@ -1104,8 +1104,8 @@
   <a href="#rule_14"> 14</a> <span class="i">for_statement</span> → <span class="dot">•</span> <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <span class="i">statements</span> <b>"next"</b>
   <a href="#rule_14"> 14</a>               | <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <span class="i">statements</span> <span class="dot">•</span> <b>"next"</b>
   <a href="#rule_15"> 15</a>               | <span class="dot">•</span> <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <b>"step"</b> <span class="i">exp</span> <span class="i">statements</span> <b>"next"</b>
-  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"endif"</b>
-  <a href="#rule_17"> 17</a>              | <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"endif"</b>
+  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
+  <a href="#rule_17"> 17</a>              | <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
   <a href="#rule_18"> 18</a> <span class="i">wait_statement</span> → <span class="dot">•</span> <b>"wait"</b> <span class="i">exp</span>
 
     "continue"    <a href="#state_5">shift, and go to state 5</a>
@@ -1133,7 +1133,7 @@
   <a href="#rule_6">  6</a>            | <span class="dot">•</span> <span class="i">statements</span> <span class="i">for_statement</span>
   <a href="#rule_7">  7</a>            | <span class="dot">•</span> <span class="i">statements</span> <span class="i">if_statement</span>
   <a href="#rule_8">  8</a>            | <span class="dot">•</span> <span class="i">statements</span> <span class="i">wait_statement</span>
-  <a href="#rule_17"> 17</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="dot">•</span> <span class="i">statements</span> <b>"endif"</b>
+  <a href="#rule_17"> 17</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="dot">•</span> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
 
     $default  <a href="#rule_2">reduce using rule 2</a> (statements)
 
@@ -1142,9 +1142,9 @@
 
 <h3><a name="state_61" id="state_61"></a>State 61</h3>
 
-<p class="pre">  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"endif"</b> <span class="dot">•</span>
+<p class="pre">  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"end"</b> <span class="dot">•</span> <b>"if"</b>
 
-    $default  <a href="#rule_16">reduce using rule 16</a> (if_statement)
+    "if"  <a href="#state_65">shift, and go to state 65</a>
 </p>
 
 <h3><a name="state_62" id="state_62"></a>State 62</h3>
@@ -1169,7 +1169,7 @@
 
     $default  <a href="#rule_2">reduce using rule 2</a> (statements)
 
-    statements  <a href="#state_65">go to state 65</a>
+    statements  <a href="#state_66">go to state 66</a>
 </p>
 
 <h3><a name="state_63" id="state_63"></a>State 63</h3>
@@ -1194,13 +1194,13 @@
   <a href="#rule_13"> 13</a>                | <span class="dot">•</span> <b>"exit"</b> <b>"all"</b>
   <a href="#rule_14"> 14</a> <span class="i">for_statement</span> → <span class="dot">•</span> <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <span class="i">statements</span> <b>"next"</b>
   <a href="#rule_15"> 15</a>               | <span class="dot">•</span> <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <b>"step"</b> <span class="i">exp</span> <span class="i">statements</span> <b>"next"</b>
-  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"endif"</b>
-  <a href="#rule_17"> 17</a>              | <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"endif"</b>
-  <a href="#rule_17"> 17</a>              | <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <span class="dot">•</span> <b>"endif"</b>
+  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
+  <a href="#rule_17"> 17</a>              | <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
+  <a href="#rule_17"> 17</a>              | <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <span class="dot">•</span> <b>"end"</b> <b>"if"</b>
   <a href="#rule_18"> 18</a> <span class="i">wait_statement</span> → <span class="dot">•</span> <b>"wait"</b> <span class="i">exp</span>
 
     "continue"    <a href="#state_5">shift, and go to state 5</a>
-    "endif"       <a href="#state_66">shift, and go to state 66</a>
+    "end"         <a href="#state_67">shift, and go to state 67</a>
     "exit"        <a href="#state_6">shift, and go to state 6</a>
     "for"         <a href="#state_7">shift, and go to state 7</a>
     "if"          <a href="#state_8">shift, and go to state 8</a>
@@ -1217,6 +1217,13 @@
 
 <h3><a name="state_65" id="state_65"></a>State 65</h3>
 
+<p class="pre">  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b> <span class="dot">•</span>
+
+    $default  <a href="#rule_16">reduce using rule 16</a> (if_statement)
+</p>
+
+<h3><a name="state_66" id="state_66"></a>State 66</h3>
+
 <p class="pre">  <a href="#rule_3">  3</a> <span class="i">statements</span> → <span class="i">statements</span> <span class="dot">•</span> <span class="i">assignment</span>
   <a href="#rule_4">  4</a>            | <span class="i">statements</span> <span class="dot">•</span> <span class="i">continue_statement</span>
   <a href="#rule_5">  5</a>            | <span class="i">statements</span> <span class="dot">•</span> <span class="i">exit_statement</span>
@@ -1231,15 +1238,15 @@
   <a href="#rule_14"> 14</a> <span class="i">for_statement</span> → <span class="dot">•</span> <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <span class="i">statements</span> <b>"next"</b>
   <a href="#rule_15"> 15</a>               | <span class="dot">•</span> <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <b>"step"</b> <span class="i">exp</span> <span class="i">statements</span> <b>"next"</b>
   <a href="#rule_15"> 15</a>               | <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <b>"step"</b> <span class="i">exp</span> <span class="i">statements</span> <span class="dot">•</span> <b>"next"</b>
-  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"endif"</b>
-  <a href="#rule_17"> 17</a>              | <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"endif"</b>
+  <a href="#rule_16"> 16</a> <span class="i">if_statement</span> → <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
+  <a href="#rule_17"> 17</a>              | <span class="dot">•</span> <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b>
   <a href="#rule_18"> 18</a> <span class="i">wait_statement</span> → <span class="dot">•</span> <b>"wait"</b> <span class="i">exp</span>
 
     "continue"    <a href="#state_5">shift, and go to state 5</a>
     "exit"        <a href="#state_6">shift, and go to state 6</a>
     "for"         <a href="#state_7">shift, and go to state 7</a>
     "if"          <a href="#state_8">shift, and go to state 8</a>
-    "next"        <a href="#state_67">shift, and go to state 67</a>
+    "next"        <a href="#state_68">shift, and go to state 68</a>
     "wait"        <a href="#state_9">shift, and go to state 9</a>
     "identifier"  <a href="#state_10">shift, and go to state 10</a>
 
@@ -1251,18 +1258,25 @@
     wait_statement      <a href="#state_16">go to state 16</a>
 </p>
 
-<h3><a name="state_66" id="state_66"></a>State 66</h3>
+<h3><a name="state_67" id="state_67"></a>State 67</h3>
 
-<p class="pre">  <a href="#rule_17"> 17</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"endif"</b> <span class="dot">•</span>
+<p class="pre">  <a href="#rule_17"> 17</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"end"</b> <span class="dot">•</span> <b>"if"</b>
 
-    $default  <a href="#rule_17">reduce using rule 17</a> (if_statement)
+    "if"  <a href="#state_69">shift, and go to state 69</a>
 </p>
 
-<h3><a name="state_67" id="state_67"></a>State 67</h3>
+<h3><a name="state_68" id="state_68"></a>State 68</h3>
 
 <p class="pre">  <a href="#rule_15"> 15</a> <span class="i">for_statement</span> → <b>"for"</b> <span class="i">assignment</span> <b>"to"</b> <span class="i">exp</span> <b>"step"</b> <span class="i">exp</span> <span class="i">statements</span> <b>"next"</b> <span class="dot">•</span>
 
     $default  <a href="#rule_15">reduce using rule 15</a> (for_statement)
+</p>
+
+<h3><a name="state_69" id="state_69"></a>State 69</h3>
+
+<p class="pre">  <a href="#rule_17"> 17</a> <span class="i">if_statement</span> → <b>"if"</b> <span class="i">bool_exp</span> <b>"then"</b> <span class="i">statements</span> <b>"else"</b> <span class="i">statements</span> <b>"end"</b> <b>"if"</b> <span class="dot">•</span>
+
+    $default  <a href="#rule_17">reduce using rule 17</a> (if_statement)
 </p>
 
 <div id="footer"><hr />This document was generated using

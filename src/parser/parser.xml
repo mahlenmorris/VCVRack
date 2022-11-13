@@ -135,7 +135,8 @@
           <symbol>bool_exp</symbol>
           <symbol>&quot;then&quot;</symbol>
           <symbol>statements</symbol>
-          <symbol>&quot;endif&quot;</symbol>
+          <symbol>&quot;end&quot;</symbol>
+          <symbol>&quot;if&quot;</symbol>
         </rhs>
       </rule>
       <rule number="17" usefulness="useful">
@@ -147,7 +148,8 @@
           <symbol>statements</symbol>
           <symbol>&quot;else&quot;</symbol>
           <symbol>statements</symbol>
-          <symbol>&quot;endif&quot;</symbol>
+          <symbol>&quot;end&quot;</symbol>
+          <symbol>&quot;if&quot;</symbol>
         </rhs>
       </rule>
       <rule number="18" usefulness="useful">
@@ -272,7 +274,7 @@
       <terminal symbol-number="4" token-number="259" name="&quot;=&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="5" token-number="260" name="&quot;continue&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="6" token-number="261" name="&quot;else&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="7" token-number="262" name="&quot;endif&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="7" token-number="262" name="&quot;end&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="8" token-number="263" name="&quot;exit&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="9" token-number="264" name="&quot;for&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="10" token-number="265" name="&quot;if&quot;" type="std::string" usefulness="useful"/>
@@ -823,7 +825,7 @@
             <symbol>$end</symbol>
             <symbol>&quot;continue&quot;</symbol>
             <symbol>&quot;else&quot;</symbol>
-            <symbol>&quot;endif&quot;</symbol>
+            <symbol>&quot;end&quot;</symbol>
             <symbol>&quot;exit&quot;</symbol>
             <symbol>&quot;for&quot;</symbol>
             <symbol>&quot;if&quot;</symbol>
@@ -1232,7 +1234,7 @@
             <symbol>$end</symbol>
             <symbol>&quot;continue&quot;</symbol>
             <symbol>&quot;else&quot;</symbol>
-            <symbol>&quot;endif&quot;</symbol>
+            <symbol>&quot;end&quot;</symbol>
             <symbol>&quot;exit&quot;</symbol>
             <symbol>&quot;for&quot;</symbol>
             <symbol>&quot;if&quot;</symbol>
@@ -1328,7 +1330,7 @@
             <symbol>$end</symbol>
             <symbol>&quot;continue&quot;</symbol>
             <symbol>&quot;else&quot;</symbol>
-            <symbol>&quot;endif&quot;</symbol>
+            <symbol>&quot;end&quot;</symbol>
             <symbol>&quot;exit&quot;</symbol>
             <symbol>&quot;for&quot;</symbol>
             <symbol>&quot;if&quot;</symbol>
@@ -1378,7 +1380,7 @@
             <symbol>$end</symbol>
             <symbol>&quot;continue&quot;</symbol>
             <symbol>&quot;else&quot;</symbol>
-            <symbol>&quot;endif&quot;</symbol>
+            <symbol>&quot;end&quot;</symbol>
             <symbol>&quot;exit&quot;</symbol>
             <symbol>&quot;for&quot;</symbol>
             <symbol>&quot;if&quot;</symbol>
@@ -1431,7 +1433,7 @@
             <symbol>$end</symbol>
             <symbol>&quot;continue&quot;</symbol>
             <symbol>&quot;else&quot;</symbol>
-            <symbol>&quot;endif&quot;</symbol>
+            <symbol>&quot;end&quot;</symbol>
             <symbol>&quot;exit&quot;</symbol>
             <symbol>&quot;for&quot;</symbol>
             <symbol>&quot;if&quot;</symbol>
@@ -1482,7 +1484,7 @@
             <symbol>$end</symbol>
             <symbol>&quot;continue&quot;</symbol>
             <symbol>&quot;else&quot;</symbol>
-            <symbol>&quot;endif&quot;</symbol>
+            <symbol>&quot;end&quot;</symbol>
             <symbol>&quot;exit&quot;</symbol>
             <symbol>&quot;for&quot;</symbol>
             <symbol>&quot;if&quot;</symbol>
@@ -1708,7 +1710,7 @@
         <transitions>
           <transition type="shift" symbol="&quot;continue&quot;" state="5"/>
           <transition type="shift" symbol="&quot;else&quot;" state="60"/>
-          <transition type="shift" symbol="&quot;endif&quot;" state="61"/>
+          <transition type="shift" symbol="&quot;end&quot;" state="61"/>
           <transition type="shift" symbol="&quot;exit&quot;" state="6"/>
           <transition type="shift" symbol="&quot;for&quot;" state="7"/>
           <transition type="shift" symbol="&quot;if&quot;" state="8"/>
@@ -1823,11 +1825,11 @@
         <item rule-number="16" dot="5"/>
       </itemset>
       <actions>
-        <transitions/>
+        <transitions>
+          <transition type="shift" symbol="&quot;if&quot;" state="65"/>
+        </transitions>
         <errors/>
-        <reductions>
-          <reduction symbol="$default" rule="16" enabled="true"/>
-        </reductions>
+        <reductions/>
       </actions>
       <solved-conflicts/>
     </state>
@@ -1863,7 +1865,7 @@
           <transition type="shift" symbol="&quot;+&quot;" state="34"/>
           <transition type="shift" symbol="&quot;*&quot;" state="35"/>
           <transition type="shift" symbol="&quot;/&quot;" state="36"/>
-          <transition type="goto" symbol="statements" state="65"/>
+          <transition type="goto" symbol="statements" state="66"/>
         </transitions>
         <errors/>
         <reductions>
@@ -1910,7 +1912,7 @@
       <actions>
         <transitions>
           <transition type="shift" symbol="&quot;continue&quot;" state="5"/>
-          <transition type="shift" symbol="&quot;endif&quot;" state="66"/>
+          <transition type="shift" symbol="&quot;end&quot;" state="67"/>
           <transition type="shift" symbol="&quot;exit&quot;" state="6"/>
           <transition type="shift" symbol="&quot;for&quot;" state="7"/>
           <transition type="shift" symbol="&quot;if&quot;" state="8"/>
@@ -1930,6 +1932,20 @@
     </state>
 
     <state number="65">
+      <itemset>
+        <item rule-number="16" dot="6"/>
+      </itemset>
+      <actions>
+        <transitions/>
+        <errors/>
+        <reductions>
+          <reduction symbol="$default" rule="16" enabled="true"/>
+        </reductions>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="66">
       <itemset>
         <item rule-number="3" dot="1"/>
         <item rule-number="4" dot="1"/>
@@ -1955,7 +1971,7 @@
           <transition type="shift" symbol="&quot;exit&quot;" state="6"/>
           <transition type="shift" symbol="&quot;for&quot;" state="7"/>
           <transition type="shift" symbol="&quot;if&quot;" state="8"/>
-          <transition type="shift" symbol="&quot;next&quot;" state="67"/>
+          <transition type="shift" symbol="&quot;next&quot;" state="68"/>
           <transition type="shift" symbol="&quot;wait&quot;" state="9"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="10"/>
           <transition type="goto" symbol="assignment" state="11"/>
@@ -1971,21 +1987,21 @@
       <solved-conflicts/>
     </state>
 
-    <state number="66">
+    <state number="67">
       <itemset>
         <item rule-number="17" dot="7"/>
       </itemset>
       <actions>
-        <transitions/>
+        <transitions>
+          <transition type="shift" symbol="&quot;if&quot;" state="69"/>
+        </transitions>
         <errors/>
-        <reductions>
-          <reduction symbol="$default" rule="17" enabled="true"/>
-        </reductions>
+        <reductions/>
       </actions>
       <solved-conflicts/>
     </state>
 
-    <state number="67">
+    <state number="68">
       <itemset>
         <item rule-number="15" dot="8"/>
       </itemset>
@@ -1994,6 +2010,20 @@
         <errors/>
         <reductions>
           <reduction symbol="$default" rule="15" enabled="true"/>
+        </reductions>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="69">
+      <itemset>
+        <item rule-number="17" dot="8"/>
+      </itemset>
+      <actions>
+        <transitions/>
+        <errors/>
+        <reductions>
+          <reduction symbol="$default" rule="17" enabled="true"/>
         </reductions>
       </actions>
       <solved-conflicts/>

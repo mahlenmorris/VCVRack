@@ -125,7 +125,7 @@ blank [ \t\r]
 "all"      return yy::parser::make_ALL    (yytext, loc);
 "continue" return yy::parser::make_CONTINUE  (yytext, loc);
 "else"     return yy::parser::make_ELSE   (yytext, loc);
-"endif"    return yy::parser::make_ENDIF  (yytext, loc);
+"end"      return yy::parser::make_END    (yytext, loc);
 "exit"     return yy::parser::make_EXIT   (yytext, loc);
 "for"      return yy::parser::make_FOR    (yytext, loc);
 "if"       return yy::parser::make_IF     (yytext, loc);

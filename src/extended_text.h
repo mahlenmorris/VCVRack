@@ -28,6 +28,9 @@ struct LineColumn {
   int column;
 
   LineColumn(int line, int column) : line{line}, column{column} {}
+  bool operator==(const LineColumn a) {
+    return (a.line == line) && (a.column == column);
+  }
 };
 
 struct ExtendedText {

@@ -237,7 +237,7 @@ namespace yy {
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
-      case symbol_kind::S_ENDIF: // "endif"
+      case symbol_kind::S_END: // "end"
       case symbol_kind::S_EXIT: // "exit"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
@@ -306,7 +306,7 @@ namespace yy {
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
-      case symbol_kind::S_ENDIF: // "endif"
+      case symbol_kind::S_END: // "end"
       case symbol_kind::S_EXIT: // "exit"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
@@ -375,7 +375,7 @@ namespace yy {
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
-      case symbol_kind::S_ENDIF: // "endif"
+      case symbol_kind::S_END: // "end"
       case symbol_kind::S_EXIT: // "exit"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
@@ -443,7 +443,7 @@ namespace yy {
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
-      case symbol_kind::S_ENDIF: // "endif"
+      case symbol_kind::S_END: // "end"
       case symbol_kind::S_EXIT: // "exit"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
@@ -527,7 +527,7 @@ namespace yy {
 #line 528 "parser.cc"
         break;
 
-      case symbol_kind::S_ENDIF: // "endif"
+      case symbol_kind::S_END: // "end"
 #line 77 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
 #line 534 "parser.cc"
@@ -986,7 +986,7 @@ namespace yy {
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
-      case symbol_kind::S_ENDIF: // "endif"
+      case symbol_kind::S_END: // "end"
       case symbol_kind::S_EXIT: // "exit"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
@@ -1120,15 +1120,15 @@ namespace yy {
 #line 1121 "parser.cc"
     break;
 
-  case 17: // if_statement: "if" bool_exp "then" statements "endif"
+  case 17: // if_statement: "if" bool_exp "then" statements "end" "if"
 #line 110 "parser.yy"
-                                                             { yylhs.value.as < Line > () = Line::IfThen(yystack_[3].value.as < BoolExpression > (), yystack_[1].value.as < Statements > ()); }
+                                                                { yylhs.value.as < Line > () = Line::IfThen(yystack_[4].value.as < BoolExpression > (), yystack_[2].value.as < Statements > ()); }
 #line 1127 "parser.cc"
     break;
 
-  case 18: // if_statement: "if" bool_exp "then" statements "else" statements "endif"
+  case 18: // if_statement: "if" bool_exp "then" statements "else" statements "end" "if"
 #line 111 "parser.yy"
-                                                             { yylhs.value.as < Line > () = Line::IfThenElse(yystack_[5].value.as < BoolExpression > (), yystack_[3].value.as < Statements > (), yystack_[1].value.as < Statements > ()); }
+                                                                { yylhs.value.as < Line > () = Line::IfThenElse(yystack_[6].value.as < BoolExpression > (), yystack_[4].value.as < Statements > (), yystack_[2].value.as < Statements > ()); }
 #line 1133 "parser.cc"
     break;
 
@@ -1408,7 +1408,7 @@ namespace yy {
     static const char *const yy_sname[] =
     {
     "end of file", "error", "invalid token", "all", "=", "continue", "else",
-  "endif", "exit", "for", "if", "next", "then", "to", "step", "wait", "-",
+  "end", "exit", "for", "if", "next", "then", "to", "step", "wait", "-",
   "+", "*", "/", "(", ")", "==", "!=", "<", "<=", ">", ">=", "identifier",
   "number", "NEG", "$accept", "program", "statements", "assignment",
   "continue_statement", "exit_statement", "for_statement", "if_statement",
@@ -1694,7 +1694,7 @@ namespace yy {
      -10,   -18,    83,   -10,   -10,   -10,   -10,   -10,   -10,   -10,
      -10,   -10,   -10,   -18,    26,    89,   -18,   -14,   -14,   -18,
      -18,    26,    26,    26,    26,    26,    26,    31,   -10,    42,
-     -18,   -18,    26,   -18,    53,    64,   -18,   -18
+     -18,    44,    26,   -18,    53,   -18,    64,    45,   -18,   -18
   };
 
   const signed char
@@ -1706,13 +1706,13 @@ namespace yy {
        0,    21,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     3,    10,     3,    27,    24,    23,    25,
       26,    32,    33,    28,    29,    30,    31,     0,     0,     0,
-       3,    17,     3,    15,     0,     0,    18,    16
+       3,     0,     3,    15,     0,    17,     0,     0,    16,    18
   };
 
   const signed char
   parser::yypgoto_[] =
   {
-     -18,   -18,    22,    47,   -18,   -18,   -18,   -18,   -18,    -9,
+     -18,   -18,    22,    49,   -18,   -18,   -18,   -18,   -18,    -9,
      -18
   };
 
@@ -1731,10 +1731,10 @@ namespace yy {
       44,    45,     9,    30,    47,    48,    49,    50,    51,    52,
       53,    54,    55,    56,    31,    10,     5,    60,    61,     6,
        7,     8,    33,    34,    35,    36,     9,     5,    43,    62,
-       6,     7,     8,    63,    21,     0,     0,     9,     5,    10,
-      66,     6,     7,     8,     0,    57,     0,    59,     9,     5,
-      10,     0,     6,     7,     8,    67,     0,     0,     0,     9,
-       0,    10,    64,     0,    65,     0,     0,    33,    34,    35,
+       6,     7,     8,    63,    65,    69,    21,     9,     5,    10,
+      67,     6,     7,     8,     0,    57,     0,    59,     9,     5,
+      10,     0,     6,     7,     8,    68,     0,     0,     0,     9,
+       0,    10,    64,     0,    66,     0,     0,    33,    34,    35,
       36,     0,    10,    37,    38,    39,    40,    41,    42,    33,
       34,    35,    36,    58,    46,    33,    34,    35,    36
   };
@@ -1747,7 +1747,7 @@ namespace yy {
       29,    30,    15,    13,    33,    34,    35,    36,    37,    38,
       39,    40,    41,    42,    29,    28,     5,     6,     7,     8,
        9,    10,    16,    17,    18,    19,    15,     5,    12,    58,
-       8,     9,    10,    11,     7,    -1,    -1,    15,     5,    28,
+       8,     9,    10,    11,    10,    10,     7,    15,     5,    28,
        7,     8,     9,    10,    -1,    43,    -1,    45,    15,     5,
       28,    -1,     8,     9,    10,    11,    -1,    -1,    -1,    15,
       -1,    28,    60,    -1,    62,    -1,    -1,    16,    17,    18,
@@ -1764,7 +1764,7 @@ namespace yy {
       13,    29,    40,    16,    17,    18,    19,    22,    23,    24,
       25,    26,    27,    12,    40,    40,    21,    40,    40,    40,
       40,    40,    40,    40,    40,    40,    40,    33,    14,    33,
-       6,     7,    40,    11,    33,    33,     7,    11
+       6,     7,    40,    11,    33,    10,    33,     7,    11,    10
   };
 
   const signed char
@@ -1780,7 +1780,7 @@ namespace yy {
   parser::yyr2_[] =
   {
        0,     2,     2,     0,     2,     2,     2,     2,     2,     2,
-       3,     2,     2,     2,     2,     6,     8,     5,     7,     2,
+       3,     2,     2,     2,     2,     6,     8,     6,     8,     2,
        1,     2,     1,     3,     3,     3,     3,     3,     3,     3,
        3,     3,     3,     3
   };

@@ -1,6 +1,24 @@
 # VCV Rack plugin by Stochastic Telegraph
 Modules for use with VCV Rack 2.0, with an emphasis on generative and self-regulating structure. Exploring the region between random and static.
 
+## BASICally
+A simple, somewhat familiar procedural programming language within the
+context of Rack. Can act as a sequencer or VCO or LFO's, and perform math on inputs to produce multiple outputs. Useful both for quickly trying out a transformation and efficient enough to use anywhere.
+
+### Examples
+
+## Uses
+
+## The Language
+
+## Slightly Surprising Details
+
+### Controls
+
+### Menu Options
+
+### Bypass Behavior
+
 ## Drifter
 Creates sequences of values that can slowly (or quickly) vary, like a series of
 points doing random walks connected into a series.

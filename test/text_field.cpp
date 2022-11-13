@@ -31,11 +31,18 @@ TEST(TextFieldTest, ColumnTest)
   ExtendedText et;
   et.ProcessUpdatedText(std::string("a line\nanother\n"));
   ASSERT_EQ(3, et.line_map.size());
-  EXPECT_EQ(0, et.GetCurrentColumn(0));
-  EXPECT_EQ(1, et.GetCurrentColumn(1));
-  EXPECT_EQ(0, et.GetCurrentColumn(7));
-  EXPECT_EQ(7, et.GetCurrentColumn(14));
-  EXPECT_EQ(0, et.GetCurrentColumn(15));
+  LineColumn a(0, 0);
+  EXPECT_TRUE(a == et.GetCurrentLineColumn(0));
+  a.column = 1;
+  EXPECT_TRUE(a == et.GetCurrentLineColumn(1));
+  a.line = 1;
+  a.column = 0;
+  EXPECT_TRUE(a == et.GetCurrentLineColumn(7));
+  a.column = 7;
+  EXPECT_TRUE(a == et.GetCurrentLineColumn(14));
+  a.line = 2;
+  a.column = 0;
+  EXPECT_TRUE(a == et.GetCurrentLineColumn(15));
 
   EXPECT_EQ(0, et.GetCursorForLineColumn(0, 0));
   EXPECT_EQ(1, et.GetCursorForLineColumn(0, 1));

@@ -39,7 +39,7 @@
   ASSIGN  "="
   CONTINUE "continue"
   ELSE    "else"
-  ENDIF   "endif"
+  END     "end"
   EXIT    "exit"
   FOR     "for"
   IF      "if"
@@ -107,8 +107,8 @@ for_statement:
 | "for" assignment "to" exp "step" exp statements "next" { $$ = Line::ForNext($2, $4, $6, $7); }
 
 if_statement:
-  "if" bool_exp "then" statements "endif"                    { $$ = Line::IfThen($2, $4); }
-| "if" bool_exp "then" statements "else" statements "endif"  { $$ = Line::IfThenElse($2, $4, $6); }
+  "if" bool_exp "then" statements "end" "if"                    { $$ = Line::IfThen($2, $4); }
+| "if" bool_exp "then" statements "else" statements "end" "if"  { $$ = Line::IfThenElse($2, $4, $6); }
 
 wait_statement:
   "wait" exp            { $$ = Line::Wait($2); }

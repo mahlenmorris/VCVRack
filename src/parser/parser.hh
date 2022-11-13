@@ -435,7 +435,7 @@ namespace yy {
       // "="
       // "continue"
       // "else"
-      // "endif"
+      // "end"
       // "exit"
       // "for"
       // "if"
@@ -513,7 +513,7 @@ namespace yy {
     TOK_ASSIGN = 4,                // "="
     TOK_CONTINUE = 5,              // "continue"
     TOK_ELSE = 6,                  // "else"
-    TOK_ENDIF = 7,                 // "endif"
+    TOK_END = 7,                   // "end"
     TOK_EXIT = 8,                  // "exit"
     TOK_FOR = 9,                   // "for"
     TOK_IF = 10,                   // "if"
@@ -562,7 +562,7 @@ namespace yy {
         S_ASSIGN = 4,                            // "="
         S_CONTINUE = 5,                          // "continue"
         S_ELSE = 6,                              // "else"
-        S_ENDIF = 7,                             // "endif"
+        S_END = 7,                               // "end"
         S_EXIT = 8,                              // "exit"
         S_FOR = 9,                               // "for"
         S_IF = 10,                               // "if"
@@ -663,7 +663,7 @@ namespace yy {
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
-      case symbol_kind::S_ENDIF: // "endif"
+      case symbol_kind::S_END: // "end"
       case symbol_kind::S_EXIT: // "exit"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
@@ -848,7 +848,7 @@ switch (yykind)
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
-      case symbol_kind::S_ENDIF: // "endif"
+      case symbol_kind::S_END: // "end"
       case symbol_kind::S_EXIT: // "exit"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
@@ -1166,16 +1166,16 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_ENDIF (std::string v, location_type l)
+      make_END (std::string v, location_type l)
       {
-        return symbol_type (token::TOK_ENDIF, std::move (v), std::move (l));
+        return symbol_type (token::TOK_END, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_ENDIF (const std::string& v, const location_type& l)
+      make_END (const std::string& v, const location_type& l)
       {
-        return symbol_type (token::TOK_ENDIF, v, l);
+        return symbol_type (token::TOK_END, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1924,7 +1924,7 @@ switch (yykind)
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
-      case symbol_kind::S_ENDIF: // "endif"
+      case symbol_kind::S_END: // "end"
       case symbol_kind::S_EXIT: // "exit"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
@@ -2009,7 +2009,7 @@ switch (yykind)
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
-      case symbol_kind::S_ENDIF: // "endif"
+      case symbol_kind::S_END: // "end"
       case symbol_kind::S_EXIT: // "exit"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"

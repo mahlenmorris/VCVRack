@@ -87,44 +87,44 @@ TEST(ParserTest, BooleanTest)
     Driver drv;
     Environment env;
 
-    EXPECT_EQ(0, drv.parse("if 5 > 3 then wait 0 endif"));
+    EXPECT_EQ(0, drv.parse("if 5 > 3 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].bool1.Compute(&env));
     ASSERT_EQ(1, drv.lines[0].statements.size());
 
-    EXPECT_EQ(0, drv.parse("if 5 < 3 then wait 0 endif"));
+    EXPECT_EQ(0, drv.parse("if 5 < 3 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(false, drv.lines[0].bool1.Compute(&env));
     ASSERT_EQ(1, drv.lines[0].statements.size());
 
-    EXPECT_EQ(0, drv.parse("if 3 > 5 then wait 0 endif"));
+    EXPECT_EQ(0, drv.parse("if 3 > 5 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(false, drv.lines[0].bool1.Compute(&env));
     ASSERT_EQ(1, drv.lines[0].statements.size());
 
-    EXPECT_EQ(0, drv.parse("if 3 < 5 then wait 0 endif"));
+    EXPECT_EQ(0, drv.parse("if 3 < 5 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].bool1.Compute(&env));
     ASSERT_EQ(1, drv.lines[0].statements.size());
 
     env.variables["in1"] = 5.0f;
 
-    EXPECT_EQ(0, drv.parse("if in1 > 3 then wait 0 endif"));
+    EXPECT_EQ(0, drv.parse("if in1 > 3 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].bool1.Compute(&env));
     ASSERT_EQ(1, drv.lines[0].statements.size());
 
-    EXPECT_EQ(0, drv.parse("if in1 < 3 then wait 0 endif"));
+    EXPECT_EQ(0, drv.parse("if in1 < 3 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(false, drv.lines[0].bool1.Compute(&env));
     ASSERT_EQ(1, drv.lines[0].statements.size());
 
-    EXPECT_EQ(0, drv.parse("if 3 > in1 then wait 0 endif"));
+    EXPECT_EQ(0, drv.parse("if 3 > in1 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(false, drv.lines[0].bool1.Compute(&env));
     ASSERT_EQ(1, drv.lines[0].statements.size());
 
-    EXPECT_EQ(0, drv.parse("if 3 < in1 then wait 0 endif"));
+    EXPECT_EQ(0, drv.parse("if 3 < in1 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].bool1.Compute(&env));
     ASSERT_EQ(1, drv.lines[0].statements.size());
@@ -135,7 +135,7 @@ TEST(ParserTest, IfThenTest)
     Driver drv;
     Environment env;
 
-    EXPECT_EQ(0, drv.parse("if 5 > 3 then out1 = 5 - 3 endif"));
+    EXPECT_EQ(0, drv.parse("if 5 > 3 then out1 = 5 - 3 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].bool1.Compute(&env));
     ASSERT_EQ(1, drv.lines[0].statements.size());
