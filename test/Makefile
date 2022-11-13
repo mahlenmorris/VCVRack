@@ -29,7 +29,7 @@ CXXFLAGS += -g -Wall -Wextra -pthread
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
-TESTS = test_libs
+TESTS = test_libs text_field
 
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
@@ -74,9 +74,14 @@ VPATH = .:../src/parser
 # A test should link with either gtest.a or
 # gtest_main.a, depending on whether it defines its own main()
 # function.
-
 test_libs.o : $(USER_DIR)/test_libs.cpp ../src/parser/parser.o ../src/parser/scanner.o ../src/parser/driver.o $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/test_libs.cpp
 
 test_libs : test_libs.o ../src/parser/driver.o ../src/parser/parser.o ../src/parser/scanner.o gtest_main.a
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
+
+text_field.o : $(USER_DIR)/text_field.cpp ../src/extended_text.h $(GTEST_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/text_field.cpp
+
+text_field : text_field.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
