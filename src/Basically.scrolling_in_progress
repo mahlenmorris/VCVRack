@@ -338,13 +338,17 @@ struct BasicallyTextField : LedDisplayTextField {
 	Basically* module;
   ExtendedText extended;  // Helper for navigating a long string.
 
+  BasicallyTextField() {
+    extended.Initialize(17);
+  }
+
 	void step() override {
 		LedDisplayTextField::step();
 		if (module && module->dirty) {
       // Text has been changed by the module (not the user).
       // This happens when the module loads.
-      // Index the lines by calling this.
-      extended.ProcessUpdatedText(module->text);
+      std::string dummy;
+      extended.ProcessUpdatedText(&dummy, module->text);
 			setText(module->text);
 			module->dirty = false;
 		}
@@ -381,15 +385,20 @@ struct BasicallyTextField : LedDisplayTextField {
 	void onChange(const ChangeEvent& e) override {
 		if (module) {
       // Create a ModuleAction so this can undo/redo is aware of it.
-      std::string new_text = getText();
+      std::string new_window_text = getText();
       // Sometimes the text isn't actually different. If I don't check
       // this, I get spurious history events.
-      if (module->text != new_text) {
+      // TODO: compare to extended.text_in_window.
+      if (extended.text_in_window != new_window_text) {
+        std::string old_text = module->text;
+        std::string new_text;
+        extended.ProcessUpdatedText(&new_text, new_window_text);
         APP->history->push(
-          new TextEditAction(module->id, module->text, new_text));
-        extended.ProcessUpdatedText(new_text);
-        module->text = new_text;
-        module->user_has_changed = true;
+          new TextEditAction(module->id, old_text, new_text));
+          // NOTE: module->text must always be the complete program, since that
+          // is what gets compiled.
+          module->text = new_text;
+          module->user_has_changed = true;
       }
     }
 	}

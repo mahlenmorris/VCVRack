@@ -3,21 +3,90 @@ Modules for use with VCV Rack 2.0, with an emphasis on generative and self-regul
 
 ## BASICally
 A simple, somewhat familiar procedural programming language within the
-context of Rack. Can act as a sequencer or VCO or LFO's, and perform math on inputs to produce multiple outputs. Useful both for quickly trying out a transformation and efficient enough to use anywhere.
+context of Rack. Can act as a sequencer or VCO or LFO's, or can perform math on inputs to produce multiple outputs. Useful both for quickly trying out a transformation and efficient enough to use anywhere. You can edit the code while it's running!
 
 ### Examples
 
+TODO: Image of simple example.
+
+TODO: Link to patch file with numerous examples.
+
+TODO: video of different examples and their output
+
 ## Uses
 
+### Sequencer
+
+### Logic
+
+### Sample and Hold
+
+### Oscillator
+
+### Utility
+
 ## The Language
+### Setting Variables (i.e., Assignment)
+
+### WAIT Statements
+
+### Comments
+A single quote followed by a space indicate that the rest of the line will
+treated as a comment only to be read by the user.
+
+Some examples:
+
+    out2 = 3.250 ' A C4 note.
+    WAIT 200 ' Pause for 1/5 of a second.
+    ' Look, I'm live-coding!
+    ' Next line can be turned on just by removing the initial quote.
+    ' out1 = 2.3 * in1
+
+### IF Statements
+
+### FOR Loops
+
+### CONTINUE FOR and ALL
+
+### EXIT FOR and ALL
+
+### Other
+All of the OUTn outputs are limited to send values between -10V and 10V.
+Anything higher or lower will be locked down to
+
+BASICally is intended for the very casual user, with the hope that examples
+alone will suffice to suggest how programs can be written. Because of the UI
+limitations, detailed error reporting is difficult to provide.
+
+Since programs are typically *very* short, the language leans towards ease for
+the casual user. For that reason, the following lists a few surprising
+differences from more robust languages:
+* BASICally is case-insensitive. OUT1, oUt1, and out1 all refer to the same
+variable. I would certainly suggest you be consistent within in your programs,
+but the module won't insist on it.
+* Newlines do not matter, *except* that comments always end with a newline.
+* Indentation does not matter. That said, even short programs can benefit from
+the indentation demonstrated in the examples.
 
 ## Slightly Surprising Details
 
+### Implied WAIT 0 Statements
+
 ### Controls
+#### GOOD Light
+
+#### STYLE Knob
+
+#### RUN Button and Input
 
 ### Menu Options
 
 ### Bypass Behavior
+
+### Related Modules
+For strictly mathematical transformations, Frank Buss's [Formula](https://library.vcvrack.com/FrankBuss/Formula) is more straightforward and (at least
+in my brief testing) more CPU efficient module.
+
 
 ## Drifter
 Creates sequences of values that can slowly (or quickly) vary, like a series of

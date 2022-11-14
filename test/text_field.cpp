@@ -50,3 +50,18 @@ TEST(TextFieldTest, ColumnTest)
   EXPECT_EQ(15, et.GetCursorForLineColumn(3, 0));
   EXPECT_EQ(15, et.GetCursorForLineColumn(2, 1));
 }
+
+// Part of in-progress scrolling update that I am deferring for now.
+/*
+TEST(TextFieldTest, MovementTest)
+{
+  ExtendedText et;
+  et.Initialize(3);
+  std:string full_text("1\n2\n3\n4\n5\n6");
+  et.ProcessUpdatedText(full_text));
+  str::string window_text;
+  int new_position = et.RepositionWindow(&window_text, full_text, 0);
+  EXPECT_EQ(0, new_position);
+  EXPECT_EQ("1\n2\n3\n", window_text);
+}
+*/
