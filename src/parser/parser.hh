@@ -429,6 +429,7 @@ namespace yy {
       char dummy4[sizeof (float)];
 
       // "all"
+      // "and"
       // "="
       // "continue"
       // "else"
@@ -437,6 +438,8 @@ namespace yy {
       // "for"
       // "if"
       // "next"
+      // "not"
+      // "or"
       // "then"
       // "to"
       // "step"
@@ -507,33 +510,36 @@ namespace yy {
     TOK_YYerror = 1,               // error
     TOK_YYUNDEF = 2,               // "invalid token"
     TOK_ALL = 3,                   // "all"
-    TOK_ASSIGN = 4,                // "="
-    TOK_CONTINUE = 5,              // "continue"
-    TOK_ELSE = 6,                  // "else"
-    TOK_END = 7,                   // "end"
-    TOK_EXIT = 8,                  // "exit"
-    TOK_FOR = 9,                   // "for"
-    TOK_IF = 10,                   // "if"
-    TOK_NEXT = 11,                 // "next"
-    TOK_THEN = 12,                 // "then"
-    TOK_TO = 13,                   // "to"
-    TOK_STEP = 14,                 // "step"
-    TOK_WAIT = 15,                 // "wait"
-    TOK_MINUS = 16,                // "-"
-    TOK_PLUS = 17,                 // "+"
-    TOK_STAR = 18,                 // "*"
-    TOK_SLASH = 19,                // "/"
-    TOK_LPAREN = 20,               // "("
-    TOK_RPAREN = 21,               // ")"
-    TOK_EQUALS = 22,               // "=="
-    TOK_NOT_EQUALS = 23,           // "!="
-    TOK_LT = 24,                   // "<"
-    TOK_LTE = 25,                  // "<="
-    TOK_GT = 26,                   // ">"
-    TOK_GTE = 27,                  // ">="
-    TOK_IDENTIFIER = 28,           // "identifier"
-    TOK_NUMBER = 29,               // "number"
-    TOK_NEG = 30                   // NEG
+    TOK_AND = 4,                   // "and"
+    TOK_ASSIGN = 5,                // "="
+    TOK_CONTINUE = 6,              // "continue"
+    TOK_ELSE = 7,                  // "else"
+    TOK_END = 8,                   // "end"
+    TOK_EXIT = 9,                  // "exit"
+    TOK_FOR = 10,                  // "for"
+    TOK_IF = 11,                   // "if"
+    TOK_NEXT = 12,                 // "next"
+    TOK_NOT = 13,                  // "not"
+    TOK_OR = 14,                   // "or"
+    TOK_THEN = 15,                 // "then"
+    TOK_TO = 16,                   // "to"
+    TOK_STEP = 17,                 // "step"
+    TOK_WAIT = 18,                 // "wait"
+    TOK_MINUS = 19,                // "-"
+    TOK_PLUS = 20,                 // "+"
+    TOK_STAR = 21,                 // "*"
+    TOK_SLASH = 22,                // "/"
+    TOK_LPAREN = 23,               // "("
+    TOK_RPAREN = 24,               // ")"
+    TOK_EQUALS = 25,               // "=="
+    TOK_NOT_EQUALS = 26,           // "!="
+    TOK_LT = 27,                   // "<"
+    TOK_LTE = 28,                  // "<="
+    TOK_GT = 29,                   // ">"
+    TOK_GTE = 30,                  // ">="
+    TOK_IDENTIFIER = 31,           // "identifier"
+    TOK_NUMBER = 32,               // "number"
+    TOK_NEG = 33                   // NEG
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -550,49 +556,52 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 31, ///< Number of tokens.
+        YYNTOKENS = 34, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
         S_YYUNDEF = 2,                           // "invalid token"
         S_ALL = 3,                               // "all"
-        S_ASSIGN = 4,                            // "="
-        S_CONTINUE = 5,                          // "continue"
-        S_ELSE = 6,                              // "else"
-        S_END = 7,                               // "end"
-        S_EXIT = 8,                              // "exit"
-        S_FOR = 9,                               // "for"
-        S_IF = 10,                               // "if"
-        S_NEXT = 11,                             // "next"
-        S_THEN = 12,                             // "then"
-        S_TO = 13,                               // "to"
-        S_STEP = 14,                             // "step"
-        S_WAIT = 15,                             // "wait"
-        S_MINUS = 16,                            // "-"
-        S_PLUS = 17,                             // "+"
-        S_STAR = 18,                             // "*"
-        S_SLASH = 19,                            // "/"
-        S_LPAREN = 20,                           // "("
-        S_RPAREN = 21,                           // ")"
-        S_EQUALS = 22,                           // "=="
-        S_NOT_EQUALS = 23,                       // "!="
-        S_LT = 24,                               // "<"
-        S_LTE = 25,                              // "<="
-        S_GT = 26,                               // ">"
-        S_GTE = 27,                              // ">="
-        S_IDENTIFIER = 28,                       // "identifier"
-        S_NUMBER = 29,                           // "number"
-        S_NEG = 30,                              // NEG
-        S_YYACCEPT = 31,                         // $accept
-        S_program = 32,                          // program
-        S_statements = 33,                       // statements
-        S_assignment = 34,                       // assignment
-        S_continue_statement = 35,               // continue_statement
-        S_exit_statement = 36,                   // exit_statement
-        S_for_statement = 37,                    // for_statement
-        S_if_statement = 38,                     // if_statement
-        S_wait_statement = 39,                   // wait_statement
-        S_exp = 40                               // exp
+        S_AND = 4,                               // "and"
+        S_ASSIGN = 5,                            // "="
+        S_CONTINUE = 6,                          // "continue"
+        S_ELSE = 7,                              // "else"
+        S_END = 8,                               // "end"
+        S_EXIT = 9,                              // "exit"
+        S_FOR = 10,                              // "for"
+        S_IF = 11,                               // "if"
+        S_NEXT = 12,                             // "next"
+        S_NOT = 13,                              // "not"
+        S_OR = 14,                               // "or"
+        S_THEN = 15,                             // "then"
+        S_TO = 16,                               // "to"
+        S_STEP = 17,                             // "step"
+        S_WAIT = 18,                             // "wait"
+        S_MINUS = 19,                            // "-"
+        S_PLUS = 20,                             // "+"
+        S_STAR = 21,                             // "*"
+        S_SLASH = 22,                            // "/"
+        S_LPAREN = 23,                           // "("
+        S_RPAREN = 24,                           // ")"
+        S_EQUALS = 25,                           // "=="
+        S_NOT_EQUALS = 26,                       // "!="
+        S_LT = 27,                               // "<"
+        S_LTE = 28,                              // "<="
+        S_GT = 29,                               // ">"
+        S_GTE = 30,                              // ">="
+        S_IDENTIFIER = 31,                       // "identifier"
+        S_NUMBER = 32,                           // "number"
+        S_NEG = 33,                              // NEG
+        S_YYACCEPT = 34,                         // $accept
+        S_program = 35,                          // program
+        S_statements = 36,                       // statements
+        S_assignment = 37,                       // assignment
+        S_continue_statement = 38,               // continue_statement
+        S_exit_statement = 39,                   // exit_statement
+        S_for_statement = 40,                    // for_statement
+        S_if_statement = 41,                     // if_statement
+        S_wait_statement = 42,                   // wait_statement
+        S_exp = 43                               // exp
       };
     };
 
@@ -652,6 +661,7 @@ namespace yy {
         break;
 
       case symbol_kind::S_ALL: // "all"
+      case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
@@ -660,6 +670,8 @@ namespace yy {
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
       case symbol_kind::S_NEXT: // "next"
+      case symbol_kind::S_NOT: // "not"
+      case symbol_kind::S_OR: // "or"
       case symbol_kind::S_THEN: // "then"
       case symbol_kind::S_TO: // "to"
       case symbol_kind::S_STEP: // "step"
@@ -819,6 +831,7 @@ switch (yykind)
         break;
 
       case symbol_kind::S_ALL: // "all"
+      case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
@@ -827,6 +840,8 @@ switch (yykind)
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
       case symbol_kind::S_NEXT: // "next"
+      case symbol_kind::S_NOT: // "not"
+      case symbol_kind::S_OR: // "or"
       case symbol_kind::S_THEN: // "then"
       case symbol_kind::S_TO: // "to"
       case symbol_kind::S_STEP: // "step"
@@ -1095,6 +1110,21 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_AND (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_AND, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_AND (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_AND, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_ASSIGN (std::string v, location_type l)
       {
         return symbol_type (token::TOK_ASSIGN, std::move (v), std::move (l));
@@ -1210,6 +1240,36 @@ switch (yykind)
       make_NEXT (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOK_NEXT, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_NOT (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_NOT, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_NOT (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_NOT, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_OR (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_OR, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_OR (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_OR, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1572,7 +1632,7 @@ switch (yykind)
     // Tables.
     // YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
     // STATE-NUM.
-    static const signed char yypact_[];
+    static const short yypact_[];
 
     // YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
     // Performed when YYTABLE does not specify something else to do.  Zero
@@ -1841,7 +1901,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 139,     ///< Last index in yytable_.
+      yylast_ = 204,     ///< Last index in yytable_.
       yynnts_ = 10,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
@@ -1891,6 +1951,7 @@ switch (yykind)
         break;
 
       case symbol_kind::S_ALL: // "all"
+      case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
@@ -1899,6 +1960,8 @@ switch (yykind)
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
       case symbol_kind::S_NEXT: // "next"
+      case symbol_kind::S_NOT: // "not"
+      case symbol_kind::S_OR: // "or"
       case symbol_kind::S_THEN: // "then"
       case symbol_kind::S_TO: // "to"
       case symbol_kind::S_STEP: // "step"
@@ -1972,6 +2035,7 @@ switch (yykind)
         break;
 
       case symbol_kind::S_ALL: // "all"
+      case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
@@ -1980,6 +2044,8 @@ switch (yykind)
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
       case symbol_kind::S_NEXT: // "next"
+      case symbol_kind::S_NOT: // "not"
+      case symbol_kind::S_OR: // "or"
       case symbol_kind::S_THEN: // "then"
       case symbol_kind::S_TO: // "to"
       case symbol_kind::S_STEP: // "step"
@@ -2065,7 +2131,7 @@ switch (yykind)
 
 
 } // yy
-#line 2069 "parser.hh"
+#line 2135 "parser.hh"
 
 
 

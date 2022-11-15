@@ -128,6 +128,38 @@ TEST(ParserTest, BooleanTest)
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].expr1.Compute(&env));
     ASSERT_EQ(1, drv.lines[0].statements.size());
+
+    EXPECT_EQ(0, drv.parse("ok = 3 < in1 and 2"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(1, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("ok = 3 < in1 and 0.0"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(0, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("ok = 3 < in1 and not 0.0"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(1, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("ok = 3 < in1 or 0.0"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(1, drv.lines[0].expr1.Compute(&env));
+
+    // "and" should bind more tightly than "or"
+    EXPECT_EQ(0, drv.parse("ok = 1 == 3 and 3 > 2 or 2 == 2"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(1, drv.lines[0].expr1.Compute(&env));
+    EXPECT_EQ(0, drv.parse("ok = 1 == 3 and (3 > 2 or 2 == 2)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(0, drv.lines[0].expr1.Compute(&env));
+
+    // "not" should bind to "3", not "3 and 3 > 2 or 2 == 2"
+    EXPECT_EQ(0, drv.parse("ok = not 3 and 3 > 2 or 2 == 2"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(1, drv.lines[0].expr1.Compute(&env));
+    EXPECT_EQ(0, drv.parse("ok = not (3 and 3 > 2 or 2 == 2)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(0, drv.lines[0].expr1.Compute(&env));
 }
 
 TEST(ParserTest, IfThenTest)

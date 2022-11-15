@@ -123,6 +123,7 @@ blank [ \t\r]
 ">"        return yy::parser::make_GT     (yytext, loc);
 ">="       return yy::parser::make_GTE    (yytext, loc);
 "all"      return yy::parser::make_ALL    (yytext, loc);
+"and"      return yy::parser::make_AND    (yytext, loc);
 "continue" return yy::parser::make_CONTINUE  (yytext, loc);
 "else"     return yy::parser::make_ELSE   (yytext, loc);
 "end"      return yy::parser::make_END    (yytext, loc);
@@ -130,6 +131,8 @@ blank [ \t\r]
 "for"      return yy::parser::make_FOR    (yytext, loc);
 "if"       return yy::parser::make_IF     (yytext, loc);
 "next"     return yy::parser::make_NEXT   (yytext, loc);
+"not"      return yy::parser::make_NOT    (yytext, loc);
+"or"       return yy::parser::make_OR     (yytext, loc);
 "step"     return yy::parser::make_STEP   (yytext, loc);
 "then"     return yy::parser::make_THEN   (yytext, loc);
 "to"       return yy::parser::make_TO     (yytext, loc);

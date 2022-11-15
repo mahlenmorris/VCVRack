@@ -13,7 +13,8 @@ public:
   enum Type {
     NUMBER,  // 3, 4.5, -283823
     BINOP,   // plus, times
-    VARIABLE
+    VARIABLE, // in1, out1, foo
+    NOT      // not bool
   };
   Type type;
   // Which BinOp is this?
@@ -39,6 +40,7 @@ public:
   static std::map<std::string, Operation> string_to_operation;
   Expression() {}
 
+  static Expression Not(const Expression &expr);
   static Expression Number(float the_value);
   static Expression CreateBinOp(const Expression &lhs,
                                 const std::string &op_string,

@@ -23,6 +23,13 @@ std::map<std::string, Expression::Operation> Expression::string_to_operation = {
   {"or", OR},
 };
 
+Expression Expression::Not(const Expression &expr) {
+  Expression ex;
+  ex.type = NOT;
+  ex.left_right.push_back(expr);
+  return ex;
+}
+
 Expression Expression::Number(float the_value) {
   Expression ex;
   ex.type = NUMBER;
@@ -31,8 +38,8 @@ Expression Expression::Number(float the_value) {
 }
 
 Expression Expression::CreateBinOp(const Expression &lhs,
-                              const std::string &op_string,
-                              const Expression &rhs) {
+                                   const std::string &op_string,
+                                   const Expression &rhs) {
   Expression ex;
   ex.type = BINOP;
   ex.left_right.push_back(lhs);
@@ -59,7 +66,7 @@ Expression::Expression(char * var_name) {
   name = std::string(var_name);
 }
 
-Expression Expression::Variable(char * var_name) {
+Expression Expression::Variable(char* var_name) {
   // Intentionally copying the name.
   return Variable(std::string(var_name).c_str());
 }
@@ -79,6 +86,8 @@ float Expression::Compute(Environment* env) {
         return 0.0f;
       }
     }
+    break;
+    case NOT: return (is_zero(left_right[0].Compute(env)) ? 1.0f : 0.0f);
     default: return 1.2345;
   }
 }
@@ -110,6 +119,8 @@ float Expression::binop_compute(Environment* env) {
   float lhs = left_right[0].Compute(env);
   float rhs = left_right[1].Compute(env);
   switch (operation) {
+    case AND: return !is_zero(lhs) && !is_zero(rhs);
+    case OR: return !is_zero(lhs) || !is_zero(rhs);
     case PLUS: return lhs + rhs;
     case MINUS: return lhs - rhs;
     case TIMES: return lhs * rhs;

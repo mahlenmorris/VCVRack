@@ -36,6 +36,7 @@
 %define api.token.prefix {TOK_}
 %token <std::string>
   ALL     "all"
+  AND     "and"
   ASSIGN  "="
   CONTINUE "continue"
   ELSE    "else"
@@ -44,6 +45,8 @@
   FOR     "for"
   IF      "if"
   NEXT    "next"
+  NOT     "not"
+  OR      "or"
   THEN    "then"
   TO      "to"
   STEP    "step"
@@ -112,14 +115,17 @@ if_statement:
 wait_statement:
   "wait" exp            { $$ = Line::Wait($2); }
 
+%left "or";
+%left "and";
 %left "<" "<=" ">" ">=" "==" "!=";
 %left "+" "-";
 %left "*" "/";
-%precedence NEG;   /* unary minus */
+%precedence NEG;   /* unary minus or "not" */
 
 exp:
   "number"      { $$ = Expression::Number((float) $1); }
 | MINUS "number" %prec NEG { $$ = Expression::Number(-1 * (float) $2);}
+| "not" exp %prec NEG { $$ = Expression::Not($2);}
 | "identifier"  { $$ = Expression::Variable($1); }
 | exp "+" exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
 | exp "-" exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
@@ -131,6 +137,8 @@ exp:
 | exp ">=" exp  { $$ = Expression::CreateBinOp($1, $2, $3); }
 | exp "==" exp  { $$ = Expression::CreateBinOp($1, $2, $3); }
 | exp "!=" exp  { $$ = Expression::CreateBinOp($1, $2, $3); }
+| exp "and" exp { $$ = Expression::CreateBinOp($1, $2, $3); }
+| exp "or" exp  { $$ = Expression::CreateBinOp($1, $2, $3); }
 | "(" exp ")"   { $$ = $2; }
 %%
 
