@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "parser/tree.hh"
+#include "parser/tree.h"
 #include "pcode.h"
 
 PCode PCode::Assignment(const std::string str1, const Expression &expr1) {
@@ -110,7 +110,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       // ...
       PCode new_pcode;
       new_pcode.type = PCode::IFNOT;
-      new_pcode.bool1 = line.bool1;
+      new_pcode.expr1 = line.expr1;
       pcodes->push_back(new_pcode);
       // Need to find this IFNOT PCode later, so I can fill in jump_count
       // after adding all of the statements.
@@ -131,7 +131,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       // else Statements
       PCode ifnot;
       ifnot.type = PCode::IFNOT;
-      ifnot.bool1 = line.bool1;
+      ifnot.expr1 = line.expr1;
       pcodes->push_back(ifnot);
       // Need to find this IFNOT PCode later, so I can fill in jump_count
       // after adding all of the statements.

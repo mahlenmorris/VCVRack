@@ -22,7 +22,7 @@ struct PCode {
   enum Type {
     ASSIGNMENT,  // str1 = expr1
     WAIT,        // wait expr1
-    IFNOT,       // ifnot bool1 jump jump_count
+    IFNOT,       // ifnot expr1 jump jump_count
     RELATIVE_JUMP,  // add jump_count to line_number.
     FORLOOP      // On ENTERING_FOR_LOOP, compute limit (expr1) & step (expr2).
                  // if beyond limit, jump jump_count.
@@ -32,7 +32,6 @@ struct PCode {
   Type type;
   std::string str1;
   Expression expr1, expr2;
-  BoolExpression bool1;
   int jump_count;
   float step, limit;
   bool stop_execution;

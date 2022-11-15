@@ -233,7 +233,8 @@ struct Basically : Module {
         break;
         case PCode::IFNOT: {
           // All this PCode does is determine where to move current_line to.
-          bool expr_val = pcode->bool1.Compute(&environment);
+          bool expr_val = !Expression::is_zero(
+              pcode->expr1.Compute(&environment));
           if (!expr_val) {
             current_line += pcode->jump_count;
           } else {

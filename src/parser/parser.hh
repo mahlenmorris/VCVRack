@@ -48,7 +48,7 @@
 #line 17 "parser.yy"
 
   #include <string>
-  #include "tree.hh"
+  #include "tree.h"
   class Driver;
 
 #line 55 "parser.hh"
@@ -410,12 +410,9 @@ namespace yy {
     /// An auxiliary type to compute the largest semantic type.
     union union_type
     {
-      // bool_exp
-      char dummy1[sizeof (BoolExpression)];
-
       // "identifier"
       // exp
-      char dummy2[sizeof (Expression)];
+      char dummy1[sizeof (Expression)];
 
       // assignment
       // continue_statement
@@ -423,13 +420,13 @@ namespace yy {
       // for_statement
       // if_statement
       // wait_statement
-      char dummy3[sizeof (Line)];
+      char dummy2[sizeof (Line)];
 
       // statements
-      char dummy4[sizeof (Statements)];
+      char dummy3[sizeof (Statements)];
 
       // "number"
-      char dummy5[sizeof (float)];
+      char dummy4[sizeof (float)];
 
       // "all"
       // "="
@@ -456,7 +453,7 @@ namespace yy {
       // "<="
       // ">"
       // ">="
-      char dummy6[sizeof (std::string)];
+      char dummy5[sizeof (std::string)];
     };
 
     /// The size of the largest semantic type.
@@ -595,8 +592,7 @@ namespace yy {
         S_for_statement = 37,                    // for_statement
         S_if_statement = 38,                     // if_statement
         S_wait_statement = 39,                   // wait_statement
-        S_exp = 40,                              // exp
-        S_bool_exp = 41                          // bool_exp
+        S_exp = 40                               // exp
       };
     };
 
@@ -633,10 +629,6 @@ namespace yy {
       {
         switch (this->kind ())
     {
-      case symbol_kind::S_bool_exp: // bool_exp
-        value.move< BoolExpression > (std::move (that.value));
-        break;
-
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.move< Expression > (std::move (that.value));
@@ -706,20 +698,6 @@ namespace yy {
 #else
       basic_symbol (typename Base::kind_type t, const location_type& l)
         : Base (t)
-        , location (l)
-      {}
-#endif
-
-#if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, BoolExpression&& v, location_type&& l)
-        : Base (t)
-        , value (std::move (v))
-        , location (std::move (l))
-      {}
-#else
-      basic_symbol (typename Base::kind_type t, const BoolExpression& v, const location_type& l)
-        : Base (t)
-        , value (v)
         , location (l)
       {}
 #endif
@@ -818,10 +796,6 @@ namespace yy {
         // Value type destructor.
 switch (yykind)
     {
-      case symbol_kind::S_bool_exp: // bool_exp
-        value.template destroy< BoolExpression > ();
-        break;
-
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.template destroy< Expression > ();
@@ -1867,8 +1841,8 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 108,     ///< Last index in yytable_.
-      yynnts_ = 11,  ///< Number of nonterminal symbols.
+      yylast_ = 139,     ///< Last index in yytable_.
+      yynnts_ = 10,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
 
@@ -1894,10 +1868,6 @@ switch (yykind)
   {
     switch (this->kind ())
     {
-      case symbol_kind::S_bool_exp: // bool_exp
-        value.copy< BoolExpression > (YY_MOVE (that.value));
-        break;
-
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.copy< Expression > (YY_MOVE (that.value));
@@ -1979,10 +1949,6 @@ switch (yykind)
     super_type::move (s);
     switch (this->kind ())
     {
-      case symbol_kind::S_bool_exp: // bool_exp
-        value.move< BoolExpression > (YY_MOVE (s.value));
-        break;
-
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.move< Expression > (YY_MOVE (s.value));
@@ -2099,7 +2065,7 @@ switch (yykind)
 
 
 } // yy
-#line 2103 "parser.hh"
+#line 2069 "parser.hh"
 
 
 

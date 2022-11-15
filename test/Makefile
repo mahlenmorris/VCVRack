@@ -74,10 +74,10 @@ VPATH = .:../src/parser
 # A test should link with either gtest.a or
 # gtest_main.a, depending on whether it defines its own main()
 # function.
-test_libs.o : $(USER_DIR)/test_libs.cpp ../src/parser/parser.o ../src/parser/scanner.o ../src/parser/driver.o $(GTEST_HEADERS)
+test_libs.o : $(USER_DIR)/test_libs.cpp ../src/parser/parser.o ../src/parser/scanner.o ../src/parser/driver.o ../src/parser/tree.o $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/test_libs.cpp
 
-test_libs : test_libs.o ../src/parser/driver.o ../src/parser/parser.o ../src/parser/scanner.o gtest_main.a
+test_libs : test_libs.o ../src/parser/driver.o ../src/parser/parser.o ../src/parser/scanner.o ../src/parser/tree.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
 text_field.o : $(USER_DIR)/text_field.cpp ../src/extended_text.h $(GTEST_HEADERS)
