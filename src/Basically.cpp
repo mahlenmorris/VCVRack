@@ -339,6 +339,11 @@ struct BasicallyTextField : LedDisplayTextField {
 	Basically* module;
   ExtendedText extended;  // Helper for navigating a long string.
 
+  BasicallyTextField() {
+    // Bright green! Like an old monitor should be.
+    color = nvgRGB(0x00, 0xff, 0x00);
+  }
+
 	void step() override {
 		LedDisplayTextField::step();
 		if (module && module->dirty) {
