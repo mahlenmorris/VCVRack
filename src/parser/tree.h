@@ -14,7 +14,8 @@ public:
     NUMBER,  // 3, 4.5, -283823
     BINOP,   // plus, times
     VARIABLE, // in1, out1, foo
-    NOT      // not bool
+    NOT,      // not bool
+    ONEARGFUNC // name(left_right[0])
   };
   Type type;
   // Which BinOp is this?
@@ -42,6 +43,8 @@ public:
 
   static Expression Not(const Expression &expr);
   static Expression Number(float the_value);
+  static Expression OneArgFunc(const std::string &func_name,
+                               const Expression &arg1);
   static Expression CreateBinOp(const Expression &lhs,
                                 const std::string &op_string,
                                 const Expression &rhs);

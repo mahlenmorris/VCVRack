@@ -35,21 +35,30 @@
 
 %define api.token.prefix {TOK_}
 %token <std::string>
+  ABS     "abs"
   ALL     "all"
   AND     "and"
   ASSIGN  "="
+  CEILING "ceiling"
+  CLAMP   "clamp"
   CONTINUE "continue"
   ELSE    "else"
   END     "end"
   EXIT    "exit"
+  FLOOR   "floor"
   FOR     "for"
   IF      "if"
+  MAX     "max"
+  MIN     "min"
   NEXT    "next"
   NOT     "not"
   OR      "or"
+  POW     "pow"
+  SIGN    "sign"
+  SIN     "sin"
+  STEP    "step"
   THEN    "then"
   TO      "to"
-  STEP    "step"
   WAIT    "wait"
   MINUS   "-"
   PLUS    "+"
@@ -67,6 +76,7 @@
 
 %token <Expression> IDENTIFIER "identifier"
 %token <float> NUMBER "number"
+%token <std::string> ONEARGFUNC "oneargfunc"
 %nterm <Expression> exp
 %nterm <Statements> statements
 %nterm <Line> assignment
@@ -139,6 +149,7 @@ exp:
 | exp "!=" exp  { $$ = Expression::CreateBinOp($1, $2, $3); }
 | exp "and" exp { $$ = Expression::CreateBinOp($1, $2, $3); }
 | exp "or" exp  { $$ = Expression::CreateBinOp($1, $2, $3); }
+| "oneargfunc" "(" exp ")" { $$ = Expression::OneArgFunc($1, $3); }
 | "(" exp ")"   { $$ = $2; }
 %%
 

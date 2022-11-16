@@ -60,6 +60,48 @@ TEST(ParserTest, SimpleTest)
     EXPECT_FLOAT_EQ(0.5, drv.lines[0].expr1.Compute(&env));
 }
 
+TEST(ParserTest, FunctionTest)
+{
+    Driver drv;
+    Environment env;
+    EXPECT_EQ(0, drv.parse("f = abs(2.3)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(2.3f, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("f = abs(-1.0 * 2.3)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(2.3f, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("f = ceiling(2.3)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(3.0f, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("f = ceiling(-2.3)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(-2.0f, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("f = floor(2.3)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(2.0f, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("f = floor(-2.3)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(-3.0f, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("f = sign(2.3)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(1.0f, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("f = sign(-2.3)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(-1.0f, drv.lines[0].expr1.Compute(&env));
+
+    // sin of 30 degress = 0.5
+    EXPECT_EQ(0, drv.parse("f = sin(30*3.14159265/180)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(0.5f, drv.lines[0].expr1.Compute(&env));
+}
+
 TEST(ParserTest, NegativeTest)
 {
     Driver drv;
