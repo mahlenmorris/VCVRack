@@ -69,15 +69,15 @@ struct Basically : Module {
                   "Run when gate is open"});
     // This has distinct values.
     getParamQuantity(STYLE_PARAM)->snapEnabled = true;
-    configInput(IN1_INPUT, "IN1 input.");
-    configInput(IN2_INPUT, "IN2 input.");
-    configInput(IN3_INPUT, "IN3 input.");
-    configInput(IN4_INPUT, "IN4 input.");
+    configInput(IN1_INPUT, "IN1");
+    configInput(IN2_INPUT, "IN2");
+    configInput(IN3_INPUT, "IN3");
+    configInput(IN4_INPUT, "IN4");
     configInput(RUN_INPUT, "Trigger to start or Gate to start/stop (See Style)");
-    configOutput(OUT1_OUTPUT, "OUT1 output.");
-    configOutput(OUT2_OUTPUT, "OUT2 output.");
-    configOutput(OUT3_OUTPUT, "OUT3 output.");
-    configOutput(OUT4_OUTPUT, "OUT4 output.");
+    configOutput(OUT1_OUTPUT, "OUT1");
+    configOutput(OUT2_OUTPUT, "OUT2");
+    configOutput(OUT3_OUTPUT, "OUT3");
+    configOutput(OUT4_OUTPUT, "OUT4");
     configLight(RUN_LIGHT, "Lit when code is currently running.");
     configLight(GOOD_LIGHT, "Lit when code compiles and could run.");
 
@@ -434,42 +434,42 @@ struct BasicallyWidget : ModuleWidget {
     // Controls.
     // Run button/trigger/gate.
     addInput(createInputCentered<PJ301MPort>(
-        mm2px(Vec(11.07, 103.24)), module, Basically::RUN_INPUT));
+        mm2px(Vec(11.07, 39.64)), module, Basically::RUN_INPUT));
     // Making this a Button and not a Latch means that it pops back up
     // when you let go.
     addParam(createLightParamCentered<VCVLightButton<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(11.07, 90.781)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(11.07, 27.181)),
                                              module, Basically::RUN_PARAM,
                                              Basically::RUN_LIGHT));
     RoundBlackSnapKnob* style_knob = createParamCentered<RoundBlackSnapKnob>(
-        mm2px(Vec(11.07, 114.863)), module, Basically::STYLE_PARAM);
+        mm2px(Vec(11.07, 51.268)), module, Basically::STYLE_PARAM);
     style_knob->minAngle = -0.28f * M_PI;
     style_knob->maxAngle = 0.28f * M_PI;
     addParam(style_knob);
 
     // Data Inputs
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 21.75)),
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 71.351)),
       module, Basically::IN1_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 21.75)),
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 71.351)),
       module, Basically::IN2_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 35.75)),
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 85.35)),
       module, Basically::IN3_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 35.75)),
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 85.35)),
       module, Basically::IN4_INPUT));
 
     // The Outputs
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.496, 52.0)),
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.496, 101.601)),
       module, Basically::OUT1_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.645, 52.0)),
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.645, 101.601)),
       module, Basically::OUT2_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.496, 66.0)),
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.496, 115.601)),
       module, Basically::OUT3_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.645, 66.0)),
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.645, 115.601)),
       module, Basically::OUT4_OUTPUT));
 
     // Lights
     addChild(createLightCentered<MediumLight<GreenLight>>(
-      mm2px(Vec(11.07, 81.293)), module, Basically::GOOD_LIGHT));
+      mm2px(Vec(11.07, 17.693)), module, Basically::GOOD_LIGHT));
 
   }
 };
