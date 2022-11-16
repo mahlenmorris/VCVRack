@@ -181,13 +181,19 @@ struct Basically : Module {
       break;
     }
 
+    if (text.empty()) {
+      // User erasing all text means stop running.
+      running = false;
+    }
+
     // Update environment with current inputs.
     // If we're just waiting this tick, nothing will read the environment, so
     // no point in updating it.
-    if (ticks_remaining < 2) {
+    if (running && ticks_remaining < 2) {
       for (auto input : in_list) {
         if (inputs[input.second].isConnected()) {
-          environment.variables[input.first] = inputs[input.second].getVoltage();
+          environment.variables[input.first] =
+              inputs[input.second].getVoltage();
         }
       }
     }

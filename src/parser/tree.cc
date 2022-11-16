@@ -23,6 +23,18 @@ std::map<std::string, Expression::Operation> Expression::string_to_operation = {
   {"or", OR},
 };
 
+double my_sign(double arg) {
+  return (std::signbit(arg) ? -1.0f : 1.0f);
+}
+
+std::map<std::string, double (*)(double)> Expression::string_to_onearg_func = {
+  {"abs", &std::abs},
+  {"ceiling", &ceil},
+  {"floor", &floor},
+  {"sign", &my_sign},
+  {"sin", &sin}
+};
+
 Expression Expression::Not(const Expression &expr) {
   Expression ex;
   ex.type = NOT;
@@ -41,7 +53,7 @@ Expression Expression::OneArgFunc(const std::string &func_name,
                                   const Expression &arg1) {
   Expression ex;
   ex.type = ONEARGFUNC;
-  ex.name = func_name;
+  ex.func1 = string_to_onearg_func.at(func_name);
   ex.left_right.push_back(arg1);
   return ex;
 }
@@ -98,15 +110,7 @@ float Expression::Compute(Environment* env) {
     break;
     case NOT: return (is_zero(left_right[0].Compute(env)) ? 1.0f : 0.0f);
     case ONEARGFUNC: {
-      float arg1 = left_right[0].Compute(env);
-      // TODO: do this more efficiently.
-      if (name == "abs") return std::abs(arg1);
-      if (name == "ceiling") return ceil(arg1);
-      if (name == "floor") return floor(arg1);
-      if (name == "sign") return (std::signbit(arg1) ? -1.0f : 1.0f);
-      if (name == "sin") return sin(arg1);
-      // TODO: Hey, shouldn't happen!
-      return -0.98765f;
+      return func1(left_right[0].Compute(env));
     }
     default: return 1.2345;
   }

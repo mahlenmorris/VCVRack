@@ -15,7 +15,7 @@ public:
     BINOP,   // plus, times
     VARIABLE, // in1, out1, foo
     NOT,      // not bool
-    ONEARGFUNC // name(left_right[0])
+    ONEARGFUNC // func1(left_right[0])
   };
   Type type;
   // Which BinOp is this?
@@ -36,9 +36,11 @@ public:
   Operation operation;
   float float_value;
   std::string name;
+  double (*func1)(double);
   std::vector<Expression> left_right;
 
   static std::map<std::string, Operation> string_to_operation;
+  static std::map<std::string, double (*)(double)> string_to_onearg_func;
   Expression() {}
 
   static Expression Not(const Expression &expr);
