@@ -94,6 +94,7 @@
 id    [a-zA-Z][a-zA-Z_0-9]*
 oneargfunc "abs"|"ceiling"|"floor"|"sign"|"sin"
 twoargfunc "max"|"min"|"mod"|"pow"
+comparison "<"|"<="|">"|">="|"=="|"!="
 float ([0-9]*[.])?[0-9]+
 blank [ \t\r]
 
@@ -118,12 +119,6 @@ blank [ \t\r]
 "("        return yy::parser::make_LPAREN (yytext, loc);
 ")"        return yy::parser::make_RPAREN (yytext, loc);
 "="        return yy::parser::make_ASSIGN (yytext, loc);
-"=="       return yy::parser::make_EQUALS (yytext, loc);
-"!="       return yy::parser::make_NOT_EQUALS (yytext, loc);
-"<"        return yy::parser::make_LT     (yytext, loc);
-"<="       return yy::parser::make_LTE    (yytext, loc);
-">"        return yy::parser::make_GT     (yytext, loc);
-">="       return yy::parser::make_GTE    (yytext, loc);
 ","        return yy::parser::make_COMMA  (yytext, loc);
 "all"      return yy::parser::make_ALL    (yytext, loc);
 "and"      return yy::parser::make_AND    (yytext, loc);
@@ -144,6 +139,7 @@ blank [ \t\r]
 {float}    return make_NUMBER (yytext, loc);
 {oneargfunc} return yy::parser::make_ONEARGFUNC (yytext, loc);
 {twoargfunc} return yy::parser::make_TWOARGFUNC (yytext, loc);
+{comparison} return yy::parser::make_COMPARISON (yytext, loc);
 {id}       return yy::parser::make_IDENTIFIER (yytext, loc);
 .          {
              throw yy::parser::syntax_error

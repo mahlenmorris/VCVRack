@@ -66,12 +66,6 @@
   SLASH   "/"
   LPAREN  "("
   RPAREN  ")"
-  EQUALS  "=="
-  NOT_EQUALS "!="
-  LT      "<"
-  LTE     "<="
-  GT      ">"
-  GTE     ">="
   COMMA   ","
 ;
 
@@ -79,6 +73,7 @@
 %token <float> NUMBER "number"
 %token <std::string> ONEARGFUNC "oneargfunc"
 %token <std::string> TWOARGFUNC "twoargfunc"
+%token <std::string> COMPARISON "comparison"
 %nterm <Expression> exp
 %nterm <Statements> statements
 %nterm <Line> assignment
@@ -129,7 +124,7 @@ wait_statement:
 
 %left "or";
 %left "and";
-%left "<" "<=" ">" ">=" "==" "!=";
+%left COMPARISON;
 %left "+" "-";
 %left "*" "/";
 %precedence NEG;   /* unary minus or "not" */
@@ -143,12 +138,7 @@ exp:
 | exp "-" exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
 | exp "*" exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
 | exp "/" exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
-| exp "<" exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
-| exp "<=" exp  { $$ = Expression::CreateBinOp($1, $2, $3); }
-| exp ">" exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
-| exp ">=" exp  { $$ = Expression::CreateBinOp($1, $2, $3); }
-| exp "==" exp  { $$ = Expression::CreateBinOp($1, $2, $3); }
-| exp "!=" exp  { $$ = Expression::CreateBinOp($1, $2, $3); }
+| exp COMPARISON exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
 | exp "and" exp { $$ = Expression::CreateBinOp($1, $2, $3); }
 | exp "or" exp  { $$ = Expression::CreateBinOp($1, $2, $3); }
 | "oneargfunc" "(" exp ")" { $$ = Expression::OneArgFunc($1, $3); }

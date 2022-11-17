@@ -222,6 +222,14 @@ TEST(ParserTest, BooleanTest)
     EXPECT_EQ(0, drv.parse("ok = not (3 and 3 > 2 or 2 == 2)"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(0, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("ok = 1 == 1 and 2 <= 2 and 3 >= 3"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(1, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("ok = 1 != 1 or 2 < 2 or 3 > 3"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(0, drv.lines[0].expr1.Compute(&env));
 }
 
 TEST(ParserTest, IfThenTest)

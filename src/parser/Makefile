@@ -5,6 +5,7 @@ BASE = calc++
 BISON = bison
 CXX = g++
 FLEX = flex
+BISONFLAGS = -Wcounterexamples
 
 all: $(BASE)
 

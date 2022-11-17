@@ -459,15 +459,10 @@ namespace yy {
       // "/"
       // "("
       // ")"
-      // "=="
-      // "!="
-      // "<"
-      // "<="
-      // ">"
-      // ">="
       // ","
       // "oneargfunc"
       // "twoargfunc"
+      // "comparison"
       char dummy5[sizeof (std::string)];
     };
 
@@ -552,18 +547,13 @@ namespace yy {
     TOK_SLASH = 31,                // "/"
     TOK_LPAREN = 32,               // "("
     TOK_RPAREN = 33,               // ")"
-    TOK_EQUALS = 34,               // "=="
-    TOK_NOT_EQUALS = 35,           // "!="
-    TOK_LT = 36,                   // "<"
-    TOK_LTE = 37,                  // "<="
-    TOK_GT = 38,                   // ">"
-    TOK_GTE = 39,                  // ">="
-    TOK_COMMA = 40,                // ","
-    TOK_IDENTIFIER = 41,           // "identifier"
-    TOK_NUMBER = 42,               // "number"
-    TOK_ONEARGFUNC = 43,           // "oneargfunc"
-    TOK_TWOARGFUNC = 44,           // "twoargfunc"
-    TOK_NEG = 45                   // NEG
+    TOK_COMMA = 34,                // ","
+    TOK_IDENTIFIER = 35,           // "identifier"
+    TOK_NUMBER = 36,               // "number"
+    TOK_ONEARGFUNC = 37,           // "oneargfunc"
+    TOK_TWOARGFUNC = 38,           // "twoargfunc"
+    TOK_COMPARISON = 39,           // "comparison"
+    TOK_NEG = 40                   // NEG
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -580,7 +570,7 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 46, ///< Number of tokens.
+        YYNTOKENS = 41, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -616,28 +606,23 @@ namespace yy {
         S_SLASH = 31,                            // "/"
         S_LPAREN = 32,                           // "("
         S_RPAREN = 33,                           // ")"
-        S_EQUALS = 34,                           // "=="
-        S_NOT_EQUALS = 35,                       // "!="
-        S_LT = 36,                               // "<"
-        S_LTE = 37,                              // "<="
-        S_GT = 38,                               // ">"
-        S_GTE = 39,                              // ">="
-        S_COMMA = 40,                            // ","
-        S_IDENTIFIER = 41,                       // "identifier"
-        S_NUMBER = 42,                           // "number"
-        S_ONEARGFUNC = 43,                       // "oneargfunc"
-        S_TWOARGFUNC = 44,                       // "twoargfunc"
-        S_NEG = 45,                              // NEG
-        S_YYACCEPT = 46,                         // $accept
-        S_program = 47,                          // program
-        S_statements = 48,                       // statements
-        S_assignment = 49,                       // assignment
-        S_continue_statement = 50,               // continue_statement
-        S_exit_statement = 51,                   // exit_statement
-        S_for_statement = 52,                    // for_statement
-        S_if_statement = 53,                     // if_statement
-        S_wait_statement = 54,                   // wait_statement
-        S_exp = 55                               // exp
+        S_COMMA = 34,                            // ","
+        S_IDENTIFIER = 35,                       // "identifier"
+        S_NUMBER = 36,                           // "number"
+        S_ONEARGFUNC = 37,                       // "oneargfunc"
+        S_TWOARGFUNC = 38,                       // "twoargfunc"
+        S_COMPARISON = 39,                       // "comparison"
+        S_NEG = 40,                              // NEG
+        S_YYACCEPT = 41,                         // $accept
+        S_program = 42,                          // program
+        S_statements = 43,                       // statements
+        S_assignment = 44,                       // assignment
+        S_continue_statement = 45,               // continue_statement
+        S_exit_statement = 46,                   // exit_statement
+        S_for_statement = 47,                    // for_statement
+        S_if_statement = 48,                     // if_statement
+        S_wait_statement = 49,                   // wait_statement
+        S_exp = 50                               // exp
       };
     };
 
@@ -727,15 +712,10 @@ namespace yy {
       case symbol_kind::S_SLASH: // "/"
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
-      case symbol_kind::S_EQUALS: // "=="
-      case symbol_kind::S_NOT_EQUALS: // "!="
-      case symbol_kind::S_LT: // "<"
-      case symbol_kind::S_LTE: // "<="
-      case symbol_kind::S_GT: // ">"
-      case symbol_kind::S_GTE: // ">="
       case symbol_kind::S_COMMA: // ","
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
+      case symbol_kind::S_COMPARISON: // "comparison"
         value.move< std::string > (std::move (that.value));
         break;
 
@@ -909,15 +889,10 @@ switch (yykind)
       case symbol_kind::S_SLASH: // "/"
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
-      case symbol_kind::S_EQUALS: // "=="
-      case symbol_kind::S_NOT_EQUALS: // "!="
-      case symbol_kind::S_LT: // "<"
-      case symbol_kind::S_LTE: // "<="
-      case symbol_kind::S_GT: // ">"
-      case symbol_kind::S_GTE: // ">="
       case symbol_kind::S_COMMA: // ","
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
+      case symbol_kind::S_COMPARISON: // "comparison"
         value.template destroy< std::string > ();
         break;
 
@@ -1057,7 +1032,7 @@ switch (yykind)
       {
 #if !defined _MSC_VER || defined __clang__
         YY_ASSERT ((token::TOK_ABS <= tok && tok <= token::TOK_COMMA)
-                   || (token::TOK_ONEARGFUNC <= tok && tok <= token::TOK_TWOARGFUNC));
+                   || (token::TOK_ONEARGFUNC <= tok && tok <= token::TOK_COMPARISON));
 #endif
       }
     };
@@ -1621,96 +1596,6 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_EQUALS (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_EQUALS, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_EQUALS (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_EQUALS, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_NOT_EQUALS (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_NOT_EQUALS, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_NOT_EQUALS (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_NOT_EQUALS, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_LT (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_LT, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_LT (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_LT, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_LTE (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_LTE, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_LTE (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_LTE, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_GT (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_GT, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_GT (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_GT, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_GTE (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_GTE, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_GTE (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_GTE, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
       make_COMMA (std::string v, location_type l)
       {
         return symbol_type (token::TOK_COMMA, std::move (v), std::move (l));
@@ -1781,6 +1666,21 @@ switch (yykind)
       make_TWOARGFUNC (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOK_TWOARGFUNC, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_COMPARISON (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_COMPARISON, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_COMPARISON (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_COMPARISON, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -2142,7 +2042,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 287,     ///< Last index in yytable_.
+      yylast_ = 205,     ///< Last index in yytable_.
       yynnts_ = 10,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
@@ -2222,15 +2122,10 @@ switch (yykind)
       case symbol_kind::S_SLASH: // "/"
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
-      case symbol_kind::S_EQUALS: // "=="
-      case symbol_kind::S_NOT_EQUALS: // "!="
-      case symbol_kind::S_LT: // "<"
-      case symbol_kind::S_LTE: // "<="
-      case symbol_kind::S_GT: // ">"
-      case symbol_kind::S_GTE: // ">="
       case symbol_kind::S_COMMA: // ","
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
+      case symbol_kind::S_COMPARISON: // "comparison"
         value.copy< std::string > (YY_MOVE (that.value));
         break;
 
@@ -2318,15 +2213,10 @@ switch (yykind)
       case symbol_kind::S_SLASH: // "/"
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
-      case symbol_kind::S_EQUALS: // "=="
-      case symbol_kind::S_NOT_EQUALS: // "!="
-      case symbol_kind::S_LT: // "<"
-      case symbol_kind::S_LTE: // "<="
-      case symbol_kind::S_GT: // ">"
-      case symbol_kind::S_GTE: // ">="
       case symbol_kind::S_COMMA: // ","
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
+      case symbol_kind::S_COMPARISON: // "comparison"
         value.move< std::string > (YY_MOVE (s.value));
         break;
 
@@ -2396,7 +2286,7 @@ switch (yykind)
 
 
 } // yy
-#line 2400 "parser.hh"
+#line 2290 "parser.hh"
 
 
 
