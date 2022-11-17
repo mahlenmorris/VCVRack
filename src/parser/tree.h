@@ -15,7 +15,8 @@ public:
     BINOP,   // plus, times
     VARIABLE, // in1, out1, foo
     NOT,      // not bool
-    ONEARGFUNC // func1(left_right[0])
+    ONEARGFUNC, // func1(subexpressions[0])
+    TWOARGFUNC // func1(subexpressions[0], subexpressions[1])
   };
   Type type;
   // Which BinOp is this?
@@ -37,16 +38,20 @@ public:
   float float_value;
   std::string name;
   double (*func1)(double);
-  std::vector<Expression> left_right;
+  double (*func2)(double, double);
+  std::vector<Expression> subexpressions;
 
   static std::map<std::string, Operation> string_to_operation;
   static std::map<std::string, double (*)(double)> string_to_onearg_func;
+  static std::map<std::string, double (*)(double, double)> string_to_twoarg_func;
   Expression() {}
 
   static Expression Not(const Expression &expr);
   static Expression Number(float the_value);
   static Expression OneArgFunc(const std::string &func_name,
                                const Expression &arg1);
+  static Expression TwoArgFunc(const std::string &func_name,
+                               const Expression &arg1, const Expression &arg2);
   static Expression CreateBinOp(const Expression &lhs,
                                 const std::string &op_string,
                                 const Expression &rhs);

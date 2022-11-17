@@ -93,6 +93,7 @@
 
 id    [a-zA-Z][a-zA-Z_0-9]*
 oneargfunc "abs"|"ceiling"|"floor"|"sign"|"sin"
+twoargfunc "max"|"min"|"mod"|"pow"
 float ([0-9]*[.])?[0-9]+
 blank [ \t\r]
 
@@ -123,21 +124,18 @@ blank [ \t\r]
 "<="       return yy::parser::make_LTE    (yytext, loc);
 ">"        return yy::parser::make_GT     (yytext, loc);
 ">="       return yy::parser::make_GTE    (yytext, loc);
+","        return yy::parser::make_COMMA  (yytext, loc);
 "all"      return yy::parser::make_ALL    (yytext, loc);
 "and"      return yy::parser::make_AND    (yytext, loc);
-"clamp"    return yy::parser::make_CLAMP    (yytext, loc);
 "continue" return yy::parser::make_CONTINUE (yytext, loc);
 "else"     return yy::parser::make_ELSE   (yytext, loc);
 "end"      return yy::parser::make_END    (yytext, loc);
 "exit"     return yy::parser::make_EXIT   (yytext, loc);
 "for"      return yy::parser::make_FOR    (yytext, loc);
 "if"       return yy::parser::make_IF     (yytext, loc);
-"max"      return yy::parser::make_MAX    (yytext, loc);
-"min"      return yy::parser::make_MIN    (yytext, loc);
 "next"     return yy::parser::make_NEXT   (yytext, loc);
 "not"      return yy::parser::make_NOT    (yytext, loc);
 "or"       return yy::parser::make_OR     (yytext, loc);
-"pow"      return yy::parser::make_POW    (yytext, loc);
 "step"     return yy::parser::make_STEP   (yytext, loc);
 "then"     return yy::parser::make_THEN   (yytext, loc);
 "to"       return yy::parser::make_TO     (yytext, loc);
@@ -145,6 +143,7 @@ blank [ \t\r]
 
 {float}    return make_NUMBER (yytext, loc);
 {oneargfunc} return yy::parser::make_ONEARGFUNC (yytext, loc);
+{twoargfunc} return yy::parser::make_TWOARGFUNC (yytext, loc);
 {id}       return yy::parser::make_IDENTIFIER (yytext, loc);
 .          {
              throw yy::parser::syntax_error

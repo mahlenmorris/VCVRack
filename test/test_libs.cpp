@@ -96,10 +96,30 @@ TEST(ParserTest, FunctionTest)
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(-1.0f, drv.lines[0].expr1.Compute(&env));
 
+    EXPECT_EQ(0, drv.parse("f = sign(0)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(0, drv.lines[0].expr1.Compute(&env));
+
     // sin of 30 degress = 0.5
     EXPECT_EQ(0, drv.parse("f = sin(30*3.14159265/180)"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(0.5f, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("f = max(-2.3, 4)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(4.0f, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("f = min(1.0, max(-0.5, 0.0))"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(0.0f, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("f = mod(10, 4)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(2.0f, drv.lines[0].expr1.Compute(&env));
+
+    EXPECT_EQ(0, drv.parse("f = pow(49, 0.5)"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(7.0f, drv.lines[0].expr1.Compute(&env));
 }
 
 TEST(ParserTest, NegativeTest)

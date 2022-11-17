@@ -24,7 +24,8 @@ std::map<std::string, Expression::Operation> Expression::string_to_operation = {
 };
 
 double my_sign(double arg) {
-  return (std::signbit(arg) ? -1.0f : 1.0f);
+  return (std::signbit(arg) ? -1.0f :
+          (Expression::is_zero(arg) ? 0.0f: 1.0f));
 }
 
 std::map<std::string, double (*)(double)> Expression::string_to_onearg_func = {
@@ -35,10 +36,17 @@ std::map<std::string, double (*)(double)> Expression::string_to_onearg_func = {
   {"sin", &sin}
 };
 
+std::map<std::string, double (*)(double, double)> Expression::string_to_twoarg_func = {
+  {"mod", &fmod},
+  {"max", &fmax},
+  {"min", &fmin},
+  {"pow", &pow}
+};
+
 Expression Expression::Not(const Expression &expr) {
   Expression ex;
   ex.type = NOT;
-  ex.left_right.push_back(expr);
+  ex.subexpressions.push_back(expr);
   return ex;
 }
 
@@ -54,7 +62,18 @@ Expression Expression::OneArgFunc(const std::string &func_name,
   Expression ex;
   ex.type = ONEARGFUNC;
   ex.func1 = string_to_onearg_func.at(func_name);
-  ex.left_right.push_back(arg1);
+  ex.subexpressions.push_back(arg1);
+  return ex;
+}
+
+Expression Expression::TwoArgFunc(const std::string &func_name,
+                                  const Expression &arg1,
+                                  const Expression &arg2) {
+  Expression ex;
+  ex.type = TWOARGFUNC;
+  ex.func2 = string_to_twoarg_func.at(func_name);
+  ex.subexpressions.push_back(arg1);
+  ex.subexpressions.push_back(arg2);
   return ex;
 }
 
@@ -63,8 +82,8 @@ Expression Expression::CreateBinOp(const Expression &lhs,
                                    const Expression &rhs) {
   Expression ex;
   ex.type = BINOP;
-  ex.left_right.push_back(lhs);
-  ex.left_right.push_back(rhs);
+  ex.subexpressions.push_back(lhs);
+  ex.subexpressions.push_back(rhs);
   ex.operation = string_to_operation.at(op_string);
   return ex;
 }
@@ -108,10 +127,16 @@ float Expression::Compute(Environment* env) {
       }
     }
     break;
-    case NOT: return (is_zero(left_right[0].Compute(env)) ? 1.0f : 0.0f);
+    case NOT: return (is_zero(subexpressions[0].Compute(env)) ? 1.0f : 0.0f);
     case ONEARGFUNC: {
-      return func1(left_right[0].Compute(env));
+      return func1(subexpressions[0].Compute(env));
     }
+    break;
+    case TWOARGFUNC: {
+      return func2(subexpressions[0].Compute(env),
+                   subexpressions[1].Compute(env));
+    }
+    break;
     default: return 1.2345;
   }
 }
@@ -125,7 +150,7 @@ std::string Expression::to_string() const {
   switch (type) {
     case NUMBER: return "NumberExpression(" + std::to_string(float_value) + ")";
     case BINOP: return "BinOpExpression(" + std::to_string(operation) + ", " +
-        left_right[0].to_string() + ", " + left_right[1].to_string() + ")";
+        subexpressions[0].to_string() + ", " + subexpressions[1].to_string() + ")";
     case VARIABLE: return "VariableExpression(" + name + ")";
     default: return "Expression(ERR: Unknown type!)";
   }
@@ -140,8 +165,8 @@ float Expression::bool_to_float(bool value) {
 }
 
 float Expression::binop_compute(Environment* env) {
-  float lhs = left_right[0].Compute(env);
-  float rhs = left_right[1].Compute(env);
+  float lhs = subexpressions[0].Compute(env);
+  float rhs = subexpressions[1].Compute(env);
   switch (operation) {
     case AND: return !is_zero(lhs) && !is_zero(rhs);
     case OR: return !is_zero(lhs) || !is_zero(rhs);

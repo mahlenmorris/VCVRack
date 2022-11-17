@@ -72,11 +72,13 @@
   LTE     "<="
   GT      ">"
   GTE     ">="
+  COMMA   ","
 ;
 
 %token <Expression> IDENTIFIER "identifier"
 %token <float> NUMBER "number"
 %token <std::string> ONEARGFUNC "oneargfunc"
+%token <std::string> TWOARGFUNC "twoargfunc"
 %nterm <Expression> exp
 %nterm <Statements> statements
 %nterm <Line> assignment
@@ -150,6 +152,7 @@ exp:
 | exp "and" exp { $$ = Expression::CreateBinOp($1, $2, $3); }
 | exp "or" exp  { $$ = Expression::CreateBinOp($1, $2, $3); }
 | "oneargfunc" "(" exp ")" { $$ = Expression::OneArgFunc($1, $3); }
+| "twoargfunc" "(" exp "," exp ")" { $$ = Expression::TwoArgFunc($1, $3, $5); }
 | "(" exp ")"   { $$ = $2; }
 %%
 
