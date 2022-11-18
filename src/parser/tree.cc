@@ -25,19 +25,11 @@ std::map<std::string, Expression::Operation> Expression::string_to_operation = {
   {"ceiling", CEILING},
   {"floor", FLOOR},
   {"sign", SIGN},
-  {"sin", SIN}
-};
-
-double my_sign(double arg) {
-  return (std::signbit(arg) ? -1.0f :
-          (Expression::is_zero(arg) ? 0.0f: 1.0f));
-}
-
-std::map<std::string, double (*)(double, double)> Expression::string_to_twoarg_func = {
-  {"mod", &fmod},
-  {"max", &fmax},
-  {"min", &fmin},
-  {"pow", &pow}
+  {"sin", SIN},
+  {"mod", MOD},
+  {"max", MAX},
+  {"min", MIN},
+  {"pow", POW}
 };
 
 Expression Expression::Not(const Expression &expr) {
@@ -68,7 +60,7 @@ Expression Expression::TwoArgFunc(const std::string &func_name,
                                   const Expression &arg2) {
   Expression ex;
   ex.type = TWOARGFUNC;
-  ex.func2 = string_to_twoarg_func.at(func_name);
+  ex.operation = string_to_operation.at(func_name);
   ex.subexpressions.push_back(arg1);
   ex.subexpressions.push_back(arg2);
   return ex;
@@ -130,8 +122,8 @@ float Expression::Compute(Environment* env) {
     }
     break;
     case TWOARGFUNC: {
-      return func2(subexpressions[0].Compute(env),
-                   subexpressions[1].Compute(env));
+      return two_arg_compute(subexpressions[0].Compute(env),
+                             subexpressions[1].Compute(env));
     }
     break;
     default: return 1.2345;
@@ -185,7 +177,7 @@ float Expression::binop_compute(Environment* env) {
     case GTE: return bool_to_float(lhs >= rhs);
     case LT: return bool_to_float(lhs < rhs);
     case LTE: return bool_to_float(lhs <= rhs);
-    default: return -2.3456;
+    default: return -2.3456f;
   }
 }
 
@@ -197,6 +189,16 @@ float Expression::one_arg_compute(float arg1) {
     case SIGN: return (std::signbit(arg1) ? -1.0f :
                        (Expression::is_zero(arg1) ? 0.0f: 1.0f));
     case SIN: return sin(arg1);
-    default: return 3.45678;
+    default: return 3.45678f;
+  }
+}
+
+float Expression::two_arg_compute(float arg1, float arg2) {
+  switch (operation) {
+    case MOD: return fmod(arg1, arg2);
+    case MAX: return fmax(arg1, arg2);
+    case MIN: return fmin(arg1, arg2);
+    case POW: return pow(arg1, arg2);
+    default: return 4.56789f;
   }
 }

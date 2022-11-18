@@ -37,16 +37,18 @@ public:
     CEILING,
     FLOOR,
     SIGN,
-    SIN
+    SIN,
+    MOD,
+    MAX,
+    MIN,
+    POW
   };
   Operation operation;
   float float_value;
   std::string name;
-  double (*func2)(double, double);
   std::vector<Expression> subexpressions;
 
   static std::map<std::string, Operation> string_to_operation;
-  static std::map<std::string, double (*)(double, double)> string_to_twoarg_func;
   Expression() {}
 
   static Expression Not(const Expression &expr);
@@ -74,6 +76,7 @@ private:
   float bool_to_float(bool value);
   float binop_compute(Environment* env);
   float one_arg_compute(float arg1);
+  float two_arg_compute(float arg1, float arg2);
 };
 
 struct Statements;
