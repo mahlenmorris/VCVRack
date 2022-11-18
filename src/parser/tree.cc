@@ -1,4 +1,4 @@
-// Code for methods related to parsing data structures.
+ // Code for methods related to parsing data structures.
 #include "tree.h"
 
 #include <cmath>
@@ -21,20 +21,17 @@ std::map<std::string, Expression::Operation> Expression::string_to_operation = {
   {"<=", LTE},
   {"and", AND},
   {"or", OR},
+  {"abs", ABS},
+  {"ceiling", CEILING},
+  {"floor", FLOOR},
+  {"sign", SIGN},
+  {"sin", SIN}
 };
 
 double my_sign(double arg) {
   return (std::signbit(arg) ? -1.0f :
           (Expression::is_zero(arg) ? 0.0f: 1.0f));
 }
-
-std::map<std::string, double (*)(double)> Expression::string_to_onearg_func = {
-  {"abs", &std::abs},
-  {"ceiling", &ceil},
-  {"floor", &floor},
-  {"sign", &my_sign},
-  {"sin", &sin}
-};
 
 std::map<std::string, double (*)(double, double)> Expression::string_to_twoarg_func = {
   {"mod", &fmod},
@@ -61,7 +58,7 @@ Expression Expression::OneArgFunc(const std::string &func_name,
                                   const Expression &arg1) {
   Expression ex;
   ex.type = ONEARGFUNC;
-  ex.func1 = string_to_onearg_func.at(func_name);
+  ex.operation = string_to_operation.at(func_name);
   ex.subexpressions.push_back(arg1);
   return ex;
 }
@@ -129,7 +126,7 @@ float Expression::Compute(Environment* env) {
     break;
     case NOT: return (is_zero(subexpressions[0].Compute(env)) ? 1.0f : 0.0f);
     case ONEARGFUNC: {
-      return func1(subexpressions[0].Compute(env));
+      return one_arg_compute(subexpressions[0].Compute(env));
     }
     break;
     case TWOARGFUNC: {
@@ -189,5 +186,17 @@ float Expression::binop_compute(Environment* env) {
     case LT: return bool_to_float(lhs < rhs);
     case LTE: return bool_to_float(lhs <= rhs);
     default: return -2.3456;
+  }
+}
+
+float Expression::one_arg_compute(float arg1) {
+  switch (operation) {
+    case ABS: return std::abs(arg1);
+    case CEILING: return ceil(arg1);
+    case FLOOR: return floor(arg1);
+    case SIGN: return (std::signbit(arg1) ? -1.0f :
+                       (Expression::is_zero(arg1) ? 0.0f: 1.0f));
+    case SIN: return sin(arg1);
+    default: return 3.45678;
   }
 }

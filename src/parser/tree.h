@@ -15,8 +15,8 @@ public:
     BINOP,   // plus, times
     VARIABLE, // in1, out1, foo
     NOT,      // not bool
-    ONEARGFUNC, // func1(subexpressions[0])
-    TWOARGFUNC // func1(subexpressions[0], subexpressions[1])
+    ONEARGFUNC, // operation (subexpressions[0])
+    TWOARGFUNC // func2(subexpressions[0], subexpressions[1])
   };
   Type type;
   // Which BinOp is this?
@@ -32,17 +32,20 @@ public:
     LT,
     LTE,
     AND,
-    OR
+    OR,
+    ABS,
+    CEILING,
+    FLOOR,
+    SIGN,
+    SIN
   };
   Operation operation;
   float float_value;
   std::string name;
-  double (*func1)(double);
   double (*func2)(double, double);
   std::vector<Expression> subexpressions;
 
   static std::map<std::string, Operation> string_to_operation;
-  static std::map<std::string, double (*)(double)> string_to_onearg_func;
   static std::map<std::string, double (*)(double, double)> string_to_twoarg_func;
   Expression() {}
 
@@ -70,6 +73,7 @@ public:
 private:
   float bool_to_float(bool value);
   float binop_compute(Environment* env);
+  float one_arg_compute(float arg1);
 };
 
 struct Statements;
