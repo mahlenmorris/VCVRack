@@ -59,6 +59,10 @@ struct Basically : Module {
                                                           {"in3", IN3_INPUT},
                                                           {"in4", IN4_INPUT}
                                                         };
+  // width (in "holes") of the whole module. Changed by the resize bar on the
+  // right (within limits), and informs the size of the display and text field.
+  // Saved in the json for the module.
+  int width = 16;
 
   Basically() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -97,6 +101,7 @@ struct Basically : Module {
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "text", json_stringn(text.c_str(), text.size()));
+    json_object_set_new(rootJ, "width", json_integer(width));
     return rootJ;
   }
 
@@ -106,6 +111,9 @@ struct Basically : Module {
 			text = json_string_value(textJ);
   		dirty = true;
     }
+    json_t* widthJ = json_object_get(rootJ, "width");
+		if (widthJ)
+			width = json_integer_value(widthJ);
   }
 
   void ResetToProgramStart() {
@@ -341,13 +349,71 @@ struct TextEditAction : history::ModuleAction {
   }
 };
 
+struct ModuleResizeHandle : OpaqueWidget {
+	Vec dragPos;
+	Rect originalBox;
+	Basically* module;
+
+	ModuleResizeHandle() {
+		box.size = Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
+	}
+
+	void onDragStart(const DragStartEvent& e) override {
+		if (e.button != GLFW_MOUSE_BUTTON_LEFT)
+			return;
+
+		dragPos = APP->scene->rack->getMousePos();
+		ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
+		assert(mw);
+		originalBox = mw->box;
+	}
+
+	void onDragMove(const DragMoveEvent& e) override {
+		ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
+		assert(mw);
+
+		Vec newDragPos = APP->scene->rack->getMousePos();
+		float deltaX = newDragPos.x - dragPos.x;
+
+		Rect newBox = originalBox;
+		Rect oldBox = mw->box;
+    // Minimum and maximum number of holes we allow the module to be.
+		const float minWidth = 8 * RACK_GRID_WIDTH;
+    const float maxWidth = 64 * RACK_GRID_WIDTH;
+		newBox.size.x += deltaX;
+		newBox.size.x = std::fmax(newBox.size.x, minWidth);
+    newBox.size.x = std::fmin(newBox.size.x, maxWidth);
+		newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
+
+		// Set box and test whether it's valid
+		mw->box = newBox;
+		if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
+			mw->box = oldBox;
+		}
+		module->width = std::round(mw->box.size.x / RACK_GRID_WIDTH);
+	}
+
+	void draw(const DrawArgs& args) override {
+		for (float x = 5.0; x <= 10.0; x += 5.0) {
+			nvgBeginPath(args.vg);
+			const float margin = 5.0;
+			nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
+			nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
+			nvgStrokeWidth(args.vg, 1.0);
+			nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
+			nvgStroke(args.vg);
+		}
+	}
+};
+
 struct BasicallyTextField : LedDisplayTextField {
 	Basically* module;
   ExtendedText extended;  // Helper for navigating a long string.
 
   BasicallyTextField() {
-    // Bright green! Like an old monitor should be.
+    // Bright green on black! Like an old monitor _should_ be.
     color = nvgRGB(0x00, 0xff, 0x00);
+    bgColor = nvgRGB(0x00, 0x00, 0x00);
   }
 
 	void step() override {
@@ -408,31 +474,50 @@ struct BasicallyTextField : LedDisplayTextField {
 };
 
 struct BasicallyDisplay : LedDisplay {
+  BasicallyTextField* textField;
+  //bool box_changed = true;
+
 	void setModule(Basically* module) {
-		BasicallyTextField* textField = createWidget<BasicallyTextField>(Vec(0, 0));
+		textField = createWidget<BasicallyTextField>(Vec(0, 0));
 		textField->box.size = box.size;
 		textField->multiline = true;
 		textField->module = module;
 		addChild(textField);
 	}
+  // The BasicallyWidget changes size, so we have to reflaect that.
+  void step() override {
+//    if (box_changed) {
+      // I think setting this might be CPU expensive, so only do when needed.
+      textField->box.size = box.size;
+//      box_changed = false;
+//    }
+    LedDisplay::step();
+	}
 };
 
 struct BasicallyWidget : ModuleWidget {
+  Widget* topRightScrew;
+	Widget* bottomRightScrew;
+	Widget* rightHandle;
+	BasicallyDisplay* codeDisplay;
+
   BasicallyWidget(Basically* module) {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Basically.svg")));
 
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(
-        Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
+    topRightScrew = createWidget<ScrewSilver>(
+        Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0));
+    addChild(topRightScrew);
     addChild(createWidget<ScrewSilver>(
         Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(
+    bottomRightScrew = createWidget<ScrewSilver>(
         Vec(box.size.x - 2 * RACK_GRID_WIDTH,
-            RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+            RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
+    addChild(bottomRightScrew);
 
-    BasicallyDisplay* codeDisplay = createWidget<BasicallyDisplay>(
-      mm2px(Vec(20.680, 11.844)));
+    codeDisplay = createWidget<BasicallyDisplay>(
+      mm2px(Vec(22.0, 11.844)));
 		codeDisplay->box.size = mm2px(Vec(60.0, 110.0));
 		codeDisplay->setModule(module);
 		addChild(codeDisplay);
@@ -477,7 +562,40 @@ struct BasicallyWidget : ModuleWidget {
     addChild(createLightCentered<MediumLight<GreenLight>>(
       mm2px(Vec(11.07, 17.693)), module, Basically::GOOD_LIGHT));
 
+    // Set reasonable initial size of module. Will likely get updated below.
+    box.size = Vec(RACK_GRID_WIDTH * 16, RACK_GRID_HEIGHT);
+    // Resize bar on right.
+    ModuleResizeHandle* rightHandle = new ModuleResizeHandle;
+		this->rightHandle = rightHandle;
+		rightHandle->module = module;
+		addChild(rightHandle);
+
+    // Set box width from loaded Module before adding to the RackWidget,
+    // so modules aren't unnecessarily shoved around.
+		if (module) {
+      // Now set the actual size.
+			box.size.x = module->width * RACK_GRID_WIDTH;
+		}
   }
+
+  void step() override {
+		Basically* module = dynamic_cast<Basically*>(this->module);
+    // TODO: this is really only useful to call when the width changes.
+    // And maybe the *first* time step() is called.
+    // Should only do it when changed.
+		if (module) {
+			box.size.x = module->width * RACK_GRID_WIDTH;
+		}
+
+    // Adjust size of area we display code in.
+    // "6" here is ~4 on the left side plus ~1.5 on the right.
+		codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 5.5;
+    // Move the right side screws to follow.
+		topRightScrew->box.pos.x = box.size.x - 30;
+		bottomRightScrew->box.pos.x = box.size.x - 30;
+		rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
+		ModuleWidget::step();
+	}
 };
 
 Model* modelBasically = createModel<Basically, BasicallyWidget>("BASICally");
