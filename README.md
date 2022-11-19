@@ -3,7 +3,15 @@ Modules for use with VCV Rack 2.0, with an emphasis on generative and self-regul
 
 ## BASICally
 A simple, somewhat familiar procedural programming language within the
-context of Rack. Can act as a sequencer or VCO or LFO's, or can perform math on inputs to produce multiple outputs. Useful both for quickly trying out a transformation and efficient enough to use anywhere. You can edit the code while it's running!
+context of Rack. Can act like:
+* a sequencer
+* VCO or LFO
+* wavefolder
+* control voltage utility
+* sample and hold
+* all of the above and more, simultaneously
+
+Useful both for quickly trying out a transformation and efficient enough to use anywhere.
 
 ### Examples
 

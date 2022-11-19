@@ -29,11 +29,26 @@
 // ... and declare it for the parser's sake.
 YY_DECL;
 
+struct Error {
+  int line;
+  int column;
+  std::string message;
+
+  Error(int line, int column, const std::string message) : line{line},
+      column{column}, message{message} {
+  }
+};
+
 // Conducting the whole scanning and parsing of Calc++.
 class Driver
 {
 public:
+  // If able to parse, this is the abstract syntax tree for the program.
+  // Cannot be executed; needs to be turned into PCode objects before
+  // Basically can run it.
   std::vector<Line> lines;
+  // List of syntax errors found before parser gave up.
+  std::vector<Error> errors;
   // Whether to generate parser debug traces.
   bool trace_parsing;
   // Whether to generate scanner debug traces.

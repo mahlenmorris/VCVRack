@@ -31,8 +31,7 @@ int Driver::parse(const std::string &text)
   location.initialize();
   // Remove any existing lines from a previous parse().
   lines.clear();
-  int success_on_zero = set_text(text);
-  // If it succeeded, then caller needs to translate the Line objects into
-  // the pseudo-code that runs.
-  return success_on_zero;
+  // Remove any errors from previous parse attempt.
+  errors.clear();
+  return set_text(text);
 }

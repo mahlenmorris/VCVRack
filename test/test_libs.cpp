@@ -300,3 +300,37 @@ TEST(ParserTest, AllTest)
     EXPECT_EQ(Line::EXIT, line.type);
     EXPECT_EQ("all", line.str1);
 }
+
+TEST(ParserTest, ErrorTest)
+{
+  Driver drv;
+
+  EXPECT_EQ(0, drv.parse("out1 = 5 - 3"));
+  ASSERT_EQ(1, drv.lines.size());
+  ASSERT_EQ(0, drv.errors.size());
+
+  EXPECT_EQ(1, drv.parse("out1 = 5 - "));
+  ASSERT_EQ(0, drv.lines.size());
+  ASSERT_EQ(1, drv.errors.size());
+  Error err = drv.errors[0];
+  EXPECT_EQ(1, err.line);
+  EXPECT_EQ(12, err.column);
+  EXPECT_EQ("syntax error, unexpected end of file", err.message);
+
+  // Effect of a comment.
+  EXPECT_EQ(1, drv.parse("out1 = 5\n' comment\nidjfi"));
+  ASSERT_EQ(0, drv.lines.size());
+  ASSERT_EQ(1, drv.errors.size());
+  err = drv.errors[0];
+  EXPECT_EQ(3, err.line);
+  EXPECT_EQ(6, err.column);
+  EXPECT_EQ("syntax error, unexpected end of file, expecting =", err.message);
+
+  EXPECT_EQ(1, drv.parse("out1 = 5 ' comment\nidjfi"));
+  ASSERT_EQ(0, drv.lines.size());
+  ASSERT_EQ(1, drv.errors.size());
+  err = drv.errors[0];
+  EXPECT_EQ(2, err.line);
+  EXPECT_EQ(6, err.column);
+  EXPECT_EQ("syntax error, unexpected end of file, expecting =", err.message);
+}

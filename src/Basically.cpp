@@ -45,7 +45,6 @@ struct Basically : Module {
   };
   enum LightId {
     RUN_LIGHT,   // Currently running.
-    GOOD_LIGHT,  // Code compiles and can run.
     LIGHTS_LEN
   };
 
@@ -83,7 +82,6 @@ struct Basically : Module {
     configOutput(OUT3_OUTPUT, "OUT3");
     configOutput(OUT4_OUTPUT, "OUT4");
     configLight(RUN_LIGHT, "Lit when code is currently running.");
-    configLight(GOOD_LIGHT, "Lit when code compiles and could run.");
 
     // If user decides to "bypass" the module, we can just pass IN -> OUT.
     // TODO: reconsider this Bypass behavior.
@@ -143,9 +141,6 @@ struct Basically : Module {
       std::transform(text.begin(), text.end(),
                      lowercase.begin(), ::tolower);
       compiles = !drv.parse(lowercase);
-      // Only time this light changes is when it compiles. That might not
-      // always be true in the future.
-      lights[GOOD_LIGHT].setBrightness(compiles ? 1.f : 0.f);
       if (compiles) {
         PCodeTranslator translator;
         translator.LinesToPCode(drv.lines, &pcodes);
@@ -475,7 +470,6 @@ struct BasicallyTextField : LedDisplayTextField {
 
 struct BasicallyDisplay : LedDisplay {
   BasicallyTextField* textField;
-  //bool box_changed = true;
 
 	void setModule(Basically* module) {
 		textField = createWidget<BasicallyTextField>(Vec(0, 0));
@@ -486,14 +480,112 @@ struct BasicallyDisplay : LedDisplay {
 	}
   // The BasicallyWidget changes size, so we have to reflaect that.
   void step() override {
-//    if (box_changed) {
-      // I think setting this might be CPU expensive, so only do when needed.
-      textField->box.size = box.size;
-//      box_changed = false;
-//    }
+    textField->box.size = box.size;
     LedDisplay::step();
 	}
 };
+
+struct ErrorWidget;
+struct ErrorTooltip : ui::Tooltip {
+	ErrorWidget* errorWidget;
+  std::string error_text;
+
+  ErrorTooltip(const std::string &text) : error_text{text} {}
+
+	void step() override;
+};
+
+struct ErrorWidget : widget::OpaqueWidget {
+  Basically* module;
+  std::string fontPath;
+  ErrorTooltip* tooltip;
+
+  ErrorWidget() {
+    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+    tooltip = NULL;
+  }
+
+  void onEnter(const EnterEvent & e) override {
+    create_tooltip();
+  }
+
+  void onLeave(const LeaveEvent & e) override {
+    destroy_tooltip();
+  }
+
+  void create_tooltip() {
+  	if (!settings::tooltips)
+  		return;
+  	if (tooltip)  // Already exists.
+  		return;
+  	if (!module)
+  		return;
+    std::string tip_text;
+    if (module->compiles) {
+      tip_text = "Program compiles!";
+    } else {
+      if (module->text.empty()) {
+        tip_text = "Type in some code over there ->";
+      } else {
+        if (module->drv.errors.size() > 0) {
+          Error err = module->drv.errors[0];
+          // TODO: remove "syntax error, " from message.
+          tip_text = "Line " + std::to_string(err.line) + ": " + err.message;
+        }
+      }
+    }
+  	ErrorTooltip* new_tooltip = new ErrorTooltip(tip_text);
+  	new_tooltip->errorWidget = this;
+  	APP->scene->addChild(new_tooltip);
+  	tooltip = new_tooltip;
+  }
+
+  void destroy_tooltip() {
+  	if (!tooltip)
+  		return;
+  	APP->scene->removeChild(tooltip);
+  	delete tooltip;
+  	tooltip = NULL;
+  }
+
+  void drawLayer(const DrawArgs& args, int layer) override {
+    if ((layer == 1) && module) {
+      Rect r = box.zeroPos();
+      Vec bounding_box = r.getBottomRight();
+      // Fill the rectangle with either Green or Red.
+      NVGcolor main_color = (module->compiles ? SCHEME_GREEN : color::RED);
+      nvgBeginPath(args.vg);
+      nvgRect(args.vg, 0.5, 0.5,
+              bounding_box.x - 1.0f, bounding_box.y - 1.0f);
+      nvgFillColor(args.vg, main_color);
+      nvgFill(args.vg);
+
+      std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
+      if (font) {
+        // WHITE is really hard to read on YELLOW.
+        nvgFillColor(args.vg, color::BLACK);
+        nvgFontSize(args.vg, 13);
+        nvgFontFaceId(args.vg, font->handle);
+        nvgTextLetterSpacing(args.vg, -2);
+
+        std::string text = (module->compiles ? "Good" : " Fix");
+        // Place on the line just off the left edge.
+        nvgText(args.vg, 1, bounding_box.y / 2.0 + 4, text.c_str(), NULL);
+      }
+    }
+    Widget::drawLayer(args, layer);
+  }
+};
+
+void ErrorTooltip::step() {
+  text = error_text;
+	Tooltip::step();
+	// Position at bottom-right of parameter
+	box.pos = errorWidget->getAbsoluteOffset(errorWidget->box.size).round();
+	// Fit inside parent (copied from Tooltip.cpp)
+	assert(parent);
+	box = box.nudge(parent->box.zeroPos());
+}
 
 struct BasicallyWidget : ModuleWidget {
   Widget* topRightScrew;
@@ -558,9 +650,13 @@ struct BasicallyWidget : ModuleWidget {
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.645, 115.601)),
       module, Basically::OUT4_OUTPUT));
 
-    // Lights
-    addChild(createLightCentered<MediumLight<GreenLight>>(
-      mm2px(Vec(11.07, 17.693)), module, Basically::GOOD_LIGHT));
+    // Compilation status and error message access.
+    // Want the middle of this to be at x=11.07
+    ErrorWidget* display = createWidget<ErrorWidget>(mm2px(
+        Vec(11.07 - 4.0, 15.0)));
+    display->box.size = mm2px(Vec(8.0, 4.0));
+    display->module = module;
+    addChild(display);
 
     // Set reasonable initial size of module. Will likely get updated below.
     box.size = Vec(RACK_GRID_WIDTH * 16, RACK_GRID_HEIGHT);
@@ -582,7 +678,8 @@ struct BasicallyWidget : ModuleWidget {
 		Basically* module = dynamic_cast<Basically*>(this->module);
     // TODO: this is really only useful to call when the width changes.
     // And maybe the *first* time step() is called.
-    // Should only do it when changed.
+    // _Maybe_ should only do it when changed. I mean, it would be a _little_
+    // less code run for every step, so better, right?
 		if (module) {
 			box.size.x = module->width * RACK_GRID_WIDTH;
 		}

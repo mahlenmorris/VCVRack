@@ -149,5 +149,5 @@ exp:
 void
 yy::parser::error (const location_type& l, const std::string& m)
 {
-  std::cerr << l << ": " << m << '\n';
+  drv.errors.push_back(Error(l.begin.line, l.begin.column, m));
 }
