@@ -100,6 +100,7 @@ struct Basically : Module {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "text", json_stringn(text.c_str(), text.size()));
     json_object_set_new(rootJ, "width", json_integer(width));
+    json_object_set_new(rootJ, "screen_colors", json_integer(screen_colors));
     return rootJ;
   }
 
@@ -112,6 +113,9 @@ struct Basically : Module {
     json_t* widthJ = json_object_get(rootJ, "width");
 		if (widthJ)
 			width = json_integer_value(widthJ);
+    json_t* screenJ = json_object_get(rootJ, "screen_colors");
+		if (screenJ)
+			screen_colors = json_integer_value(screenJ);
   }
 
   void ResetToProgramStart() {
@@ -312,6 +316,8 @@ struct Basically : Module {
   // Some PCodes are reentrant, but with different behaviors. state helps
   // determine the behavior.
   PCode::State state;
+  // Green on Black.
+  long long int screen_colors = 0x00ff00000000;
 };
 
 // Adds support for undo/redo in the text field where people type programs.
@@ -404,15 +410,21 @@ struct ModuleResizeHandle : OpaqueWidget {
 struct BasicallyTextField : LedDisplayTextField {
 	Basically* module;
   ExtendedText extended;  // Helper for navigating a long string.
+  long long int color_scheme;
 
-  BasicallyTextField() {
-    // Bright green on black! Like an old monitor _should_ be.
-    color = nvgRGB(0x00, 0xff, 0x00);
-    bgColor = nvgRGB(0x00, 0x00, 0x00);
+  NVGcolor int_to_color(int color) {
+    return nvgRGB(color >> 16, (color & 0xff00) >> 8, color & 0xff);
   }
 
 	void step() override {
 		LedDisplayTextField::step();
+    if (module && color_scheme != module->screen_colors) {
+      color_scheme = module->screen_colors;
+      color = int_to_color(color_scheme >> 24);
+      // LedDisplay, which is doing the actual drawing, seems to ignore
+      // bgColor. Keeping this for if/when we replace LedDisplay.
+      bgColor = int_to_color(color_scheme & 0xffffff);
+    }
 		if (module && module->dirty) {
       // Text has been changed by the module (not the user).
       // This happens when the module loads.
@@ -529,8 +541,12 @@ struct ErrorWidget : widget::OpaqueWidget {
       } else {
         if (module->drv.errors.size() > 0) {
           Error err = module->drv.errors[0];
-          // TODO: remove "syntax error, " from message.
-          tip_text = "Line " + std::to_string(err.line) + ": " + err.message;
+          // Remove "syntax error, " from message.
+          std::string msg = err.message;
+          if (msg.rfind("syntax error, ", 0) == 0) {
+            msg = msg.substr(14);
+          }
+          tip_text = "Line " + std::to_string(err.line) + ": " + msg;
         }
       }
     }
@@ -693,6 +709,26 @@ struct BasicallyWidget : ModuleWidget {
 		rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
 		ModuleWidget::step();
 	}
+
+  void appendContextMenu(Menu* menu) override {
+    Basically* module = dynamic_cast<Basically*>(this->module);
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createMenuLabel("Screen colors"));
+    long long int default_colors[] = {0x00ff00000000,
+                                      0xffffff000000,
+                                      0xffd714000000};
+    std::string color_names[] = {"Green on Black",
+                                 "White on Black",
+                                 "Notes"};
+    for (int i = 0; i < std::end(default_colors) - std::begin(default_colors);
+         i++) {
+      long long int scheme = default_colors[i];
+      menu->addChild(createCheckMenuItem(color_names[i], "",
+          [=]() {return scheme == module->screen_colors;},
+          [=]() {module->screen_colors = scheme;}
+      ));
+    }
+  }
 };
 
 Model* modelBasically = createModel<Basically, BasicallyWidget>("BASICally");

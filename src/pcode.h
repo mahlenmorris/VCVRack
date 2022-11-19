@@ -79,6 +79,8 @@ struct Exit {
 class PCodeTranslator {
 public:
   PCodeTranslator() { }
+  // TODO: This should return a vector of Error objects, so that we can
+  // prevent running and report them.
   void LinesToPCode(const std::vector<Line> &lines, std::vector<PCode> *pcodes);
 private:
   void AddLineToPCode(const Line &line, const Exit &innermost_loop);
