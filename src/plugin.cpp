@@ -6,6 +6,7 @@ void init(Plugin* p) {
 	pluginInstance = p;
 
 	// Add modules here
+	p->addModel(modelBasically);
 	p->addModel(modelDrifter);
 	p->addModel(modelFuse);
 

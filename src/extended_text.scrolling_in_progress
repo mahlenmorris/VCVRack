@@ -1,0 +1,144 @@
+#ifndef EXTENDED_TEXT_H
+#define EXTENDED_TEXT_H
+
+#include <algorithm>
+#include <string>
+#include <vector>
+/*
+Library that helps my subclasses of LedDisplayTextField do useful
+features like being longer than the screen and support up/down keys.
+*/
+
+struct TextLine {
+  int line_number;
+  int start_position;
+  int line_length;
+
+  TextLine(int line, int position, int length) : line_number{line},
+      start_position{position}, line_length{length} {}
+  bool operator==(const TextLine a) {
+    return (a.line_number == line_number) &&
+           (a.start_position == start_position) &&
+           (a.line_length == line_length);
+  }
+};
+
+struct LineColumn {
+  int line;
+  int column;
+
+  LineColumn(int line, int column) : line{line}, column{column} {}
+  bool operator==(const LineColumn a) {
+    return (a.line == line) && (a.column == column);
+  }
+};
+
+struct ExtendedText {
+  // Sorted searchable map from position -> line+column.
+  std::vector<TextLine> line_map;
+  int window_length;
+  // Track how many lines are above the visible window.
+  int above_count;
+  // These are what is needed to compute the entire text.
+  // What the editing window is a (possibly changed) version of text_in_window.
+  std::string text_above_window;
+  std::string text_in_window;
+  std::string text_below_window;
+
+  void Initialize(int window_length) {
+    window_length = window_length;
+  }
+
+  // When the user changes the text in the window and we get told that,
+  // several things must happen:
+  // 1. Combine it with what we know to be above and below the window, and
+  // tell the module about it.
+  // 2. Recreate the line_map with the full text.
+  void ProcessUpdatedText(std::string* text, const std::string &window_text) {
+    // Clear and repopulate line_map.
+    line_map.clear();
+    int line_number = 0;
+    text->reserve(text_above_window.size() + window_text.size() +
+                  text_below_window.size());
+    *text += text_above_window;
+    *text += window_text;
+    *text += text_below_window;
+    // 'pos <= text.size()' is correct; the last line might be an empty line
+    // directly after a \n.
+    for (size_t pos = 0;  pos <= text->size(); ) {
+      size_t found = text->find('\n', pos);
+      if (found != std::string::npos) {
+        TextLine tl(line_number, pos, found - pos);
+        line_map.push_back(tl);
+        pos = found + 1;
+        line_number++;
+      } else {
+        // Add the last line.
+        TextLine tl(line_number, pos, text->size() - pos);
+        line_map.push_back(tl);
+        break;
+      }
+    }
+  }
+
+  // Decide if the window_text needs to be changed, because the user is about
+  // to scroll to the end of the window.
+  int RepositionWindow(std::string* updated_window,
+      const std::string &full_text, int current_position) {
+    // Which line are we currently on?
+    LineColumn lc = GetCurrentLineColumn(current_position);
+    // First, figure out what we want.
+    int top_line;
+    if (lc.line == 0) {
+      // at first line, must show top.
+      top_line = 0;
+    } else if (lc.line == line_map.size() - 1) {
+      top_line = line_map.size() - window_length;
+    } else {
+      top_line = lc.line - 1;  // Keep top of window one line above cursor.
+    }
+    int end_pos;
+    if (top_line + window_length >= line_map.size()) {
+      end_pos = full_text.size() - 1;
+    } else {
+      end_pos = line_map[top_line + window_length].start_position - 1;
+    }
+    int length = end_pos - line_map[top_line].start_position;
+    updated_window->replace(0, length, full_text,
+        line_map[top_line].start_position, length);
+    // Transpose the position in the entire text to the position within this
+    // window.
+    
+
+  }
+  LineColumn GetCurrentLineColumn(int position) {
+    int line_number;
+    auto next_line = std::find_if(line_map.begin(), line_map.end(),
+        [position](TextLine tl) { return position < tl.start_position; });
+    if (next_line == line_map.end()) {
+      // We're on the last line.
+      line_number = line_map.size() - 1;
+    } else {
+      line_number = next_line->line_number - 1;
+    }
+    return LineColumn(line_number,
+        position - line_map[line_number].start_position);
+  }
+
+  int GetCursorForLineColumn(int line, int column) {
+    // Enforce line number limits.
+    if (line < 0) {
+      line = 0;
+    }
+    if (line >= (int) line_map.size()) {
+      line = line_map.size() - 1;
+    }
+    TextLine tl = line_map[line];
+    if (tl.line_length < column) {
+      column = tl.line_length;
+    }
+    return tl.start_position + column;
+  }
+};
+
+#endif // EXTENDED_TEXT_H
