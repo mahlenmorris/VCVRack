@@ -2,119 +2,6 @@
 Modules for use with VCV Rack 2.0, with an emphasis on generative and
 self-regulating structure. Exploring the region between random and static.
 
-## BASICally (not yet released)
-A simple, somewhat familiar procedural programming language within the
-context of VCV Rack. Can act like:
-* a very flexible sequencer
-* VCO or LFO
-* a wavefolder
-* a control voltage utility
-* sample and hold
-* all of the above and more, simultaneously
-
-Useful both for quickly trying out an idea and efficient enough
-to use anywhere.
-
-### Examples
-
-TODO: Image of simple example.
-
-TODO: Link to patch file with numerous examples.
-
-TODO: video of different examples and their output
-
-## Uses
-
-### Sequencer
-
-### Logic
-
-### Sample and Hold
-
-### Oscillator
-
-### Utility
-
-## The Language
-### Setting and Using Variables (i.e., Assignment)
-Sets values of the OUT1, OUT2, OUT3 and OUT4 ports for connected modules to
-read. Also used to create and set variables for later use by the program.
-
-Always in the form:
-
-**variable name** = **mathematical expression**
-
-Examples:
-
-    foo = 3  ' Creates a variable called 'foo' and sets it to 3.0. All values in BASICally are floating point numbers.
-    bar = 5 * in1 + foo  ' Uses the value of the 'foo' variable.
-    out1 = bar * -0.01  ' Sets the value of the OUT1 port.
-    out2 = 0.1 + 2 * -1  ' Sets out2 equal to -1.9. Operator precedence is the same as most other languages.
-
-* All variables start with the value 0.0 when first read.
-* Variables stay available in the environment of a module until the patch
-is restarted. This is true even if the code that created the variable has been removed from the program.
-
-### WAIT Statements
-
-### Comments
-A single quote (') followed by a space indicates that the rest of the line will
-be treated as a comment only to be read by the user. Comments have no effect on
-the execution of other statements.
-
-Examples:
-
-    out2 = 3.250 ' A C4 note.
-    WAIT 200 ' Pause for 1/5 of a second.
-    ' Next line can be turned on just by removing the initial tick.
-    ' out1 = 2.3 * in1  ' Look, I'm live-coding!
-
-### IF Statements
-
-### FOR Loops
-
-### CONTINUE FOR and ALL
-
-### EXIT FOR and ALL
-
-### Other
-All of the OUTn outputs are limited to send values between -10V and 10V.
-Anything higher or lower will be locked down to
-
-BASICally is intended for the very casual user, with the hope that examples
-alone will suffice to suggest how programs can be written. Because of the UI
-limitations, detailed error reporting is difficult to provide.
-
-Since programs are typically *very* short, the language leans towards ease for
-the casual user. For that reason, the following lists a few surprising
-differences from more robust languages:
-* BASICally is case-insensitive. OUT1, oUt1, and out1 all refer to the same
-variable. I would certainly suggest you be consistent within in your programs,
-but the module won't insist on it.
-* Newlines do not matter, *except* that comments always end with a newline.
-* Indentation does not matter. That said, even short programs can benefit from
-the indentation demonstrated in the examples.
-
-## Slightly Surprising Details
-
-### Implied WAIT 0 Statements
-
-### Controls
-#### GOOD Light
-
-#### STYLE Knob
-
-#### RUN Button and Input
-
-### Menu Options
-
-### Bypass Behavior
-
-### Related Modules
-For strictly mathematical transformations, Frank Buss's [Formula](https://library.vcvrack.com/FrankBuss/Formula) is more straightforward and (at least
-in my brief testing) more CPU efficient module.
-
-
 ## Drifter
 Creates sequences of values that can slowly (or quickly) vary, like a series of
 points doing random walks connected into a series.
@@ -287,3 +174,135 @@ per the usual case.
 If this module is bypassed, then OUT will equal IN. If IN has no cable running
 into it, then OUT will be 0.0V, *even if* the "Unplugged value of IN" menu
 option is set to something else.
+
+## BASICally (not yet released)
+A simple, likely familiar procedural programming language within the
+context of VCV Rack. Can act like:
+* a very flexible sequencer
+* VCO or LFO
+* a wavefolder
+* a control voltage utility
+* sample and hold
+* all of the above and more, simultaneously, and more.
+
+Useful for:
+* quickly trying out an idea
+* simple transformations that would otherwise involve many small utility modules
+* non-standard approaches to otherwise
+
+### Examples
+
+#### Sequencer
+![Sequencer image](images/BASICallyZara.png)
+
+TODO: Link to patch file with numerous examples.
+
+TODO: video of different examples and their output
+
+## Unique Features
+While there are
+[other modules](https://github.com/mahlenmorris/VCVRack#related-modules) with a similar emphasis on "programming within VCV", BASICally has some interesting differences:
+* It intentionally bears a visual resemblance to the
+[BASIC language](https://en.wikipedia.org/wiki/BASIC) (albeit an
+**quite** limited version of BASIC). BASIC is a language that many people
+know, once knew, or can pick up by looking at examples.
+* The right side of the module is a resize bar; pull it to the right or left,
+and the code window changes size. Handy for reading those long comments without
+line breaks and for shrinking the module down to a small size when you don't
+wish to edit the code.
+* Four different run "STYLES" (see Controls below), giving it the ability to
+ act on a RUN trigger, or to run the most recent working version continuously
+ as you type, or only run while a button is pressed.
+
+## Uses
+
+### Sequencer
+
+### Logic
+
+### Sample and Hold
+
+### Oscillator
+
+### Utility
+
+## The Language
+### Setting and Using Variables (i.e., Assignment)
+Sets values of the OUT1, OUT2, OUT3 and OUT4 ports for connected modules to
+read. Also used to create and set variables for later use by the program.
+
+Always in the form:
+
+**variable name** = **mathematical expression**
+
+Examples:
+
+    foo = 3  ' Creates a variable called 'foo' and sets it to 3.0. All values in BASICally are floating point numbers.
+    bar = 5 * in1 + foo  ' Uses the value of the 'foo' variable.
+    out1 = bar * -0.01  ' Sets the value of the OUT1 port.
+    out2 = 0.1 + 2 * -1  ' Sets out2 equal to -1.9. Operator precedence is the same as most other languages.
+
+* All variables start with the value 0.0 when first read.
+* Variables stay available in the environment of a module until the patch
+is restarted. This is true even if the code that created the variable has been removed from the program.
+
+### WAIT Statements
+
+### Comments
+A single quote (') followed by a space indicates that the rest of the line will
+be treated as a comment only to be read by the user. Comments have no effect on
+the execution of other statements.
+
+Examples:
+
+    out2 = 3.250 ' A C4 note.
+    WAIT 200 ' Pause for 1/5 of a second.
+    ' Next line can be turned on just by removing the initial tick.
+    ' out1 = 2.3 * in1  ' Look, I'm live-coding!
+
+### IF Statements
+
+### FOR Loops
+
+### CONTINUE FOR and ALL
+
+### EXIT FOR and ALL
+
+### Other
+All of the OUTn outputs are limited to send values between -10V and 10V.
+Anything higher or lower will be locked down to
+
+BASICally is intended for the very casual user, with the hope that examples
+alone will suffice to suggest how programs can be written. Because of the UI
+limitations, detailed error reporting is difficult to provide.
+
+Since programs are typically *very* short, the language leans towards ease for
+the casual user. For that reason, the following lists a few surprising
+differences from more robust languages:
+* BASICally is case-insensitive. OUT1, oUt1, and out1 all refer to the same
+variable. I would certainly suggest you be consistent within in your programs,
+but the module won't insist on it.
+* Newlines do not matter, *except* that comments always end with a newline.
+* Indentation does not matter. That said, even short programs can benefit from
+the indentation demonstrated in the examples.
+
+## Slightly Surprising Details
+
+### Implied WAIT 0 Statements
+
+### Controls
+#### GOOD Light
+
+#### STYLE Knob
+
+#### RUN Button and Input
+
+### Menu Options
+
+### Bypass Behavior
+
+### Related Modules
+* Frank Buss's
+[Formula](https://library.vcvrack.com/FrankBuss/Formula).
+* docB's
+[Formula One](https://library.vcvrack.com/dbRackFormulaOne), which seems to be **very** CPU efficient. in comparison to Formula and BASICally.
