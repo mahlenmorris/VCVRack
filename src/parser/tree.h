@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <map>
+#include <unordered_set>
 #include <vector>
 #include "environment.h"
 
@@ -48,7 +49,8 @@ public:
   std::string name;
   std::vector<Expression> subexpressions;
 
-  static std::map<std::string, Operation> string_to_operation;
+  static std::unordered_map<std::string, Operation> string_to_operation;
+  static std::unordered_set<std::string> volatile_inputs;
   Expression() {}
 
   static Expression Not(const Expression &expr);
@@ -68,7 +70,14 @@ public:
 
   static Expression Variable(char * var_name);
 
+  // Compute the result of this Expression given the current environment.
   float Compute(Environment* env);
+  // Determine if this Expression can Compute() different results depending on
+  // INn or any other volatile source (e.g., a random() function.)
+  // The names of the dependencies must be added to this set.
+  bool Volatile(std::unordered_set<std::string>* volatile_deps);
+
+  // Bison seems to require this; I don't use it.
   friend std::ostream& operator<<(std::ostream& os, const Expression &ex);
   std::string to_string() const;
   static bool is_zero(float value);

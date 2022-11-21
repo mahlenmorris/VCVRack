@@ -1,17 +1,19 @@
 # VCV Rack plugin by Stochastic Telegraph
-Modules for use with VCV Rack 2.0, with an emphasis on generative and self-regulating structure. Exploring the region between random and static.
+Modules for use with VCV Rack 2.0, with an emphasis on generative and
+self-regulating structure. Exploring the region between random and static.
 
-## BASICally
+## BASICally (not yet released)
 A simple, somewhat familiar procedural programming language within the
-context of Rack. Can act like:
-* a sequencer
+context of VCV Rack. Can act like:
+* a very flexible sequencer
 * VCO or LFO
-* wavefolder
-* control voltage utility
+* a wavefolder
+* a control voltage utility
 * sample and hold
 * all of the above and more, simultaneously
 
-Useful both for quickly trying out a transformation and efficient enough to use anywhere.
+Useful both for quickly trying out an idea and efficient enough
+to use anywhere.
 
 ### Examples
 
@@ -34,21 +36,38 @@ TODO: video of different examples and their output
 ### Utility
 
 ## The Language
-### Setting Variables (i.e., Assignment)
+### Setting and Using Variables (i.e., Assignment)
+Sets values of the OUT1, OUT2, OUT3 and OUT4 ports for connected modules to
+read. Also used to create and set variables for later use by the program.
+
+Always in the form:
+
+**variable name** = **mathematical expression**
+
+Examples:
+
+    foo = 3  ' Creates a variable called 'foo' and sets it to 3.0. All values in BASICally are floating point numbers.
+    bar = 5 * in1 + foo  ' Uses the value of the 'foo' variable.
+    out1 = bar * -0.01  ' Sets the value of the OUT1 port.
+    out2 = 0.1 + 2 * -1  ' Sets out2 equal to -1.9. Operator precedence is the same as most other languages.
+
+* All variables start with the value 0.0 when first read.
+* Variables stay available in the environment of a module until the patch
+is restarted. This is true even if the code that created the variable has been removed from the program.
 
 ### WAIT Statements
 
 ### Comments
-A single quote followed by a space indicate that the rest of the line will
-treated as a comment only to be read by the user.
+A single quote (') followed by a space indicates that the rest of the line will
+be treated as a comment only to be read by the user. Comments have no effect on
+the execution of other statements.
 
-Some examples:
+Examples:
 
     out2 = 3.250 ' A C4 note.
     WAIT 200 ' Pause for 1/5 of a second.
-    ' Look, I'm live-coding!
-    ' Next line can be turned on just by removing the initial quote.
-    ' out1 = 2.3 * in1
+    ' Next line can be turned on just by removing the initial tick.
+    ' out1 = 2.3 * in1  ' Look, I'm live-coding!
 
 ### IF Statements
 

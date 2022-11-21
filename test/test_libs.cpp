@@ -28,36 +28,53 @@ TEST(ParserTest, SimpleTest)
 {
     Driver drv;
     Environment env;
+    std::unordered_set<std::string> volatile_deps;
 
     EXPECT_EQ(0, drv.parse("out1 = (3 + 3) * 6"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ("out1", drv.lines[0].str1);
     EXPECT_EQ(36, drv.lines[0].expr1.Compute(&env));
+    EXPECT_FALSE(drv.lines[0].expr1.Volatile(&volatile_deps));
+    EXPECT_TRUE(volatile_deps.empty());
 
     // Space at end.
     EXPECT_EQ(0, drv.parse("out1 = (3 + 3) * 6  \n"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ("out1", drv.lines[0].str1);
     EXPECT_EQ(36, drv.lines[0].expr1.Compute(&env));
+    EXPECT_FALSE(drv.lines[0].expr1.Volatile(&volatile_deps));
+    EXPECT_TRUE(volatile_deps.empty());
 
     EXPECT_EQ(0, drv.parse("out1 = 3 + in2\n"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ("out1", drv.lines[0].str1);
     env.variables["in2"] = 0.338;
     EXPECT_FLOAT_EQ(3.338, drv.lines[0].expr1.Compute(&env));
+    EXPECT_TRUE(drv.lines[0].expr1.Volatile(&volatile_deps));
+    EXPECT_EQ(1, volatile_deps.size());
+    volatile_deps.clear();
 
     EXPECT_EQ(0, drv.parse("out1 = 3 + in2\nwait 1000"));
     ASSERT_EQ(2, drv.lines.size());
     EXPECT_EQ("out1", drv.lines[0].str1);
     EXPECT_FLOAT_EQ(3.338, drv.lines[0].expr1.Compute(&env));
+    EXPECT_TRUE(drv.lines[0].expr1.Volatile(&volatile_deps));
+    EXPECT_EQ(1, volatile_deps.size());
+    volatile_deps.clear();
     EXPECT_FLOAT_EQ(1000, drv.lines[1].expr1.Compute(&env));
+    EXPECT_FALSE(drv.lines[1].expr1.Volatile(&volatile_deps));
+    EXPECT_TRUE(volatile_deps.empty());
 
     // TODO: negative and float constants.
-    EXPECT_EQ(0, drv.parse("out1 = -0.5 + in2"));
+    EXPECT_EQ(0, drv.parse("out1 = -0.5 + in2 + pow(in2, in4)"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ("out1", drv.lines[0].str1);
     env.variables["in2"] = 1.0f;
-    EXPECT_FLOAT_EQ(0.5, drv.lines[0].expr1.Compute(&env));
+    EXPECT_FLOAT_EQ(1.5, drv.lines[0].expr1.Compute(&env));
+    EXPECT_TRUE(drv.lines[0].expr1.Volatile(&volatile_deps));
+    EXPECT_EQ(2, volatile_deps.size());
+    EXPECT_TRUE(volatile_deps.find("in2") != volatile_deps.end());
+    EXPECT_TRUE(volatile_deps.find("in4") != volatile_deps.end());
 }
 
 TEST(ParserTest, FunctionTest)

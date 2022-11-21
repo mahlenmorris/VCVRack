@@ -8,7 +8,7 @@
 #include <vector>
 #include "environment.h"
 
-std::map<std::string, Expression::Operation> Expression::string_to_operation = {
+std::unordered_map<std::string, Expression::Operation> Expression::string_to_operation = {
   {"+", PLUS},
   {"-", MINUS},
   {"*", TIMES},
@@ -31,6 +31,11 @@ std::map<std::string, Expression::Operation> Expression::string_to_operation = {
   {"min", MIN},
   {"pow", POW}
 };
+
+std::unordered_set<std::string> Expression::volatile_inputs = {
+  "in1", "in2", "in3", "in4"
+};
+
 
 Expression Expression::Not(const Expression &expr) {
   Expression ex;
@@ -130,6 +135,32 @@ float Expression::Compute(Environment* env) {
   }
 }
 
+bool Expression::Volatile(std::unordered_set<std::string>* volatile_deps) {
+  switch (type) {
+    case NUMBER: return false;
+    case TWOARGFUNC:
+    case BINOP: {
+      // Must ensure both get called to complete volatile_deps!
+      bool lhs = subexpressions[0].Volatile(volatile_deps);
+      bool rhs = subexpressions[1].Volatile(volatile_deps);
+      return lhs || rhs;
+    }
+    break;
+    case VARIABLE: {
+      if (volatile_inputs.find(name) == volatile_inputs.end()) {
+        return false;
+      } else {
+        volatile_deps->insert(name);
+        return true;
+      }
+    }
+    break;
+    case NOT: return subexpressions[0].Volatile(volatile_deps);
+    case ONEARGFUNC: return subexpressions[0].Volatile(volatile_deps);
+    default: return false;
+  }
+}
+
 std::ostream& operator<<(std::ostream& os, const Expression &ex) {
   os << ex.to_string();
   return os;
@@ -139,9 +170,10 @@ std::string Expression::to_string() const {
   switch (type) {
     case NUMBER: return "NumberExpression(" + std::to_string(float_value) + ")";
     case BINOP: return "BinOpExpression(" + std::to_string(operation) + ", " +
-        subexpressions[0].to_string() + ", " + subexpressions[1].to_string() + ")";
+        subexpressions[0].to_string() + ", " +
+        subexpressions[1].to_string() + ")";
     case VARIABLE: return "VariableExpression(" + name + ")";
-    default: return "Expression(ERR: Unknown type!)";
+    default: return "Expression(some other type)";
   }
 }
 

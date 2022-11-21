@@ -22,6 +22,25 @@ Style STYLES[] = {
   GATE
 };
 
+// The execution of WAIT statements needs to be as efficient as I can make them.
+// This data structure just collects all data about the ongoing WAITs.
+struct WaitInfo {
+  int countdown_to_recompute;
+  // Are we currently in a WAIT?
+  bool in_wait;
+  // The expression that computes the wait time could change while the wait is
+  // occuring.
+  bool is_volatile;
+  // The inputs the WAIT Expression relies on, if any.
+  std::unordered_set<std::string> volatile_deps;
+  // The number of process() calls seen in this WAIT. GOes up by one every time
+  // procees is called during the wait.
+  int ticks_so_far;
+  // The number of ticks needed to complete the wait. If is_volatile, then
+  // this needs to be recomputed when INn gets changed.
+  int ticks_limit;
+};
+
 struct Basically : Module {
   enum ParamId {
     RUN_PARAM,
@@ -89,10 +108,11 @@ struct Basically : Module {
 
     //drv.parse("out1 := in1 / 2 \n wait 500 \n out1 := in1 * 2 wait 300");
     // Environment must be initialized with values or module will fail on start.
+    // TODO: Do we still need this? I doubt it.
     environment.variables["out1"] = 0.0f;  // Default value to start.
     environment.variables["in1"] = 0.0f;  // Default value to start.
     current_line = 0;
-    ticks_remaining = 0;
+    wait_info.in_wait = false;
   }
 
   // If asked to, save the curve data in json for reading when loaded.
@@ -120,7 +140,7 @@ struct Basically : Module {
 
   void ResetToProgramStart() {
     current_line = 0;
-    ticks_remaining = 0;
+    wait_info.in_wait = false;
     // TODO: Consider resetting ticks_remaining and clearing "environment"?
   }
 
@@ -133,6 +153,37 @@ struct Basically : Module {
     }
   }
 
+  // Update all connected inputs.
+  void UpdateAllInputs() {
+    for (auto input : in_list) {
+      // Unconnected inputs can't change.
+      if (inputs[input.second].isConnected()) {
+        environment.variables[input.first] = inputs[input.second].getVoltage();
+      }
+    }
+  }
+
+  // Version of UpdateAllInputs optimized for volatile WAITs.
+  // Update only the inputs listed in deps.
+  // Returns true iff any input listed in deps changed value.
+  bool UpdateNeededInputs(const std::unordered_set<std::string> &deps) {
+    bool dep_changed = false;
+    for (auto input : in_list) {
+      // Unconnected inputs can't change.
+      if (inputs[input.second].isConnected()) {
+        if (deps.find(input.first) != deps.end()) {
+          // TODO: _maybe_ slightly faster to pull the pair from the map?
+          float prev = environment.variables[input.first];
+          float new_value = inputs[input.second].getVoltage();
+          if (!Expression::is_zero(new_value - prev)) {
+            environment.variables[input.first] = new_value;
+            dep_changed = true;
+          }
+        }
+      }
+    }
+    return dep_changed;
+  }
 
   void process(const ProcessArgs& args) override {
     Style style = STYLES[(int) params[STYLE_PARAM].getValue()];
@@ -194,16 +245,31 @@ struct Basically : Module {
     }
 
     // Update environment with current inputs.
-    // If we're just waiting this tick, nothing will read the environment, so
-    // no point in updating it.
-    if (running && ticks_remaining < 2) {
-      for (auto input : in_list) {
-        if (inputs[input.second].isConnected()) {
-          environment.variables[input.first] =
-              inputs[input.second].getVoltage();
+    bool need_to_update_wait = false;
+    // Need to determine if:
+    // * We need to update the inputs at all.
+    // * We are in a WAIT *and* we need to recompute the wait time.
+    // These are related questions.
+    if (running) {
+      // If we're not running, don't need to update inputs, and the WAIT
+      // status doesn't change.
+      if (!wait_info.in_wait) {
+        // Not in a WAIT => Definitely need to update.
+        UpdateAllInputs();
+      } else {
+        // In a WAIT, but does the wait interval rely on inputs?
+        if (wait_info.is_volatile) {
+          wait_info.countdown_to_recompute--;
+          if (wait_info.countdown_to_recompute <= 0) {
+            // Looks like inputs contribute to the WAIT period we are currently
+            // in. Better update the ones I need.
+            need_to_update_wait = UpdateNeededInputs(wait_info.volatile_deps);
+            wait_info.countdown_to_recompute = (int) args.sampleRate / 1000.0f;
+          }
         }
       }
     }
+
     // Run the PCode vector from the current spot in it.
     bool waiting = false;
 
@@ -220,26 +286,46 @@ struct Basically : Module {
         }
         break;
         case PCode::WAIT: {
-          // TODO: Need a way for user to say "wait exactly one step"
-          if (ticks_remaining > 0) {
-            // We're currently running through the current wait period.
-            ticks_remaining--;
-            if (ticks_remaining <= 0) {
+          if (wait_info.in_wait) {
+            // We're currently running through this statement's wait period.
+            // Update it by one tick.
+            wait_info.ticks_so_far++;
+            // If the wait period may have changed, recompute it.
+            if (need_to_update_wait) {
+              wait_info.ticks_limit = (int) (pcode->expr1.Compute(&environment) *
+                  args.sampleRate / 1000.0f);
+            }
+            if (wait_info.ticks_so_far >= wait_info.ticks_limit) {
+              // WAIT has completed, immediately execute next line.
+              wait_info.in_wait = false;
               current_line++;
+              // We may not updated *all* of the Inputs, let's do so.
+              UpdateAllInputs();
             }
           } else {
             // Just arriving at this WAIT statement.
-            ticks_remaining = (int) (pcode->expr1.Compute(&environment) *
+            int ticks = (int) (pcode->expr1.Compute(&environment) *
                 args.sampleRate / 1000.0f);
-            // A "WAIT 0" (or WAIT -1!) means we should push to next line and
-            // stop running for this process() call.
-            if (ticks_remaining <= 0) {
-              ticks_remaining = 0;
+            // A "WAIT 0" (or WAIT -1!) means we should stop running for
+            // this process() call but push to the next line. No reason to
+            // create a WaitInfo.
+            if (ticks <= 0) {
               current_line++;
               waiting = true;
+            } else {
+              // This WAIT is longer than a single tick, so we should fill in
+              // the WaitInfo for it.
+              wait_info.is_volatile = pcode->expr1.Volatile(
+                &(wait_info.volatile_deps));
+              // It wastes a lot of CPU seeing if we need to recompute every tick.
+              // We instead only consider doing so every millisecond.
+              wait_info.countdown_to_recompute = (int) args.sampleRate / 1000.0f;
+              wait_info.ticks_limit = ticks;
+              wait_info.ticks_so_far = 0;
+              wait_info.in_wait = true;
             }
           }
-          if (ticks_remaining > 0) {
+          if (wait_info.in_wait) {
             waiting = true;
           }
         }
@@ -312,12 +398,12 @@ struct Basically : Module {
   std::vector<PCode> pcodes;  // What actually gets executed.
   Environment environment;
   unsigned int current_line;
-  int ticks_remaining;
   // Some PCodes are reentrant, but with different behaviors. state helps
   // determine the behavior.
   PCode::State state;
   // Green on Black.
   long long int screen_colors = 0x00ff00000000;
+  WaitInfo wait_info;
 };
 
 // Adds support for undo/redo in the text field where people type programs.
