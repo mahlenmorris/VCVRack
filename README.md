@@ -192,8 +192,18 @@ Useful for:
 
 ### Examples
 
-#### Sequencer
+#### Sequencer playing the first three notes of Also sprach Zarathustra
 ![Sequencer image](images/BASICallyZara.png)
+
+#### LFO altered by inputs
+![SAW wave that resets when an input > 3 image](images/BASICallyHacksaw.png)
+
+#### An almost triangle wave with randomly selected slopes and peak
+![TRI wave with random slopes image](images/BASICallySmearingTri.png)
+
+#### Sample and hold
+![add a little variation to a melody image](images/BASICallySandH.png)
+Note that STYLE is set to "Start on trigger, don't loop"
 
 TODO: Link to patch file with numerous examples.
 
@@ -201,7 +211,9 @@ TODO: video of different examples and their output
 
 ## Unique Features
 While there are
-[other modules](https://github.com/mahlenmorris/VCVRack#related-modules) with a similar emphasis on "programming within VCV", BASICally has some interesting differences:
+[other modules](https://github.com/mahlenmorris/VCVRack#related-modules)
+with a similar emphasis on "programming within VCV", BASICally has some
+interesting differences:
 * It intentionally bears a visual resemblance to the
 [BASIC language](https://en.wikipedia.org/wiki/BASIC) (albeit an
 **quite** limited version of BASIC). BASIC is a language that many people
@@ -213,6 +225,8 @@ wish to edit the code.
 * Four different run "STYLES" (see Controls below), giving it the ability to
  act on a RUN trigger, or to run the most recent working version continuously
  as you type, or only run while a button is pressed.
+* Edits in the text window become part of the VCV Rack Undo/Redo system.
+* You can pick from a small number of screen color schemes in the menu.
 
 ## Uses
 
