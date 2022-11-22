@@ -102,15 +102,6 @@ struct Basically : Module {
     configOutput(OUT4_OUTPUT, "OUT4");
     configLight(RUN_LIGHT, "Lit when code is currently running.");
 
-    // If user decides to "bypass" the module, we can just pass IN -> OUT.
-    // TODO: reconsider this Bypass behavior.
-    configBypass(IN1_INPUT, OUT1_OUTPUT);
-
-    //drv.parse("out1 := in1 / 2 \n wait 500 \n out1 := in1 * 2 wait 300");
-    // Environment must be initialized with values or module will fail on start.
-    // TODO: Do we still need this? I doubt it.
-    environment.variables["out1"] = 0.0f;  // Default value to start.
-    environment.variables["in1"] = 0.0f;  // Default value to start.
     current_line = 0;
     wait_info.in_wait = false;
   }
@@ -141,7 +132,7 @@ struct Basically : Module {
   void ResetToProgramStart() {
     current_line = 0;
     wait_info.in_wait = false;
-    // TODO: Consider resetting ticks_remaining and clearing "environment"?
+    // TODO: Do we need a gesture that clears "environment"?
   }
 
   void UpdateOutsIfNeeded(const std::string var_name, float value) {
@@ -185,10 +176,18 @@ struct Basically : Module {
     return dep_changed;
   }
 
+  void processBypass(const ProcessArgs& args) override {
+    outputs[OUT1_OUTPUT].setVoltage(0.0f);
+    outputs[OUT2_OUTPUT].setVoltage(0.0f);
+    outputs[OUT3_OUTPUT].setVoltage(0.0f);
+    outputs[OUT4_OUTPUT].setVoltage(0.0f);
+  }
+
   void process(const ProcessArgs& args) override {
     Style style = STYLES[(int) params[STYLE_PARAM].getValue()];
     bool loops = (style != TRIGGER_NO_LOOP_STYLE);
 
+    // Compile if we need to.
     if (user_has_changed && !text.empty()) {
       user_has_changed = false;  // TODO: race condition?
       std::string lowercase;
@@ -211,37 +210,41 @@ struct Basically : Module {
     }
 
     // Determine if we are running or not.
-    // TODO: This doesn't need to run under some conditions.
-    bool run_was_low = !runTrigger.isHigh();
-    runTrigger.process(rescale(
-        inputs[RUN_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
-    bool run_button_pressed = params[RUN_PARAM].getValue() > 0.1f;
-    bool asked_to_start_run = (run_button_pressed ||
-                               (run_was_low && runTrigger.isHigh()));
-
-    switch (style) {
-      case ALWAYS_STYLE: {
-        if (compiles) running = true;
-      }
-      break;
-      case TRIGGER_LOOP_STYLE:
-      case TRIGGER_NO_LOOP_STYLE: {
-        // If we're already running, keep running.
-        if (!running && asked_to_start_run) {
+    // This section is more complicated than needed to avoid unneeded
+    // work every process() call.
+    bool prev_running = running;
+    if (style == ALWAYS_STYLE) {
+      if (compiles) running = true;
+    } else if (style == TRIGGER_LOOP_STYLE || style == TRIGGER_NO_LOOP_STYLE) {
+      if (!running) {
+        bool run_was_low = !runTrigger.isHigh();
+        runTrigger.process(rescale(
+            inputs[RUN_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+        bool run_button_pressed = params[RUN_PARAM].getValue() > 0.1f;
+        bool asked_to_start_run = (run_button_pressed ||
+                                   (run_was_low && runTrigger.isHigh()));
+        if (asked_to_start_run) {
           running = true;
           ResetToProgramStart();
         }
       }
-      break;
-      case GATE: {
-        running = runTrigger.isHigh() || run_button_pressed;
+    } else {  // style == GATE
+      runTrigger.process(rescale(
+          inputs[RUN_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+      if (runTrigger.isHigh()) {
+        running = true;
+      } else {
+        running = params[RUN_PARAM].getValue() > 0.1f;
       }
-      break;
     }
-
     if (text.empty()) {
       // User erasing all text means stop running.
       running = false;
+    }
+    if (!prev_running && running) {
+      // Flash the run light for a brief part of  asecond.
+      // Compute how many samples to show the light.
+      run_light_countdown = std::floor(args.sampleRate / 20.0f);
     }
 
     // Update environment with current inputs.
@@ -264,7 +267,8 @@ struct Basically : Module {
             // Looks like inputs contribute to the WAIT period we are currently
             // in. Better update the ones I need.
             need_to_update_wait = UpdateNeededInputs(wait_info.volatile_deps);
-            wait_info.countdown_to_recompute = (int) args.sampleRate / 1000.0f;
+            wait_info.countdown_to_recompute = std::floor(
+                args.sampleRate / 1000.0f);
           }
         }
       }
@@ -273,8 +277,6 @@ struct Basically : Module {
     // Run the PCode vector from the current spot in it.
     bool waiting = false;
 
-    // TODO: Could just decrement and skip this whole thing if
-    // ticks_remaining > 2?
     while (running && !waiting) {
       PCode* pcode = &(pcodes[current_line]);
       switch (pcode->type) {
@@ -292,7 +294,8 @@ struct Basically : Module {
             wait_info.ticks_so_far++;
             // If the wait period may have changed, recompute it.
             if (need_to_update_wait) {
-              wait_info.ticks_limit = (int) (pcode->expr1.Compute(&environment) *
+              wait_info.ticks_limit = std::floor(
+                  pcode->expr1.Compute(&environment) *
                   args.sampleRate / 1000.0f);
             }
             if (wait_info.ticks_so_far >= wait_info.ticks_limit) {
@@ -304,7 +307,7 @@ struct Basically : Module {
             }
           } else {
             // Just arriving at this WAIT statement.
-            int ticks = (int) (pcode->expr1.Compute(&environment) *
+            int ticks = std::floor(pcode->expr1.Compute(&environment) *
                 args.sampleRate / 1000.0f);
             // A "WAIT 0" (or WAIT -1!) means we should stop running for
             // this process() call but push to the next line. No reason to
@@ -319,7 +322,8 @@ struct Basically : Module {
                 &(wait_info.volatile_deps));
               // It wastes a lot of CPU seeing if we need to recompute every tick.
               // We instead only consider doing so every millisecond.
-              wait_info.countdown_to_recompute = (int) args.sampleRate / 1000.0f;
+              wait_info.countdown_to_recompute =
+                 std::floor(args.sampleRate / 1000.0f);
               wait_info.ticks_limit = ticks;
               wait_info.ticks_so_far = 0;
               wait_info.in_wait = true;
@@ -385,7 +389,11 @@ struct Basically : Module {
     }
 
     // Lights.
-    lights[RUN_LIGHT].setBrightness(running ? 1.0f : 0.0f);
+    if (run_light_countdown > 0) {
+      run_light_countdown--;
+    }
+    lights[RUN_LIGHT].setBrightness(
+      (running || run_light_countdown > 0) ? 1.0f : 0.0f);
   }
 
   dsp::SchmittTrigger runTrigger;
@@ -398,11 +406,13 @@ struct Basically : Module {
   std::vector<PCode> pcodes;  // What actually gets executed.
   Environment environment;
   unsigned int current_line;
-  // Some PCodes are reentrant, but with different behaviors. state helps
-  // determine the behavior.
+  // Some PCodes have different behaviors, depending on how execution got
+  // there. 'state' helps determine the correct behavior.
   PCode::State state;
   // Green on Black.
   long long int screen_colors = 0x00ff00000000;
+  // Keeps lights lit long enough to see.
+  int run_light_countdown = 0;
   WaitInfo wait_info;
 };
 
@@ -778,10 +788,9 @@ struct BasicallyWidget : ModuleWidget {
 
   void step() override {
 		Basically* module = dynamic_cast<Basically*>(this->module);
-    // TODO: this is really only useful to call when the width changes.
+    // While this is really only useful to call when the width changes,
+    // I don't think it's currently worth the effort to ONLY call it then.
     // And maybe the *first* time step() is called.
-    // _Maybe_ should only do it when changed. I mean, it would be a _little_
-    // less code run for every step, so better, right?
 		if (module) {
 			box.size.x = module->width * RACK_GRID_WIDTH;
 		}
