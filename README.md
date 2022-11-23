@@ -7,7 +7,7 @@ Creates sequences of values that can slowly (or quickly) vary, like a series of
 points doing random walks connected into a series.
 
 ### Examples
-![Simple Example](images/simplest_example.png)
+![Simple Example](images/DrifterSimplestExample.png)
 
 * Set this up, and you'll just hear a single tone.
 * Now try tapping the DRIFT button a few times, and you'll hear the frequency change.
@@ -205,18 +205,20 @@ Useful for:
 ![add a little variation to a melody image](images/BASICallySandH.png)
 Note that STYLE is set to "Start on trigger, don't loop"
 
-TODO: Link to patch file with numerous examples.
+The examples above are all in [this patch](examples/BASICallyExamples1.vcv).
+A patch with some simple ideas for other directions BASICally can go are in
+[this patch](examples/BASICallyExperiments.vcv).
 
 TODO: video of different examples and their output
 
 ## Unique Features
 While there are
 [other modules](https://github.com/mahlenmorris/VCVRack#related-modules)
-with a similar emphasis on "programming within VCV", BASICally has some
+with a similar emphasis on "writing code within VCV", BASICally has some
 interesting differences:
 * It intentionally bears a visual resemblance to the
-[BASIC language](https://en.wikipedia.org/wiki/BASIC) (albeit an
-**quite** limited version of BASIC). BASIC is a language that many people
+[BASIC language](https://en.wikipedia.org/wiki/BASIC) (albeit a **quite
+limited** version of BASIC). BASIC is a language that many people
 know, once knew, or can pick up by looking at examples.
 * The right side of the module is a resize bar; pull it to the right or left,
 and the code window changes size. Handy for reading those long comments without
@@ -224,43 +226,59 @@ line breaks and for shrinking the module down to a small size when you don't
 wish to edit the code.
 * Four different run "STYLES" (see Controls below), giving it the ability to
  act on a RUN trigger, or to run the most recent working version continuously
- as you type, or only run while a button is pressed.
+ as you type, or only run while a button or trigger is pressed.
 * Edits in the text window become part of the VCV Rack Undo/Redo system.
-* You can pick from a small number of screen color schemes in the menu.
-
-## Uses
-
-### Sequencer
-
-### Logic
-
-### Sample and Hold
-
-### Oscillator
-
-### Utility
+* You can pick from a (small) number of screen color schemes in the menu.
 
 ## The Language
 ### Setting and Using Variables (i.e., Assignment)
-Sets values of the OUT1, OUT2, OUT3 and OUT4 ports for connected modules to
-read. Also used to create and set variables for later use by the program.
-
 Always in the form:
 
 **variable name** = **mathematical expression**
 
+Setting values of the OUT1, OUT2, OUT3 and OUT4 ports for connected modules to
+read. Also used for setting variables for use elsewhere by your program.
+
 Examples:
 
-    foo = 3  ' Creates a variable called 'foo' and sets it to 3.0. All values in BASICally are floating point numbers.
-    bar = 5 * in1 + foo  ' Uses the value of the 'foo' variable.
-    out1 = bar * -0.01  ' Sets the value of the OUT1 port.
-    out2 = 0.1 + 2 * -1  ' Sets out2 equal to -1.9. Operator precedence is the same as most other languages.
+    ' Creates a variable called 'foo' and sets it to 3.0. All values
+    ' in BASICally are floating point numbers.
+    foo = 3
+    ' Uses the value of the 'foo' variable.
+    bar = 5 * in1 + foo
+    ' Sets the value of the OUT1 port.
+    out1 = bar * -0.01
+    ' Sets out2 equal to -1.9. Operator precedence is the same as most other languages.
+    out2 = 0.1 + 2 * -1
 
 * All variables start with the value 0.0 when first read.
 * Variables stay available in the environment of a module until the patch
 is restarted. This is true even if the code that created the variable has been removed from the program.
+* OUT1-4 are clamped to the range -10v <--> 10v.
 
 ### WAIT Statements
+Always in the form:
+
+WAIT **mathematical expression**
+
+Specifies a number of milliseconds for the program to make no changes. The
+OUTn ports maintain their voltages at the values they were at when the WAIT started.
+
+Examples:
+
+    ' Waits a full second.'
+    wait 1000
+    ' Wait half of one thousandth of a second.
+    WAIT 0.5
+    ' wait [in2] tenths of a second.
+    wait in2 * 100
+    ' The shortest possible WAIT. Exactly one sample.
+    WAIT 0
+    ' Negative values are treated as if the were zero.
+    WAIT -3
+
+If you find that your BASICally module is using a lot of CPU, even a short WAIT
+will help make the module use less CPU.
 
 ### Comments
 A single quote (') followed by a space indicates that the rest of the line will
@@ -271,7 +289,7 @@ Examples:
 
     out2 = 3.250 ' A C4 note.
     WAIT 200 ' Pause for 1/5 of a second.
-    ' Next line can be turned on just by removing the initial tick.
+    ' The next line can be turned on just by removing the initial tick (').
     ' out1 = 2.3 * in1  ' Look, I'm live-coding!
 
 ### IF Statements
@@ -288,21 +306,95 @@ Anything higher or lower will be locked down to
 
 BASICally is intended for the very casual user, with the hope that examples
 alone will suffice to suggest how programs can be written. Because of the UI
-limitations, detailed error reporting is difficult to provide.
+limitations, detailed error reporting is difficult to provide. But if you
+hover your mouse over the little red area to the left that says "Fix!", it
+will attempt to point out the first place that BASICally couldn't understand
+the code.  
 
 Since programs are typically *very* short, the language leans towards ease for
 the casual user. For that reason, the following lists a few surprising
 differences from more robust languages:
-* BASICally is case-insensitive. OUT1, oUt1, and out1 all refer to the same
-variable. I would certainly suggest you be consistent within in your programs,
-but the module won't insist on it.
-* Newlines do not matter, *except* that comments always end with a newline.
-* Indentation does not matter. That said, even short programs can benefit from
-the indentation demonstrated in the examples.
+* BASICally is **case-insensitive**. "OUT1", "oUt1", and "out1" all refer to
+the same variable. "WAIT" and "wait" are identical in meaning. I would
+certainly suggest you be consistent within in your programs,
+but BASICally won't insist on it.
+* **Newlines do not matter**, *except* that comments always end at the newline.
+The following are identical in meaning:
+```
+out1 = sin(in2) * 0.3 + mod(in1, 4)
+```
+```
+ out1 =
+ sin(in2)
+   * 0.3
+      + mod(
+  in1, 4)
+```
+```
+' You could comment parts of this equation in or out as you type.
+out1 =
+  sin(in2) *
+    0.3 +
+  mod(in1, 4)
+```
+
+If lines are wrapping around in a way that makes it hard to read,
+remember that you can **resize the code window** by dragging the right-side
+edge of the module.
+* **Indentation does not matter**. That said, even short programs can become more readable to you by using the indentation demonstrated in the examples.
 
 ## Slightly Surprising Details
 
-### Implied WAIT 0 Statements
+### WAIT Statements Changing Lengths
+
+In the case of
+
+    wait in2 * 100
+
+the length of time might get shorter or longer if in2 changes while
+the WAIT has started. For example, if in2 is 10.0 when the WAIT starts, then
+it will start to wait for 1000 millis. However, if, say, 100 milliseconds later
+the value of in2 changes to 0.5, then the WAIT was for 50 milliseconds, what
+should happen?
+
+What BASICally does is frequently recompute the wait time and then see if the
+WAIT has already exceeded the new value; if it does, the WAIT ends and the next
+statement runs. Doing this makes BASICally more responsive to changes from the
+user.
+
+If this is not what you want, just assign the value to a variable:
+
+    pause_ms = in2 * 100
+    wait pause_ms
+
+Then (in the scenario above) the length of the WAIT will be 1000 millis,
+and no change to in2 during the WAIT can change that.
+
+### Hidden WAIT 0 Statements
+
+Under the hood, WAIT statements are how BASICally knows to stop running its
+code and pass control back to the other modules in VCV Rack. If it never WAITed,
+VCV Rack would hang. Therefore, there are a number of hardwired WAIT 0
+lines inserted. Here they are made visible. For example, this program:
+
+    OUT3 = 0
+    WAIT 100
+    FOR level = 0 To 5 STEP 0.01
+      OUT3 = level
+    NEXT
+    OUT1 = sin(in2 * in2)
+Is turned into:
+
+    OUT3 = 0
+    WAIT 100
+    FOR level = 0 To 5 STEP 0.01
+      OUT3 = level
+      ' There is a hidden WAIT 0 inserted just before every NEXT in a FOR-NEXT loop.
+      WAIT 0
+    NEXT
+    OUT1 = sin(in2 * in2)
+    ' There is a hidden WAIT 0 inserted at the bottom of the program.
+    WAIT 0
 
 ### Controls
 #### GOOD Light
@@ -314,6 +406,7 @@ the indentation demonstrated in the examples.
 ### Menu Options
 
 ### Bypass Behavior
+When the module is bypassed, all OUTn ports are set to zero volts.
 
 ### Related Modules
 * Frank Buss's
