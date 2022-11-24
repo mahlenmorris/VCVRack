@@ -231,7 +231,7 @@ wish to edit the code.
 * You can pick from a (small) number of screen color schemes in the menu.
 
 ## The Language
-### Setting and Using Variables (i.e., Assignment)
+### Setting and Using Variables (Assignment and Math)
 Always in the form:
 
 **variable name** = **mathematical expression**
@@ -260,8 +260,8 @@ is restarted. This is true even if the code that created the variable has been r
 The following are operators and functions you can use in mathematical
 expressions:
 * **"+", "-", "*", "/"** -- add, subtract, multiply, divide. Note that dividing
-any number by zero, while undefined in *mathematics*, is defined by BASICally
-to be 0.0f.
+any number by zero, while undefined in *mathematics*, is defined by *BASICally*
+to be 0.0.
 * **"<", "<=", ">" , ">=", "==", "!="** -- comparison operators. Most commonly used
 in IF-THEN[-ELSE] statements.
 * **"and", "or", "not"** -- Boolean logic operators. For purposes of these, a zero
@@ -274,10 +274,10 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 |**floor(x)**|integer value at or below x|floor(2.1) == 2, floor(-2.1) == -3|
 |**max(x, y)**|the larger of x or y|max(2.1, 2.3) == 2.3, max(2.1, -2.3) == 2.1
 |**min(x, y)**|the smaller of x or y|min(2.1, 2.3) == 2.1, min(2.1, -2.3) == -2.3
-|**mod(x, y)**|the remainder after dividing a by b. Will be negative if a is negative|mod(10, 2.1) == 1.6
+|**mod(x, y)**|the remainder after dividing x by y. Will be negative only if x is negative|mod(10, 2.1) == 1.6
 |**pow(x, y)**|x to the power of y|pow(3, 2) == 9, pow(9, 0.5) == 3
-|**sign(x)**|-1, 0, or 1, depending on the sign of the value|sign(2.1) == 1, sign(-2.1) == -1, sign(0) = 0|
-|**sin(x)**|arithmetic sine of the value, which is in radians| sin(30 * 0.0174533) == 0.5, sin(3.14159 / 2) == 1
+|**sign(x)**|-1, 0, or 1, depending on the sign of x|sign(2.1) == 1, sign(-2.1) == -1, sign(0) = 0|
+|**sin(x)**|arithmetic sine of x, which is in radians| sin(30 * 0.0174533) == 0.5, sin(3.14159 / 2) == 1
 
 ### WAIT Statements
 Always in the form:
@@ -315,15 +315,122 @@ Examples:
     ' The next line can be turned on just by removing the initial tick (').
     ' out1 = 2.3 * in1  ' Look, I'm live-coding!
 
-### IF Statements
+### IF Statements (Conditional Behavior)
+There are two kinds of IF statements:
 
+IF **conditional expression** THEN
+**...Statements for True...**
+END IF
+
+or
+
+IF **conditional expression** THEN
+**...statements for True...**
+ELSE
+**...Statements for False...**
+END IF
+
+The conditional expression evaluates to False if it equals zero; it evaluates to
+True otherwise.
+
+Examples:
+```
+if in1 > 3.7 then
+  out1 = in2 * 0.01
+  out2 = sin(in2)
+end if
+
+if in1 > 3.7 or foo == -1 then
+  out1 = in2 * 0.01
+  out2 = sin(in2)
+else
+  out1 = 0
+  out2 = 0.5
+end if
+```
 ### FOR Loops
+Useful for repeating statements for some limited number of times.
+There are two kinds of FOR loops:
 
-### CONTINUE FOR and ALL
+FOR **variable** = **expression** TO **expression** **...Statements...** NEXT
 
-### EXIT FOR and ALL
+(**variable** goes up by one every loop)
 
-### Other
+or
+
+FOR **variable** = **expression** TO **expression** STEP **expression** **...Statements...** NEXT
+
+(**variable** goes up by the STEP **expression** every loop, or down if it's negative)
+
+Examples:
+```
+for i = -5 to 5
+  out1 = i
+  wait 100
+next
+' out1 will be: -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 and then leave the loop
+
+for i = 0 to 5
+  for j = 0.4 to 0 step -0.1
+    out1 = i + j
+    wait 10
+  next
+  wait 100
+next
+' out1 will be: 0.4, 0.3, 0.2, 0.1, 0, 1.4, 1.3, 1.2, ...
+```
+Note that the TO and STEP expressions are only computed when entering the loop.
+```
+dest = 10
+leap = 2
+FOR j = 0 TO dest STEP leap
+  dest = .1  ' Has no effect on loop.
+  leap = .1  ' Also no effect.
+  out1 = j
+  wait 10
+next
+' out1 will be: 0, 2, 4, 6, 8, 10 and then leave the loop.
+```
+
+### CONTINUE FOR and EXIT FOR
+While in a FOR loop, there may be circumstances when you want to change
+what statements to run. There are two special ways to do this.
+
+**CONTINUE FOR** moves execution back to the beginning of the loop, changing
+the variable value as it normally would.
+
+**EXIT FOR**, in contrast, moves to the statement after the NEXT, quitting the
+loop entirely.
+
+Examples:
+```
+for i = 0 to 5
+  if i == 2 then CONTINUE FOR end if  ' Skips rest of loop when i == 2.
+  out1 = i
+  wait 100
+next
+' out1 will be 0, 1, 3, 4, 5, and then leave this loop.
+
+for i = 0 to 5
+  if i == 2 then EXIT FOR end if   ' Leaves loop when i == 2.
+  out1 = i
+  wait 100
+next
+' out1 will be 0, 1, and then leave this loop.
+```
+### CONTINUE ALL and EXIT ALL
+Similarly, you can use **CONTINUE ALL** to move execution to the top of the
+program.
+
+For the two STYLES that support halting the program, which are:
+
+* Start on trigger, loop
+* Start on trigger, don't loop
+
+encountering an  **EXIT ALL** will actually halt the program. A trigger/button
+press to RUN will start it again.
+
+### Other Things to Note
 BASICally is intended for the very casual user, with the hope that examples
 alone will suffice to suggest how programs can be written. Because of the UI
 limitations, detailed error reporting is difficult to provide. But if you
@@ -331,9 +438,10 @@ hover your mouse over the little red area to the left that says "Fix!", it
 will attempt to point out the first place that BASICally couldn't understand
 the code.  
 
-Since programs are typically *very* short, the language leans towards ease for
-the casual user. For that reason, the following lists a few surprising
-differences from more robust languages:
+Programs are typically *very* short. For that reason, this language doesn't need
+the features that are useful for writing long programs but increase the
+amount of boilerplate code. Here are a few surprising differences
+from more robust languages:
 * BASICally is **case-insensitive**. "OUT1", "oUt1", and "out1" all refer to
 the same variable. "WAIT" and "wait" are identical in meaning. I would
 certainly suggest you be consistent within in your programs,
@@ -383,34 +491,36 @@ If this is not what you want, just assign the value to a variable:
 Then (in the scenario above) the length of the WAIT will be 1000 millis,
 and no change to in2 during the WAIT can change that.
 
+*Note that this differs from the way FOR-NEXT loops work, where the TO and STEP
+values are computed **only** upon entering the loop.*
+
 ### Hidden WAIT 0 Statements
 
 Under the hood, WAIT statements are how BASICally knows to stop running its
 code and pass control back to the other modules in VCV Rack. If it never WAITed,
-VCV Rack would hang. Therefore, there are a number of hardwired WAIT 0
-lines inserted. Here they are made visible. For example, this program:
-
-    OUT3 = 0
-    WAIT 100
-    FOR level = 0 To 5 STEP 0.01
-      OUT3 = level
-    NEXT
-    OUT1 = sin(in2 * in2)
-Is turned into:
-
-    OUT3 = 0
-    WAIT 100
-    FOR level = 0 To 5 STEP 0.01
-      OUT3 = level
-      ' There is a hidden WAIT 0 inserted just before every NEXT in a FOR-NEXT loop.
-      WAIT 0
-    NEXT
-    OUT1 = sin(in2 * in2)
-    ' There is a hidden WAIT 0 inserted at the bottom of the program.
-    WAIT 0
+VCV Rack would hang and eventually the program will crash. Therefore, there are a number of hardwired WAIT 0 lines inserted. For example, consider this program:
+```
+OUT3 = 0
+WAIT 100
+FOR level = 0 To 5 STEP 0.01
+  OUT3 = level
+NEXT
+OUT1 = sin(in2 * in2)
+```    
+Under the hood, it is turned into:
+```
+OUT3 = 0
+WAIT 100
+FOR level = 0 To 5 STEP 0.01
+  OUT3 = level
+  WAIT 0   ' There is a hidden WAIT 0 inserted just before every NEXT in a FOR-NEXT loop.
+NEXT
+OUT1 = sin(in2 * in2)
+WAIT 0  ' There is a hidden WAIT 0 inserted at the bottom of the program.
+```
 
 ### Controls
-#### GOOD Light
+#### GOOD? Light
 
 #### STYLE Knob
 
@@ -425,4 +535,5 @@ When the module is bypassed, all OUTn ports are set to zero volts.
 * Frank Buss's
 [Formula](https://library.vcvrack.com/FrankBuss/Formula).
 * docB's
-[Formula One](https://library.vcvrack.com/dbRackFormulaOne), which seems to be **very** CPU efficient. in comparison to Formula and BASICally.
+[Formula One](https://library.vcvrack.com/dbRackFormulaOne), which, compared
+to Formula and BASICally, seems to be **very** CPU efficient.
