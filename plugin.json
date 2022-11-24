@@ -19,7 +19,10 @@
       "description": "Generate sequences and perform math on inputs with a simple BASIC-like language.",
       "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/README.md#basically",
       "tags": [
+        "Attenuator",
+        "Function Generator",
 	      "Sequencer",
+        "Sample and hold",
 	      "Utility"
 	    ]
     },
