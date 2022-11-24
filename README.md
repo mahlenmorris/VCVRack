@@ -266,6 +266,7 @@ to be 0.0f.
 in IF-THEN[-ELSE] statements.
 * **"and", "or", "not"** -- Boolean logic operators. For purposes of these, a zero
 value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
+
 | Function  | Meaning        | Examples |
 | --------- | -------------- | -------- |
 |**abs(x)**| absolute value | abs(2.1) == 2.1, abs(-2.1) == 2.1 |
