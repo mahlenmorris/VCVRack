@@ -236,8 +236,9 @@ Always in the form:
 
 **variable name** = **mathematical expression**
 
-Setting values of the OUT1, OUT2, OUT3 and OUT4 ports for connected modules to
-read. Also used for setting variables for use elsewhere by your program.
+Set values of the OUT1, OUT2, OUT3 and OUT4 ports for connected modules to
+read via connected cables. Assignment is also used for setting variables for
+use elsewhere by your program.
 
 Examples:
 
@@ -255,6 +256,27 @@ Examples:
 * Variables stay available in the environment of a module until the patch
 is restarted. This is true even if the code that created the variable has been removed from the program.
 * OUT1-4 are clamped to the range -10v <--> 10v.
+
+The following are operators and functions you can use in mathematical
+expressions:
+* **"+", "-", "*", "/"** -- add, subtract, multiply, divide. Note that dividing
+any number by zero, while undefined in *mathematics*, is defined by BASICally
+to be 0.0f.
+* **"<", "<=", ">" , ">=", "==", "!="** -- comparison operators. Most commonly used
+in IF-THEN[-ELSE] statements.
+* **"and", "or", "not"** -- Boolean logic operators. For purposes of these, a zero
+value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
+| Function  | Meaning        | Examples |
+| --------- | -------------- | -------- |
+|**abs(x)**| absolute value | abs(2.1) == 2.1, abs(-2.1) == 2.1 |
+|**ceiling(x)**| integer value at or above x | ceiling(2.1) == 3, ceiling(-2.1) == -2 |
+|**floor(x)**|integer value at or below x|floor(2.1) == 2, floor(-2.1) == -3|
+|**max(x, y)**|the larger of x or y|max(2.1, 2.3) == 2.3, max(2.1, -2.3) == 2.1
+|**min(x, y)**|the smaller of x or y|min(2.1, 2.3) == 2.1, min(2.1, -2.3) == -2.3
+|**mod(x, y)**|the remainder after dividing a by b. Will be negative if a is negative|mod(10, 2.1) == 1.6
+|**pow(x, y)**|x to the power of y|pow(3, 2) == 9, pow(9, 0.5) == 3
+|**sign(x)**|-1, 0, or 1, depending on the sign of the value|sign(2.1) == 1, sign(-2.1) == -1, sign(0) = 0|
+|**sin(x)**|arithmetic sine of the value, which is in radians| sin(30 * 0.0174533) == 0.5, sin(3.14159 / 2) == 1
 
 ### WAIT Statements
 Always in the form:
@@ -301,9 +323,6 @@ Examples:
 ### EXIT FOR and ALL
 
 ### Other
-All of the OUTn outputs are limited to send values between -10V and 10V.
-Anything higher or lower will be locked down to
-
 BASICally is intended for the very casual user, with the hope that examples
 alone will suffice to suggest how programs can be written. Because of the UI
 limitations, detailed error reporting is difficult to provide. But if you
@@ -330,13 +349,6 @@ out1 = sin(in2) * 0.3 + mod(in1, 4)
       + mod(
   in1, 4)
 ```
-```
-' You could comment parts of this equation in or out as you type.
-out1 =
-  sin(in2) *
-    0.3 +
-  mod(in1, 4)
-```
 
 If lines are wrapping around in a way that makes it hard to read,
 remember that you can **resize the code window** by dragging the right-side
@@ -353,9 +365,9 @@ In the case of
 
 the length of time might get shorter or longer if in2 changes while
 the WAIT has started. For example, if in2 is 10.0 when the WAIT starts, then
-it will start to wait for 1000 millis. However, if, say, 100 milliseconds later
-the value of in2 changes to 0.5, then the WAIT was for 50 milliseconds, what
-should happen?
+it will *start* to wait for 1000 millis. However, if, say, 100 milliseconds later
+the value of in2 changes to 0.5, then the WAIT is now for 50 milliseconds.
+What should happen?
 
 What BASICally does is frequently recompute the wait time and then see if the
 WAIT has already exceeded the new value; if it does, the WAIT ends and the next
