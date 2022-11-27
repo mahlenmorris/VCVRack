@@ -350,16 +350,52 @@ WAIT 0  ' There is a hidden WAIT 0 inserted at the bottom of the program.
 
 ### Controls
 #### GOOD? Light
+The area underneath the "GOOD?" indicates whether or not BASICally has figured
+out how to turn your code into instructions. If it looks like:
 
-#### STYLE Knob
+![Good image](images/BASICallyGood.png)
 
-#### RUN Button and Input
+then BASICally can run your code. However if it looks like:
+
+![Fix image](images/BASICallyFix.png)
+
+Then it cannot run the code as it stands. If you roll the mouse pointer over
+the "Fix", then BASICally will attempt to point out where the first error
+it found was. As you can see here, for now, it can only vaguely tell
+you where it got confused and why.
+
+#### STYLE Knob + RUN Button and Input
+There are four options to determine when the code will run. Three of them rely on the RUN Button and trigger/gate, which are described below.
+
+* **Always run** -- Will always try to run the latest code in the window that
+compiled. This is the best state for making changes on the fly and seeing them
+applied immediately. Also nice for when you are first determining what your
+code for this module should be. Note that when the code changes, BASICally restart the code from the start of the code.
+
+* **Start on trigger, loop** -- If not already running, then it waits for the RUN
+button to be pressed or a trigger to be seen by the RUN input. When the signal
+to run happens, it will run and "loop", meaning it will when it gets to the last line, it will do a "WAIT 0", and then start again from the top.
+
+* **Start on trigger, don't loop** -- If not already running, then it waits for
+the RUN button to be pressed or a trigger to be seen by the RUN input.
+When the signal to run happens, it will run and then stop when the last line is reached. This is useful for making Sample & Hold behavior; the RUN input
+becomes the trigger for the Hold.
+
+* **Run when gate is open** -- While the RUN button is pressed or the RUN input
+is high, then BASICALLY will run. If the button is released or the input
+falls low, then the program will stop. As long as the program isn't changed, when the next button press/input high occurs, exection will pick up from where it left off. For example, suppose a five second WAIT starts, and then after 3.5
+seconds the button is released. When the button is later pressed, the WAIT will continue for another 1.5 seconds before moving on to the next statement.
 
 ### Menu Options
 
-#### Screen colors
+#### Screen Colors
 A small number of choices about text colors. There should be more, but
 changing the background color is not a simple as I expected.
+
+#### Syntax Hints
+Just in case you're in the middle of coding and you don't want to look up
+this documentation, there's some hints about the syntax of BASICally. You can
+click on a particular statement and it will be inserted into your code.
 
 ### Bypass Behavior
 When the module is bypassed, all OUTn ports are set to zero volts.

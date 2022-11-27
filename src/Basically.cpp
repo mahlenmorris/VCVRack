@@ -591,6 +591,11 @@ struct BasicallyDisplay : LedDisplay {
     textField->box.size = box.size;
     LedDisplay::step();
 	}
+
+  // Text insertions from the menu.
+  void insertText(const std::string &fragment) {
+    textField->insertText(fragment);
+  }
 };
 
 struct ErrorWidget;
@@ -807,6 +812,7 @@ struct BasicallyWidget : ModuleWidget {
 
   void appendContextMenu(Menu* menu) override {
     Basically* module = dynamic_cast<Basically*>(this->module);
+    // Add color choices.
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel("Screen colors"));
     long long int default_colors[] = {0x00ff00000000,
@@ -821,6 +827,32 @@ struct BasicallyWidget : ModuleWidget {
       menu->addChild(createCheckMenuItem(color_names[i], "",
           [=]() {return scheme == module->screen_colors;},
           [=]() {module->screen_colors = scheme;}
+      ));
+    }
+    // Add syntax insertions.
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createMenuLabel(
+      "Syntax hints (select to insert into code)"));
+    std::pair<std::string, std::string> syntax[] = {
+      {"OUT1 = IN1 + IN2", "OUT1 = IN1 + IN2"},
+      {"WAIT 200", "WAIT 200"},
+      {"' I'm a comment.", "' I'm a comment."},
+      {"IF IN1 == 0 THEN OUT1 = IN2 * IN2 END IF",
+       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN2\nEND IF"},
+      {"IF IN1 == 0 THEN OUT1 = IN2 * IN1 ELSE OUT1 = IN2 * IN1 END IF",
+       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSE\n  OUT1 = IN2 * IN1\nEND IF"},
+      {"FOR i = 0 TO 10 foo = IN1 + i NEXT",
+       "FOR i = 0 TO 10\n  foo = IN1 + i\nNEXT"},
+      {"FOR i = 0 TO 10 STEP 0.2 foo = IN1 + i NEXT",
+       "FOR i = 0 TO 10 STEP 0.2\n  foo = IN1 + i\nNEXT"},
+      {"CONTINUE FOR", "CONTINUE FOR"},
+      {"EXIT FOR", "EXIT FOR"},
+      {"CONTINUE ALL", "CONTINUE ALL"},
+      {"EXIT ALL", "EXIT ALL"}
+    };
+    for (auto line : syntax) {
+      menu->addChild(createMenuItem(line.first, "",
+        [=]() { codeDisplay->insertText(line.second); }
       ));
     }
   }
