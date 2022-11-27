@@ -1,7 +1,7 @@
 {
   "slug": "StochasticTelegraph",
   "name": "Stochastic Telegraph",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "license": "GPL-3.0-or-later",
   "brand": "Stochastic Telegraph",
   "author": "Mahlen Morris",
@@ -16,7 +16,7 @@
     {
       "slug": "BASICally",
       "name": "BASICally",
-      "description": "Generate sequences and perform math on inputs with a simple BASIC-like language.",
+      "description": "Generate sequences or perform math on inputs with a simple BASIC-like language.",
       "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/README.md#basically",
       "tags": [
         "Attenuator",
