@@ -8,7 +8,9 @@ self-regulating structure. Exploring the region between random and static.
 * [Drifter](#drifter): Creates sequences of values that can slowly (or quickly) vary, like a series of points doing random walks connected into a series.
 * [Fuse](#fuse): Block, allow, or attenuate a signal passing through, based on the number of triggers observed in a different signal.
 
-## BASICally
+![Line Break image](images/Separator.png)
+
+# BASICally
 
 A simple, likely familiar procedural programming language within the
 context of VCV Rack. Can act like:
@@ -412,7 +414,9 @@ When the module is bypassed, all OUTn ports are set to zero volts.
 [Formula One](https://library.vcvrack.com/dbRackFormulaOne), which, compared
 to Formula and BASICally, seems to be **very** CPU efficient.
 
-## Drifter
+![Line Break image](images/Separator.png)
+
+# Drifter
 Creates sequences of values that can slowly (or quickly) vary, like a series of
 points doing random walks connected into a series.
 
@@ -487,7 +491,9 @@ will be saved with the rack, and that position will be loaded along with the rac
 ### Bypass Behavior
 If this module is bypassed, then OUT will equal IN.
 
-## Fuse
+![Line Break image](images/Separator.png)
+
+# Fuse
 Block, allow, or attenuate a signal passing through, based on the number of triggers
 observed in a different signal.
 ### Examples
