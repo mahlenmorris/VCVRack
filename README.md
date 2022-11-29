@@ -19,7 +19,7 @@ context of VCV Rack. Can act like:
 * a wavefolder
 * a control voltage utility
 * sample and hold
-* all of the above and more, simultaneously, and more.
+* all of the above and more, simultaneously
 
 Useful for:
 * quickly trying out an idea
