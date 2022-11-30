@@ -69,7 +69,7 @@
   COMMA   ","
 ;
 
-%token <Expression> IDENTIFIER "identifier"
+%token <std::string> IDENTIFIER "identifier"
 %token <float> NUMBER "number"
 %token <std::string> ONEARGFUNC "oneargfunc"
 %token <std::string> TWOARGFUNC "twoargfunc"
@@ -101,7 +101,7 @@ statements:
 | statements wait_statement       { $$ = $1.add($2); }
 
 assignment:
-  "identifier" "=" exp  { $$ = Line::Assignment($1, $3); }
+  "identifier" "=" exp  { $$ = Line::Assignment($1, $3, &drv); }
 
 continue_statement:
   "continue" "for"      { $$ = Line::Continue($2); }
@@ -133,7 +133,7 @@ exp:
   "number"      { $$ = Expression::Number((float) $1); }
 | MINUS "number" %prec NEG { $$ = Expression::Number(-1 * (float) $2);}
 | "not" exp %prec NEG { $$ = Expression::Not($2);}
-| "identifier"  { $$ = Expression::Variable($1); }
+| "identifier"  { $$ = Expression::Variable($1, &drv); }
 | exp "+" exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
 | exp "-" exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
 | exp "*" exp   { $$ = Expression::CreateBinOp($1, $2, $3); }

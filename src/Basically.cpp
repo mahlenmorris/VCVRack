@@ -67,16 +67,27 @@ struct Basically : Module {
     LIGHTS_LEN
   };
 
+  // Structure that maps text name to enum to float* for I/O variables.
+  struct InPortInfo {
+    std::string name;
+    InputId id;
+    float* value_ptr;
+
+    InPortInfo(const std::string a, InputId b) : name{a}, id{b} {
+      value_ptr = nullptr;
+    }
+  };
+
   std::unordered_map<std::string, OutputId> out_map { {"out1", OUT1_OUTPUT},
                                                       {"out2", OUT2_OUTPUT},
                                                       {"out3", OUT3_OUTPUT},
                                                       {"out4", OUT4_OUTPUT}
                                                     };
-  std::vector<std::pair<std::string, InputId> > in_list { {"in1", IN1_INPUT},
-                                                          {"in2", IN2_INPUT},
-                                                          {"in3", IN3_INPUT},
-                                                          {"in4", IN4_INPUT}
-                                                        };
+  std::vector<InPortInfo> in_list { {"in1", IN1_INPUT},
+                                    {"in2", IN2_INPUT},
+                                    {"in3", IN3_INPUT},
+                                    {"in4", IN4_INPUT}
+                                  };
   // width (in "holes") of the whole module. Changed by the resize bar on the
   // right (within limits), and informs the size of the display and text field.
   // Saved in the json for the module.
@@ -104,6 +115,18 @@ struct Basically : Module {
 
     current_line = 0;
     wait_info.in_wait = false;
+
+    // Add the INn variables to the variable space, and get the pointer to
+    // them so module can set them.
+    for (size_t i = 0; i < in_list.size(); i++) {
+      in_list[i].value_ptr = drv.GetVarFromName(in_list[i].name);
+    }
+    // Add the OUTn variables to the symbol table, just so we're sure they
+    // are present. But we don't appear to need to keep the pointers in
+    // the module.
+    for (auto output : out_map) {
+      drv.GetVarFromName(output.first);
+    }
   }
 
   // If asked to, save the curve data in json for reading when loaded.
@@ -132,7 +155,8 @@ struct Basically : Module {
   void ResetToProgramStart() {
     current_line = 0;
     wait_info.in_wait = false;
-    // TODO: Do we need a gesture that clears "environment"?
+    // Do we need a gesture that clears all variables? Likely not often;
+    // keeping previously defined variables makes live-coding work.
   }
 
   void UpdateOutsIfNeeded(const std::string var_name, float value) {
@@ -148,8 +172,8 @@ struct Basically : Module {
   void UpdateAllInputs() {
     for (auto input : in_list) {
       // Unconnected inputs can't change.
-      if (inputs[input.second].isConnected()) {
-        environment.variables[input.first] = inputs[input.second].getVoltage();
+      if (inputs[input.id].isConnected()) {  // TODO: is this an expensive call?
+        *(input.value_ptr) = inputs[input.id].getVoltage();
       }
     }
   }
@@ -161,13 +185,13 @@ struct Basically : Module {
     bool dep_changed = false;
     for (auto input : in_list) {
       // Unconnected inputs can't change.
-      if (inputs[input.second].isConnected()) {
-        if (deps.find(input.first) != deps.end()) {
+      if (inputs[input.id].isConnected()) {
+        if (deps.find(input.name) != deps.end()) {
           // TODO: _maybe_ slightly faster to pull the pair from the map?
-          float prev = environment.variables[input.first];
-          float new_value = inputs[input.second].getVoltage();
+          float prev = *(input.value_ptr);
+          float new_value = inputs[input.id].getVoltage();
           if (!Expression::is_zero(new_value - prev)) {
-            environment.variables[input.first] = new_value;
+            *(input.value_ptr) = new_value;
             dep_changed = true;
           }
         }
@@ -247,7 +271,7 @@ struct Basically : Module {
       run_light_countdown = std::floor(args.sampleRate / 20.0f);
     }
 
-    // Update environment with current inputs.
+    // Update INn variables with current inputs, but only if we _need_ to.
     bool need_to_update_wait = false;
     // Need to determine if:
     // * We need to update the inputs at all.
@@ -281,8 +305,8 @@ struct Basically : Module {
       PCode* pcode = &(pcodes[current_line]);
       switch (pcode->type) {
         case PCode::ASSIGNMENT: {
-          float rhs = pcode->expr1.Compute(&environment);
-          environment.variables[pcode->str1] = rhs;
+          float rhs = pcode->expr1.Compute();
+          *(pcode->variable_ptr) = rhs;
           UpdateOutsIfNeeded(pcode->str1, rhs);
           current_line++;
         }
@@ -295,8 +319,7 @@ struct Basically : Module {
             // If the wait period may have changed, recompute it.
             if (need_to_update_wait) {
               wait_info.ticks_limit = std::floor(
-                  pcode->expr1.Compute(&environment) *
-                  args.sampleRate / 1000.0f);
+                  pcode->expr1.Compute() * args.sampleRate / 1000.0f);
             }
             if (wait_info.ticks_so_far >= wait_info.ticks_limit) {
               // WAIT has completed, immediately execute next line.
@@ -307,8 +330,8 @@ struct Basically : Module {
             }
           } else {
             // Just arriving at this WAIT statement.
-            int ticks = std::floor(pcode->expr1.Compute(&environment) *
-                args.sampleRate / 1000.0f);
+            int ticks = std::floor(
+                pcode->expr1.Compute() * args.sampleRate / 1000.0f);
             // A "WAIT 0" (or WAIT -1!) means we should stop running for
             // this process() call but push to the next line. No reason to
             // create a WaitInfo.
@@ -336,8 +359,7 @@ struct Basically : Module {
         break;
         case PCode::IFNOT: {
           // All this PCode does is determine where to move current_line to.
-          bool expr_val = !Expression::is_zero(
-              pcode->expr1.Compute(&environment));
+          bool expr_val = !Expression::is_zero(pcode->expr1.Compute());
           if (!expr_val) {
             current_line += pcode->jump_count;
           } else {
@@ -357,19 +379,19 @@ struct Basically : Module {
         break;
         case PCode::FORLOOP: {
           if (state == PCode::ENTERING_FOR_LOOP) {
-            pcode->limit = pcode->expr1.Compute(&environment);
-            pcode->step = pcode->expr2.Compute(&environment);
+            pcode->limit = pcode->expr1.Compute();
+            pcode->step = pcode->expr2.Compute();
           } else {
-            float new_value = environment.variables[pcode->str1] + pcode->step;
-            environment.variables[pcode->str1] = new_value;
+            float new_value = *(pcode->variable_ptr) + pcode->step;
+            *(pcode->variable_ptr) = new_value;
             UpdateOutsIfNeeded(pcode->str1, new_value);
           }
           bool done = false;
           // If "Step" is negative, we wait until value is below limit.
           if (pcode->step >= 0.0f) {
-            done = environment.variables[pcode->str1] > pcode->limit;
+            done = *(pcode->variable_ptr) > pcode->limit;
           } else {
-            done = environment.variables[pcode->str1] < pcode->limit;
+            done = *(pcode->variable_ptr) < pcode->limit;
           }
           if (done) {
             current_line += pcode->jump_count;
@@ -404,7 +426,6 @@ struct Basically : Module {
   bool running = false;
   Driver drv;
   std::vector<PCode> pcodes;  // What actually gets executed.
-  Environment environment;
   unsigned int current_line;
   // Some PCodes have different behaviors, depending on how execution got
   // there. 'state' helps determine the correct behavior.

@@ -207,7 +207,6 @@ namespace yy {
   {
     switch (that.kind ())
     {
-      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.YY_MOVE_OR_COPY< Expression > (YY_MOVE (that.value));
         break;
@@ -261,6 +260,7 @@ namespace yy {
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
       case symbol_kind::S_COMMA: // ","
+      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
       case symbol_kind::S_COMPARISON: // "comparison"
@@ -282,7 +282,6 @@ namespace yy {
   {
     switch (that.kind ())
     {
-      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.move< Expression > (YY_MOVE (that.value));
         break;
@@ -336,6 +335,7 @@ namespace yy {
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
       case symbol_kind::S_COMMA: // ","
+      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
       case symbol_kind::S_COMPARISON: // "comparison"
@@ -357,7 +357,6 @@ namespace yy {
     state = that.state;
     switch (that.kind ())
     {
-      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.copy< Expression > (that.value);
         break;
@@ -411,6 +410,7 @@ namespace yy {
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
       case symbol_kind::S_COMMA: // ","
+      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
       case symbol_kind::S_COMPARISON: // "comparison"
@@ -431,7 +431,6 @@ namespace yy {
     state = that.state;
     switch (that.kind ())
     {
-      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.move< Expression > (that.value);
         break;
@@ -485,6 +484,7 @@ namespace yy {
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
       case symbol_kind::S_COMMA: // ","
+      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
       case symbol_kind::S_COMPARISON: // "comparison"
@@ -721,7 +721,7 @@ namespace yy {
 
       case symbol_kind::S_IDENTIFIER: // "identifier"
 #line 86 "parser.yy"
-                 { yyo << yysym.value.template as < Expression > (); }
+                 { yyo << yysym.value.template as < std::string > (); }
 #line 726 "parser.cc"
         break;
 
@@ -1034,7 +1034,6 @@ namespace yy {
          when using variants.  */
       switch (yyr1_[yyn])
     {
-      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         yylhs.value.emplace< Expression > ();
         break;
@@ -1088,6 +1087,7 @@ namespace yy {
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
       case symbol_kind::S_COMMA: // ","
+      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
       case symbol_kind::S_COMPARISON: // "comparison"
@@ -1164,7 +1164,7 @@ namespace yy {
 
   case 10: // assignment: "identifier" "=" exp
 #line 104 "parser.yy"
-                        { yylhs.value.as < Line > () = Line::Assignment(yystack_[2].value.as < Expression > (), yystack_[0].value.as < Expression > ()); }
+                        { yylhs.value.as < Line > () = Line::Assignment(yystack_[2].value.as < std::string > (), yystack_[0].value.as < Expression > (), &drv); }
 #line 1169 "parser.cc"
     break;
 
@@ -1242,7 +1242,7 @@ namespace yy {
 
   case 23: // exp: "identifier"
 #line 136 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::Variable(yystack_[0].value.as < Expression > ()); }
+                { yylhs.value.as < Expression > () = Expression::Variable(yystack_[0].value.as < std::string > (), &drv); }
 #line 1247 "parser.cc"
     break;
 

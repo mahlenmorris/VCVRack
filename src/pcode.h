@@ -20,7 +20,7 @@ structure are properly flattened into the whole program.
 
 struct PCode {
   enum Type {
-    ASSIGNMENT,  // str1 = expr1
+    ASSIGNMENT,  // *variable_ptr = expr1
     WAIT,        // wait expr1
     IFNOT,       // ifnot expr1 jump jump_count
     RELATIVE_JUMP,  // add jump_count to line_number.
@@ -31,6 +31,7 @@ struct PCode {
   };
   Type type;
   std::string str1;
+  float* variable_ptr;
   Expression expr1, expr2;
   int jump_count;
   float step, limit;
@@ -49,7 +50,8 @@ struct PCode {
     stop_execution = false;
   };
 
-  static PCode Assignment(const std::string str1, const Expression &expr1);
+  static PCode Assignment(const std::string str1, float* variable_ptr,
+                          const Expression &expr1);
   static PCode Wait(const Expression &expr1);
   std::string to_string();
 };

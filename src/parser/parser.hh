@@ -410,7 +410,6 @@ namespace yy {
     /// An auxiliary type to compute the largest semantic type.
     union union_type
     {
-      // "identifier"
       // exp
       char dummy1[sizeof (Expression)];
 
@@ -460,6 +459,7 @@ namespace yy {
       // "("
       // ")"
       // ","
+      // "identifier"
       // "oneargfunc"
       // "twoargfunc"
       // "comparison"
@@ -659,7 +659,6 @@ namespace yy {
       {
         switch (this->kind ())
     {
-      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.move< Expression > (std::move (that.value));
         break;
@@ -713,6 +712,7 @@ namespace yy {
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
       case symbol_kind::S_COMMA: // ","
+      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
       case symbol_kind::S_COMPARISON: // "comparison"
@@ -836,7 +836,6 @@ namespace yy {
         // Value type destructor.
 switch (yykind)
     {
-      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.template destroy< Expression > ();
         break;
@@ -890,6 +889,7 @@ switch (yykind)
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
       case symbol_kind::S_COMMA: // ","
+      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
       case symbol_kind::S_COMPARISON: // "comparison"
@@ -999,18 +999,6 @@ switch (yykind)
 #endif
       }
 #if 201103L <= YY_CPLUSPLUS
-      symbol_type (int tok, Expression v, location_type l)
-        : super_type (token_kind_type (tok), std::move (v), std::move (l))
-#else
-      symbol_type (int tok, const Expression& v, const location_type& l)
-        : super_type (token_kind_type (tok), v, l)
-#endif
-      {
-#if !defined _MSC_VER || defined __clang__
-        YY_ASSERT (tok == token::TOK_IDENTIFIER);
-#endif
-      }
-#if 201103L <= YY_CPLUSPLUS
       symbol_type (int tok, float v, location_type l)
         : super_type (token_kind_type (tok), std::move (v), std::move (l))
 #else
@@ -1031,7 +1019,7 @@ switch (yykind)
 #endif
       {
 #if !defined _MSC_VER || defined __clang__
-        YY_ASSERT ((token::TOK_ABS <= tok && tok <= token::TOK_COMMA)
+        YY_ASSERT ((token::TOK_ABS <= tok && tok <= token::TOK_IDENTIFIER)
                    || (token::TOK_ONEARGFUNC <= tok && tok <= token::TOK_COMPARISON));
 #endif
       }
@@ -1611,14 +1599,14 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_IDENTIFIER (Expression v, location_type l)
+      make_IDENTIFIER (std::string v, location_type l)
       {
         return symbol_type (token::TOK_IDENTIFIER, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_IDENTIFIER (const Expression& v, const location_type& l)
+      make_IDENTIFIER (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOK_IDENTIFIER, v, l);
       }
@@ -2069,7 +2057,6 @@ switch (yykind)
   {
     switch (this->kind ())
     {
-      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.copy< Expression > (YY_MOVE (that.value));
         break;
@@ -2123,6 +2110,7 @@ switch (yykind)
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
       case symbol_kind::S_COMMA: // ","
+      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
       case symbol_kind::S_COMPARISON: // "comparison"
@@ -2160,7 +2148,6 @@ switch (yykind)
     super_type::move (s);
     switch (this->kind ())
     {
-      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_exp: // exp
         value.move< Expression > (YY_MOVE (s.value));
         break;
@@ -2214,6 +2201,7 @@ switch (yykind)
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
       case symbol_kind::S_COMMA: // ","
+      case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
       case symbol_kind::S_COMPARISON: // "comparison"
@@ -2286,7 +2274,7 @@ switch (yykind)
 
 
 } // yy
-#line 2290 "parser.hh"
+#line 2278 "parser.hh"
 
 
 
