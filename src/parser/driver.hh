@@ -19,6 +19,7 @@
 
 #ifndef DRIVER_HH
 #define DRIVER_HH
+#include <unordered_map>
 #include <string>
 #include <vector>
 #include "parser.hh"
@@ -55,8 +56,13 @@ public:
   bool trace_scanning;
   // The token's location used by the scanner.
   yy::location location;
+  // Maps the name of a variable to a pointer to it.
+  std::unordered_map<std::string, float*> symbol_floats;
 
   Driver();
+  ~Driver();
+
+  float* GetVarFromName(const std::string &name);
 
   // Run the parser on the text of string f.  Return 0 on success.
   int parse(const std::string& f);

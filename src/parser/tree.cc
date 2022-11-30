@@ -1,4 +1,4 @@
- // Code for methods related to parsing data structures.
+// Code for methods related to parsing data structures.
 #include "tree.h"
 
 #include <cmath>
@@ -6,7 +6,7 @@
 #include <limits>
 #include <map>
 #include <vector>
-#include "environment.h"
+#include "driver.hh"
 
 std::unordered_map<std::string, Expression::Operation> Expression::string_to_operation = {
   {"+", PLUS},
@@ -82,53 +82,44 @@ Expression Expression::CreateBinOp(const Expression &lhs,
   return ex;
 }
 
-Expression Expression::Variable(const char *var_name) {
+Expression Expression::Variable(const char *var_name, Driver* driver) {
   // Intentionally copying the name.
   Expression ex;
   ex.type = VARIABLE;
   ex.name = std::string(var_name);
+  ex.variable_ptr = driver->GetVarFromName(ex.name);
   return ex;
 }
 // The parser seems to need many variants of Variable.
-Expression Expression::Variable(const Expression &expr) {
+Expression Expression::Variable(const std::string &expr, Driver* driver) {
   // Intentionally copying the name.
-  return Variable(expr.name.c_str());
+  return Variable(expr.c_str(), driver);
 }
 // The parser seems to need many variants of Variable.
-Expression::Expression(char * var_name) {
-  // Intentionally copying the name.
+Expression::Expression(char * var_name, Driver* driver) {
+  // Intentionally _copying_ the name.
   name = std::string(var_name);
+  variable_ptr = driver->GetVarFromName(name);
 }
 
-Expression Expression::Variable(char* var_name) {
+Expression Expression::Variable(char* var_name, Driver* driver) {
   // Intentionally copying the name.
-  return Variable(std::string(var_name).c_str());
+  return Variable(std::string(var_name).c_str(), driver);
 }
 
-float Expression::Compute(Environment* env) {
+float Expression::Compute() {
   switch (type) {
     case NUMBER: return float_value;
-    case BINOP: return binop_compute(env);
-    case VARIABLE: {
-      // TODO: This operation actually depends on the name. Make this correct.
-      // If we compile as the user types, many spurious variable names will be
-      // asked for. Make sure we don't create spurious entries.
-      auto found = env->variables.find(name);
-      if (found != env->variables.end()) {
-        return found->second;
-      } else {
-        return 0.0f;
-      }
-    }
-    break;
-    case NOT: return (is_zero(subexpressions[0].Compute(env)) ? 1.0f : 0.0f);
+    case BINOP: return binop_compute();
+    case VARIABLE: return *variable_ptr;
+    case NOT: return (is_zero(subexpressions[0].Compute()) ? 1.0f : 0.0f);
     case ONEARGFUNC: {
-      return one_arg_compute(subexpressions[0].Compute(env));
+      return one_arg_compute(subexpressions[0].Compute());
     }
     break;
     case TWOARGFUNC: {
-      return two_arg_compute(subexpressions[0].Compute(env),
-                             subexpressions[1].Compute(env));
+      return two_arg_compute(subexpressions[0].Compute(),
+                             subexpressions[1].Compute());
     }
     break;
     default: return 1.2345;
@@ -185,9 +176,9 @@ float Expression::bool_to_float(bool value) {
   return (value ? 1.0f : 0.0f);
 }
 
-float Expression::binop_compute(Environment* env) {
-  float lhs = subexpressions[0].Compute(env);
-  float rhs = subexpressions[1].Compute(env);
+float Expression::binop_compute() {
+  float lhs = subexpressions[0].Compute();
+  float rhs = subexpressions[1].Compute();
   switch (operation) {
     case AND: return !is_zero(lhs) && !is_zero(rhs);
     case OR: return !is_zero(lhs) || !is_zero(rhs);
@@ -233,4 +224,74 @@ float Expression::two_arg_compute(float arg1, float arg2) {
     case POW: return pow(arg1, arg2);
     default: return 4.56789f;
   }
+}
+
+Line Line::Assignment(const std::string &variable_name, const Expression &expr, Driver* driver) {
+  Line line;
+  line.type = ASSIGNMENT;
+  line.str1 = variable_name;
+  line.variable_ptr = driver->GetVarFromName(variable_name);
+  line.expr1 = expr;
+  return line;
+}
+
+// loop_type is the string identifying the loop type; e.g., "for" or "all".
+Line Line::Continue(const std::string &loop_type) {
+  Line line;
+  line.type = CONTINUE;
+  line.str1 = loop_type;
+  return line;
+}
+
+// loop_type is the string identifying the loop type; e.g., "for" or "all".
+Line Line::Exit(const std::string &loop_type) {
+  Line line;
+  line.type = EXIT;
+  line.str1 = loop_type;
+  return line;
+}
+
+Line Line::ForNext(const Line &assign, const Expression &limit,
+                   const Expression &step, const Statements &state) {
+  Line line;
+  line.type = FORNEXT;
+  line.str1 = assign.str1;
+  line.variable_ptr = assign.variable_ptr;
+  line.expr1 = assign.expr1;
+  line.expr2 = limit;
+  line.expr3 = step;
+  line.statements.push_back(state);
+  return line;
+}
+
+Line Line::IfThen(const Expression &bool_expr,
+                  const Statements &state1) {
+  Line line;
+  line.type = IFTHEN;
+  line.expr1 = bool_expr;
+  line.statements.push_back(state1);
+  return line;
+}
+
+Line Line::IfThenElse(const Expression &bool_expr,
+                      const Statements &state1,
+                      const Statements &state2) {
+  Line line;
+  line.type = IFTHENELSE;
+  line.expr1 = bool_expr;
+  line.statements.push_back(state1);
+  line.statements.push_back(state2);
+  return line;
+}
+
+Line Line::Wait(const Expression &expr) {
+  Line line;
+  line.type = WAIT;
+  line.expr1 = expr;
+  return line;
+}
+
+std::ostream& operator<<(std::ostream& os, Line line) {
+  os << "Line(" << line.str1 << ", " << line.expr1.to_string() << ")";
+  return os;
 }

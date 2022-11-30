@@ -20,9 +20,28 @@
 #include "driver.hh"
 #include "parser.hh"
 
-Driver::Driver ()
+Driver::Driver()
   : trace_parsing (false), trace_scanning (false)
 {
+}
+
+Driver::~Driver() {
+  // Free up the floats that GetVarFromName() allocated.
+  for (auto entry : symbol_floats) {
+    delete entry.second;
+  }
+}
+
+float* Driver::GetVarFromName(const std::string &name) {
+  auto found = symbol_floats.find(name);
+  if (found != symbol_floats.end()) {
+    return found->second;
+  } else {
+    float* float_pointer = new float;
+    *float_pointer = 0.0f;
+    symbol_floats[name] = float_pointer;
+    return float_pointer;
+  }
 }
 
 // Returns zero on success.

@@ -305,7 +305,7 @@
       <terminal symbol-number="32" token-number="287" name="&quot;(&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="33" token-number="288" name="&quot;)&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="34" token-number="289" name="&quot;,&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="35" token-number="290" name="&quot;identifier&quot;" type="Expression" usefulness="useful"/>
+      <terminal symbol-number="35" token-number="290" name="&quot;identifier&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="36" token-number="291" name="&quot;number&quot;" type="float" usefulness="useful"/>
       <terminal symbol-number="37" token-number="292" name="&quot;oneargfunc&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="38" token-number="293" name="&quot;twoargfunc&quot;" type="std::string" usefulness="useful"/>

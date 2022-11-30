@@ -3,11 +3,12 @@
 
 #include <iostream>
 #include <map>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include "environment.h"
 
 class Expression;
+class Driver;
 // Base class for computing expressions.
 class Expression {
 public:
@@ -46,6 +47,7 @@ public:
   };
   Operation operation;
   float float_value;
+  float* variable_ptr;
   std::string name;
   std::vector<Expression> subexpressions;
 
@@ -62,16 +64,16 @@ public:
   static Expression CreateBinOp(const Expression &lhs,
                                 const std::string &op_string,
                                 const Expression &rhs);
-  static Expression Variable(const char *var_name);
+  static Expression Variable(const char *var_name, Driver* driver);
   // The parser seems to need many variants of Variable.
-  static Expression Variable(const Expression &expr);
+  static Expression Variable(const std::string &expr, Driver* driver);
   // The parser seems to need many variants of Variable.
-  Expression(char * var_name);
+  Expression(char * var_name, Driver* driver);
 
-  static Expression Variable(char * var_name);
+  static Expression Variable(char * var_name, Driver* driver);
 
-  // Compute the result of this Expression given the current environment.
-  float Compute(Environment* env);
+  // Compute the result of this Expression.
+  float Compute();
   // Determine if this Expression can Compute() different results depending on
   // INn or any other volatile source (e.g., a random() function.)
   // The names of the dependencies must be added to this set.
@@ -83,7 +85,7 @@ public:
   static bool is_zero(float value);
 private:
   float bool_to_float(bool value);
-  float binop_compute(Environment* env);
+  float binop_compute();
   float one_arg_compute(float arg1);
   float two_arg_compute(float arg1, float arg2);
 };
@@ -102,80 +104,35 @@ struct Line {
   };
   Type type;
   std::string str1;
+  float* variable_ptr;
   Expression expr1, expr2, expr3;
   std::vector<Statements> statements;
 
   // identifiers on both right hand and left hand side of := look the same.
   // So the lhs will get turned into a VariableExpression. We need to pull
   // the name out of it.
-  static Line Assignment(Expression variable_expr, const Expression &expr) {
-    Line line;
-    line.type = ASSIGNMENT;
-    line.str1 = variable_expr.name;
-    line.expr1 = expr;
-    return line;
-  }
+  static Line Assignment(const std::string &variable_name,
+                         const Expression &expr, Driver* driver);
 
   // loop_type is the string identifying the loop type; e.g., "for" or "all".
-  static Line Continue(const std::string &loop_type) {
-    Line line;
-    line.type = CONTINUE;
-    line.str1 = loop_type;
-    return line;
-  }
+  static Line Continue(const std::string &loop_type);
 
   // loop_type is the string identifying the loop type; e.g., "for" or "all".
-  static Line Exit(const std::string &loop_type) {
-    Line line;
-    line.type = EXIT;
-    line.str1 = loop_type;
-    return line;
-  }
+  static Line Exit(const std::string &loop_type);
 
   static Line ForNext(const Line &assign, const Expression &limit,
-                      const Expression &step, const Statements &state) {
-    Line line;
-    line.type = FORNEXT;
-    line.str1 = assign.str1;
-    line.expr1 = assign.expr1;
-    line.expr2 = limit;
-    line.expr3 = step;
-    line.statements.push_back(state);
-    return line;
-  }
+                      const Expression &step, const Statements &state);
 
   static Line IfThen(const Expression &bool_expr,
-                     const Statements &state1) {
-    Line line;
-    line.type = IFTHEN;
-    line.expr1 = bool_expr;
-    line.statements.push_back(state1);
-    return line;
-  }
+                     const Statements &state1);
 
   static Line IfThenElse(const Expression &bool_expr,
                          const Statements &state1,
-                         const Statements &state2) {
-    Line line;
-    line.type = IFTHENELSE;
-    line.expr1 = bool_expr;
-    line.statements.push_back(state1);
-    line.statements.push_back(state2);
-    return line;
-  }
+                         const Statements &state2);
 
-  static Line Wait(const Expression &expr) {
-    Line line;
-    line.type = WAIT;
-    line.expr1 = expr;
-    return line;
-  }
+  static Line Wait(const Expression &expr);
 
-  friend std::ostream& operator<<(
-    std::ostream& os, Line line) {
-    os << "Line(" << line.str1 << ", " << line.expr1.to_string() << ")";
-    return os;
-  }
+  friend std::ostream& operator<<(std::ostream& os, Line line);
 };
 
 struct Statements {

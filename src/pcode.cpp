@@ -9,10 +9,12 @@
 #include "parser/tree.h"
 #include "pcode.h"
 
-PCode PCode::Assignment(const std::string str1, const Expression &expr1) {
+PCode PCode::Assignment(const std::string str1, float* variable_ptr,
+                        const Expression &expr1) {
   PCode assign;
   assign.type = PCode::ASSIGNMENT;
   assign.str1 = str1;
+  assign.variable_ptr = variable_ptr;
   assign.expr1 = expr1;
   return assign;
 }
@@ -47,7 +49,8 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
                                      const Exit &innermost_loop) {
   switch (line.type) {
     case Line::ASSIGNMENT: {
-      pcodes->push_back(PCode::Assignment(line.str1, line.expr1));
+      pcodes->push_back(PCode::Assignment(
+          line.str1, line.variable_ptr, line.expr1));
     }
     break;
     case Line::CONTINUE: {
@@ -163,13 +166,14 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       // statements
       // WAIT 0
       // RELATIVE_JUMP (back to FORLOOP).
-      PCode assign = PCode::Assignment(line.str1, line.expr1);
+      PCode assign = PCode::Assignment(line.str1, line.variable_ptr, line.expr1);
       // Tells the FORLOOP to re-evaluate limit
       assign.state = PCode::ENTERING_FOR_LOOP;
       pcodes->push_back(assign);
       PCode forloop;
       forloop.type = PCode::FORLOOP;
       forloop.str1 = line.str1;  // Variable name.
+      forloop.variable_ptr = line.variable_ptr;
       forloop.expr1 = line.expr2;  // Limit.
       forloop.expr2 = line.expr3;  // Step.
       pcodes->push_back(forloop);
