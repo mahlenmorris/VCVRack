@@ -261,8 +261,8 @@ struct Basically : Module {
         running = params[RUN_PARAM].getValue() > 0.1f;
       }
     }
-    if (text.empty()) {
-      // User erasing all text means stop running.
+    if (pcodes.size() == 0) {
+      // No lines to run mean don't run!
       running = false;
     }
     if (!prev_running && running) {
