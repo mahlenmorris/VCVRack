@@ -411,7 +411,8 @@ When the module is bypassed, all OUTn ports are set to zero volts.
 * If you open a new BASICally module and the first thing you type is a
 comment (good for you, starting your code with a comment),
 VCV Rack crashes. Also happens if you load a patch where the code is just  comments.
-** **Workaround**: Type anything that would compile (e.g., "f=1"),
+
+* * **Workaround**: Type anything that would compile (e.g., "f=1"),
 and then erase it and write the comment. A fix is forthcoming.
 * *Sometimes* when you duplicate a BASICally module, it doesn't duplicate
 the text color correctly.
