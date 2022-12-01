@@ -535,7 +535,7 @@ struct BasicallyTextField : LedDisplayTextField {
 
 	void step() override {
 		LedDisplayTextField::step();
-    if (module && color_scheme != module->screen_colors) {
+    if (module && (color_scheme != module->screen_colors || module->dirty)) {
       color_scheme = module->screen_colors;
       color = int_to_color(color_scheme >> 24);
       // LedDisplay, which is doing the actual drawing, seems to ignore
