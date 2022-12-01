@@ -53,6 +53,8 @@ struct Basically : Module {
     IN3_INPUT,
     IN4_INPUT,
     RUN_INPUT,
+    IN5_INPUT,
+    IN6_INPUT,
     INPUTS_LEN
   };
   enum OutputId {
@@ -86,7 +88,9 @@ struct Basically : Module {
   std::vector<InPortInfo> in_list { {"in1", IN1_INPUT},
                                     {"in2", IN2_INPUT},
                                     {"in3", IN3_INPUT},
-                                    {"in4", IN4_INPUT}
+                                    {"in4", IN4_INPUT},
+                                    {"in5", IN5_INPUT},
+                                    {"in6", IN6_INPUT}
                                   };
   // width (in "holes") of the whole module. Changed by the resize bar on the
   // right (within limits), and informs the size of the display and text field.
@@ -106,6 +110,8 @@ struct Basically : Module {
     configInput(IN2_INPUT, "IN2");
     configInput(IN3_INPUT, "IN3");
     configInput(IN4_INPUT, "IN4");
+    configInput(IN5_INPUT, "IN5");
+    configInput(IN6_INPUT, "IN6");
     configInput(RUN_INPUT, "Trigger to start or Gate to start/stop (See Style)");
     configOutput(OUT1_OUTPUT, "OUT1");
     configOutput(OUT2_OUTPUT, "OUT2");
@@ -755,28 +761,32 @@ struct BasicallyWidget : ModuleWidget {
     // Controls.
     // Run button/trigger/gate.
     addInput(createInputCentered<PJ301MPort>(
-        mm2px(Vec(11.07, 39.64)), module, Basically::RUN_INPUT));
+        mm2px(Vec(6.496, 17.698)), module, Basically::RUN_INPUT));
     // Making this a Button and not a Latch means that it pops back up
     // when you let go.
     addParam(createLightParamCentered<VCVLightButton<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(11.07, 27.181)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(15.645, 17.698)),
                                              module, Basically::RUN_PARAM,
                                              Basically::RUN_LIGHT));
     RoundBlackSnapKnob* style_knob = createParamCentered<RoundBlackSnapKnob>(
-        mm2px(Vec(11.07, 51.268)), module, Basically::STYLE_PARAM);
+        mm2px(Vec(11.07, 34.068)), module, Basically::STYLE_PARAM);
     style_knob->minAngle = -0.28f * M_PI;
     style_knob->maxAngle = 0.28f * M_PI;
     addParam(style_knob);
 
     // Data Inputs
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 71.351)),
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 57.35)),
       module, Basically::IN1_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 71.351)),
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 57.35)),
       module, Basically::IN2_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 85.35)),
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 71.35)),
       module, Basically::IN3_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 85.35)),
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 71.35)),
       module, Basically::IN4_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 85.35)),
+      module, Basically::IN5_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 85.35)),
+      module, Basically::IN6_INPUT));
 
     // The Outputs
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.496, 101.601)),
@@ -791,7 +801,7 @@ struct BasicallyWidget : ModuleWidget {
     // Compilation status and error message access.
     // Want the middle of this to be at x=11.07
     ErrorWidget* display = createWidget<ErrorWidget>(mm2px(
-        Vec(11.07 - 4.0, 15.0)));
+        Vec(11.07 - 4.0, 7.844)));  // Bottom edge flush with top of code.
     display->box.size = mm2px(Vec(8.0, 4.0));
     display->module = module;
     addChild(display);
