@@ -390,7 +390,7 @@ becomes the trigger for the Hold.
 
 * **Run when gate is open** -- While the RUN button is pressed or the RUN input
 is high, then BASICALLY will run. If the button is released or the input
-falls low, then the program will stop. As long as the program isn't changed, when the next button press/input high occurs, exection will pick up from where it left off. For example, suppose a five second WAIT starts, and then after 3.5
+falls low, then the program will stop. As long as the program isn't changed, when the next button press/input high occurs, execution will pick up from where it left off. For example, suppose a five second WAIT starts, and then after 3.5
 seconds the button is released. When the button is later pressed, the WAIT will continue for another 1.5 seconds before moving on to the next statement.
 
 ### Menu Options
@@ -399,10 +399,9 @@ seconds the button is released. When the button is later pressed, the WAIT will 
 A small number of choices about text colors. There should be more, but
 changing the background color is not a simple as I expected.
 
-#### Syntax/Math Hints
+#### Syntax Hints
 Just in case you're in the middle of coding and you don't want to look up
-this documentation, there's some hints about the syntax of BASICally, as
-well as the complete list of math functions. You can
+this documentation, there's some hints about the syntax of BASICally. You can
 click on a particular statement and it will be inserted into your code.
 
 ### Bypass Behavior
