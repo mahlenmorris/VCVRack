@@ -863,7 +863,7 @@ struct BasicallyWidget : ModuleWidget {
     // Add syntax insertions.
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel(
-      "Syntax hints (select to insert into code)"));
+      "Language hints (select to insert into code)"));
     std::pair<std::string, std::string> syntax[] = {
       {"OUT1 = IN1 + IN2", "OUT1 = IN1 + IN2"},
       {"WAIT 200", "WAIT 200"},
@@ -881,11 +881,39 @@ struct BasicallyWidget : ModuleWidget {
       {"CONTINUE ALL", "CONTINUE ALL"},
       {"EXIT ALL", "EXIT ALL"}
     };
-    for (auto line : syntax) {
-      menu->addChild(createMenuItem(line.first, "",
-        [=]() { codeDisplay->insertText(line.second); }
-      ));
-    }
+    MenuItem* syntax_menu = createSubmenuItem("Syntax", "",
+      [=](Menu* menu) {
+          for (auto line : syntax) {
+            menu->addChild(createMenuItem(line.first, "",
+              [=]() { codeDisplay->insertText(line.second); }
+            ));
+          }
+      }
+    );
+    menu->addChild(syntax_menu);
+    // Now add math functions.
+    // description, inserted text.
+    std::pair<std::string, std::string> math_funcs[] = {
+      {"abs(x) - this number without a negative sign", "abs(IN1)"},
+      {"ceiling(x) - integer value at or above x", "ceiling(IN1)"},
+      {"floor(x) -  integer value at or below x", "floor(IN1)"},
+      {"max(x, y) - larger of x or y", "max(IN1, -5)"},
+      {"min(x, y) - smaller of x or y", "min(IN1, 5)"},
+      {"mod(x, y) - remainder after dividing x by y", "mod(IN1, 1)"},
+      {"pow(x, y) - x to the power of y", "pow(IN1, 0.5)"},
+      {"sign(x) - -1, 0, or 1, depending on the sign of x", "sign(IN1)"},
+      {"sin(x) - sine of x, which is in radians", "sin(IN1)"}
+    };
+    MenuItem* math_menu = createSubmenuItem("Math", "",
+      [=](Menu* menu) {
+          for (auto line : math_funcs) {
+            menu->addChild(createMenuItem(line.first, "",
+              [=]() { codeDisplay->insertText(line.second); }
+            ));
+          }
+      }
+    );
+    menu->addChild(math_menu);
   }
 };
 

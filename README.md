@@ -399,9 +399,10 @@ seconds the button is released. When the button is later pressed, the WAIT will 
 A small number of choices about text colors. There should be more, but
 changing the background color is not a simple as I expected.
 
-#### Syntax Hints
+#### Syntax/Math Hints
 Just in case you're in the middle of coding and you don't want to look up
-this documentation, there's some hints about the syntax of BASICally. You can
+this documentation, there's some hints about the syntax of BASICally, as
+well as the complete list of math functions. You can
 click on a particular statement and it will be inserted into your code.
 
 ### Bypass Behavior
