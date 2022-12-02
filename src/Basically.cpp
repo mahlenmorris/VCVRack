@@ -539,6 +539,22 @@ struct BasicallyTextField : LedDisplayTextField {
     return nvgRGB(color >> 16, (color & 0xff00) >> 8, color & 0xff);
   }
 
+  // bgColor seems to be ignored. Perhaps drawing a background and then
+  // letting LedDisplayTextField draw the rest will fix that.
+  void drawLayer(const DrawArgs& args, int layer) override {
+    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+
+    if (layer == 1) {
+  		// background only
+      nvgBeginPath(args.vg);
+      nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
+      nvgFillColor(args.vg, bgColor);
+      nvgFill(args.vg);
+  	}
+  	LedDisplayTextField::drawLayer(args, layer);  // Draw text.
+  	nvgResetScissor(args.vg);
+  }
+
 	void step() override {
 		LedDisplayTextField::step();
     if (module && (color_scheme != module->screen_colors || module->dirty)) {
@@ -849,10 +865,15 @@ struct BasicallyWidget : ModuleWidget {
     menu->addChild(createMenuLabel("Screen colors"));
     long long int default_colors[] = {0x00ff00000000,
                                       0xffffff000000,
-                                      0xffd714000000};
+                                      0xffd714000000,
+                                      0xffc000000000,
+                                      0x000000ffffff
+                                    };
     std::string color_names[] = {"Green on Black",
                                  "White on Black",
-                                 "Notes"};
+                                 "Yellow on Black (like Notes)",
+                                 "Amber on Black",
+                                 "Black on White"};
     for (int i = 0; i < std::end(default_colors) - std::begin(default_colors);
          i++) {
       long long int scheme = default_colors[i];
