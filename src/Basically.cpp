@@ -709,12 +709,13 @@ struct ErrorWidget : widget::OpaqueWidget {
         // WHITE is really hard to read on YELLOW.
         nvgFillColor(args.vg, color::BLACK);
         nvgFontSize(args.vg, 13);
+        nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
         nvgFontFaceId(args.vg, font->handle);
         nvgTextLetterSpacing(args.vg, -2);
 
-        std::string text = (module->compiles ? "Good" : " Fix");
+        std::string text = (module->compiles ? "Good" : "Fix");
         // Place on the line just off the left edge.
-        nvgText(args.vg, 1, bounding_box.y / 2.0 + 4, text.c_str(), NULL);
+        nvgText(args.vg, bounding_box.x / 2, 0, text.c_str(), NULL);
       }
     }
     Widget::drawLayer(args, layer);
