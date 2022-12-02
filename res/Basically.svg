@@ -33,8 +33,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.979899"
-     inkscape:cx="66.922606"
-     inkscape:cy="306.32876"
+     inkscape:cx="38.133258"
+     inkscape:cy="306.83383"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -236,7 +236,7 @@
     </g>
     <g
        aria-label="IN1"
-       transform="translate(-16.749505,120.64571)"
+       transform="translate(-16.749505,121.79571)"
        id="text1007"
        style="font-size:10.5833px;line-height:1.25;font-family:sans-serif;word-spacing:0px;display:inline;stroke-width:0.264583">
       <path
@@ -254,7 +254,7 @@
     </g>
     <g
        aria-label="IN2"
-       transform="translate(-17.427915,120.66361)"
+       transform="translate(-17.427915,121.81361)"
        id="text1007-3"
        style="font-size:10.5833px;line-height:1.25;font-family:sans-serif;word-spacing:0px;display:inline;stroke-width:0.264583">
       <path
@@ -272,7 +272,7 @@
     </g>
     <g
        aria-label="IN3"
-       transform="translate(-36.404269,134.68549)"
+       transform="translate(-36.404269,135.83549)"
        id="text1007-1"
        style="font-size:10.5833px;line-height:1.25;font-family:sans-serif;word-spacing:0px;display:inline;stroke-width:0.264583">
       <path
@@ -290,7 +290,7 @@
     </g>
     <g
        aria-label="IN4"
-       transform="translate(-37.082681,134.64276)"
+       transform="translate(-37.082681,135.79276)"
        id="text1007-0"
        style="font-size:10.5833px;line-height:1.25;font-family:sans-serif;word-spacing:0px;display:inline;stroke-width:0.264583">
       <path
@@ -480,7 +480,7 @@
        aria-label="IN5"
        id="text2156"
        style="font-size:2.82223px;line-height:1.25;word-spacing:0px;stroke-width:0.264583"
-       transform="translate(29.345524,-3.833195)">
+       transform="translate(29.345524,-2.683195)">
       <path
          d="m -24.391525,251.75444 h -0.810289 v -0.20946 h 0.268718 V 249.912 h -0.268718 v -0.20946 h 0.810289 v 0.20946 h -0.268719 v 1.63298 h 0.268719 z"
          id="path2212" />
@@ -495,7 +495,7 @@
        aria-label="IN6"
        id="text2210"
        style="font-size:2.82223px;line-height:1.25;word-spacing:0px;stroke-width:0.264583"
-       transform="translate(35.932008,6.34232)">
+       transform="translate(35.932008,7.49232)">
       <path
          d="m -21.852463,241.59821 h -0.810289 v -0.20947 h 0.268719 v -1.63298 h -0.268719 v -0.20946 h 0.810289 v 0.20946 h -0.268718 v 1.63298 h 0.268718 z"
          id="path2219" />
