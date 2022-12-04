@@ -377,7 +377,8 @@ then BASICally can run your code. However if it looks like:
 Then it cannot run the code as it stands. If you roll the mouse pointer over
 the "Fix", then BASICally will attempt to point out where the first error
 it found was. As you can see here, for now, it can only vaguely tell
-you where it got confused and why.
+you where it got confused and why. The red error highlight line will point to
+the line it means. 
 
 #### STYLE Knob + RUN Button and Input
 There are four options to determine when the code will run. Three of them rely on the RUN Button and trigger/gate, which are described below.
@@ -406,6 +407,12 @@ seconds the button is released. When the button is later pressed, the WAIT will 
 #### Screen Colors
 A small number of choices about text colors. There should be more, but
 changing the background color is not a simple as I expected.
+
+#### Error Line Highlighting
+By default, if BASICally can't understand your code in its entirety, then it
+will attempt to highlight the line where it stopped understanding your code.
+It's not terribly accurate, but gives you a sense of where to change your code.
+If the red highlight is distracting, you can turn it off here.
 
 #### Syntax/Math Hints
 Just in case you're in the middle of coding and you don't want to look up

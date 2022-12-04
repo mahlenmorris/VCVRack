@@ -140,6 +140,9 @@ struct Basically : Module {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "text", json_stringn(text.c_str(), text.size()));
     json_object_set_new(rootJ, "width", json_integer(width));
+    if (allow_error_highlight) {
+      json_object_set_new(rootJ, "allow_error_highlight", json_integer(1));
+    }
     json_object_set_new(rootJ, "screen_colors", json_integer(screen_colors));
     return rootJ;
   }
@@ -156,6 +159,12 @@ struct Basically : Module {
     json_t* screenJ = json_object_get(rootJ, "screen_colors");
 		if (screenJ)
 			screen_colors = json_integer_value(screenJ);
+    json_t* error_highlightJ = json_object_get(rootJ, "allow_error_highlight");
+    if (error_highlightJ) {
+      allow_error_highlight = json_integer_value(error_highlightJ) == 1;
+    } else {
+      allow_error_highlight = false;
+    }
   }
 
   void ResetToProgramStart() {
@@ -430,8 +439,10 @@ struct Basically : Module {
   bool user_has_changed = true;
   bool compiles = false;
   bool running = false;
+  bool allow_error_highlight = true;
   Driver drv;
   std::vector<PCode> pcodes;  // What actually gets executed.
+  // Line where execution is currently happening.
   unsigned int current_line;
   // Some PCodes have different behaviors, depending on how execution got
   // there. 'state' helps determine the correct behavior.
@@ -539,8 +550,8 @@ struct BasicallyTextField : LedDisplayTextField {
     return nvgRGB(color >> 16, (color & 0xff00) >> 8, color & 0xff);
   }
 
-  // bgColor seems to be ignored. Perhaps drawing a background and then
-  // letting LedDisplayTextField draw the rest will fix that.
+  // bgColor seems to have no effect if I don't do this. Drawing a background
+  // and then letting LedDisplayTextField draw the rest will fixes that.
   void drawLayer(const DrawArgs& args, int layer) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 
@@ -550,6 +561,20 @@ struct BasicallyTextField : LedDisplayTextField {
       nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
       nvgFillColor(args.vg, bgColor);
       nvgFill(args.vg);
+
+      // Let's try highlighting a line, though, if needed and allowed to.
+      if (module && module->allow_error_highlight) {
+        // Highlight the line with an error, if any.
+        if (module->drv.errors.size() > 0) {
+          int line_number = module->drv.errors[0].line;
+          nvgBeginPath(args.vg);
+          int topFudge = textOffset.y + 5;  // I'm just trying things until they work.
+          // textOffset is in ledDisplayTextField.
+          nvgRect(args.vg, 0, topFudge + 12 * (line_number - 1), box.size.x, 12);
+          nvgFillColor(args.vg, nvgRGB(128, 0, 0));
+          nvgFill(args.vg);
+        }
+      }
   	}
   	LedDisplayTextField::drawLayer(args, layer);  // Draw text.
   	nvgResetScissor(args.vg);
@@ -882,6 +907,11 @@ struct BasicallyWidget : ModuleWidget {
           [=]() {module->screen_colors = scheme;}
       ));
     }
+    // Options
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createBoolPtrMenuItem("Highlight error line", "",
+                                          &module->allow_error_highlight));
+
     // Add syntax insertions.
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel(
