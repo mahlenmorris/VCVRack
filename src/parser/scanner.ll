@@ -91,6 +91,7 @@
   make_NUMBER (const std::string &s, const yy::parser::location_type& loc);
 %}
 
+note  [a-g][#b]?(-1|[0-9]|10)
 id    [a-zA-Z][a-zA-Z_0-9]*
 oneargfunc "abs"|"ceiling"|"floor"|"sign"|"sin"
 twoargfunc "max"|"min"|"mod"|"pow"
@@ -136,6 +137,7 @@ blank [ \t\r]
 "to"       return yy::parser::make_TO     (yytext, loc);
 "wait"     return yy::parser::make_WAIT   (yytext, loc);
 
+{note}     return yy::parser::make_NOTE (yytext, loc);
 {float}    return make_NUMBER (yytext, loc);
 {oneargfunc} return yy::parser::make_ONEARGFUNC (yytext, loc);
 {twoargfunc} return yy::parser::make_TWOARGFUNC (yytext, loc);

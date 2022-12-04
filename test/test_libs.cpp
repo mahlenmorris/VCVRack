@@ -345,3 +345,38 @@ TEST(ParserTest, ErrorTest)
   EXPECT_EQ(6, err.column);
   EXPECT_EQ("syntax error, unexpected end of file, expecting =", err.message);
 }
+
+TEST(ParserTest, NoteTest)
+{
+    Driver drv;
+
+    EXPECT_EQ(0, drv.parse("out1 = c3"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ("out1", drv.lines[0].str1);
+    EXPECT_EQ(-1.0f, drv.lines[0].expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("out1 = c#0"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ("out1", drv.lines[0].str1);
+    EXPECT_FLOAT_EQ(-4.0f + 0.0833333, drv.lines[0].expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("out1 = c-1"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ("out1", drv.lines[0].str1);
+    EXPECT_FLOAT_EQ(-5.0f, drv.lines[0].expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("out1 = c#-1"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ("out1", drv.lines[0].str1);
+    EXPECT_FLOAT_EQ(-5.0f + 0.0833333, drv.lines[0].expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("out1 = c10"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ("out1", drv.lines[0].str1);
+    EXPECT_FLOAT_EQ(6.0f, drv.lines[0].expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("out1 = db10"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ("out1", drv.lines[0].str1);
+    EXPECT_FLOAT_EQ(6.0f + 0.0833333, drv.lines[0].expr1.Compute());
+}

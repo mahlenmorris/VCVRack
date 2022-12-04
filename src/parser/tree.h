@@ -52,10 +52,12 @@ public:
   std::vector<Expression> subexpressions;
 
   static std::unordered_map<std::string, Operation> string_to_operation;
+  static std::unordered_map<std::string, float> note_to_volt_octave_4;
   static std::unordered_set<std::string> volatile_inputs;
   Expression() {}
 
   static Expression Not(const Expression &expr);
+  static Expression Note(const std::string &note_name);
   static Expression Number(float the_value);
   static Expression OneArgFunc(const std::string &func_name,
                                const Expression &arg1);

@@ -71,6 +71,7 @@
 
 %token <std::string> IDENTIFIER "identifier"
 %token <float> NUMBER "number"
+%token <std::string> NOTE "note"
 %token <std::string> ONEARGFUNC "oneargfunc"
 %token <std::string> TWOARGFUNC "twoargfunc"
 %token <std::string> COMPARISON "comparison"
@@ -131,6 +132,7 @@ wait_statement:
 
 exp:
   "number"      { $$ = Expression::Number((float) $1); }
+| "note"        { $$ = Expression::Note($1); }
 | MINUS "number" %prec NEG { $$ = Expression::Number(-1 * (float) $2);}
 | "not" exp %prec NEG { $$ = Expression::Not($2);}
 | "identifier"  { $$ = Expression::Variable($1, &drv); }
