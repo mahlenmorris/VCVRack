@@ -65,6 +65,8 @@ wish to edit the code.
  as you type, or only run while a button or trigger is pressed.
 * Edits in the text window become part of the VCV Rack Undo/Redo system.
 * You can pick from a (small) number of screen color schemes in the menu.
+* [Scientific pitch notation](https://en.m.wikipedia.org/wiki/Scientific_pitch_notation) is supported (e.g., c4, Db2, d#8). They are
+turned into V/OCT values.
 
 ## The Language
 ### Setting and Using Variables (Assignment and Math)
@@ -87,11 +89,16 @@ Examples:
     out1 = bar * -0.01
     ' Sets out2 equal to -1.9. Operator precedence is the same as most other languages.
     out2 = 0.1 + 2 * -1
+    ' Set out2 to emit the V/OCT value for middle C.
+    out2 = C4
 
 * All variables start with the value 0.0 when first read.
 * Variables stay available in the environment of a module until the patch
 is restarted. This is true even if the code that created the variable has been removed from the program.
-* OUT1-4 are clamped to the range -10v <--> 10v.
+* OUT1-4 are clamped to the range -10v <--> 10v. Input values and internal
+values are not clamped.
+* [Scientific pitch notation](https://en.m.wikipedia.org/wiki/Scientific_pitch_notation) is supported (e.g., c4, Db2, d#8), turning them into
+V/OCT values. So you can use **out1 = c4**, send OUT1 to a VCO in the default position, and the VCO will output a tone at middle C.
 
 The following are operators and functions you can use in mathematical
 expressions:
@@ -279,9 +286,10 @@ the features that are useful for writing long programs but increase the
 amount of boilerplate code. Here are a few surprising differences
 from more robust languages:
 * BASICally is **case-insensitive**. "OUT1", "oUt1", and "out1" all refer to
-the same variable. "WAIT" and "wait" are identical in meaning. I would
-certainly suggest you be consistent within in your programs,
-but BASICally won't insist on it.
+the same variable. "WAIT" and "wait" are identical in meaning. DB3, Db3, and
+db3 are the same note. I would certainly suggest you capitalize consistently
+within in your programs to make them easier to read, but BASICally won't
+insist on it.
 * **Newlines do not matter**, *except* that comments always end at the newline.
 The following are identical in meaning:
 ```
