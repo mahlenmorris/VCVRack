@@ -17,7 +17,7 @@ struct STTextField : OpaqueWidget {
   math::Vec textOffset;
   NVGcolor color;
   NVGcolor bgColor;
- 
+
 	std::string* text = nullptr;  // Pointer to the text in the owning module.
 	std::string placeholder;
 	/** The index of the text cursor */
@@ -44,9 +44,12 @@ struct STTextField : OpaqueWidget {
 	void onSelectKey(const SelectKeyEvent& e) override;
 	virtual int getTextPosition(math::Vec mousePos);
 
-	std::string getText();  // TODO: eliminate!
-	/** Replaces the entire text */
-	void setText(std::string text);  // TODO: eliminate!
+	// Replaces the entire text. There are cases when this is needed, like
+	// undo/redo, loading. But we don't actually need to _set_ the text,
+	// since the module can do that. But we do need to tell the STTextField
+	// that the underlying text has chanhged (like to update internal data
+  // structures).
+	void textUpdated();
 	void selectAll();
 	std::string getSelectedText();
 	/** Inserts text at the cursor, replacing the selection if necessary */

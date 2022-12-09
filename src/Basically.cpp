@@ -153,7 +153,8 @@ struct Basically : Module {
 		if (textJ) {
 			text = json_string_value(textJ);
       previous_text = text;
-  		dirty = true;
+  		editor_refresh = true;
+      module_refresh = true;
     }
     json_t* widthJ = json_object_get(rootJ, "width");
 		if (widthJ)
@@ -229,8 +230,8 @@ struct Basically : Module {
     bool loops = (style != TRIGGER_NO_LOOP_STYLE);
 
     // Compile if we need to.
-    if (user_has_changed && !text.empty()) {
-      user_has_changed = false;  // TODO: race condition?
+    if (module_refresh && !text.empty()) {
+      module_refresh = false;
       std::string lowercase;
       lowercase.resize(text.size());
       std::transform(text.begin(), text.end(),
@@ -239,12 +240,6 @@ struct Basically : Module {
       if (compiles) {
         PCodeTranslator translator;
         translator.LinesToPCode(drv.lines, &pcodes);
-        /*
-        for (auto &pcode : pcodes) {
-          // Add to log, for debugging.
-          INFO("%s", pcode.to_string().c_str());
-        }
-        */
         // Recompiled; cannot trust program state.
         ResetToProgramStart();
       }
@@ -441,8 +436,11 @@ struct Basically : Module {
   // We need to the immediately previous version of the text around to
   // make undo and redo work; otherwise, we don't know what the change was.
   std::string previous_text;
-  bool dirty = false;  // Set when module changes the text (like at start).
-  bool user_has_changed = true;
+  // Set when module changes the text (like at start).
+  // Set when editing window needs to refresh based on text.
+  bool editor_refresh = false;
+  // Set when module needs to refresh (e.g., compile) text.
+  bool module_refresh = true;
   bool compiles = false;
   bool running = false;
   bool allow_error_highlight = true;
@@ -475,8 +473,10 @@ struct TextEditAction : history::ModuleAction {
     Basically *module = dynamic_cast<Basically*>(APP->engine->getModule(moduleId));
     if (module) {
       module->text = this->old_text;
-      module->dirty = true;  // Tell UI it needs to reload 'text'.
-      module->user_has_changed = true;  // Tell compiler it needs to re-evaluate 'text'.
+      // Tell UI it needs to refresh because 'text' has changed.
+      module->editor_refresh = true;
+      // Tell module it needs to re-evaluate 'text'.
+      module->module_refresh = true;
     }
   }
 
@@ -484,8 +484,10 @@ struct TextEditAction : history::ModuleAction {
     Basically *module = dynamic_cast<Basically*>(APP->engine->getModule(moduleId));
     if (module) {
       module->text = this->new_text;
-      module->dirty = true;  // Tell UI it needs to reload 'text'.
-      module->user_has_changed = true;  // Tell compiler it needs to re-evaluate 'text'.
+      // Tell UI it needs to refresh because 'text' has changed.
+      module->editor_refresh = true;
+      // Tell module it needs to re-evaluate 'text'.
+      module->module_refresh = true;
     }
   }
 };
@@ -588,20 +590,18 @@ struct BasicallyTextField : STTextField {
 
 	void step() override {
 		STTextField::step();
-    if (module && (color_scheme != module->screen_colors || module->dirty)) {
+    if (module && (color_scheme != module->screen_colors || module->editor_refresh)) {
       color_scheme = module->screen_colors;
       color = int_to_color(color_scheme >> 24);
-      // LedDisplay, which is doing the actual drawing, seems to ignore
-      // bgColor. Keeping this for if/when we replace LedDisplay.
       bgColor = int_to_color(color_scheme & 0xffffff);
     }
-		if (module && module->dirty) {
-      // Text has been changed by the module (not the user).
-      // This happens when the module loads.
+		if (module && module->editor_refresh) {
+      // Text has been changed, editor needs to update itself.
+      // This happens when the module loads, and on undo/redo.
       // Index the lines by calling this.
       extended.ProcessUpdatedText(module->text);
-			setText(module->text);
-			module->dirty = false;
+			textUpdated();
+			module->editor_refresh = false;
 		}
 	}
 
@@ -643,7 +643,7 @@ struct BasicallyTextField : STTextField {
           new TextEditAction(module->id, module->previous_text, module->text));
         extended.ProcessUpdatedText(module->text);
         module->previous_text = module->text;
-        module->user_has_changed = true;
+        module->module_refresh = true;
       }
     }
 	}
@@ -882,7 +882,7 @@ struct BasicallyWidget : ModuleWidget {
 		}
 
     // Adjust size of area we display code in.
-    // "6" here is ~4 on the left side plus ~1.5 on the right.
+    // "5.5" here is ~4 on the left side plus ~1.5 on the right.
 		codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 5.5;
     // Move the right side screws to follow.
 		topRightScrew->box.pos.x = box.size.x - 30;

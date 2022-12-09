@@ -266,18 +266,11 @@ int STTextField::getTextPosition(math::Vec mousePos) {
 	return textPos;
 }
 
-std::string STTextField::getText() {
-	return *text;
-}
-
-void STTextField::setText(std::string new_text) {
-	if (this->text->compare(new_text) != 0) {
-		this->text->assign(new_text);
-		// ChangeEvent
-		ChangeEvent eChange;
-		onChange(eChange);
-	}
-	selection = cursor = text->size();
+void STTextField::textUpdated() {
+  // TODO: this is not _exactly_ what we want. Maybe save cursor+selection
+  // in undo/redo?
+  cursor = std::min(cursor, (int) text->size());
+	selection = cursor;  // Nothing should be selected now.
 }
 
 void STTextField::selectAll() {
