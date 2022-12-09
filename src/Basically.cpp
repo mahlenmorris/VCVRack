@@ -3,7 +3,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "extended_text.h"
 #include "plugin.hpp"
 #include "parser/driver.hh"
 #include "pcode.h"
@@ -462,32 +461,48 @@ struct Basically : Module {
 struct TextEditAction : history::ModuleAction {
   std::string old_text;
   std::string new_text;
+  int old_width;
+  int new_width;
 
   TextEditAction(int64_t id, std::string oldText, std::string newText) {
     moduleId = id;
     name = "edit code";
     old_text = oldText;
     new_text = newText;
+    old_width = new_width = -1;
+  }
+  TextEditAction(int64_t id, int old_width, int new_width) :
+      old_width{old_width}, new_width{new_width} {
+    moduleId = id;
+    name = "change module width";
   }
   void undo() override {
     Basically *module = dynamic_cast<Basically*>(APP->engine->getModule(moduleId));
     if (module) {
-      module->text = this->old_text;
-      // Tell UI it needs to refresh because 'text' has changed.
-      module->editor_refresh = true;
-      // Tell module it needs to re-evaluate 'text'.
-      module->module_refresh = true;
+      if (old_width < 0) {
+        module->text = this->old_text;
+        // Tell UI it needs to refresh because 'text' has changed.
+        module->editor_refresh = true;
+        // Tell module it needs to re-evaluate 'text'.
+        module->module_refresh = true;
+      } else {
+        module->width = this->old_width;
+      }
     }
   }
 
   void redo() override {
     Basically *module = dynamic_cast<Basically*>(APP->engine->getModule(moduleId));
     if (module) {
-      module->text = this->new_text;
-      // Tell UI it needs to refresh because 'text' has changed.
-      module->editor_refresh = true;
-      // Tell module it needs to re-evaluate 'text'.
-      module->module_refresh = true;
+      if (old_width < 0) {
+        module->text = this->new_text;
+        // Tell UI it needs to refresh because 'text' has changed.
+        module->editor_refresh = true;
+        // Tell module it needs to re-evaluate 'text'.
+        module->module_refresh = true;
+      } else {
+        module->width = this->new_width;
+      }
     }
   }
 };
@@ -514,6 +529,7 @@ struct ModuleResizeHandle : OpaqueWidget {
 	void onDragMove(const DragMoveEvent& e) override {
 		ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
 		assert(mw);
+    int original_width = module->width;
 
 		Vec newDragPos = APP->scene->rack->getMousePos();
 		float deltaX = newDragPos.x - dragPos.x;
@@ -528,12 +544,18 @@ struct ModuleResizeHandle : OpaqueWidget {
     newBox.size.x = std::fmin(newBox.size.x, maxWidth);
 		newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
 
-		// Set box and test whether it's valid
+		// Set box and test whether it's valid.
 		mw->box = newBox;
 		if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
 			mw->box = oldBox;
 		}
 		module->width = std::round(mw->box.size.x / RACK_GRID_WIDTH);
+    if (original_width != module->width) {
+      // Make this an undo action. If I don't do this, undoing a different
+      // module's move will cause them to overlap.
+      APP->history->push(
+        new TextEditAction(module->id, original_width, module->width));
+    }
 	}
 
 	void draw(const DrawArgs& args) override {
@@ -551,7 +573,6 @@ struct ModuleResizeHandle : OpaqueWidget {
 
 struct BasicallyTextField : STTextField {
 	Basically* module;
-  ExtendedText extended;  // Helper for navigating a long string.
   long long int color_scheme;
 
   NVGcolor int_to_color(int color) {
@@ -596,41 +617,14 @@ struct BasicallyTextField : STTextField {
       bgColor = int_to_color(color_scheme & 0xffffff);
     }
 		if (module && module->editor_refresh) {
+      // TODO: is this checked often enough? I don't know when step()
+      // is called.
       // Text has been changed, editor needs to update itself.
       // This happens when the module loads, and on undo/redo.
-      // Index the lines by calling this.
-      extended.ProcessUpdatedText(module->text);
 			textUpdated();
 			module->editor_refresh = false;
 		}
 	}
-
-  // So we can handle up and down keys.
-  void onSelectKey(const SelectKeyEvent& e) override {
-    if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) {
-      // Up (placeholder)
-  		if (e.key == GLFW_KEY_UP) {
-        // Move to same column, in previous line.
-        LineColumn lc = extended.GetCurrentLineColumn(cursor);
-        cursor = extended.GetCursorForLineColumn(lc.line - 1, lc.column);
-        if (!(e.mods & GLFW_MOD_SHIFT)) {
-  				selection = cursor;  // Otherwise we select the line.
-  			}
-  			e.consume(this);
-  		}
-  		// Down (placeholder)
-  		if (e.key == GLFW_KEY_DOWN) {
-        // Move to same column, in next line.
-        LineColumn lc = extended.GetCurrentLineColumn(cursor);
-        cursor = extended.GetCursorForLineColumn(lc.line + 1, lc.column);
-        if (!(e.mods & GLFW_MOD_SHIFT)) {
-  				selection = cursor;  // Otherwise we select the line.
-  			}
-  			e.consume(this);
-  		}
-    }
-    STTextField::onSelectKey(e);
-  }
 
   // User has updated the text.
 	void onChange(const ChangeEvent& e) override {
@@ -641,7 +635,6 @@ struct BasicallyTextField : STTextField {
       if (module->text != module->previous_text) {
         APP->history->push(
           new TextEditAction(module->id, module->previous_text, module->text));
-        extended.ProcessUpdatedText(module->text);
         module->previous_text = module->text;
         module->module_refresh = true;
       }

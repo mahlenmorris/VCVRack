@@ -175,12 +175,24 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
 			}
 			e.consume(this);
 		}
-		// Up (placeholder)
+		// Up
 		if (e.key == GLFW_KEY_UP) {
+			// Move to same column, in previous line.
+			LineColumn lc = extended.GetCurrentLineColumn(cursor);
+			cursor = extended.GetCursorForLineColumn(lc.line - 1, lc.column);
+			if (!(e.mods & GLFW_MOD_SHIFT)) {
+				selection = cursor;  // Otherwise we select the line.
+			}
 			e.consume(this);
 		}
-		// Down (placeholder)
+		// Down
 		if (e.key == GLFW_KEY_DOWN) {
+			// Move to same column, in next line.
+			LineColumn lc = extended.GetCurrentLineColumn(cursor);
+			cursor = extended.GetCursorForLineColumn(lc.line + 1, lc.column);
+			if (!(e.mods & GLFW_MOD_SHIFT)) {
+				selection = cursor;  // Otherwise we select the line.
+			}
 			e.consume(this);
 		}
 		// Home
@@ -267,6 +279,7 @@ int STTextField::getTextPosition(math::Vec mousePos) {
 }
 
 void STTextField::textUpdated() {
+  extended.ProcessUpdatedText(*text);
   // TODO: this is not _exactly_ what we want. Maybe save cursor+selection
   // in undo/redo?
   cursor = std::min(cursor, (int) text->size());
@@ -301,6 +314,8 @@ void STTextField::insertText(std::string new_text) {
 		changed = true;
 	}
 	if (changed) {
+		// Update the line map.
+		extended.ProcessUpdatedText(*text);
 		ChangeEvent eChange;
 		onChange(eChange);
 	}
