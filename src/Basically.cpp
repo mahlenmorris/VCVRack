@@ -7,6 +7,7 @@
 #include "plugin.hpp"
 #include "parser/driver.hh"
 #include "pcode.h"
+#include "st_textfield.hpp"
 
 enum Style {
   ALWAYS_STYLE,
@@ -541,7 +542,7 @@ struct ModuleResizeHandle : OpaqueWidget {
 	}
 };
 
-struct BasicallyTextField : LedDisplayTextField {
+struct BasicallyTextField : STTextField {
 	Basically* module;
   ExtendedText extended;  // Helper for navigating a long string.
   long long int color_scheme;
@@ -576,12 +577,13 @@ struct BasicallyTextField : LedDisplayTextField {
         }
       }
   	}
-  	LedDisplayTextField::drawLayer(args, layer);  // Draw text.
+    // If this comes out wrong, pull in the LedDisplayTextField version.
+  	STTextField::drawLayer(args, layer);  // Draw text.
   	nvgResetScissor(args.vg);
   }
 
 	void step() override {
-		LedDisplayTextField::step();
+		STTextField::step();
     if (module && (color_scheme != module->screen_colors || module->dirty)) {
       color_scheme = module->screen_colors;
       color = int_to_color(color_scheme >> 24);
@@ -623,7 +625,7 @@ struct BasicallyTextField : LedDisplayTextField {
   			e.consume(this);
   		}
     }
-    TextField::onSelectKey(e);
+    STTextField::onSelectKey(e);
   }
 
   // User has updated the text.
