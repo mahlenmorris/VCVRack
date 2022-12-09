@@ -152,6 +152,7 @@ struct Basically : Module {
     json_t* textJ = json_object_get(rootJ, "text");
 		if (textJ) {
 			text = json_string_value(textJ);
+      previous_text = text;
   		dirty = true;
     }
     json_t* widthJ = json_object_get(rootJ, "width");
@@ -435,7 +436,11 @@ struct Basically : Module {
   }
 
   dsp::SchmittTrigger runTrigger;
+  // Full text of program.  Also used by BasicallyTextField for editing.
   std::string text;
+  // We need to the immediately previous version of the text around to
+  // make undo and redo work; otherwise, we don't know what the change was.
+  std::string previous_text;
   bool dirty = false;  // Set when module changes the text (like at start).
   bool user_has_changed = true;
   bool compiles = false;
@@ -577,7 +582,6 @@ struct BasicallyTextField : STTextField {
         }
       }
   	}
-    // If this comes out wrong, pull in the LedDisplayTextField version.
   	STTextField::drawLayer(args, layer);  // Draw text.
   	nvgResetScissor(args.vg);
   }
@@ -631,15 +635,14 @@ struct BasicallyTextField : STTextField {
   // User has updated the text.
 	void onChange(const ChangeEvent& e) override {
 		if (module) {
-      // Create a ModuleAction so this can undo/redo is aware of it.
-      std::string new_text = getText();
       // Sometimes the text isn't actually different. If I don't check
-      // this, I get spurious history events.
-      if (module->text != new_text) {
+      // this, I might get spurious history events.
+      // TODO: do I need this check anymore?
+      if (module->text != module->previous_text) {
         APP->history->push(
-          new TextEditAction(module->id, module->text, new_text));
-        extended.ProcessUpdatedText(new_text);
-        module->text = new_text;
+          new TextEditAction(module->id, module->previous_text, module->text));
+        extended.ProcessUpdatedText(module->text);
+        module->previous_text = module->text;
         module->user_has_changed = true;
       }
     }
@@ -652,8 +655,11 @@ struct BasicallyDisplay : LedDisplay {
 	void setModule(Basically* module) {
 		textField = createWidget<BasicallyTextField>(Vec(0, 0));
 		textField->box.size = box.size;
-		textField->multiline = true;
 		textField->module = module;
+    // If this is the module browser, 'module' will be null!
+    if (module != nullptr) {
+      textField->text = &(module->text);
+    }
 		addChild(textField);
 	}
   // The BasicallyWidget changes size, so we have to reflaect that.

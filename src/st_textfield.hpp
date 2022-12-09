@@ -1,9 +1,6 @@
 #pragma once
 #include "plugin.hpp"
-//#include <widget/OpaqueWidget.hpp>
-//#include <ui/common.hpp>
-//#include <context.hpp>
-
+#include "extended_text.h"
 
 // An expansion of the VCV TextField class, but allowing for features I wish
 // to add, including:
@@ -20,18 +17,18 @@ struct STTextField : OpaqueWidget {
   math::Vec textOffset;
   NVGcolor color;
   NVGcolor bgColor;
-
-	std::string text;
+ 
+	std::string* text = nullptr;  // Pointer to the text in the owning module.
 	std::string placeholder;
-	/** Masks text with "*". */
-	bool password = false;
-	bool multiline = false;
 	/** The index of the text cursor */
 	int cursor = 0;
 	/** The index of the other end of the selection.
 	If nothing is selected, this is equal to `cursor`.
 	*/
 	int selection = 0;
+
+	// Tracks lines positions and lengths.
+	ExtendedText extended;
 
 	/** For Tab and Shift-Tab focusing.
 	*/
@@ -41,16 +38,15 @@ struct STTextField : OpaqueWidget {
 	STTextField();
 	void drawLayer(const DrawArgs& args, int layer) override;
 
-	//void draw(const DrawArgs& args) override;
 	void onDragHover(const DragHoverEvent& e) override;
 	void onButton(const ButtonEvent& e) override;
 	void onSelectText(const SelectTextEvent& e) override;
 	void onSelectKey(const SelectKeyEvent& e) override;
 	virtual int getTextPosition(math::Vec mousePos);
 
-	std::string getText();
+	std::string getText();  // TODO: eliminate!
 	/** Replaces the entire text */
-	void setText(std::string text);
+	void setText(std::string text);  // TODO: eliminate!
 	void selectAll();
 	std::string getSelectedText();
 	/** Inserts text at the cursor, replacing the selection if necessary */

@@ -53,14 +53,15 @@ STTextField::STTextField() {
   color = nvgRGB(0xff, 0xd7, 0x14);
   bgColor = nvgRGB(0x00, 0x00, 0x00);
 	box.size.y = BND_WIDGET_HEIGHT;
+  text = &placeholder;  // must be correctly set by caller!
 }
 
 void STTextField::drawLayer(const DrawArgs& args, int layer) {
 	nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-
 	if (layer == 1) {
 		// Text
 		std::shared_ptr<window::Font> font = APP->window->loadFont(fontPath);
+
 		if (font && font->handle >= 0) {
 			bndSetFont(font->handle);
 
@@ -68,10 +69,13 @@ void STTextField::drawLayer(const DrawArgs& args, int layer) {
 			highlightColor.a = 0.5;
 			int begin = std::min(cursor, selection);
 			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
-			bndIconLabelCaret(args.vg,
-				textOffset.x, textOffset.y,
-				box.size.x - 2 * textOffset.x, box.size.y - 2 * textOffset.y,
-				-1, color, 12, text.c_str(), highlightColor, begin, end);
+
+      if (text != nullptr) {
+  			bndIconLabelCaret(args.vg,
+  				textOffset.x, textOffset.y,
+  				box.size.x - 2 * textOffset.x, box.size.y - 2 * textOffset.y,
+  				-1, color, 12, text->c_str(), highlightColor, begin, end);
+      }
 
 			bndSetFont(APP->window->uiFont->handle);
 		}
@@ -80,40 +84,6 @@ void STTextField::drawLayer(const DrawArgs& args, int layer) {
 	Widget::drawLayer(args, layer);
 	nvgResetScissor(args.vg);
 }
-
-/*
-void STTextField::draw(const DrawArgs& args) {
-	nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-
-	BNDwidgetState state;
-	if (this == APP->event->selectedWidget)
-		state = BND_ACTIVE;
-	else if (this == APP->event->hoveredWidget)
-		state = BND_HOVER;
-	else
-		state = BND_DEFAULT;
-
-	int begin = std::min(cursor, selection);
-	int end = std::max(cursor, selection);
-
-	std::string drawText;
-	if (password) {
-		drawText = std::string(text.size(), '*');
-	}
-	else {
-		drawText = text;
-	}
-
-	bndTextField(args.vg, 0.0, 0.0, box.size.x, box.size.y, BND_CORNER_NONE, state, -1, drawText.c_str(), begin, end);
-
-	// Draw placeholder text
-	if (text.empty()) {
-		bndIconLabelCaret(args.vg, 0.0, 0.0, box.size.x, box.size.y, -1, bndGetTheme()->textFieldTheme.itemColor, 13, placeholder.c_str(), bndGetTheme()->textFieldTheme.itemColor, 0, -1);
-	}
-
-	nvgResetScissor(args.vg);
-}
-*/
 
 void STTextField::onDragHover(const DragHoverEvent& e) {
 	OpaqueWidget::onDragHover(e);
@@ -166,7 +136,7 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
 		// Delete
 		if (e.key == GLFW_KEY_DELETE && (e.mods & RACK_MOD_MASK) == 0) {
 			if (cursor == selection) {
-				cursor = std::min(cursor + 1, (int) text.size());
+				cursor = std::min(cursor + 1, (int) text->size());
 			}
 			insertText("");
 			e.consume(this);
@@ -198,7 +168,7 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
 				cursorToNextWord();
 			}
 			else {
-				cursor = std::min(cursor + 1, (int) text.size());
+				cursor = std::min(cursor + 1, (int) text->size());
 			}
 			if (!(e.mods & GLFW_MOD_SHIFT)) {
 				selection = cursor;
@@ -225,12 +195,12 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
 		}
 		// End
 		if (e.key == GLFW_KEY_END && (e.mods & RACK_MOD_MASK) == 0) {
-			selection = cursor = text.size();
+			selection = cursor = text->size();
 			e.consume(this);
 		}
 		// Shift+End
 		if (e.key == GLFW_KEY_END && (e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT) {
-			cursor = text.size();
+			cursor = text->size();
 			e.consume(this);
 		}
 		// Ctrl+V
@@ -255,13 +225,7 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
 		}
 		// Enter
 		if ((e.key == GLFW_KEY_ENTER || e.key == GLFW_KEY_KP_ENTER) && (e.mods & RACK_MOD_MASK) == 0) {
-			if (multiline) {
-				insertText("\n");
-			}
-			else {
-				ActionEvent eAction;
-				onAction(eAction);
-			}
+  		insertText("\n");
 			e.consume(this);
 		}
 		// Tab
@@ -282,9 +246,9 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
 		}
 
 		assert(0 <= cursor);
-		assert(cursor <= (int) text.size());
+		assert(cursor <= (int) text->size());
 		assert(0 <= selection);
-		assert(selection <= (int) text.size());
+		assert(selection <= (int) text->size());
 	}
 }
 
@@ -297,55 +261,49 @@ int STTextField::getTextPosition(math::Vec mousePos) {
 	int textPos = bndIconLabelTextPosition(APP->window->vg,
 		textOffset.x, textOffset.y,
 		box.size.x - 2 * textOffset.x, box.size.y - 2 * textOffset.y,
-		-1, 12, text.c_str(), mousePos.x, mousePos.y);
+		-1, 12, text->c_str(), mousePos.x, mousePos.y);
 	bndSetFont(APP->window->uiFont->handle);
 	return textPos;
 }
 
-/*
-int STTextField::getTextPosition(math::Vec mousePos) {
-	return bndTextFieldTextPosition(APP->window->vg, 0.0, 0.0, box.size.x, box.size.y, -1, text.c_str(), mousePos.x, mousePos.y);
-}
-*/
-
 std::string STTextField::getText() {
-	return text;
+	return *text;
 }
 
-void STTextField::setText(std::string text) {
-	if (this->text != text) {
-		this->text = text;
+void STTextField::setText(std::string new_text) {
+	if (this->text->compare(new_text) != 0) {
+		this->text->assign(new_text);
 		// ChangeEvent
 		ChangeEvent eChange;
 		onChange(eChange);
 	}
-	selection = cursor = text.size();
+	selection = cursor = text->size();
 }
 
 void STTextField::selectAll() {
-	cursor = text.size();
+	cursor = text->size();
 	selection = 0;
 }
 
 std::string STTextField::getSelectedText() {
 	int begin = std::min(cursor, selection);
 	int len = std::abs(selection - cursor);
-	return text.substr(begin, len);
+	return text->substr(begin, len);
 }
 
-void STTextField::insertText(std::string text) {
+void STTextField::insertText(std::string new_text) {
 	bool changed = false;
 	if (cursor != selection) {
 		// Delete selected text
 		int begin = std::min(cursor, selection);
 		int len = std::abs(selection - cursor);
-		this->text.erase(begin, len);
+		this->text->erase(begin, len);
 		cursor = selection = begin;
 		changed = true;
 	}
-	if (!text.empty()) {
-		this->text.insert(cursor, text);
-		cursor += text.size();
+	if (!new_text.empty()) {
+		this->text->insert(cursor, new_text);
+		cursor += new_text.size();
 		selection = cursor;
 		changed = true;
 	}
@@ -374,17 +332,17 @@ void STTextField::pasteClipboard() {
 }
 
 void STTextField::cursorToPrevWord() {
-	size_t pos = text.rfind(' ', std::max(cursor - 2, 0));
+	size_t pos = text->rfind(' ', std::max(cursor - 2, 0));
 	if (pos == std::string::npos)
 		cursor = 0;
 	else
-		cursor = std::min((int) pos + 1, (int) text.size());
+		cursor = std::min((int) pos + 1, (int) text->size());
 }
 
 void STTextField::cursorToNextWord() {
-	size_t pos = text.find(' ', std::min(cursor + 1, (int) text.size()));
+	size_t pos = text->find(' ', std::min(cursor + 1, (int) text->size()));
 	if (pos == std::string::npos)
-		pos = text.size();
+		pos = text->size();
 	cursor = pos;
 }
 
