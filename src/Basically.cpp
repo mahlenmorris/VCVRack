@@ -611,7 +611,10 @@ struct BasicallyTextField : STTextField {
 
 	void step() override {
 		STTextField::step();
-    if (module && (color_scheme != module->screen_colors || module->editor_refresh)) {
+    if (module && (color_scheme != module->screen_colors ||
+                   module->editor_refresh)) {
+      // Note: this doesn't actully care about editor_refresh. But this cleared
+      // up a bug about duplicated windows not keeping the same color.
       color_scheme = module->screen_colors;
       color = int_to_color(color_scheme >> 24);
       bgColor = int_to_color(color_scheme & 0xffffff);

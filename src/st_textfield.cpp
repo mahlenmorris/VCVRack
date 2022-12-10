@@ -13,7 +13,6 @@ struct STTextFieldCopyItem : ui::MenuItem {
 	}
 };
 
-
 struct STTextFieldCutItem : ui::MenuItem {
 	WeakPtr<STTextField> textField;
 	void onAction(const ActionEvent& e) override {
@@ -23,7 +22,6 @@ struct STTextFieldCutItem : ui::MenuItem {
 		APP->event->setSelectedWidget(textField);
 	}
 };
-
 
 struct STTextFieldPasteItem : ui::MenuItem {
 	WeakPtr<STTextField> textField;
@@ -35,7 +33,6 @@ struct STTextFieldPasteItem : ui::MenuItem {
 	}
 };
 
-
 struct STTextFieldSelectAllItem : ui::MenuItem {
 	WeakPtr<STTextField> textField;
 	void onAction(const ActionEvent& e) override {
@@ -46,7 +43,6 @@ struct STTextFieldSelectAllItem : ui::MenuItem {
 	}
 };
 
-
 STTextField::STTextField() {
   fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
   textOffset = math::Vec(5, 5);
@@ -54,6 +50,7 @@ STTextField::STTextField() {
   bgColor = nvgRGB(0x00, 0x00, 0x00);
 	box.size.y = BND_WIDGET_HEIGHT;
   text = &placeholder;  // must be correctly set by caller!
+	extended.Initialize(26, 1);
 }
 
 void STTextField::drawLayer(const DrawArgs& args, int layer) {
@@ -67,14 +64,16 @@ void STTextField::drawLayer(const DrawArgs& args, int layer) {
 
 			NVGcolor highlightColor = color;
 			highlightColor.a = 0.5;
-			int begin = std::min(cursor, selection);
-			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
+			int begin = std::min(cursor, selection) - extended.CharsAbove();
+			int end = (this == APP->event->selectedWidget) ?
+			          std::max(cursor, selection) - extended.CharsAbove(): -1;
 
       if (text != nullptr) {
   			bndIconLabelCaret(args.vg,
   				textOffset.x, textOffset.y,
   				box.size.x - 2 * textOffset.x, box.size.y - 2 * textOffset.y,
-  				-1, color, 12, text->c_str(), highlightColor, begin, end);
+  				-1, color, 12, text->c_str() + extended.CharsAbove(),
+				  highlightColor, begin, end);
       }
 
 			bndSetFont(APP->window->uiFont->handle);
@@ -117,6 +116,7 @@ void STTextField::onSelectText(const SelectTextEvent& e) {
 
 void STTextField::onSelectKey(const SelectKeyEvent& e) {
 	if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) {
+		int original_cursor = cursor;
 		// Backspace
 		if (e.key == GLFW_KEY_BACKSPACE && (e.mods & RACK_MOD_MASK) == 0) {
 			if (cursor == selection) {
@@ -257,6 +257,12 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
 			e.consume(this);
 		}
 
+		if (cursor != original_cursor) {
+			// Moved, may need to reposition window.
+			extended.RepositionWindow(cursor);
+			INFO("OnSelectKey: lines_above = %i", extended.lines_above);
+		}
+
 		assert(0 <= cursor);
 		assert(cursor <= (int) text->size());
 		assert(0 <= selection);
@@ -316,6 +322,7 @@ void STTextField::insertText(std::string new_text) {
 	if (changed) {
 		// Update the line map.
 		extended.ProcessUpdatedText(*text);
+		extended.RepositionWindow(cursor);
 		ChangeEvent eChange;
 		onChange(eChange);
 	}
