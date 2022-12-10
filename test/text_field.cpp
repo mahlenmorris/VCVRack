@@ -52,16 +52,64 @@ TEST(TextFieldTest, ColumnTest)
 }
 
 // Part of in-progress scrolling update that I am deferring for now.
-/*
 TEST(TextFieldTest, MovementTest)
 {
   ExtendedText et;
-  et.Initialize(3);
-  std:string full_text("1\n2\n3\n4\n5\n6");
-  et.ProcessUpdatedText(full_text));
-  str::string window_text;
-  int new_position = et.RepositionWindow(&window_text, full_text, 0);
-  EXPECT_EQ(0, new_position);
-  EXPECT_EQ("1\n2\n3\n", window_text);
+  et.Initialize(4, 1);
+  std::string full_text = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n";
+  et.ProcessUpdatedText(full_text);
+  EXPECT_EQ(11, et.line_map.size());
+
+  std::string window_text;
+
+  // Behavior on startup, when we believe no text is currently visible.
+  et.lines_above = -1;
+  et.RepositionWindow(0);
+  EXPECT_EQ(0, et.lines_above);
+
+  et.RepositionWindow(1);
+  EXPECT_EQ(0, et.lines_above);
+
+  et.RepositionWindow(2);
+  EXPECT_EQ(0, et.lines_above);
+
+  et.RepositionWindow(4);
+  EXPECT_EQ(0, et.lines_above);
+
+  et.RepositionWindow(6);
+  EXPECT_EQ(1, et.lines_above);
+
+  et.RepositionWindow(8);
+  EXPECT_EQ(2, et.lines_above);
+
+  et.RepositionWindow(10);
+  EXPECT_EQ(3, et.lines_above);
+
+  et.RepositionWindow(12);
+  EXPECT_EQ(4, et.lines_above);
+
+  et.RepositionWindow(14);
+  EXPECT_EQ(5, et.lines_above);
+
+  // Test moving up as well.
+  et.RepositionWindow(12);
+  EXPECT_EQ(5, et.lines_above);
+
+  et.RepositionWindow(10);
+  EXPECT_EQ(4, et.lines_above);
+
+  et.RepositionWindow(8);
+  EXPECT_EQ(3, et.lines_above);
+
+  et.RepositionWindow(6);
+  EXPECT_EQ(2, et.lines_above);
+
+  et.RepositionWindow(4);
+  EXPECT_EQ(1, et.lines_above);
+
+  et.RepositionWindow(2);
+  EXPECT_EQ(0, et.lines_above);
+
+  et.RepositionWindow(0);
+  EXPECT_EQ(0, et.lines_above);
 }
-*/
