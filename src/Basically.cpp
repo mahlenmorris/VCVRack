@@ -92,10 +92,6 @@ struct Basically : Module {
                                     {"in5", IN5_INPUT},
                                     {"in6", IN6_INPUT}
                                   };
-  // width (in "holes") of the whole module. Changed by the resize bar on the
-  // right (within limits), and informs the size of the display and text field.
-  // Saved in the json for the module.
-  int width = 16;
 
   Basically() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -455,20 +451,31 @@ struct Basically : Module {
   // Keeps lights lit long enough to see.
   int run_light_countdown = 0;
   WaitInfo wait_info;
+  // width (in "holes") of the whole module. Changed by the resize bar on the
+  // right (within limits), and informs the size of the display and text field.
+  // Saved in the json for the module.
+  int width = 16;
+  // The undo/redo sometimes needs to reset the cursor position.
+  // But we don't actully have a good pointer to the text field.
+  // drawLayer() uses this if it's > -1;
+  int cursor_override = -1;
 };
 
 // Adds support for undo/redo in the text field where people type programs.
 struct TextEditAction : history::ModuleAction {
   std::string old_text;
   std::string new_text;
+  int cursor;
   int old_width;
   int new_width;
 
-  TextEditAction(int64_t id, std::string oldText, std::string newText) {
+  TextEditAction(int64_t id, std::string oldText, std::string newText,
+     int cursor_pos) {
     moduleId = id;
     name = "edit code";
     old_text = oldText;
     new_text = newText;
+    cursor = cursor_pos;
     old_width = new_width = -1;
   }
   TextEditAction(int64_t id, int old_width, int new_width) :
@@ -485,6 +492,7 @@ struct TextEditAction : history::ModuleAction {
         module->editor_refresh = true;
         // Tell module it needs to re-evaluate 'text'.
         module->module_refresh = true;
+        module->cursor_override = cursor;
       } else {
         module->width = this->old_width;
       }
@@ -500,6 +508,7 @@ struct TextEditAction : history::ModuleAction {
         module->editor_refresh = true;
         // Tell module it needs to re-evaluate 'text'.
         module->module_refresh = true;
+        module->cursor_override = cursor;
       } else {
         module->width = this->new_width;
       }
@@ -595,13 +604,25 @@ struct BasicallyTextField : STTextField {
       if (module && module->allow_error_highlight) {
         // Highlight the line with an error, if any.
         if (module->drv.errors.size() > 0) {
-          int line_number = module->drv.errors[0].line;
+          int line_number = module->drv.errors[0].line - extended.lines_above;
           nvgBeginPath(args.vg);
           int topFudge = textOffset.y + 5;  // I'm just trying things until they work.
           // textOffset is in ledDisplayTextField.
           nvgRect(args.vg, 0, topFudge + 12 * (line_number - 1), box.size.x, 12);
           nvgFillColor(args.vg, nvgRGB(128, 0, 0));
           nvgFill(args.vg);
+        }
+        if (module->cursor_override >= 0) {
+          INFO("cursor_override = %i", module->cursor_override);
+          // Undo/redo must have just happened.
+          // Move cursor (with no selection) to where the cursor was when we
+          // did edit.
+          cursor = module->cursor_override;
+          selection = module->cursor_override;
+          module->cursor_override = -1;
+          // Since we just forcibly moved the cursor, need to reposition window
+          // to show it.
+          extended.RepositionWindow(cursor);
         }
       }
   	}
@@ -637,7 +658,8 @@ struct BasicallyTextField : STTextField {
       // TODO: do I need this check anymore?
       if (module->text != module->previous_text) {
         APP->history->push(
-          new TextEditAction(module->id, module->previous_text, module->text));
+          new TextEditAction(module->id, module->previous_text,
+                             module->text, cursor));
         module->previous_text = module->text;
         module->module_refresh = true;
       }
@@ -921,21 +943,21 @@ struct BasicallyWidget : ModuleWidget {
     menu->addChild(createMenuLabel(
       "Language hints (select to insert into code)"));
     std::pair<std::string, std::string> syntax[] = {
-      {"OUT1 = IN1 + IN2", "OUT1 = IN1 + IN2"},
-      {"WAIT 200", "WAIT 200"},
-      {"' I'm a comment.", "' I'm a comment."},
-      {"IF IN1 == 0 THEN OUT1 = IN2 * IN2 END IF",
-       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN2\nEND IF"},
-      {"IF IN1 == 0 THEN OUT1 = IN2 * IN1 ELSE OUT1 = IN2 * IN1 END IF",
-       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSE\n  OUT1 = IN2 * IN1\nEND IF"},
-      {"FOR i = 0 TO 10 foo = IN1 + i NEXT",
-       "FOR i = 0 TO 10\n  foo = IN1 + i\nNEXT"},
-      {"FOR i = 0 TO 10 STEP 0.2 foo = IN1 + i NEXT",
-       "FOR i = 0 TO 10 STEP 0.2\n  foo = IN1 + i\nNEXT"},
-      {"CONTINUE FOR", "CONTINUE FOR"},
-      {"EXIT FOR", "EXIT FOR"},
-      {"CONTINUE ALL", "CONTINUE ALL"},
-      {"EXIT ALL", "EXIT ALL"}
+      {"OUT1 = IN1 + IN2", "OUT1 = IN1 + IN2\n"},
+      {"WAIT 200", "WAIT 200\n"},
+      {"' I'm a comment.", "' I'm a comment.\n"},
+      {"IF IN1 == 0 THEN OUT1 = IN2 * IN2 END IF\n",
+       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN2\nEND IF\n"},
+      {"IF IN1 == 0 THEN OUT1 = IN2 * IN1 ELSE OUT1 = IN2 * IN1 END IF\n",
+       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSE\n  OUT1 = IN2 * IN1\nEND IF\n"},
+      {"FOR i = 0 TO 10 foo = IN1 + i NEXT\n",
+       "FOR i = 0 TO 10\n  foo = IN1 + i\nNEXT\n"},
+      {"FOR i = 0 TO 10 STEP 0.2 foo = IN1 + i NEXT\n",
+       "FOR i = 0 TO 10 STEP 0.2\n  foo = IN1 + i\nNEXT\n"},
+      {"CONTINUE FOR", "CONTINUE FOR\n"},
+      {"EXIT FOR", "EXIT FOR\n"},
+      {"CONTINUE ALL", "CONTINUE ALL\n"},
+      {"EXIT ALL", "EXIT ALL\n"}
     };
     MenuItem* syntax_menu = createSubmenuItem("Syntax", "",
       [=](Menu* menu) {

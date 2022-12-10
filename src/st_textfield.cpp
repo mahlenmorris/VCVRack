@@ -260,7 +260,6 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
 		if (cursor != original_cursor) {
 			// Moved, may need to reposition window.
 			extended.RepositionWindow(cursor);
-			INFO("OnSelectKey: lines_above = %i", extended.lines_above);
 		}
 
 		assert(0 <= cursor);
@@ -279,9 +278,9 @@ int STTextField::getTextPosition(math::Vec mousePos) {
 	int textPos = bndIconLabelTextPosition(APP->window->vg,
 		textOffset.x, textOffset.y,
 		box.size.x - 2 * textOffset.x, box.size.y - 2 * textOffset.y,
-		-1, 12, text->c_str(), mousePos.x, mousePos.y);
+		-1, 12, text->c_str() + extended.CharsAbove(), mousePos.x, mousePos.y);
 	bndSetFont(APP->window->uiFont->handle);
-	return textPos;
+	return textPos + extended.CharsAbove();
 }
 
 void STTextField::textUpdated() {
