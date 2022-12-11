@@ -80,11 +80,11 @@ struct Basically : Module {
     }
   };
 
-  std::unordered_map<std::string, OutputId> out_map { {"out1", OUT1_OUTPUT},
-                                                      {"out2", OUT2_OUTPUT},
-                                                      {"out3", OUT3_OUTPUT},
-                                                      {"out4", OUT4_OUTPUT}
-                                                    };
+  std::unordered_map<std::string, int> out_map { {"out1", OUT1_OUTPUT},
+                                                 {"out2", OUT2_OUTPUT},
+                                                 {"out3", OUT3_OUTPUT},
+                                                 {"out4", OUT4_OUTPUT}
+                                               };
   std::vector<InPortInfo> in_list { {"in1", IN1_INPUT},
                                     {"in2", IN2_INPUT},
                                     {"in3", IN3_INPUT},
@@ -172,11 +172,12 @@ struct Basically : Module {
     // keeping previously defined variables makes live-coding work.
   }
 
-  void UpdateOutsIfNeeded(const std::string var_name, float value) {
-    auto found = out_map.find(var_name);
-    if (found != out_map.end()) {
+  // TODO: I could just be marking all assignments with a bool saying whether or
+  // not it's an OUTn. Saving me the cost of this lookup every sample.
+  void UpdateOutsIfNeeded(int var_index, float value) {
+    if (var_index >= 0) {
       // Limit to -10 <= x < = 10.
-      outputs[found->second].setVoltage(
+      outputs[var_index].setVoltage(
         std::max(-10.0f, std::min(10.0f, value)));
     }
   }
@@ -233,7 +234,7 @@ struct Basically : Module {
                      lowercase.begin(), ::tolower);
       compiles = !drv.parse(lowercase);
       if (compiles) {
-        PCodeTranslator translator;
+        PCodeTranslator translator(out_map);
         translator.LinesToPCode(drv.lines, &pcodes);
         // Recompiled; cannot trust program state.
         ResetToProgramStart();
@@ -314,7 +315,7 @@ struct Basically : Module {
         case PCode::ASSIGNMENT: {
           float rhs = pcode->expr1.Compute();
           *(pcode->variable_ptr) = rhs;
-          UpdateOutsIfNeeded(pcode->str1, rhs);
+          UpdateOutsIfNeeded(pcode->out_enum_value, rhs);
           current_line++;
         }
         break;
@@ -391,7 +392,7 @@ struct Basically : Module {
           } else {
             float new_value = *(pcode->variable_ptr) + pcode->step;
             *(pcode->variable_ptr) = new_value;
-            UpdateOutsIfNeeded(pcode->str1, new_value);
+            UpdateOutsIfNeeded(pcode->out_enum_value, new_value);
           }
           bool done = false;
           // If "Step" is negative, we wait until value is below limit.

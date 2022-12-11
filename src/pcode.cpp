@@ -9,21 +9,28 @@
 #include "parser/tree.h"
 #include "pcode.h"
 
-PCode PCode::Assignment(const std::string str1, float* variable_ptr,
-                        const Expression &expr1) {
-  PCode assign;
-  assign.type = PCode::ASSIGNMENT;
-  assign.str1 = str1;
-  assign.variable_ptr = variable_ptr;
-  assign.expr1 = expr1;
-  return assign;
-}
-
 PCode PCode::Wait(const Expression &expr1) {
   PCode new_pcode;
   new_pcode.type = PCode::WAIT;
   new_pcode.expr1 = expr1;
   return new_pcode;
+}
+
+PCode PCodeTranslator::Assignment(const std::string str1, float* variable_ptr,
+                                  const Expression &expr1) {
+  PCode assign;
+  assign.type = PCode::ASSIGNMENT;
+  assign.str1 = str1;
+  // Optimize a bit for assignments to OUTn values.
+  auto found = out_map.find(str1);
+  if (found != out_map.end()) {
+    assign.out_enum_value = found->second;
+  } else {
+    assign.out_enum_value = -1;
+  }
+  assign.variable_ptr = variable_ptr;
+  assign.expr1 = expr1;
+  return assign;
 }
 
 // Note; caller should _probably_ reset the line position after this.
@@ -49,7 +56,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
                                      const Exit &innermost_loop) {
   switch (line.type) {
     case Line::ASSIGNMENT: {
-      pcodes->push_back(PCode::Assignment(
+      pcodes->push_back(Assignment(
           line.str1, line.variable_ptr, line.expr1));
     }
     break;
@@ -166,7 +173,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       // statements
       // WAIT 0
       // RELATIVE_JUMP (back to FORLOOP).
-      PCode assign = PCode::Assignment(line.str1, line.variable_ptr, line.expr1);
+      PCode assign = Assignment(line.str1, line.variable_ptr, line.expr1);
       // Tells the FORLOOP to re-evaluate limit
       assign.state = PCode::ENTERING_FOR_LOOP;
       pcodes->push_back(assign);
