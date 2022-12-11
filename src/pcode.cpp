@@ -180,6 +180,13 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       PCode forloop;
       forloop.type = PCode::FORLOOP;
       forloop.str1 = line.str1;  // Variable name.
+      // Optimize a bit for assignments to OUTn values.
+      auto found = out_map.find(forloop.str1);
+      if (found != out_map.end()) {
+        forloop.out_enum_value = found->second;
+      } else {
+        forloop.out_enum_value = -1;
+      }
       forloop.variable_ptr = line.variable_ptr;
       forloop.expr1 = line.expr2;  // Limit.
       forloop.expr2 = line.expr3;  // Step.
