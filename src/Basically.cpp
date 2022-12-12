@@ -614,7 +614,6 @@ struct BasicallyTextField : STTextField {
           nvgFill(args.vg);
         }
         if (module->cursor_override >= 0) {
-          INFO("cursor_override = %i", module->cursor_override);
           // Undo/redo must have just happened.
           // Move cursor (with no selection) to where the cursor was when we
           // did edit.

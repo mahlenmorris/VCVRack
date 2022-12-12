@@ -302,6 +302,12 @@ std::string STTextField::getSelectedText() {
 	return text->substr(begin, len);
 }
 
+bool invalidChar(char c)
+{
+	// \r seems to be the main thing messing me up.
+  return c == '\r';
+}
+
 void STTextField::insertText(std::string new_text) {
 	bool changed = false;
 	if (cursor != selection) {
@@ -312,6 +318,12 @@ void STTextField::insertText(std::string new_text) {
 		cursor = selection = begin;
 		changed = true;
 	}
+
+	// Sometimes text pasted from the outside has unprintable characters that mess
+	// the display up. Let's remove them.
+	new_text.erase(remove_if(new_text.begin(), new_text.end(), invalidChar),
+	               new_text.end());
+
 	if (!new_text.empty()) {
 		this->text->insert(cursor, new_text);
 		cursor += new_text.size();
