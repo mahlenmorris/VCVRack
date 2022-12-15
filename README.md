@@ -427,15 +427,8 @@ click on a particular statement and it will be inserted into your code.
 When the module is bypassed, all OUTn ports are set to zero volts.
 
 ### Known Bugs
-* If you open a new BASICally module and the first thing you type is a
-comment (good for you, starting your code with a comment),
-VCV Rack crashes. Also happens if you load a patch where the code is just  comments.
-
-* * **Workaround**: Type anything that would compile (e.g., "f=1"),
-and then erase it and write the comment. A fix is forthcoming.
-* *Sometimes* when you duplicate a BASICally module, it doesn't duplicate
-the text color correctly.
-** **Workaround**: Set correct text color in the menu. A fix is forthcoming.
+* In this release, if the amount of time in a WAIT involves a computation with IN5 or IN6 (e.g., "WAIT abs(in5) * 10")
+the WAIT will incorrectly not notice changes to IN5 or IN6 while it is waiting. 
 
 ### Related Modules
 * Frank Buss's
