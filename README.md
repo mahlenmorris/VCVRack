@@ -620,3 +620,17 @@ per the usual case.
 If this module is bypassed, then OUT will equal IN. If IN has no cable running
 into it, then OUT will be 0.0V, *even if* the "Unplugged value of IN" menu
 option is set to something else.
+
+![Line Break image](images/Separator.png)
+
+# Acknowledgements
+
+Thanks to all of the helpful people on the
+[VCV Rack Community board](https://community.vcvrack.com/) for their
+willingness to help and advise me as I've been learning this new domain.
+
+Many thanks to [Marc Weidenbaum](https://disquiet.com/) for his encouragement and enthusiasm for my module-making efforts.
+
+And my deepest gratitude is to Diane LeVan, for letting me ignore her and/or
+the world for periods of time just to craft these things. I apologize for
+waking up with new ideas at 5AM, and for having a retirement hobby that is nearly impossible to even start describing to anyone.
