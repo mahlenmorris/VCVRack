@@ -42,10 +42,10 @@ Useful for:
 Note that STYLE is set to "Start on trigger, don't loop".
 
 The examples above are all in [this patch](examples/BASICallyExamples1.vcv).
-A patch with some simple ideas for other directions BASICally can go are in
-[this patch](examples/BASICallyExperiments.vcv).
+A patch with some simple/strange/silly ideas for other things BASICally can do
+are in [this patch](examples/BASICallyExperiments.vcv).
 
-TODO: video of different examples and their output
+<!-- TODO: video of different examples and their output -->
 
 ## Unique Features
 While there are
@@ -59,14 +59,14 @@ know, once knew, or can pick up by looking at examples.
 * The right side of the module is a resize bar; pull it to the right or left,
 and the code window changes size. Handy for reading those long comments without
 line breaks and for shrinking the module down to a small size when you don't
-wish to edit the code.
+wish to edit the code. Also, the text window scrolls up and down as you move
+through it.
 * Four different run "STYLES" (see Controls below), giving it the ability to
  act on a RUN trigger, or to run the most recent working version continuously
  as you type, or only run while a button or trigger is pressed.
 * Edits in the text window become part of the VCV Rack Undo/Redo system.
 * You can pick from a (small) number of screen color schemes in the menu.
-* [Scientific pitch notation](https://en.m.wikipedia.org/wiki/Scientific_pitch_notation) is supported (e.g., c4, Db2, d#8). They are
-turned into V/OCT values.
+* [Scientific pitch notation](https://en.m.wikipedia.org/wiki/Scientific_pitch_notation) is supported (e.g., c4, Db2, d#8). They are turned into V/OCT values.
 
 ## The Language
 ### Setting and Using Variables (Assignment and Math)
@@ -364,9 +364,8 @@ WAIT 0  ' There is a hidden WAIT 0 inserted at the bottom of the program.
 ```
 
 ### Controls
-#### GOOD? Light
-The area underneath the "GOOD?" indicates whether or not BASICally has figured
-out how to turn your code into instructions. If it looks like:
+#### The Good/Fix Light
+The lit word in the upper left corner indicates whether or not BASICally has figured out how to turn your code into instructions. If it looks like:
 
 ![Good image](images/BASICallyGood.png)
 
@@ -374,11 +373,14 @@ then BASICally can run your code. However if it looks like:
 
 ![Fix image](images/BASICallyFix.png)
 
-Then it cannot run the code as it stands. If you roll the mouse pointer over
-the "Fix", then BASICally will attempt to point out where the first error
-it found was. As you can see here, for now, it can only vaguely tell
-you where it got confused and why. The red error highlight line will point to
-the line it means. 
+Then it cannot run the code as it stands. You can see that the line where it
+gets confused is highlighted in red.
+
+If you roll the mouse pointer over the "Fix", then BASICally will attempt to
+describe the first error it found. As you can see here, it can only vaguely
+tell you where it got confused and why. Note that if the editing window is
+scrolled away from the line where the error occurs, you won't be able to see
+the highlight line until you scroll up (or down) to it.
 
 #### STYLE Knob + RUN Button and Input
 There are four options to determine when the code will run. Three of them rely on the RUN Button and trigger/gate, which are described below.
