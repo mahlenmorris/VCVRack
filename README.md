@@ -59,7 +59,7 @@ know, once knew, or can pick up by looking at examples.
 * The right side of the module is a resize bar; pull it to the right or left,
 and the code window changes size. Handy for reading those long comments without
 line breaks and for shrinking the module down to a small size when you don't
-wish to edit the code. Also, the text window scrolls up and down as you move
+wish to edit the code. Also, the text window scrolls vertically as you move
 through it.
 * Four different run "STYLES" (see Controls below), giving it the ability to
  act on a RUN trigger, or to run the most recent working version continuously
@@ -154,6 +154,7 @@ the execution of other statements.
 Examples:
 
     out2 = 3.250 ' A C4 note.
+    out2 = c4 ' Also a C4 note.
     WAIT 200 ' Pause for 1/5 of a second.
     ' The next line can be turned on just by removing the initial tick (').
     ' out1 = 2.3 * in1  ' Look, I'm live-coding!
