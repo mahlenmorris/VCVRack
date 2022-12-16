@@ -113,8 +113,8 @@ exit_statement:
 | "exit" "all"          { $$ = Line::Exit($2); }
 
 for_statement:
-  "for" assignment "to" exp statements "next"  { $$ = Line::ForNext($2, $4, Expression::Number(1.0), $5); }
-| "for" assignment "to" exp "step" exp statements "next" { $$ = Line::ForNext($2, $4, $6, $7); }
+  "for" assignment "to" exp statements "next"  { $$ = Line::ForNext($2, $4, drv.factory.Number(1.0), $5, &drv); }
+| "for" assignment "to" exp "step" exp statements "next" { $$ = Line::ForNext($2, $4, $6, $7, &drv); }
 
 if_statement:
   "if" exp "then" statements "end" "if"                    { $$ = Line::IfThen($2, $4); }
@@ -131,20 +131,20 @@ wait_statement:
 %precedence NEG;   /* unary minus or "not" */
 
 exp:
-  "number"      { $$ = Expression::Number((float) $1); }
-| "note"        { $$ = Expression::Note($1); }
-| MINUS "number" %prec NEG { $$ = Expression::Number(-1 * (float) $2);}
-| "not" exp %prec NEG { $$ = Expression::Not($2);}
-| "identifier"  { $$ = Expression::Variable($1, &drv); }
-| exp "+" exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
-| exp "-" exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
-| exp "*" exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
-| exp "/" exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
-| exp COMPARISON exp   { $$ = Expression::CreateBinOp($1, $2, $3); }
-| exp "and" exp { $$ = Expression::CreateBinOp($1, $2, $3); }
-| exp "or" exp  { $$ = Expression::CreateBinOp($1, $2, $3); }
-| "oneargfunc" "(" exp ")" { $$ = Expression::OneArgFunc($1, $3); }
-| "twoargfunc" "(" exp "," exp ")" { $$ = Expression::TwoArgFunc($1, $3, $5); }
+  "number"      { $$ = drv.factory.Number((float) $1); }
+| "note"        { $$ = drv.factory.Note($1); }
+| MINUS "number" %prec NEG { $$ = drv.factory.Number(-1 * (float) $2);}
+| "not" exp %prec NEG { $$ = drv.factory.Not($2);}
+| "identifier"  { $$ = drv.factory.Variable($1, &drv); }
+| exp "+" exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| exp "-" exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| exp "*" exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| exp "/" exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| exp COMPARISON exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| exp "and" exp { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| exp "or" exp  { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| "oneargfunc" "(" exp ")" { $$ = drv.factory.OneArgFunc($1, $3); }
+| "twoargfunc" "(" exp "," exp ")" { $$ = drv.factory.TwoArgFunc($1, $3, $5); }
 | "(" exp ")"   { $$ = $2; }
 %%
 

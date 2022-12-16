@@ -7,11 +7,13 @@
 #include <unordered_set>
 #include <vector>
 
+#include "environment.h"
+
 class Expression;
 class Driver;
 // Base class for computing expressions.
 class Expression {
-public:
+ public:
   enum Type {
     NUMBER,  // 3, 4.5, -283823
     BINOP,   // plus, times
@@ -47,49 +49,60 @@ public:
   };
   Operation operation;
   float float_value;
+
+  // Some variables are just pointers to a float (e.g., i, foo, etc.).
   float* variable_ptr;
+  // But other variables are Input or Output ports in the UI. We can avoid
+  // always updating them by pointing to their location in the Environment.
+  PortPointer port;
+  Environment* env = nullptr;
+
   std::string name;
   std::vector<Expression> subexpressions;
 
-  static std::unordered_map<std::string, Operation> string_to_operation;
   static std::unordered_map<std::string, float> note_to_volt_octave_4;
-  static std::unordered_set<std::string> volatile_inputs;
   Expression() {}
 
-  static Expression Not(const Expression &expr);
-  static Expression Note(const std::string &note_name);
-  static Expression Number(float the_value);
-  static Expression OneArgFunc(const std::string &func_name,
-                               const Expression &arg1);
-  static Expression TwoArgFunc(const std::string &func_name,
-                               const Expression &arg1, const Expression &arg2);
-  static Expression CreateBinOp(const Expression &lhs,
-                                const std::string &op_string,
-                                const Expression &rhs);
-  static Expression Variable(const char *var_name, Driver* driver);
-  // The parser seems to need many variants of Variable.
-  static Expression Variable(const std::string &expr, Driver* driver);
   // The parser seems to need many variants of Variable.
   Expression(char * var_name, Driver* driver);
-
-  static Expression Variable(char * var_name, Driver* driver);
 
   // Compute the result of this Expression.
   float Compute();
   // Determine if this Expression can Compute() different results depending on
   // INn or any other volatile source (e.g., a random() function.)
-  // The names of the dependencies must be added to this set.
-  bool Volatile(std::unordered_set<std::string>* volatile_deps);
+  bool Volatile();
 
   // Bison seems to require this; I don't use it.
   friend std::ostream& operator<<(std::ostream& os, const Expression &ex);
   std::string to_string() const;
   static bool is_zero(float value);
-private:
+ private:
   float bool_to_float(bool value);
   float binop_compute();
   float one_arg_compute(float arg1);
   float two_arg_compute(float arg1, float arg2);
+};
+
+class ExpressionFactory {
+ public:
+  Environment* env;  // Only public for my debugging.
+  void SetEnvironment(Environment* the_env) { env = the_env; }
+  Expression Not(const Expression &expr);
+  Expression Note(const std::string &note_name);
+  Expression Number(float the_value);
+  Expression OneArgFunc(const std::string &func_name,
+                               const Expression &arg1);
+  Expression TwoArgFunc(const std::string &func_name,
+                               const Expression &arg1, const Expression &arg2);
+  Expression CreateBinOp(const Expression &lhs,
+                                const std::string &op_string,
+                                const Expression &rhs);
+  Expression Variable(const char *var_name, Driver* driver);
+  // The parser seems to need many variants of Variable.
+  Expression Variable(const std::string &expr, Driver* driver);
+  Expression Variable(char * var_name, Driver* driver);
+ private:
+  static std::unordered_map<std::string, Expression::Operation> string_to_operation;
 };
 
 struct Statements;
@@ -106,7 +119,11 @@ struct Line {
   };
   Type type;
   std::string str1;
+
+  // When assigning to a variable/port.
   float* variable_ptr;
+  PortPointer assign_port;
+
   Expression expr1, expr2, expr3;
   std::vector<Statements> statements;
 
@@ -123,7 +140,8 @@ struct Line {
   static Line Exit(const std::string &loop_type);
 
   static Line ForNext(const Line &assign, const Expression &limit,
-                      const Expression &step, const Statements &state);
+                      const Expression &step, const Statements &state,
+                      Driver* driver);
 
   static Line IfThen(const Expression &bool_expr,
                      const Statements &state1);

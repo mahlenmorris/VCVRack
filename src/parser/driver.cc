@@ -32,6 +32,24 @@ Driver::~Driver() {
   }
 }
 
+// Ports are limited in number, so the module adds them before any
+// compilation.
+void Driver::AddPortForName(const std::string &name, bool is_input, int number) {
+  PortPointer ptr;
+  ptr.port_type = is_input ? PortPointer::INPUT : PortPointer::OUTPUT;
+  ptr.index = number;
+  symbol_ports[name] = ptr;
+}
+
+bool Driver::VarHasPort(const std::string &name) {
+  return symbol_ports.find(name) != symbol_ports.end();
+}
+
+PortPointer Driver::GetPortFromName(const std::string &name) {
+  return symbol_ports[name];
+}
+
+// Other variables are made on the fly, when asked for.
 float* Driver::GetVarFromName(const std::string &name) {
   auto found = symbol_floats.find(name);
   if (found != symbol_floats.end()) {

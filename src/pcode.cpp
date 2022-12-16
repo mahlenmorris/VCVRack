@@ -17,18 +17,13 @@ PCode PCode::Wait(const Expression &expr1) {
 }
 
 PCode PCodeTranslator::Assignment(const std::string str1, float* variable_ptr,
+                                  const PortPointer &port,
                                   const Expression &expr1) {
   PCode assign;
   assign.type = PCode::ASSIGNMENT;
   assign.str1 = str1;
-  // Optimize a bit for assignments to OUTn values.
-  auto found = out_map.find(str1);
-  if (found != out_map.end()) {
-    assign.out_enum_value = found->second;
-  } else {
-    assign.out_enum_value = -1;
-  }
   assign.variable_ptr = variable_ptr;
+  assign.assign_port = port;
   assign.expr1 = expr1;
   return assign;
 }
@@ -57,7 +52,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
   switch (line.type) {
     case Line::ASSIGNMENT: {
       pcodes->push_back(Assignment(
-          line.str1, line.variable_ptr, line.expr1));
+          line.str1, line.variable_ptr, line.assign_port, line.expr1));
     }
     break;
     case Line::CONTINUE: {
@@ -173,20 +168,15 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       // statements
       // WAIT 0
       // RELATIVE_JUMP (back to FORLOOP).
-      PCode assign = Assignment(line.str1, line.variable_ptr, line.expr1);
+      PCode assign = Assignment(line.str1, line.variable_ptr,
+                                line.assign_port, line.expr1);
       // Tells the FORLOOP to re-evaluate limit
       assign.state = PCode::ENTERING_FOR_LOOP;
       pcodes->push_back(assign);
       PCode forloop;
       forloop.type = PCode::FORLOOP;
       forloop.str1 = line.str1;  // Variable name.
-      // Optimize a bit for assignments to OUTn values.
-      auto found = out_map.find(forloop.str1);
-      if (found != out_map.end()) {
-        forloop.out_enum_value = found->second;
-      } else {
-        forloop.out_enum_value = -1;
-      }
+      forloop.assign_port = line.assign_port;
       forloop.variable_ptr = line.variable_ptr;
       forloop.expr1 = line.expr2;  // Limit.
       forloop.expr2 = line.expr3;  // Step.
@@ -205,7 +195,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       // Remove from stack.
       loops.pop_back();  // TODO: confirm it is the "for" item we placed?
       // Insert smallest possible WAIT.
-      pcodes->push_back(PCode::Wait(Expression::Number(0.0f)));
+      pcodes->push_back(PCode::Wait(expression_factory.Number(0.0f)));
       PCode jump_back;
       jump_back.type = PCode::RELATIVE_JUMP;
       // jump_count must be negative to go backwards in program to FORLOOP.

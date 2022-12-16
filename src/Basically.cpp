@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "parser/environment.h"
 #include "plugin.hpp"
 #include "parser/driver.hh"
 #include "pcode.h"
@@ -31,8 +32,6 @@ struct WaitInfo {
   // The expression that computes the wait time could change while the wait is
   // occuring.
   bool is_volatile;
-  // The inputs the WAIT Expression relies on, if any.
-  std::unordered_set<std::string> volatile_deps;
   // The number of process() calls seen in this WAIT. GOes up by one every time
   // procees is called during the wait.
   int ticks_so_far;
@@ -80,6 +79,37 @@ struct Basically : Module {
     }
   };
 
+  class ProductionEnvironment : public Environment {
+    std::vector<Input>* inputs;
+    std::vector<Output>* outputs;
+
+   public:
+    ProductionEnvironment(std::vector<Input>* the_inputs,
+                          std::vector<Output>* the_outputs) :
+       inputs{the_inputs}, outputs{the_outputs} {}
+
+    float GetVoltage(const PortPointer &port) override {
+      if (port.port_type == PortPointer::INPUT) {
+        return inputs->at(port.index).getVoltage();
+      } else {
+        return outputs->at(port.index).getVoltage();
+      }
+    }
+    void SetVoltage(const PortPointer &port, float value) override {
+      if (port.port_type == PortPointer::INPUT) {
+        inputs->at(port.index).setVoltage(value);
+      } else {
+        outputs->at(port.index).setVoltage(
+          std::max(-10.0f, std::min(10.0f, value)));
+      }
+    };
+    float IsConnected(const PortPointer &port) override {
+      (void) port;
+      return 0.0;
+    };
+
+  };
+
   std::unordered_map<std::string, int> out_map { {"out1", OUT1_OUTPUT},
                                                  {"out2", OUT2_OUTPUT},
                                                  {"out3", OUT3_OUTPUT},
@@ -118,16 +148,17 @@ struct Basically : Module {
     current_line = 0;
     wait_info.in_wait = false;
 
+    drv.SetEnvironment(new ProductionEnvironment(&inputs, &outputs));
     // Add the INn variables to the variable space, and get the pointer to
     // them so module can set them.
     for (size_t i = 0; i < in_list.size(); i++) {
-      in_list[i].value_ptr = drv.GetVarFromName(in_list[i].name);
+      drv.AddPortForName(in_list[i].name, true, in_list[i].id);
     }
     // Add the OUTn variables to the symbol table, just so we're sure they
     // are present. But we don't appear to need to keep the pointers in
     // the module.
     for (auto output : out_map) {
-      drv.GetVarFromName(output.first);
+      drv.AddPortForName(output.first, false, output.second);
     }
   }
 
@@ -172,46 +203,46 @@ struct Basically : Module {
     // keeping previously defined variables makes live-coding work.
   }
 
-  // TODO: I could just be marking all assignments with a bool saying whether or
-  // not it's an OUTn. Saving me the cost of this lookup every sample.
-  void UpdateOutsIfNeeded(int var_index, float value) {
-    if (var_index >= 0) {
-      // Limit to -10 <= x < = 10.
-      outputs[var_index].setVoltage(
-        std::max(-10.0f, std::min(10.0f, value)));
+  // There are times when the module itself needs to get or set a variable's
+  // value. E.g., when executing a FOR-NEXT loop.
+  // Now that varaibles are represented by both a float* and a PortPointer,
+  // we have these methods for doing those operations.
+  // TODO: make a class that bundles the float* and the PortPointer
+  // and these methods?
+  void SetVariableValue(float* variable_ptr, const PortPointer &assign_port,
+                        float value) {
+    switch (assign_port.port_type) {
+      case PortPointer::NOT_PORT: {
+        *variable_ptr = value;
+      }
+      break;
+      case PortPointer::INPUT: {
+        inputs[assign_port.index].setVoltage(value);
+      }
+      break;
+      case PortPointer::OUTPUT: {
+        outputs[assign_port.index].setVoltage(value);
+      }
+      break;
     }
   }
 
-  // Update all connected inputs.
-  void UpdateAllInputs() {
-    for (auto input : in_list) {
-      // Unconnected inputs can't change.
-      if (inputs[input.id].isConnected()) {  // TODO: is this an expensive call?
-        *(input.value_ptr) = inputs[input.id].getVoltage();
+  float GetVariableValue(float* variable_ptr, const PortPointer &port) {
+    switch (port.port_type) {
+      case PortPointer::NOT_PORT: {
+        return *variable_ptr;
       }
-    }
-  }
-
-  // Version of UpdateAllInputs optimized for volatile WAITs.
-  // Update only the inputs listed in deps.
-  // Returns true iff any input listed in deps changed value.
-  bool UpdateNeededInputs(const std::unordered_set<std::string> &deps) {
-    bool dep_changed = false;
-    for (auto input : in_list) {
-      // Unconnected inputs can't change.
-      if (inputs[input.id].isConnected()) {
-        if (deps.find(input.name) != deps.end()) {
-          // TODO: _maybe_ slightly faster to pull the pair from the map?
-          float prev = *(input.value_ptr);
-          float new_value = inputs[input.id].getVoltage();
-          if (!Expression::is_zero(new_value - prev)) {
-            *(input.value_ptr) = new_value;
-            dep_changed = true;
-          }
-        }
+      break;
+      case PortPointer::INPUT: {
+        return inputs[port.index].getVoltage();
       }
+      break;
+      case PortPointer::OUTPUT: {
+        return outputs[port.index].getVoltage();
+      }
+      break;
+      default: return -8.7654321;  // Error value, should be impossible.
     }
-    return dep_changed;
   }
 
   void processBypass(const ProcessArgs& args) override {
@@ -234,7 +265,7 @@ struct Basically : Module {
                      lowercase.begin(), ::tolower);
       compiles = !drv.parse(lowercase);
       if (compiles) {
-        PCodeTranslator translator(out_map);
+        PCodeTranslator translator;
         translator.LinesToPCode(drv.lines, &pcodes);
         // Recompiled; cannot trust program state.
         ResetToProgramStart();
@@ -270,7 +301,7 @@ struct Basically : Module {
       }
     }
     if (pcodes.size() == 0) {
-      // No lines to run mean don't run!
+      // No lines to run --> don't run!
       running = false;
     }
     if (!prev_running && running) {
@@ -288,20 +319,12 @@ struct Basically : Module {
     if (running) {
       // If we're not running, don't need to update inputs, and the WAIT
       // status doesn't change.
-      if (!wait_info.in_wait) {
-        // Not in a WAIT => Definitely need to update.
-        UpdateAllInputs();
-      } else {
-        // In a WAIT, but does the wait interval rely on inputs?
-        if (wait_info.is_volatile) {
-          wait_info.countdown_to_recompute--;
-          if (wait_info.countdown_to_recompute <= 0) {
-            // Looks like inputs contribute to the WAIT period we are currently
-            // in. Better update the ones I need.
-            need_to_update_wait = UpdateNeededInputs(wait_info.volatile_deps);
-            wait_info.countdown_to_recompute = std::floor(
-                args.sampleRate / 1000.0f);
-          }
+      if (wait_info.in_wait && wait_info.is_volatile) {
+        // In a WAIT, and the wait interval relies on things that change?
+        wait_info.countdown_to_recompute--;
+        if (wait_info.countdown_to_recompute <= 0) {
+          wait_info.countdown_to_recompute = std::floor(
+              args.sampleRate / 1000.0f);
         }
       }
     }
@@ -314,8 +337,7 @@ struct Basically : Module {
       switch (pcode->type) {
         case PCode::ASSIGNMENT: {
           float rhs = pcode->expr1.Compute();
-          *(pcode->variable_ptr) = rhs;
-          UpdateOutsIfNeeded(pcode->out_enum_value, rhs);
+          SetVariableValue(pcode->variable_ptr, pcode->assign_port, rhs);
           current_line++;
         }
         break;
@@ -333,8 +355,6 @@ struct Basically : Module {
               // WAIT has completed, immediately execute next line.
               wait_info.in_wait = false;
               current_line++;
-              // We may not updated *all* of the Inputs, let's do so.
-              UpdateAllInputs();
             }
           } else {
             // Just arriving at this WAIT statement.
@@ -349,8 +369,7 @@ struct Basically : Module {
             } else {
               // This WAIT is longer than a single tick, so we should fill in
               // the WaitInfo for it.
-              wait_info.is_volatile = pcode->expr1.Volatile(
-                &(wait_info.volatile_deps));
+              wait_info.is_volatile = pcode->expr1.Volatile();
               // It wastes a lot of CPU seeing if we need to recompute every tick.
               // We instead only consider doing so every millisecond.
               wait_info.countdown_to_recompute =
@@ -386,20 +405,24 @@ struct Basically : Module {
         }
         break;
         case PCode::FORLOOP: {
+          float loop_var_value;
           if (state == PCode::ENTERING_FOR_LOOP) {
+            loop_var_value = GetVariableValue(pcode->variable_ptr,
+                pcode->assign_port);
             pcode->limit = pcode->expr1.Compute();
             pcode->step = pcode->expr2.Compute();
           } else {
-            float new_value = *(pcode->variable_ptr) + pcode->step;
-            *(pcode->variable_ptr) = new_value;
-            UpdateOutsIfNeeded(pcode->out_enum_value, new_value);
+            loop_var_value = GetVariableValue(pcode->variable_ptr,
+                pcode->assign_port) + pcode->step;
+            SetVariableValue(pcode->variable_ptr, pcode->assign_port,
+               loop_var_value);
           }
           bool done = false;
-          // If "Step" is negative, we wait until value is below limit.
+          // If "Step" is negative, we wait until value is _below_ limit.
           if (pcode->step >= 0.0f) {
-            done = *(pcode->variable_ptr) > pcode->limit;
+            done = loop_var_value > pcode->limit;
           } else {
-            done = *(pcode->variable_ptr) < pcode->limit;
+            done = loop_var_value < pcode->limit;
           }
           if (done) {
             current_line += pcode->jump_count;

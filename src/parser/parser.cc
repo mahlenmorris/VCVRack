@@ -1205,13 +1205,13 @@ namespace yy {
 
   case 15: // for_statement: "for" assignment "to" exp statements "next"
 #line 116 "parser.yy"
-                                               { yylhs.value.as < Line > () = Line::ForNext(yystack_[4].value.as < Line > (), yystack_[2].value.as < Expression > (), Expression::Number(1.0), yystack_[1].value.as < Statements > ()); }
+                                               { yylhs.value.as < Line > () = Line::ForNext(yystack_[4].value.as < Line > (), yystack_[2].value.as < Expression > (), drv.factory.Number(1.0), yystack_[1].value.as < Statements > (), &drv); }
 #line 1210 "parser.cc"
     break;
 
   case 16: // for_statement: "for" assignment "to" exp "step" exp statements "next"
 #line 117 "parser.yy"
-                                                         { yylhs.value.as < Line > () = Line::ForNext(yystack_[6].value.as < Line > (), yystack_[4].value.as < Expression > (), yystack_[2].value.as < Expression > (), yystack_[1].value.as < Statements > ()); }
+                                                         { yylhs.value.as < Line > () = Line::ForNext(yystack_[6].value.as < Line > (), yystack_[4].value.as < Expression > (), yystack_[2].value.as < Expression > (), yystack_[1].value.as < Statements > (), &drv); }
 #line 1216 "parser.cc"
     break;
 
@@ -1235,85 +1235,85 @@ namespace yy {
 
   case 20: // exp: "number"
 #line 134 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::Number((float) yystack_[0].value.as < float > ()); }
+                { yylhs.value.as < Expression > () = drv.factory.Number((float) yystack_[0].value.as < float > ()); }
 #line 1240 "parser.cc"
     break;
 
   case 21: // exp: "note"
 #line 135 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::Note(yystack_[0].value.as < std::string > ()); }
+                { yylhs.value.as < Expression > () = drv.factory.Note(yystack_[0].value.as < std::string > ()); }
 #line 1246 "parser.cc"
     break;
 
   case 22: // exp: "-" "number"
 #line 136 "parser.yy"
-                           { yylhs.value.as < Expression > () = Expression::Number(-1 * (float) yystack_[0].value.as < float > ());}
+                           { yylhs.value.as < Expression > () = drv.factory.Number(-1 * (float) yystack_[0].value.as < float > ());}
 #line 1252 "parser.cc"
     break;
 
   case 23: // exp: "not" exp
 #line 137 "parser.yy"
-                      { yylhs.value.as < Expression > () = Expression::Not(yystack_[0].value.as < Expression > ());}
+                      { yylhs.value.as < Expression > () = drv.factory.Not(yystack_[0].value.as < Expression > ());}
 #line 1258 "parser.cc"
     break;
 
   case 24: // exp: "identifier"
 #line 138 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::Variable(yystack_[0].value.as < std::string > (), &drv); }
+                { yylhs.value.as < Expression > () = drv.factory.Variable(yystack_[0].value.as < std::string > (), &drv); }
 #line 1264 "parser.cc"
     break;
 
   case 25: // exp: exp "+" exp
 #line 139 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
+                { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
 #line 1270 "parser.cc"
     break;
 
   case 26: // exp: exp "-" exp
 #line 140 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
+                { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
 #line 1276 "parser.cc"
     break;
 
   case 27: // exp: exp "*" exp
 #line 141 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
+                { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
 #line 1282 "parser.cc"
     break;
 
   case 28: // exp: exp "/" exp
 #line 142 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
+                { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
 #line 1288 "parser.cc"
     break;
 
   case 29: // exp: exp "comparison" exp
 #line 143 "parser.yy"
-                       { yylhs.value.as < Expression > () = Expression::CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
+                       { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
 #line 1294 "parser.cc"
     break;
 
   case 30: // exp: exp "and" exp
 #line 144 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
+                { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
 #line 1300 "parser.cc"
     break;
 
   case 31: // exp: exp "or" exp
 #line 145 "parser.yy"
-                { yylhs.value.as < Expression > () = Expression::CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
+                { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
 #line 1306 "parser.cc"
     break;
 
   case 32: // exp: "oneargfunc" "(" exp ")"
 #line 146 "parser.yy"
-                           { yylhs.value.as < Expression > () = Expression::OneArgFunc(yystack_[3].value.as < std::string > (), yystack_[1].value.as < Expression > ()); }
+                           { yylhs.value.as < Expression > () = drv.factory.OneArgFunc(yystack_[3].value.as < std::string > (), yystack_[1].value.as < Expression > ()); }
 #line 1312 "parser.cc"
     break;
 
   case 33: // exp: "twoargfunc" "(" exp "," exp ")"
 #line 147 "parser.yy"
-                                   { yylhs.value.as < Expression > () = Expression::TwoArgFunc(yystack_[5].value.as < std::string > (), yystack_[3].value.as < Expression > (), yystack_[1].value.as < Expression > ()); }
+                                   { yylhs.value.as < Expression > () = drv.factory.TwoArgFunc(yystack_[5].value.as < std::string > (), yystack_[3].value.as < Expression > (), yystack_[1].value.as < Expression > ()); }
 #line 1318 "parser.cc"
     break;
 
