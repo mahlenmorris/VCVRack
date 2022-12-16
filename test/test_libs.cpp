@@ -22,11 +22,6 @@ struct TestEnvironment : Environment {
       default: return -1.2481632;
     }
   }
-  void SetVoltage(const PortPointer &port, float value) {
-    (void) port;  // Silencing unused parameter warnings.
-    (void) value;
-    return;
-  };
   float IsConnected(const PortPointer &port) {
     (void) port;
     return 0.0;

@@ -95,14 +95,6 @@ struct Basically : Module {
         return outputs->at(port.index).getVoltage();
       }
     }
-    void SetVoltage(const PortPointer &port, float value) override {
-      if (port.port_type == PortPointer::INPUT) {
-        inputs->at(port.index).setVoltage(value);
-      } else {
-        outputs->at(port.index).setVoltage(
-          std::max(-10.0f, std::min(10.0f, value)));
-      }
-    };
     float IsConnected(const PortPointer &port) override {
       (void) port;
       return 0.0;
@@ -221,7 +213,8 @@ struct Basically : Module {
       }
       break;
       case PortPointer::OUTPUT: {
-        outputs[assign_port.index].setVoltage(value);
+        outputs[assign_port.index].setVoltage(
+                    std::max(-10.0f, std::min(10.0f, value)));
       }
       break;
     }

@@ -30,7 +30,6 @@ struct PortPointer {
 class Environment {
  public:
   virtual float GetVoltage(const PortPointer &port) = 0;
-  virtual void SetVoltage(const PortPointer &port, float value) = 0;
   //virtual float SampleRate() = 0;
   // Since a Port can only be constructed at compile time, it should just
   // become part of the function-running Expression.
