@@ -539,6 +539,7 @@ struct ModuleResizeHandle : OpaqueWidget {
 	Basically* module;
 
 	ModuleResizeHandle() {
+    // One hole wide and full length tall.
 		box.size = Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
 	}
 
@@ -584,16 +585,20 @@ struct ModuleResizeHandle : OpaqueWidget {
     }
 	}
 
-	void draw(const DrawArgs& args) override {
-		for (float x = 5.0; x <= 10.0; x += 5.0) {
-			nvgBeginPath(args.vg);
-			const float margin = 5.0;
-			nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
-			nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
-			nvgStrokeWidth(args.vg, 1.0);
-			nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
-			nvgStroke(args.vg);
-		}
+	void drawLayer(const DrawArgs& args, int layer) override {
+    if (layer == 1) {
+      // Draw two lines to give people something to grab for.
+      // Lifted from the VCV Blank module.
+  		for (float x = 5.0; x <= 10.0; x += 5.0) {
+  			nvgBeginPath(args.vg);
+  			const float margin = 5.0;
+  			nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
+  			nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
+  			nvgStrokeWidth(args.vg, 1.0);
+  			nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
+  			nvgStroke(args.vg);
+  		}
+    }
 	}
 };
 
@@ -683,6 +688,10 @@ struct BasicallyTextField : STTextField {
 	}
 };
 
+static std::string module_browser_text =
+  "' Write simple code here.\n' For example:\nfor i = 1 to 5 step 0.2\n"
+  "  out1 = i * in2 * 0.4\n  wait 100\nnext";
+
 struct BasicallyDisplay : LedDisplay {
   BasicallyTextField* textField;
 
@@ -693,6 +702,9 @@ struct BasicallyDisplay : LedDisplay {
     // If this is the module browser, 'module' will be null!
     if (module != nullptr) {
       textField->text = &(module->text);
+    } else {
+      // Show something inviting when being shown in the module browser.
+      textField->text = &module_browser_text;
     }
 		addChild(textField);
 	}
@@ -776,11 +788,12 @@ struct ErrorWidget : widget::OpaqueWidget {
   }
 
   void drawLayer(const DrawArgs& args, int layer) override {
-    if ((layer == 1) && module) {
+    if (layer == 1) {
       Rect r = box.zeroPos();
       Vec bounding_box = r.getBottomRight();
+      bool good = (module) ? module->compiles : true;
       // Fill the rectangle with either Green or Red.
-      NVGcolor main_color = (module->compiles ? SCHEME_GREEN : color::RED);
+      NVGcolor main_color = (good ? SCHEME_GREEN : color::RED);
       nvgBeginPath(args.vg);
       nvgRect(args.vg, 0.5, 0.5,
               bounding_box.x - 1.0f, bounding_box.y - 1.0f);
@@ -796,7 +809,7 @@ struct ErrorWidget : widget::OpaqueWidget {
         nvgFontFaceId(args.vg, font->handle);
         nvgTextLetterSpacing(args.vg, -2);
 
-        std::string text = (module->compiles ? "Good" : "Fix");
+        std::string text = (good ? "Good" : "Fix");
         // Place on the line just off the left edge.
         nvgText(args.vg, bounding_box.x / 2, 0, text.c_str(), NULL);
       }
@@ -825,10 +838,18 @@ struct BasicallyWidget : ModuleWidget {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Basically.svg")));
 
+    // Set reasonable initial size of module. Will likely get updated below.
+    box.size = Vec(RACK_GRID_WIDTH * 16, RACK_GRID_HEIGHT);
+		if (module) {
+      // Set box width from loaded Module when available.
+			box.size.x = module->width * RACK_GRID_WIDTH;
+		}
+
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
     topRightScrew = createWidget<ScrewSilver>(
         Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0));
     addChild(topRightScrew);
+    // TODO: this next line's Y coordinate is very odd.
     addChild(createWidget<ScrewSilver>(
         Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     bottomRightScrew = createWidget<ScrewSilver>(
@@ -840,6 +861,8 @@ struct BasicallyWidget : ModuleWidget {
       mm2px(Vec(22.0, 11.844)));
 		codeDisplay->box.size = mm2px(Vec(60.0, 110.0));
 		codeDisplay->setModule(module);
+    codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 5.5;
+
 		addChild(codeDisplay);
 
     // Controls.
@@ -890,20 +913,14 @@ struct BasicallyWidget : ModuleWidget {
     display->module = module;
     addChild(display);
 
-    // Set reasonable initial size of module. Will likely get updated below.
-    box.size = Vec(RACK_GRID_WIDTH * 16, RACK_GRID_HEIGHT);
     // Resize bar on right.
     ModuleResizeHandle* rightHandle = new ModuleResizeHandle;
 		this->rightHandle = rightHandle;
 		rightHandle->module = module;
+    // Make sure the handle is correctly placed if drawing for the module
+    // browser.
+    rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
 		addChild(rightHandle);
-
-    // Set box width from loaded Module before adding to the RackWidget,
-    // so modules aren't unnecessarily shoved around.
-		if (module) {
-      // Now set the actual size.
-			box.size.x = module->width * RACK_GRID_WIDTH;
-		}
   }
 
   void step() override {
@@ -913,7 +930,10 @@ struct BasicallyWidget : ModuleWidget {
     // And maybe the *first* time step() is called.
 		if (module) {
 			box.size.x = module->width * RACK_GRID_WIDTH;
-		}
+		} else {
+      // Like when showing the module in the module browser.
+      box.size.x = 16 * RACK_GRID_WIDTH;
+    }
 
     // Adjust size of area we display code in.
     // "5.5" here is ~4 on the left side plus ~1.5 on the right.
@@ -922,6 +942,7 @@ struct BasicallyWidget : ModuleWidget {
 		topRightScrew->box.pos.x = box.size.x - 30;
 		bottomRightScrew->box.pos.x = box.size.x - 30;
 		rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
+
 		ModuleWidget::step();
 	}
 
