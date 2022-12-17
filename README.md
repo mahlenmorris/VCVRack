@@ -146,7 +146,7 @@ the execution of other statements.
 
 Examples:
 
-    out2 = 3.250 ' A C4 note.
+    out2 = -1 ' A C3 note.
     WAIT 200 ' Pause for 1/5 of a second.
     ' The next line can be turned on just by removing the initial tick (').
     ' out1 = 2.3 * in1  ' Look, I'm live-coding!
