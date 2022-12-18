@@ -192,44 +192,54 @@ TEST(ParserTest, BooleanTest)
     EXPECT_EQ(0, drv.parse("if 5 > 3 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
+    ASSERT_EQ(0, drv.lines[0].statements[1].size());  // no elseifs
 
     EXPECT_EQ(0, drv.parse("if 5 < 3 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(false, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
+    ASSERT_EQ(0, drv.lines[0].statements[1].size());  // no elseifs
 
-    EXPECT_EQ(0, drv.parse("if 3 > 5 then wait 0 end if"));
+    EXPECT_EQ(0, drv.parse(
+      "if 3 > 5 then wait 0 elseif 6 == 9 then out1 = 9 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(false, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
+    ASSERT_EQ(1, drv.lines[0].statements[1].size());  // one elseifs
 
-    EXPECT_EQ(0, drv.parse("if 3 < 5 then wait 0 end if"));
+    EXPECT_EQ(0, drv.parse(
+      "if 3 < 5 then wait 0 "
+      "elseif 2 == 0 then wait 1 "
+      "elseif 2 == 1 then wait 2 out1 = 2"
+      "elseif 2 == 2 then wait 3 out1 = 3 out2 = 5"
+      "end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
+    ASSERT_EQ(3, drv.lines[0].statements[1].size());  // three elseifs
 
     test_env.SetIns(5.0, 0, 0, 0);
 
     EXPECT_EQ(0, drv.parse("if in1 > 3 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
 
     EXPECT_EQ(0, drv.parse("if in1 < 3 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(false, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
 
     EXPECT_EQ(0, drv.parse("if 3 > in1 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(false, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
 
     EXPECT_EQ(0, drv.parse("if 3 < in1 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
 
     EXPECT_EQ(0, drv.parse("ok = 3 < in1 and 2"));
     ASSERT_EQ(1, drv.lines.size());
@@ -279,7 +289,7 @@ TEST(ParserTest, IfThenTest)
     EXPECT_EQ(0, drv.parse("if 5 > 3 then out1 = 5 - 3 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
 }
 
 TEST(ParserTest, ForTest)

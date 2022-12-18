@@ -330,23 +330,36 @@ Line Line::ForNext(const Line &assign, const Expression &limit,
   return line;
 }
 
-Line Line::IfThen(const Expression &bool_expr,
+Line Line::ElseIf(const Expression &bool_expr,
                   const Statements &state1) {
   Line line;
-  line.type = IFTHEN;
+  line.type = ELSEIF;
   line.expr1 = bool_expr;
   line.statements.push_back(state1);
   return line;
 }
 
+Line Line::IfThen(const Expression &bool_expr,
+                  const Statements &then_state,
+                  const Statements &elseifs) {
+  Line line;
+  line.type = IFTHEN;
+  line.expr1 = bool_expr;
+  line.statements.push_back(then_state);
+  line.statements.push_back(elseifs);
+  return line;
+}
+
 Line Line::IfThenElse(const Expression &bool_expr,
-                      const Statements &state1,
-                      const Statements &state2) {
+                      const Statements &then_state,
+                      const Statements &else_state,
+                      const Statements &elseifs) {
   Line line;
   line.type = IFTHENELSE;
   line.expr1 = bool_expr;
-  line.statements.push_back(state1);
-  line.statements.push_back(state2);
+  line.statements.push_back(then_state);
+  line.statements.push_back(else_state);
+  line.statements.push_back(elseifs);
   return line;
 }
 

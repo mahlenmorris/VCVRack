@@ -84,6 +84,9 @@ public:
   // TODO: This should return a vector of Error objects, so that we can
   // prevent running and report them.
   void LinesToPCode(const std::vector<Line> &lines, std::vector<PCode> *pcodes);
+  void AddElseifs(std::vector<int>* jump_positions,
+                  const Statements &elseifs, const Exit &innermost_loop,
+                  bool last_falls_through);
   PCode Assignment(const std::string str1, float* variable_ptr,
                    const PortPointer &port, const Expression &expr1);
 

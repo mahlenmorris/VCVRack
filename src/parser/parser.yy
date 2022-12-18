@@ -43,6 +43,7 @@
   CLAMP   "clamp"
   CONTINUE "continue"
   ELSE    "else"
+  ELSEIF  "elseif"
   END     "end"
   EXIT    "exit"
   FLOOR   "floor"
@@ -76,9 +77,11 @@
 %token <std::string> TWOARGFUNC "twoargfunc"
 %token <std::string> COMPARISON "comparison"
 %nterm <Expression> exp
+%nterm <Statements> elseif_group
 %nterm <Statements> statements
 %nterm <Line> assignment
 %nterm <Line> continue_statement
+%nterm <Line> elseif_clause
 %nterm <Line> exit_statement
 %nterm <Line> for_statement
 %nterm <Line> if_statement
@@ -93,7 +96,7 @@ program:
   statements YYEOF { drv.lines = $1.lines; }
 
 statements:
-  %empty                     {}
+  %empty                          {}
 | statements assignment           { $$ = $1.add($2); }
 | statements continue_statement   { $$ = $1.add($2); }
 | statements exit_statement       { $$ = $1.add($2); }
@@ -116,9 +119,16 @@ for_statement:
   "for" assignment "to" exp statements "next"  { $$ = Line::ForNext($2, $4, drv.factory.Number(1.0), $5, &drv); }
 | "for" assignment "to" exp "step" exp statements "next" { $$ = Line::ForNext($2, $4, $6, $7, &drv); }
 
+elseif_group:
+  %empty                          {}
+| elseif_group elseif_clause      { $$ = $1.add($2); }
+
+elseif_clause:
+  "elseif" exp "then" statements  { $$ = Line::ElseIf($2, $4); }
+
 if_statement:
-  "if" exp "then" statements "end" "if"                    { $$ = Line::IfThen($2, $4); }
-| "if" exp "then" statements "else" statements "end" "if"  { $$ = Line::IfThenElse($2, $4, $6); }
+  "if" exp "then" statements elseif_group "end" "if"       { $$ = Line::IfThen($2, $4, $5); }
+| "if" exp "then" statements elseif_group "else" statements "end" "if"  { $$ = Line::IfThenElse($2, $4, $7, $5); }
 
 wait_statement:
   "wait" exp            { $$ = Line::Wait($2); }

@@ -417,11 +417,13 @@ namespace yy {
       // continue_statement
       // exit_statement
       // for_statement
+      // elseif_clause
       // if_statement
       // wait_statement
       char dummy2[sizeof (Line)];
 
       // statements
+      // elseif_group
       char dummy3[sizeof (Statements)];
 
       // "number"
@@ -435,6 +437,7 @@ namespace yy {
       // "clamp"
       // "continue"
       // "else"
+      // "elseif"
       // "end"
       // "exit"
       // "floor"
@@ -525,37 +528,38 @@ namespace yy {
     TOK_CLAMP = 8,                 // "clamp"
     TOK_CONTINUE = 9,              // "continue"
     TOK_ELSE = 10,                 // "else"
-    TOK_END = 11,                  // "end"
-    TOK_EXIT = 12,                 // "exit"
-    TOK_FLOOR = 13,                // "floor"
-    TOK_FOR = 14,                  // "for"
-    TOK_IF = 15,                   // "if"
-    TOK_MAX = 16,                  // "max"
-    TOK_MIN = 17,                  // "min"
-    TOK_NEXT = 18,                 // "next"
-    TOK_NOT = 19,                  // "not"
-    TOK_OR = 20,                   // "or"
-    TOK_POW = 21,                  // "pow"
-    TOK_SIGN = 22,                 // "sign"
-    TOK_SIN = 23,                  // "sin"
-    TOK_STEP = 24,                 // "step"
-    TOK_THEN = 25,                 // "then"
-    TOK_TO = 26,                   // "to"
-    TOK_WAIT = 27,                 // "wait"
-    TOK_MINUS = 28,                // "-"
-    TOK_PLUS = 29,                 // "+"
-    TOK_STAR = 30,                 // "*"
-    TOK_SLASH = 31,                // "/"
-    TOK_LPAREN = 32,               // "("
-    TOK_RPAREN = 33,               // ")"
-    TOK_COMMA = 34,                // ","
-    TOK_IDENTIFIER = 35,           // "identifier"
-    TOK_NUMBER = 36,               // "number"
-    TOK_NOTE = 37,                 // "note"
-    TOK_ONEARGFUNC = 38,           // "oneargfunc"
-    TOK_TWOARGFUNC = 39,           // "twoargfunc"
-    TOK_COMPARISON = 40,           // "comparison"
-    TOK_NEG = 41                   // NEG
+    TOK_ELSEIF = 11,               // "elseif"
+    TOK_END = 12,                  // "end"
+    TOK_EXIT = 13,                 // "exit"
+    TOK_FLOOR = 14,                // "floor"
+    TOK_FOR = 15,                  // "for"
+    TOK_IF = 16,                   // "if"
+    TOK_MAX = 17,                  // "max"
+    TOK_MIN = 18,                  // "min"
+    TOK_NEXT = 19,                 // "next"
+    TOK_NOT = 20,                  // "not"
+    TOK_OR = 21,                   // "or"
+    TOK_POW = 22,                  // "pow"
+    TOK_SIGN = 23,                 // "sign"
+    TOK_SIN = 24,                  // "sin"
+    TOK_STEP = 25,                 // "step"
+    TOK_THEN = 26,                 // "then"
+    TOK_TO = 27,                   // "to"
+    TOK_WAIT = 28,                 // "wait"
+    TOK_MINUS = 29,                // "-"
+    TOK_PLUS = 30,                 // "+"
+    TOK_STAR = 31,                 // "*"
+    TOK_SLASH = 32,                // "/"
+    TOK_LPAREN = 33,               // "("
+    TOK_RPAREN = 34,               // ")"
+    TOK_COMMA = 35,                // ","
+    TOK_IDENTIFIER = 36,           // "identifier"
+    TOK_NUMBER = 37,               // "number"
+    TOK_NOTE = 38,                 // "note"
+    TOK_ONEARGFUNC = 39,           // "oneargfunc"
+    TOK_TWOARGFUNC = 40,           // "twoargfunc"
+    TOK_COMPARISON = 41,           // "comparison"
+    TOK_NEG = 42                   // NEG
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -572,7 +576,7 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 42, ///< Number of tokens.
+        YYNTOKENS = 43, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -585,47 +589,50 @@ namespace yy {
         S_CLAMP = 8,                             // "clamp"
         S_CONTINUE = 9,                          // "continue"
         S_ELSE = 10,                             // "else"
-        S_END = 11,                              // "end"
-        S_EXIT = 12,                             // "exit"
-        S_FLOOR = 13,                            // "floor"
-        S_FOR = 14,                              // "for"
-        S_IF = 15,                               // "if"
-        S_MAX = 16,                              // "max"
-        S_MIN = 17,                              // "min"
-        S_NEXT = 18,                             // "next"
-        S_NOT = 19,                              // "not"
-        S_OR = 20,                               // "or"
-        S_POW = 21,                              // "pow"
-        S_SIGN = 22,                             // "sign"
-        S_SIN = 23,                              // "sin"
-        S_STEP = 24,                             // "step"
-        S_THEN = 25,                             // "then"
-        S_TO = 26,                               // "to"
-        S_WAIT = 27,                             // "wait"
-        S_MINUS = 28,                            // "-"
-        S_PLUS = 29,                             // "+"
-        S_STAR = 30,                             // "*"
-        S_SLASH = 31,                            // "/"
-        S_LPAREN = 32,                           // "("
-        S_RPAREN = 33,                           // ")"
-        S_COMMA = 34,                            // ","
-        S_IDENTIFIER = 35,                       // "identifier"
-        S_NUMBER = 36,                           // "number"
-        S_NOTE = 37,                             // "note"
-        S_ONEARGFUNC = 38,                       // "oneargfunc"
-        S_TWOARGFUNC = 39,                       // "twoargfunc"
-        S_COMPARISON = 40,                       // "comparison"
-        S_NEG = 41,                              // NEG
-        S_YYACCEPT = 42,                         // $accept
-        S_program = 43,                          // program
-        S_statements = 44,                       // statements
-        S_assignment = 45,                       // assignment
-        S_continue_statement = 46,               // continue_statement
-        S_exit_statement = 47,                   // exit_statement
-        S_for_statement = 48,                    // for_statement
-        S_if_statement = 49,                     // if_statement
-        S_wait_statement = 50,                   // wait_statement
-        S_exp = 51                               // exp
+        S_ELSEIF = 11,                           // "elseif"
+        S_END = 12,                              // "end"
+        S_EXIT = 13,                             // "exit"
+        S_FLOOR = 14,                            // "floor"
+        S_FOR = 15,                              // "for"
+        S_IF = 16,                               // "if"
+        S_MAX = 17,                              // "max"
+        S_MIN = 18,                              // "min"
+        S_NEXT = 19,                             // "next"
+        S_NOT = 20,                              // "not"
+        S_OR = 21,                               // "or"
+        S_POW = 22,                              // "pow"
+        S_SIGN = 23,                             // "sign"
+        S_SIN = 24,                              // "sin"
+        S_STEP = 25,                             // "step"
+        S_THEN = 26,                             // "then"
+        S_TO = 27,                               // "to"
+        S_WAIT = 28,                             // "wait"
+        S_MINUS = 29,                            // "-"
+        S_PLUS = 30,                             // "+"
+        S_STAR = 31,                             // "*"
+        S_SLASH = 32,                            // "/"
+        S_LPAREN = 33,                           // "("
+        S_RPAREN = 34,                           // ")"
+        S_COMMA = 35,                            // ","
+        S_IDENTIFIER = 36,                       // "identifier"
+        S_NUMBER = 37,                           // "number"
+        S_NOTE = 38,                             // "note"
+        S_ONEARGFUNC = 39,                       // "oneargfunc"
+        S_TWOARGFUNC = 40,                       // "twoargfunc"
+        S_COMPARISON = 41,                       // "comparison"
+        S_NEG = 42,                              // NEG
+        S_YYACCEPT = 43,                         // $accept
+        S_program = 44,                          // program
+        S_statements = 45,                       // statements
+        S_assignment = 46,                       // assignment
+        S_continue_statement = 47,               // continue_statement
+        S_exit_statement = 48,                   // exit_statement
+        S_for_statement = 49,                    // for_statement
+        S_elseif_group = 50,                     // elseif_group
+        S_elseif_clause = 51,                    // elseif_clause
+        S_if_statement = 52,                     // if_statement
+        S_wait_statement = 53,                   // wait_statement
+        S_exp = 54                               // exp
       };
     };
 
@@ -670,12 +677,14 @@ namespace yy {
       case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_exit_statement: // exit_statement
       case symbol_kind::S_for_statement: // for_statement
+      case symbol_kind::S_elseif_clause: // elseif_clause
       case symbol_kind::S_if_statement: // if_statement
       case symbol_kind::S_wait_statement: // wait_statement
         value.move< Line > (std::move (that.value));
         break;
 
       case symbol_kind::S_statements: // statements
+      case symbol_kind::S_elseif_group: // elseif_group
         value.move< Statements > (std::move (that.value));
         break;
 
@@ -691,6 +700,7 @@ namespace yy {
       case symbol_kind::S_CLAMP: // "clamp"
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
+      case symbol_kind::S_ELSEIF: // "elseif"
       case symbol_kind::S_END: // "end"
       case symbol_kind::S_EXIT: // "exit"
       case symbol_kind::S_FLOOR: // "floor"
@@ -848,12 +858,14 @@ switch (yykind)
       case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_exit_statement: // exit_statement
       case symbol_kind::S_for_statement: // for_statement
+      case symbol_kind::S_elseif_clause: // elseif_clause
       case symbol_kind::S_if_statement: // if_statement
       case symbol_kind::S_wait_statement: // wait_statement
         value.template destroy< Line > ();
         break;
 
       case symbol_kind::S_statements: // statements
+      case symbol_kind::S_elseif_group: // elseif_group
         value.template destroy< Statements > ();
         break;
 
@@ -869,6 +881,7 @@ switch (yykind)
       case symbol_kind::S_CLAMP: // "clamp"
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
+      case symbol_kind::S_ELSEIF: // "elseif"
       case symbol_kind::S_END: // "end"
       case symbol_kind::S_EXIT: // "exit"
       case symbol_kind::S_FLOOR: // "floor"
@@ -1239,6 +1252,21 @@ switch (yykind)
       make_ELSE (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOK_ELSE, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_ELSEIF (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_ELSEIF, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_ELSEIF (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_ELSEIF, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -2050,8 +2078,8 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 192,     ///< Last index in yytable_.
-      yynnts_ = 10,  ///< Number of nonterminal symbols.
+      yylast_ = 215,     ///< Last index in yytable_.
+      yynnts_ = 12,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
 
@@ -2085,12 +2113,14 @@ switch (yykind)
       case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_exit_statement: // exit_statement
       case symbol_kind::S_for_statement: // for_statement
+      case symbol_kind::S_elseif_clause: // elseif_clause
       case symbol_kind::S_if_statement: // if_statement
       case symbol_kind::S_wait_statement: // wait_statement
         value.copy< Line > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_statements: // statements
+      case symbol_kind::S_elseif_group: // elseif_group
         value.copy< Statements > (YY_MOVE (that.value));
         break;
 
@@ -2106,6 +2136,7 @@ switch (yykind)
       case symbol_kind::S_CLAMP: // "clamp"
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
+      case symbol_kind::S_ELSEIF: // "elseif"
       case symbol_kind::S_END: // "end"
       case symbol_kind::S_EXIT: // "exit"
       case symbol_kind::S_FLOOR: // "floor"
@@ -2177,12 +2208,14 @@ switch (yykind)
       case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_exit_statement: // exit_statement
       case symbol_kind::S_for_statement: // for_statement
+      case symbol_kind::S_elseif_clause: // elseif_clause
       case symbol_kind::S_if_statement: // if_statement
       case symbol_kind::S_wait_statement: // wait_statement
         value.move< Line > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_statements: // statements
+      case symbol_kind::S_elseif_group: // elseif_group
         value.move< Statements > (YY_MOVE (s.value));
         break;
 
@@ -2198,6 +2231,7 @@ switch (yykind)
       case symbol_kind::S_CLAMP: // "clamp"
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
+      case symbol_kind::S_ELSEIF: // "elseif"
       case symbol_kind::S_END: // "end"
       case symbol_kind::S_EXIT: // "exit"
       case symbol_kind::S_FLOOR: // "floor"
@@ -2296,7 +2330,7 @@ switch (yykind)
 
 
 } // yy
-#line 2300 "parser.hh"
+#line 2334 "parser.hh"
 
 
 

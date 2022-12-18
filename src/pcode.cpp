@@ -47,6 +47,40 @@ std::string PCode::to_string() {
     ")";
 }
 
+void PCodeTranslator::AddElseifs(std::vector<int>* jump_positions,
+                                 const Statements &elseifs,
+                                 const Exit &innermost_loop,
+                                 bool last_falls_through) {
+  // Each 'elseif' is effectively an IFTHEN with no elseifs in it. I think?
+  for (int i = 0; i < (int) elseifs.lines.size(); i++) {
+    const Line &line = elseifs.lines[i];
+    // IFNOT
+    // then Statements
+    // (if not the last elseif) JUMP past all elseifs
+    PCode ifnot;
+    ifnot.type = PCode::IFNOT;
+    ifnot.expr1 = line.expr1;
+    pcodes->push_back(ifnot);
+    // Need to find this IFNOT PCode later, so I can fill in jump_count
+    // after adding all of the statements.
+    int ifnot_position = pcodes->size() - 1;
+    // Add all of the THEN-clause Lines. Note that some of these might
+    // also be control-flow Lines of unknown PCode length.
+    for (auto &loop_line : line.statements[0].lines) {
+      AddLineToPCode(loop_line, innermost_loop);
+    }
+    // If we're not doing the last elseif, then we'll need to add a JUMP to
+    // the end of the whole statement.
+    if (!last_falls_through || ((int) elseifs.lines.size()) - i > 1) {
+      PCode jump_over_elseifs;
+      jump_over_elseifs.type = PCode::RELATIVE_JUMP;
+      pcodes->push_back(jump_over_elseifs);
+      jump_positions->push_back(pcodes->size() - 1);
+    }
+    pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
+  }
+}
+
 void PCodeTranslator::AddLineToPCode(const Line &line,
                                      const Exit &innermost_loop) {
   switch (line.type) {
@@ -112,28 +146,14 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
     case Line::IFTHEN: {
       // IFNOT
       // then Statements
-      // ...
-      PCode new_pcode;
-      new_pcode.type = PCode::IFNOT;
-      new_pcode.expr1 = line.expr1;
-      pcodes->push_back(new_pcode);
-      // Need to find this IFNOT PCode later, so I can fill in jump_count
-      // after adding all of the statements.
-      int ifnot_position = pcodes->size() - 1;
-      // Add all of the THEN-clause Lines. Note that some of these might
-      // also be control-flow Lines of unknown PCode length.
-      for (auto &loop_line : line.statements[0].lines) {
-        AddLineToPCode(loop_line, innermost_loop);
-      }
-      pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
-    }
-    break;
-    case Line::IFTHENELSE: {
+      // (if elseifs) JUMP past all elseifs
+      // (elseifs)
       // IFNOT
       // then Statements
       // ...
-      // RELATIVE_JUMP
-      // else Statements
+      // The IFNOT's jump to the next IFNOT.
+      // The JUMPs at the bottom of each set of statements passes to the end
+      // of the whole structure.
       PCode ifnot;
       ifnot.type = PCode::IFNOT;
       ifnot.expr1 = line.expr1;
@@ -146,20 +166,79 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       for (auto &loop_line : line.statements[0].lines) {
         AddLineToPCode(loop_line, innermost_loop);
       }
+      // All JUMP's that need to be updated to point past the whole structure.
+      std::vector<int> jump_positions;
+      if (line.statements[1].lines.size() > 0) {
+        // There is at least one "elseif" clause.
+        // Need to put a JUMP here so the THEN case will passover the elseifs
+        // I'm about to add.
+        PCode jump_over_elseifs;
+        jump_over_elseifs.type = PCode::RELATIVE_JUMP;
+        pcodes->push_back(jump_over_elseifs);
+        jump_positions.push_back(pcodes->size() - 1);
+      }
+      pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
+      // Now add the elseifs.
+      AddElseifs(&jump_positions, line.statements[1], innermost_loop, true);
+      // Now resolve the jumps, if any.
+      for (int position : jump_positions) {
+        pcodes->at(position).jump_count = pcodes->size() - position;
+      }
+    }
+    break;
+    case Line::ELSEIF: {
+      // The compiler is broken if we land here.
+    }
+    break;
+    case Line::IFTHENELSE: {
+      // IFNOT
+      // then Statements
+      // (if elseifs) JUMP past all elseifs
+      // (elseifs)
+      // IFNOT
+      // then Statements
+      // ...
+      // RELATIVE_JUMP
+      // else Statements
+      // The IFNOT's jump to the next IFNOT. The last IFNOT jumps to the start
+      // of the else.
+      // The JUMPs at the bottom of each set of statements passes to the end
+      // of the whole structure.
+      PCode ifnot;
+      ifnot.type = PCode::IFNOT;
+      ifnot.expr1 = line.expr1;
+      pcodes->push_back(ifnot);
+      // Need to find this IFNOT PCode later, so I can fill in jump_count
+      // after adding all of the statements.
+      int ifnot_position = pcodes->size() - 1;
+      // Add all of the THEN-clause Lines. Note that some of these might
+      // also be control-flow Lines of unknown PCode length.
+      for (auto &loop_line : line.statements[0].lines) {
+        AddLineToPCode(loop_line, innermost_loop);
+      }
+      // All JUMP's that need to be updated to point past the whole structure.
+      std::vector<int> jump_positions;
+
       // After THEN statements, need to skip over the ELSE statements.
       PCode jump;
       jump.type = PCode::RELATIVE_JUMP;
       pcodes->push_back(jump);
       // Need to find jump later.
-      int jump_position = pcodes->size() - 1;
+      jump_positions.push_back(pcodes->size() - 1);
       // Finish the ifnot.
       pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
+      // Now add the elseifs.
+      AddElseifs(&jump_positions, line.statements[2], innermost_loop, false);
+
       // Add the ELSE clause.
       for (auto &loop_line : line.statements[1].lines) {
         AddLineToPCode(loop_line, innermost_loop);
       }
-      // Finish the jump.
-      pcodes->at(jump_position).jump_count = pcodes->size() - jump_position;
+      // Now resolve the jumps, if any.
+      for (int position : jump_positions) {
+        pcodes->at(position).jump_count = pcodes->size() - position;
+      }
+
     }
     break;
     case Line::FORNEXT: {

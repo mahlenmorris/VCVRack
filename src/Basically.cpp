@@ -260,6 +260,12 @@ struct Basically : Module {
       if (compiles) {
         PCodeTranslator translator;
         translator.LinesToPCode(drv.lines, &pcodes);
+         /*
+         for (auto &pcode : pcodes) {
+           // Add to log, for debugging.
+           INFO("%s", pcode.to_string().c_str());
+         }
+         */
         // Recompiled; cannot trust program state.
         ResetToProgramStart();
       }

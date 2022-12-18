@@ -111,10 +111,11 @@ struct Line {
   enum Type {
     ASSIGNMENT,  // str1 = expr1
     CONTINUE,    // continue str1
+    ELSEIF,      // elseif expr1 then state1
     EXIT,        // exit str1
     FORNEXT,     // for str1 = expr1 to expr2 state1 next
-    IFTHEN,      // if expr1 then state1 endif
-    IFTHENELSE,  // if expr1 then state1 else state2 endif
+    IFTHEN,      // if expr1 then state1 [elseifs - state2] end if
+    IFTHENELSE,  // if expr1 then state1 [elseifs - state3] else state2 end if
     WAIT         // wait expr1
   };
   Type type;
@@ -136,6 +137,9 @@ struct Line {
   // loop_type is the string identifying the loop type; e.g., "for" or "all".
   static Line Continue(const std::string &loop_type);
 
+  static Line ElseIf(const Expression &bool_expr,
+                     const Statements &state1);
+
   // loop_type is the string identifying the loop type; e.g., "for" or "all".
   static Line Exit(const std::string &loop_type);
 
@@ -144,11 +148,13 @@ struct Line {
                       Driver* driver);
 
   static Line IfThen(const Expression &bool_expr,
-                     const Statements &state1);
+                     const Statements &then_state,
+                     const Statements &elseifs);
 
   static Line IfThenElse(const Expression &bool_expr,
-                         const Statements &state1,
-                         const Statements &state2);
+                         const Statements &then_state,
+                         const Statements &else_state,
+                         const Statements &elseifs);
 
   static Line Wait(const Expression &expr);
 
