@@ -413,6 +413,12 @@ When the module is bypassed, all OUTn ports are set to zero volts.
 * docB's
 [Formula One](https://library.vcvrack.com/dbRackFormulaOne), which, compared
 to Formula and BASICally, seems to be **very** CPU efficient.
+* [Monome Teletype](https://community.vcvrack.com/t/monome-teletype/12815),
+which isn't in the library, but can be acquired via that link. If I understand
+it correctly, it mostly responds to triggers with scripts in a very terse language,
+likely an artifact of [the hardware it is based on](https://market.monome.org/products/teletype).
+* [VCV Prototype](https://vcvrack.com/Prototype#manual), which I _think_ is only available for
+VCV Rack version 1. But you can write code in Lua or Javascript (in an external editor).
 
 ![Line Break image](images/Separator.png)
 
@@ -590,3 +596,8 @@ per the usual case.
 If this module is bypassed, then OUT will equal IN. If IN has no cable running
 into it, then OUT will be 0.0V, *even if* the "Unplugged value of IN" menu
 option is set to something else.
+
+### Related Modules
+
+* AlliewayAudio's [Bumper](https://library.vcvrack.com/AlliewayAudio_Series_I/Bumper).
+* ML Modules' [Counter](https://library.vcvrack.com/ML_modules/Counter).
