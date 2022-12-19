@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <unordered_map>
 #include <vector>
 
@@ -41,6 +42,8 @@ struct WaitInfo {
 };
 
 struct Basically : Module {
+  static const int DEFAULT_WIDTH = 18;
+
   enum ParamId {
     RUN_PARAM,
     STYLE_PARAM,
@@ -54,6 +57,9 @@ struct Basically : Module {
     RUN_INPUT,
     IN5_INPUT,
     IN6_INPUT,
+    IN7_INPUT,
+    IN8_INPUT,
+    IN9_INPUT,
     INPUTS_LEN
   };
   enum OutputId {
@@ -112,7 +118,10 @@ struct Basically : Module {
                                     {"in3", IN3_INPUT},
                                     {"in4", IN4_INPUT},
                                     {"in5", IN5_INPUT},
-                                    {"in6", IN6_INPUT}
+                                    {"in6", IN6_INPUT},
+                                    {"in7", IN7_INPUT},
+                                    {"in8", IN8_INPUT},
+                                    {"in9", IN9_INPUT}
                                   };
 
   Basically() {
@@ -130,6 +139,9 @@ struct Basically : Module {
     configInput(IN4_INPUT, "IN4");
     configInput(IN5_INPUT, "IN5");
     configInput(IN6_INPUT, "IN6");
+    configInput(IN7_INPUT, "IN7");
+    configInput(IN8_INPUT, "IN8");
+    configInput(IN9_INPUT, "IN9");
     configInput(RUN_INPUT, "Trigger to start or Gate to start/stop (See Style)");
     configOutput(OUT1_OUTPUT, "OUT1");
     configOutput(OUT2_OUTPUT, "OUT2");
@@ -163,6 +175,10 @@ struct Basically : Module {
       json_object_set_new(rootJ, "allow_error_highlight", json_integer(1));
     }
     json_object_set_new(rootJ, "screen_colors", json_integer(screen_colors));
+    if (title_text.length() > 0) {
+      json_object_set_new(rootJ, "title_text",
+                          json_stringn(title_text.c_str(), title_text.size()));
+    }
     return rootJ;
   }
 
@@ -173,6 +189,10 @@ struct Basically : Module {
       previous_text = text;
   		editor_refresh = true;
       module_refresh = true;
+    }
+    json_t* title_textJ = json_object_get(rootJ, "title_text");
+		if (title_textJ) {
+			title_text = json_string_value(title_textJ);
     }
     json_t* widthJ = json_object_get(rootJ, "width");
 		if (widthJ)
@@ -477,7 +497,9 @@ struct Basically : Module {
   // width (in "holes") of the whole module. Changed by the resize bar on the
   // right (within limits), and informs the size of the display and text field.
   // Saved in the json for the module.
-  int width = 16;
+  int width = Basically::DEFAULT_WIDTH;
+  // Program-created visible title for the program.
+  std::string title_text;
   // The undo/redo sometimes needs to reset the cursor position.
   // But we don't actully have a good pointer to the text field.
   // drawLayer() uses this if it's > -1;
@@ -570,7 +592,7 @@ struct ModuleResizeHandle : OpaqueWidget {
 		Rect newBox = originalBox;
 		Rect oldBox = mw->box;
     // Minimum and maximum number of holes we allow the module to be.
-		const float minWidth = 8 * RACK_GRID_WIDTH;
+		const float minWidth = 7 * RACK_GRID_WIDTH;
     const float maxWidth = 64 * RACK_GRID_WIDTH;
 		newBox.size.x += deltaX;
 		newBox.size.x = std::fmax(newBox.size.x, minWidth);
@@ -608,6 +630,45 @@ struct ModuleResizeHandle : OpaqueWidget {
 	}
 };
 
+struct TitleTextField : widget::OpaqueWidget {
+  Basically* module;
+  std::string fontPath;
+
+  TitleTextField() {
+    // TODO: Pick better font.
+    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+  }
+
+  void drawLayer(const DrawArgs& args, int layer) override {
+    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+    if (layer == 1) {
+      Rect r = box.zeroPos();
+      Vec bounding_box = r.getBottomRight();
+      // No background color!
+
+      std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
+      if (font && module) {
+        std::string text = module->title_text;
+        nvgFillColor(args.vg, color::BLACK);
+        // The longer the text, the smaller the font. 20 is our largest size,
+        // and it handles 10 chars of this font. 10 is smallest size, it can
+        // handle 25 chars.
+        int font_size = std::max(10, (int) floor(20 - (
+          std::max(0, ((int) text.length() - 8)) / 1.7)));
+        nvgFontSize(args.vg, font_size);
+        nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
+        nvgFontFaceId(args.vg, font->handle);
+        nvgTextLetterSpacing(args.vg, -2);
+        // Place on the line just off the left edge.
+        nvgText(args.vg, bounding_box.x / 2, 0, text.c_str(), NULL);
+      }
+    }
+    Widget::drawLayer(args, layer);
+    nvgResetScissor(args.vg);
+  }
+};
+
+// Class for the editor.
 struct BasicallyTextField : STTextField {
 	Basically* module;
   long long int color_scheme;
@@ -716,6 +777,11 @@ struct BasicallyDisplay : LedDisplay {
 	}
   // The BasicallyWidget changes size, so we have to reflaect that.
   void step() override {
+    if (textField->module && textField->module->width > 7) {
+      show();
+    } else {
+      hide();
+    }
     textField->box.size = box.size;
     LedDisplay::step();
 	}
@@ -742,6 +808,7 @@ struct ErrorWidget : widget::OpaqueWidget {
   ErrorTooltip* tooltip;
 
   ErrorWidget() {
+    // TODO: Pick better font.
     fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
     tooltip = NULL;
   }
@@ -834,6 +901,32 @@ void ErrorTooltip::step() {
 	box = box.nudge(parent->box.zeroPos());
 }
 
+struct TextFieldMenuItem : TextField {
+	TextFieldMenuItem() {
+    box.size = Vec(120, 20);
+    multiline = false;
+  }
+};
+
+struct ProgramNameMenuItem : TextFieldMenuItem {
+	Basically* module;
+
+	ProgramNameMenuItem(Basically* basically_module) {
+    module = basically_module;
+    if (module) {
+      text = module->title_text;
+    } else {
+      text = "";
+    }
+  }
+	void onChange(const event::Change& e) override {
+    TextFieldMenuItem::onChange(e);
+    if (module) {
+      module->title_text = text;
+    }
+  }
+};
+
 struct BasicallyWidget : ModuleWidget {
   Widget* topRightScrew;
 	Widget* bottomRightScrew;
@@ -845,7 +938,7 @@ struct BasicallyWidget : ModuleWidget {
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Basically.svg")));
 
     // Set reasonable initial size of module. Will likely get updated below.
-    box.size = Vec(RACK_GRID_WIDTH * 16, RACK_GRID_HEIGHT);
+    box.size = Vec(RACK_GRID_WIDTH * Basically::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
 		if (module) {
       // Set box width from loaded Module when available.
 			box.size.x = module->width * RACK_GRID_WIDTH;
@@ -864,10 +957,10 @@ struct BasicallyWidget : ModuleWidget {
     addChild(bottomRightScrew);
 
     codeDisplay = createWidget<BasicallyDisplay>(
-      mm2px(Vec(22.0, 11.844)));
+      mm2px(Vec(31.149, 11.844)));
 		codeDisplay->box.size = mm2px(Vec(60.0, 110.0));
 		codeDisplay->setModule(module);
-    codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 5.5;
+    codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 7.1;
 
 		addChild(codeDisplay);
 
@@ -881,43 +974,59 @@ struct BasicallyWidget : ModuleWidget {
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(15.645, 17.698)),
                                              module, Basically::RUN_PARAM,
                                              Basically::RUN_LIGHT));
-    RoundBlackSnapKnob* style_knob = createParamCentered<RoundBlackSnapKnob>(
-        mm2px(Vec(11.07, 34.068)), module, Basically::STYLE_PARAM);
-    style_knob->minAngle = -0.28f * M_PI;
-    style_knob->maxAngle = 0.28f * M_PI;
+
+    Trimpot* style_knob = createParamCentered<Trimpot>(
+        mm2px(Vec(6.496, 28.468)), module, Basically::STYLE_PARAM);
+    style_knob->minAngle = -0.28f * M_PI - (M_PI / 2.0);
+    style_knob->maxAngle = 0.28f * M_PI - (M_PI / 2.0);
+    style_knob->snap = true;
     addParam(style_knob);
+
+    // Compilation status and error message access.
+    // Want the middle of this to be at x=15.645
+    ErrorWidget* display = createWidget<ErrorWidget>(mm2px(
+        Vec(15.645 - 4.0, 33)));
+    display->box.size = mm2px(Vec(8.0, 4.0));
+    display->module = module;
+    addChild(display);
+
+    // User created title for the "program"?
+    // Want the middle of this to be at x=15.645
+    TitleTextField* title = createWidget<TitleTextField>(mm2px(
+        Vec(15.645 - 15.0, 40)));
+    title->box.size = mm2px(Vec(30.0, 10.0));
+    title->module = module;
+    addChild(title);
 
     // Data Inputs
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 57.35)),
       module, Basically::IN1_INPUT));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 57.35)),
       module, Basically::IN2_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 71.35)),
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.794, 57.35)),
       module, Basically::IN3_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 71.35)),
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 71.35)),
       module, Basically::IN4_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 85.35)),
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 71.35)),
       module, Basically::IN5_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 85.35)),
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.794, 71.35)),
       module, Basically::IN6_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 83.65)),
+      module, Basically::IN7_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 83.65)),
+      module, Basically::IN8_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.794, 83.65)),
+      module, Basically::IN9_INPUT));
 
     // The Outputs
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.496, 101.601)),
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(11.071, 101.601)),
       module, Basically::OUT1_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.645, 101.601)),
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.22, 101.601)),
       module, Basically::OUT2_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.496, 115.601)),
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(11.071, 115.601)),
       module, Basically::OUT3_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.645, 115.601)),
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.22, 115.601)),
       module, Basically::OUT4_OUTPUT));
-
-    // Compilation status and error message access.
-    // Want the middle of this to be at x=11.07
-    ErrorWidget* display = createWidget<ErrorWidget>(mm2px(
-        Vec(11.07 - 4.0, 7.844)));  // Bottom edge flush with top of code.
-    display->box.size = mm2px(Vec(8.0, 4.0));
-    display->module = module;
-    addChild(display);
 
     // Resize bar on right.
     ModuleResizeHandle* rightHandle = new ModuleResizeHandle;
@@ -938,12 +1047,12 @@ struct BasicallyWidget : ModuleWidget {
 			box.size.x = module->width * RACK_GRID_WIDTH;
 		} else {
       // Like when showing the module in the module browser.
-      box.size.x = 16 * RACK_GRID_WIDTH;
+      box.size.x = Basically::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
 
     // Adjust size of area we display code in.
-    // "5.5" here is ~4 on the left side plus ~1.5 on the right.
-		codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 5.5;
+    // "7.5" here is ~6 on the left side plus ~1.1 on the right.
+		codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 7.1;
     // Move the right side screws to follow.
 		topRightScrew->box.pos.x = box.size.x - 30;
 		bottomRightScrew->box.pos.x = box.size.x - 30;
@@ -955,6 +1064,9 @@ struct BasicallyWidget : ModuleWidget {
   void appendContextMenu(Menu* menu) override {
     Basically* module = dynamic_cast<Basically*>(this->module);
     // Add color choices.
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createMenuLabel("Title above IN1-3"));
+    menu->addChild(new ProgramNameMenuItem(module));
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel("Screen colors"));
     long long int default_colors[] = {0x00ff00000000,
