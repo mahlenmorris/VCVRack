@@ -32,6 +32,9 @@ struct PCode {
   Type type;
   std::string str1;
   float* variable_ptr;
+  // If assigning to an outN, this is the offset into outputs[].
+  // -1 if not an outN
+  int out_enum_value;
   Expression expr1, expr2;
   int jump_count;
   float step, limit;
@@ -50,8 +53,6 @@ struct PCode {
     stop_execution = false;
   };
 
-  static PCode Assignment(const std::string str1, float* variable_ptr,
-                          const Expression &expr1);
   static PCode Wait(const Expression &expr1);
   std::string to_string();
 };
@@ -80,16 +81,23 @@ struct Exit {
 // PCode objects.
 class PCodeTranslator {
 public:
-  PCodeTranslator() { }
+  PCodeTranslator(const std::unordered_map<std::string, int> &the_map) {
+    out_map = the_map;
+  }
   // TODO: This should return a vector of Error objects, so that we can
   // prevent running and report them.
   void LinesToPCode(const std::vector<Line> &lines, std::vector<PCode> *pcodes);
+  PCode Assignment(const std::string str1, float* variable_ptr,
+                   const Expression &expr1);
+
 private:
   void AddLineToPCode(const Line &line, const Exit &innermost_loop);
 
   std::vector<PCode> *pcodes;
   std::vector<Loop> loops;
   std::vector<Exit> exits;
+  // Maps outN varname to enum used by Basically.
+  std::unordered_map<std::string, int> out_map;
 };
 
 #endif // PCODE_H

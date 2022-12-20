@@ -42,10 +42,10 @@ Useful for:
 Note that STYLE is set to "Start on trigger, don't loop".
 
 The examples above are all in [this patch](examples/BASICallyExamples1.vcv).
-A patch with some simple ideas for other directions BASICally can go are in
-[this patch](examples/BASICallyExperiments.vcv).
+A patch with some simple/strange/silly ideas for other things BASICally can do
+are in [this patch](examples/BASICallyExperiments.vcv).
 
-TODO: video of different examples and their output
+<!-- TODO: video of different examples and their output -->
 
 ## Unique Features
 While there are
@@ -59,12 +59,14 @@ know, once knew, or can pick up by looking at examples.
 * The right side of the module is a resize bar; pull it to the right or left,
 and the code window changes size. Handy for reading those long comments without
 line breaks and for shrinking the module down to a small size when you don't
-wish to edit the code.
+wish to edit the code. Also, the text window scrolls vertically as you move
+through it.
 * Four different run "STYLES" (see Controls below), giving it the ability to
  act on a RUN trigger, or to run the most recent working version continuously
  as you type, or only run while a button or trigger is pressed.
 * Edits in the text window become part of the VCV Rack Undo/Redo system.
 * You can pick from a (small) number of screen color schemes in the menu.
+* [Scientific pitch notation](https://en.m.wikipedia.org/wiki/Scientific_pitch_notation) is supported (e.g., c4, Db2, d#8). They are turned into V/OCT values.
 
 ## The Language
 ### Setting and Using Variables (Assignment and Math)
@@ -87,11 +89,16 @@ Examples:
     out1 = bar * -0.01
     ' Sets out2 equal to -1.9. Operator precedence is the same as most other languages.
     out2 = 0.1 + 2 * -1
+    ' Set out2 to emit the V/OCT value for middle C.
+    out2 = C4
 
 * All variables start with the value 0.0 when first read.
 * Variables stay available in the environment of a module until the patch
 is restarted. This is true even if the code that created the variable has been removed from the program.
-* OUT1-4 are clamped to the range -10v <--> 10v.
+* OUT1-4 are clamped to the range -10v <--> 10v. Input values and internal
+values are not clamped.
+* [Scientific pitch notation](https://en.m.wikipedia.org/wiki/Scientific_pitch_notation) is supported (e.g., c4, Db2, d#8), turning them into
+V/OCT values. So you can use **out1 = c4**, send OUT1 to a VCO in the default position, and the VCO will output a tone at middle C.
 
 The following are operators and functions you can use in mathematical
 expressions:
@@ -146,7 +153,8 @@ the execution of other statements.
 
 Examples:
 
-    out2 = -1 ' A C3 note.
+    out2 = c3 ' A C3 note.
+    out2 = -1 ' Also a C3 note.
     WAIT 200 ' Pause for 1/5 of a second.
     ' The next line can be turned on just by removing the initial tick (').
     ' out1 = 2.3 * in1  ' Look, I'm live-coding!
@@ -279,9 +287,10 @@ the features that are useful for writing long programs but increase the
 amount of boilerplate code. Here are a few surprising differences
 from more robust languages:
 * BASICally is **case-insensitive**. "OUT1", "oUt1", and "out1" all refer to
-the same variable. "WAIT" and "wait" are identical in meaning. I would
-certainly suggest you be consistent within in your programs,
-but BASICally won't insist on it.
+the same variable. "WAIT" and "wait" are identical in meaning. DB3, Db3, and
+db3 are the same note. I would certainly suggest you capitalize consistently
+within in your programs to make them easier to read, but BASICally won't
+insist on it.
 * **Newlines do not matter**, *except* that comments always end at the newline.
 The following are identical in meaning:
 ```
@@ -356,9 +365,8 @@ WAIT 0  ' There is a hidden WAIT 0 inserted at the bottom of the program.
 ```
 
 ### Controls
-#### GOOD? Light
-The area underneath the "GOOD?" indicates whether or not BASICally has figured
-out how to turn your code into instructions. If it looks like:
+#### The Good/Fix Light
+The lit word in the upper left corner indicates whether or not BASICally has figured out how to turn your code into instructions. If it looks like:
 
 ![Good image](images/BASICallyGood.png)
 
@@ -366,10 +374,14 @@ then BASICally can run your code. However if it looks like:
 
 ![Fix image](images/BASICallyFix.png)
 
-Then it cannot run the code as it stands. If you roll the mouse pointer over
-the "Fix", then BASICally will attempt to point out where the first error
-it found was. As you can see here, for now, it can only vaguely tell
-you where it got confused and why.
+Then it cannot run the code as it stands. You can see that the line where it
+gets confused is highlighted in red.
+
+If you roll the mouse pointer over the "Fix", then BASICally will attempt to
+describe the first error it found. As you can see here, it can only vaguely
+tell you where it got confused and why. Note that if the editing window is
+scrolled away from the line where the error occurs, you won't be able to see
+the highlight line until you scroll up (or down) to it.
 
 #### STYLE Knob + RUN Button and Input
 There are four options to determine when the code will run. Three of them rely on the RUN Button and trigger/gate, which are described below.
@@ -399,13 +411,23 @@ seconds the button is released. When the button is later pressed, the WAIT will 
 A small number of choices about text colors. There should be more, but
 changing the background color is not a simple as I expected.
 
-#### Syntax Hints
+#### Error Line Highlighting
+By default, if BASICally can't understand your code in its entirety, then it
+will attempt to highlight the line where it stopped understanding your code.
+It's not terribly accurate, but gives you a sense of where to change your code.
+If the red highlight is distracting, you can turn it off here.
+
+#### Syntax/Math Hints
 Just in case you're in the middle of coding and you don't want to look up
 this documentation, there's some hints about the syntax of BASICally. You can
 click on a particular statement and it will be inserted into your code.
 
 ### Bypass Behavior
 When the module is bypassed, all OUTn ports are set to zero volts.
+
+### Known Bugs
+* In this release, if the amount of time in a WAIT involves a computation with IN5 or IN6 (e.g., "WAIT abs(in5) * 10")
+the WAIT will incorrectly not notice changes to IN5 or IN6 while it is waiting. 
 
 ### Related Modules
 * Frank Buss's
@@ -601,3 +623,19 @@ option is set to something else.
 
 * AlliewayAudio's [Bumper](https://library.vcvrack.com/AlliewayAudio_Series_I/Bumper).
 * ML Modules' [Counter](https://library.vcvrack.com/ML_modules/Counter).
+
+![Line Break image](images/Separator.png)
+
+# Acknowledgements
+
+Thanks to all of the helpful people on the
+[VCV Rack Community board](https://community.vcvrack.com/) for their
+willingness to help and advise me as I've been learning this new domain.
+
+Many thanks to [Marc Weidenbaum](https://disquiet.com/) for his
+encouragement and enthusiasm for my module-making efforts.
+
+And my deepest gratitude to Diane LeVan, for letting me ignore her and/or
+the world for periods of time just to craft these things. I apologize for
+waking up with new ideas at 5AM, and for having a retirement hobby that
+is nearly impossible to even start describing to any of ur friends.

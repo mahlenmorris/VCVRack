@@ -3,10 +3,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "extended_text.h"
 #include "plugin.hpp"
 #include "parser/driver.hh"
 #include "pcode.h"
+#include "st_textfield.hpp"
 
 enum Style {
   ALWAYS_STYLE,
@@ -80,11 +80,11 @@ struct Basically : Module {
     }
   };
 
-  std::unordered_map<std::string, OutputId> out_map { {"out1", OUT1_OUTPUT},
-                                                      {"out2", OUT2_OUTPUT},
-                                                      {"out3", OUT3_OUTPUT},
-                                                      {"out4", OUT4_OUTPUT}
-                                                    };
+  std::unordered_map<std::string, int> out_map { {"out1", OUT1_OUTPUT},
+                                                 {"out2", OUT2_OUTPUT},
+                                                 {"out3", OUT3_OUTPUT},
+                                                 {"out4", OUT4_OUTPUT}
+                                               };
   std::vector<InPortInfo> in_list { {"in1", IN1_INPUT},
                                     {"in2", IN2_INPUT},
                                     {"in3", IN3_INPUT},
@@ -92,10 +92,6 @@ struct Basically : Module {
                                     {"in5", IN5_INPUT},
                                     {"in6", IN6_INPUT}
                                   };
-  // width (in "holes") of the whole module. Changed by the resize bar on the
-  // right (within limits), and informs the size of the display and text field.
-  // Saved in the json for the module.
-  int width = 16;
 
   Basically() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -140,6 +136,9 @@ struct Basically : Module {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "text", json_stringn(text.c_str(), text.size()));
     json_object_set_new(rootJ, "width", json_integer(width));
+    if (allow_error_highlight) {
+      json_object_set_new(rootJ, "allow_error_highlight", json_integer(1));
+    }
     json_object_set_new(rootJ, "screen_colors", json_integer(screen_colors));
     return rootJ;
   }
@@ -148,7 +147,9 @@ struct Basically : Module {
     json_t* textJ = json_object_get(rootJ, "text");
 		if (textJ) {
 			text = json_string_value(textJ);
-  		dirty = true;
+      previous_text = text;
+  		editor_refresh = true;
+      module_refresh = true;
     }
     json_t* widthJ = json_object_get(rootJ, "width");
 		if (widthJ)
@@ -156,6 +157,12 @@ struct Basically : Module {
     json_t* screenJ = json_object_get(rootJ, "screen_colors");
 		if (screenJ)
 			screen_colors = json_integer_value(screenJ);
+    json_t* error_highlightJ = json_object_get(rootJ, "allow_error_highlight");
+    if (error_highlightJ) {
+      allow_error_highlight = json_integer_value(error_highlightJ) == 1;
+    } else {
+      allow_error_highlight = false;
+    }
   }
 
   void ResetToProgramStart() {
@@ -165,11 +172,12 @@ struct Basically : Module {
     // keeping previously defined variables makes live-coding work.
   }
 
-  void UpdateOutsIfNeeded(const std::string var_name, float value) {
-    auto found = out_map.find(var_name);
-    if (found != out_map.end()) {
+  // TODO: I could just be marking all assignments with a bool saying whether or
+  // not it's an OUTn. Saving me the cost of this lookup every sample.
+  void UpdateOutsIfNeeded(int var_index, float value) {
+    if (var_index >= 0) {
       // Limit to -10 <= x < = 10.
-      outputs[found->second].setVoltage(
+      outputs[var_index].setVoltage(
         std::max(-10.0f, std::min(10.0f, value)));
     }
   }
@@ -218,22 +226,16 @@ struct Basically : Module {
     bool loops = (style != TRIGGER_NO_LOOP_STYLE);
 
     // Compile if we need to.
-    if (user_has_changed && !text.empty()) {
-      user_has_changed = false;  // TODO: race condition?
+    if (module_refresh && !text.empty()) {
+      module_refresh = false;
       std::string lowercase;
       lowercase.resize(text.size());
       std::transform(text.begin(), text.end(),
                      lowercase.begin(), ::tolower);
       compiles = !drv.parse(lowercase);
       if (compiles) {
-        PCodeTranslator translator;
+        PCodeTranslator translator(out_map);
         translator.LinesToPCode(drv.lines, &pcodes);
-        /*
-        for (auto &pcode : pcodes) {
-          // Add to log, for debugging.
-          INFO("%s", pcode.to_string().c_str());
-        }
-        */
         // Recompiled; cannot trust program state.
         ResetToProgramStart();
       }
@@ -313,7 +315,7 @@ struct Basically : Module {
         case PCode::ASSIGNMENT: {
           float rhs = pcode->expr1.Compute();
           *(pcode->variable_ptr) = rhs;
-          UpdateOutsIfNeeded(pcode->str1, rhs);
+          UpdateOutsIfNeeded(pcode->out_enum_value, rhs);
           current_line++;
         }
         break;
@@ -390,7 +392,7 @@ struct Basically : Module {
           } else {
             float new_value = *(pcode->variable_ptr) + pcode->step;
             *(pcode->variable_ptr) = new_value;
-            UpdateOutsIfNeeded(pcode->str1, new_value);
+            UpdateOutsIfNeeded(pcode->out_enum_value, new_value);
           }
           bool done = false;
           // If "Step" is negative, we wait until value is below limit.
@@ -425,13 +427,22 @@ struct Basically : Module {
   }
 
   dsp::SchmittTrigger runTrigger;
+  // Full text of program.  Also used by BasicallyTextField for editing.
   std::string text;
-  bool dirty = false;  // Set when module changes the text (like at start).
-  bool user_has_changed = true;
+  // We need to the immediately previous version of the text around to
+  // make undo and redo work; otherwise, we don't know what the change was.
+  std::string previous_text;
+  // Set when module changes the text (like at start).
+  // Set when editing window needs to refresh based on text.
+  bool editor_refresh = false;
+  // Set when module needs to refresh (e.g., compile) text.
+  bool module_refresh = true;
   bool compiles = false;
   bool running = false;
+  bool allow_error_highlight = true;
   Driver drv;
   std::vector<PCode> pcodes;  // What actually gets executed.
+  // Line where execution is currently happening.
   unsigned int current_line;
   // Some PCodes have different behaviors, depending on how execution got
   // there. 'state' helps determine the correct behavior.
@@ -441,34 +452,67 @@ struct Basically : Module {
   // Keeps lights lit long enough to see.
   int run_light_countdown = 0;
   WaitInfo wait_info;
+  // width (in "holes") of the whole module. Changed by the resize bar on the
+  // right (within limits), and informs the size of the display and text field.
+  // Saved in the json for the module.
+  int width = 16;
+  // The undo/redo sometimes needs to reset the cursor position.
+  // But we don't actully have a good pointer to the text field.
+  // drawLayer() uses this if it's > -1;
+  int cursor_override = -1;
 };
 
 // Adds support for undo/redo in the text field where people type programs.
 struct TextEditAction : history::ModuleAction {
   std::string old_text;
   std::string new_text;
+  int cursor;
+  int old_width;
+  int new_width;
 
-  TextEditAction(int64_t id, std::string oldText, std::string newText) {
+  TextEditAction(int64_t id, std::string oldText, std::string newText,
+     int cursor_pos) {
     moduleId = id;
     name = "edit code";
     old_text = oldText;
     new_text = newText;
+    cursor = cursor_pos;
+    old_width = new_width = -1;
+  }
+  TextEditAction(int64_t id, int old_width, int new_width) :
+      old_width{old_width}, new_width{new_width} {
+    moduleId = id;
+    name = "change module width";
   }
   void undo() override {
     Basically *module = dynamic_cast<Basically*>(APP->engine->getModule(moduleId));
     if (module) {
-      module->text = this->old_text;
-      module->dirty = true;  // Tell UI it needs to reload 'text'.
-      module->user_has_changed = true;  // Tell compiler it needs to re-evaluate 'text'.
+      if (old_width < 0) {
+        module->text = this->old_text;
+        // Tell UI it needs to refresh because 'text' has changed.
+        module->editor_refresh = true;
+        // Tell module it needs to re-evaluate 'text'.
+        module->module_refresh = true;
+        module->cursor_override = cursor;
+      } else {
+        module->width = this->old_width;
+      }
     }
   }
 
   void redo() override {
     Basically *module = dynamic_cast<Basically*>(APP->engine->getModule(moduleId));
     if (module) {
-      module->text = this->new_text;
-      module->dirty = true;  // Tell UI it needs to reload 'text'.
-      module->user_has_changed = true;  // Tell compiler it needs to re-evaluate 'text'.
+      if (old_width < 0) {
+        module->text = this->new_text;
+        // Tell UI it needs to refresh because 'text' has changed.
+        module->editor_refresh = true;
+        // Tell module it needs to re-evaluate 'text'.
+        module->module_refresh = true;
+        module->cursor_override = cursor;
+      } else {
+        module->width = this->new_width;
+      }
     }
   }
 };
@@ -495,6 +539,7 @@ struct ModuleResizeHandle : OpaqueWidget {
 	void onDragMove(const DragMoveEvent& e) override {
 		ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
 		assert(mw);
+    int original_width = module->width;
 
 		Vec newDragPos = APP->scene->rack->getMousePos();
 		float deltaX = newDragPos.x - dragPos.x;
@@ -509,12 +554,18 @@ struct ModuleResizeHandle : OpaqueWidget {
     newBox.size.x = std::fmin(newBox.size.x, maxWidth);
 		newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
 
-		// Set box and test whether it's valid
+		// Set box and test whether it's valid.
 		mw->box = newBox;
 		if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
 			mw->box = oldBox;
 		}
 		module->width = std::round(mw->box.size.x / RACK_GRID_WIDTH);
+    if (original_width != module->width) {
+      // Make this an undo action. If I don't do this, undoing a different
+      // module's move will cause them to overlap.
+      APP->history->push(
+        new TextEditAction(module->id, original_width, module->width));
+    }
 	}
 
 	void draw(const DrawArgs& args) override {
@@ -530,74 +581,87 @@ struct ModuleResizeHandle : OpaqueWidget {
 	}
 };
 
-struct BasicallyTextField : LedDisplayTextField {
+struct BasicallyTextField : STTextField {
 	Basically* module;
-  ExtendedText extended;  // Helper for navigating a long string.
   long long int color_scheme;
 
   NVGcolor int_to_color(int color) {
     return nvgRGB(color >> 16, (color & 0xff00) >> 8, color & 0xff);
   }
 
+  // bgColor seems to have no effect if I don't do this. Drawing a background
+  // and then letting LedDisplayTextField draw the rest will fixes that.
+  void drawLayer(const DrawArgs& args, int layer) override {
+    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+
+    if (layer == 1) {
+  		// background only
+      nvgBeginPath(args.vg);
+      nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
+      nvgFillColor(args.vg, bgColor);
+      nvgFill(args.vg);
+
+      // Let's try highlighting a line, though, if needed and allowed to.
+      if (module && module->allow_error_highlight) {
+        // Highlight the line with an error, if any.
+        if (module->drv.errors.size() > 0) {
+          int line_number = module->drv.errors[0].line - extended.lines_above;
+          nvgBeginPath(args.vg);
+          int topFudge = textOffset.y + 5;  // I'm just trying things until they work.
+          // textOffset is in ledDisplayTextField.
+          nvgRect(args.vg, 0, topFudge + 12 * (line_number - 1), box.size.x, 12);
+          nvgFillColor(args.vg, nvgRGB(128, 0, 0));
+          nvgFill(args.vg);
+        }
+        if (module->cursor_override >= 0) {
+          // Undo/redo must have just happened.
+          // Move cursor (with no selection) to where the cursor was when we
+          // did edit.
+          cursor = module->cursor_override;
+          selection = module->cursor_override;
+          module->cursor_override = -1;
+          // Since we just forcibly moved the cursor, need to reposition window
+          // to show it.
+          extended.RepositionWindow(cursor);
+        }
+      }
+  	}
+  	STTextField::drawLayer(args, layer);  // Draw text.
+  	nvgResetScissor(args.vg);
+  }
+
 	void step() override {
-		LedDisplayTextField::step();
-    if (module && (color_scheme != module->screen_colors || module->dirty)) {
+		STTextField::step();
+    if (module && (color_scheme != module->screen_colors ||
+                   module->editor_refresh)) {
+      // Note: this doesn't actully care about editor_refresh. But this cleared
+      // up a bug about duplicated windows not keeping the same color.
       color_scheme = module->screen_colors;
       color = int_to_color(color_scheme >> 24);
-      // LedDisplay, which is doing the actual drawing, seems to ignore
-      // bgColor. Keeping this for if/when we replace LedDisplay.
       bgColor = int_to_color(color_scheme & 0xffffff);
     }
-		if (module && module->dirty) {
-      // Text has been changed by the module (not the user).
-      // This happens when the module loads.
-      // Index the lines by calling this.
-      extended.ProcessUpdatedText(module->text);
-			setText(module->text);
-			module->dirty = false;
+		if (module && module->editor_refresh) {
+      // TODO: is this checked often enough? I don't know when step()
+      // is called.
+      // Text has been changed, editor needs to update itself.
+      // This happens when the module loads, and on undo/redo.
+			textUpdated();
+			module->editor_refresh = false;
 		}
 	}
-
-  // So we can handle up and down keys.
-  void onSelectKey(const SelectKeyEvent& e) override {
-    if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) {
-      // Up (placeholder)
-  		if (e.key == GLFW_KEY_UP) {
-        // Move to same column, in previous line.
-        LineColumn lc = extended.GetCurrentLineColumn(cursor);
-        cursor = extended.GetCursorForLineColumn(lc.line - 1, lc.column);
-        if (!(e.mods & GLFW_MOD_SHIFT)) {
-  				selection = cursor;  // Otherwise we select the line.
-  			}
-  			e.consume(this);
-  		}
-  		// Down (placeholder)
-  		if (e.key == GLFW_KEY_DOWN) {
-        // Move to same column, in next line.
-        LineColumn lc = extended.GetCurrentLineColumn(cursor);
-        cursor = extended.GetCursorForLineColumn(lc.line + 1, lc.column);
-        if (!(e.mods & GLFW_MOD_SHIFT)) {
-  				selection = cursor;  // Otherwise we select the line.
-  			}
-  			e.consume(this);
-  		}
-    }
-    TextField::onSelectKey(e);
-  }
 
   // User has updated the text.
 	void onChange(const ChangeEvent& e) override {
 		if (module) {
-      // Create a ModuleAction so this can undo/redo is aware of it.
-      std::string new_text = getText();
       // Sometimes the text isn't actually different. If I don't check
-      // this, I get spurious history events.
-      if (module->text != new_text) {
+      // this, I might get spurious history events.
+      // TODO: do I need this check anymore?
+      if (module->text != module->previous_text) {
         APP->history->push(
-          new TextEditAction(module->id, module->text, new_text));
-        extended.ProcessUpdatedText(new_text);
-        module->text = new_text;
-        module->user_has_changed = true;
+          new TextEditAction(module->id, module->previous_text,
+                             module->text, cursor));
+        module->previous_text = module->text;
+        module->module_refresh = true;
       }
     }
 	}
@@ -609,8 +673,11 @@ struct BasicallyDisplay : LedDisplay {
 	void setModule(Basically* module) {
 		textField = createWidget<BasicallyTextField>(Vec(0, 0));
 		textField->box.size = box.size;
-		textField->multiline = true;
 		textField->module = module;
+    // If this is the module browser, 'module' will be null!
+    if (module != nullptr) {
+      textField->text = &(module->text);
+    }
 		addChild(textField);
 	}
   // The BasicallyWidget changes size, so we have to reflaect that.
@@ -709,12 +776,13 @@ struct ErrorWidget : widget::OpaqueWidget {
         // WHITE is really hard to read on YELLOW.
         nvgFillColor(args.vg, color::BLACK);
         nvgFontSize(args.vg, 13);
+        nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
         nvgFontFaceId(args.vg, font->handle);
         nvgTextLetterSpacing(args.vg, -2);
 
-        std::string text = (module->compiles ? "Good" : " Fix");
+        std::string text = (module->compiles ? "Good" : "Fix");
         // Place on the line just off the left edge.
-        nvgText(args.vg, 1, bounding_box.y / 2.0 + 4, text.c_str(), NULL);
+        nvgText(args.vg, bounding_box.x / 2, 0, text.c_str(), NULL);
       }
     }
     Widget::drawLayer(args, layer);
@@ -832,7 +900,7 @@ struct BasicallyWidget : ModuleWidget {
 		}
 
     // Adjust size of area we display code in.
-    // "6" here is ~4 on the left side plus ~1.5 on the right.
+    // "5.5" here is ~4 on the left side plus ~1.5 on the right.
 		codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 5.5;
     // Move the right side screws to follow.
 		topRightScrew->box.pos.x = box.size.x - 30;
@@ -848,10 +916,15 @@ struct BasicallyWidget : ModuleWidget {
     menu->addChild(createMenuLabel("Screen colors"));
     long long int default_colors[] = {0x00ff00000000,
                                       0xffffff000000,
-                                      0xffd714000000};
+                                      0xffd714000000,
+                                      0xffc000000000,
+                                      0x000000ffffff
+                                    };
     std::string color_names[] = {"Green on Black",
                                  "White on Black",
-                                 "Notes"};
+                                 "Yellow on Black (like Notes)",
+                                 "Amber on Black",
+                                 "Black on White"};
     for (int i = 0; i < std::end(default_colors) - std::begin(default_colors);
          i++) {
       long long int scheme = default_colors[i];
@@ -860,26 +933,31 @@ struct BasicallyWidget : ModuleWidget {
           [=]() {module->screen_colors = scheme;}
       ));
     }
+    // Options
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createBoolPtrMenuItem("Highlight error line", "",
+                                          &module->allow_error_highlight));
+
     // Add syntax insertions.
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel(
       "Language hints (select to insert into code)"));
     std::pair<std::string, std::string> syntax[] = {
-      {"OUT1 = IN1 + IN2", "OUT1 = IN1 + IN2"},
-      {"WAIT 200", "WAIT 200"},
-      {"' I'm a comment.", "' I'm a comment."},
-      {"IF IN1 == 0 THEN OUT1 = IN2 * IN2 END IF",
-       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN2\nEND IF"},
-      {"IF IN1 == 0 THEN OUT1 = IN2 * IN1 ELSE OUT1 = IN2 * IN1 END IF",
-       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSE\n  OUT1 = IN2 * IN1\nEND IF"},
-      {"FOR i = 0 TO 10 foo = IN1 + i NEXT",
-       "FOR i = 0 TO 10\n  foo = IN1 + i\nNEXT"},
-      {"FOR i = 0 TO 10 STEP 0.2 foo = IN1 + i NEXT",
-       "FOR i = 0 TO 10 STEP 0.2\n  foo = IN1 + i\nNEXT"},
-      {"CONTINUE FOR", "CONTINUE FOR"},
-      {"EXIT FOR", "EXIT FOR"},
-      {"CONTINUE ALL", "CONTINUE ALL"},
-      {"EXIT ALL", "EXIT ALL"}
+      {"OUT1 = IN1 + IN2", "OUT1 = IN1 + IN2\n"},
+      {"WAIT 200", "WAIT 200\n"},
+      {"' I'm a comment.", "' I'm a comment.\n"},
+      {"IF IN1 == 0 THEN OUT1 = IN2 * IN2 END IF\n",
+       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN2\nEND IF\n"},
+      {"IF IN1 == 0 THEN OUT1 = IN2 * IN1 ELSE OUT1 = IN2 * IN1 END IF\n",
+       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSE\n  OUT1 = IN2 * IN1\nEND IF\n"},
+      {"FOR i = 0 TO 10 foo = IN1 + i NEXT\n",
+       "FOR i = 0 TO 10\n  foo = IN1 + i\nNEXT\n"},
+      {"FOR i = 0 TO 10 STEP 0.2 foo = IN1 + i NEXT\n",
+       "FOR i = 0 TO 10 STEP 0.2\n  foo = IN1 + i\nNEXT\n"},
+      {"CONTINUE FOR", "CONTINUE FOR\n"},
+      {"EXIT FOR", "EXIT FOR\n"},
+      {"CONTINUE ALL", "CONTINUE ALL\n"},
+      {"EXIT ALL", "EXIT ALL\n"}
     };
     MenuItem* syntax_menu = createSubmenuItem("Syntax", "",
       [=](Menu* menu) {

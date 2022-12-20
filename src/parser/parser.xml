@@ -165,27 +165,33 @@
           <symbol>&quot;number&quot;</symbol>
         </rhs>
       </rule>
-      <rule number="20" usefulness="useful" percent_prec="NEG">
+      <rule number="20" usefulness="useful">
+        <lhs>exp</lhs>
+        <rhs>
+          <symbol>&quot;note&quot;</symbol>
+        </rhs>
+      </rule>
+      <rule number="21" usefulness="useful" percent_prec="NEG">
         <lhs>exp</lhs>
         <rhs>
           <symbol>&quot;-&quot;</symbol>
           <symbol>&quot;number&quot;</symbol>
         </rhs>
       </rule>
-      <rule number="21" usefulness="useful" percent_prec="NEG">
+      <rule number="22" usefulness="useful" percent_prec="NEG">
         <lhs>exp</lhs>
         <rhs>
           <symbol>&quot;not&quot;</symbol>
           <symbol>exp</symbol>
         </rhs>
       </rule>
-      <rule number="22" usefulness="useful">
+      <rule number="23" usefulness="useful">
         <lhs>exp</lhs>
         <rhs>
           <symbol>&quot;identifier&quot;</symbol>
         </rhs>
       </rule>
-      <rule number="23" usefulness="useful">
+      <rule number="24" usefulness="useful">
         <lhs>exp</lhs>
         <rhs>
           <symbol>exp</symbol>
@@ -193,7 +199,7 @@
           <symbol>exp</symbol>
         </rhs>
       </rule>
-      <rule number="24" usefulness="useful">
+      <rule number="25" usefulness="useful">
         <lhs>exp</lhs>
         <rhs>
           <symbol>exp</symbol>
@@ -201,7 +207,7 @@
           <symbol>exp</symbol>
         </rhs>
       </rule>
-      <rule number="25" usefulness="useful">
+      <rule number="26" usefulness="useful">
         <lhs>exp</lhs>
         <rhs>
           <symbol>exp</symbol>
@@ -209,7 +215,7 @@
           <symbol>exp</symbol>
         </rhs>
       </rule>
-      <rule number="26" usefulness="useful">
+      <rule number="27" usefulness="useful">
         <lhs>exp</lhs>
         <rhs>
           <symbol>exp</symbol>
@@ -217,7 +223,7 @@
           <symbol>exp</symbol>
         </rhs>
       </rule>
-      <rule number="27" usefulness="useful">
+      <rule number="28" usefulness="useful">
         <lhs>exp</lhs>
         <rhs>
           <symbol>exp</symbol>
@@ -225,7 +231,7 @@
           <symbol>exp</symbol>
         </rhs>
       </rule>
-      <rule number="28" usefulness="useful">
+      <rule number="29" usefulness="useful">
         <lhs>exp</lhs>
         <rhs>
           <symbol>exp</symbol>
@@ -233,7 +239,7 @@
           <symbol>exp</symbol>
         </rhs>
       </rule>
-      <rule number="29" usefulness="useful">
+      <rule number="30" usefulness="useful">
         <lhs>exp</lhs>
         <rhs>
           <symbol>exp</symbol>
@@ -241,7 +247,7 @@
           <symbol>exp</symbol>
         </rhs>
       </rule>
-      <rule number="30" usefulness="useful">
+      <rule number="31" usefulness="useful">
         <lhs>exp</lhs>
         <rhs>
           <symbol>&quot;oneargfunc&quot;</symbol>
@@ -250,7 +256,7 @@
           <symbol>&quot;)&quot;</symbol>
         </rhs>
       </rule>
-      <rule number="31" usefulness="useful">
+      <rule number="32" usefulness="useful">
         <lhs>exp</lhs>
         <rhs>
           <symbol>&quot;twoargfunc&quot;</symbol>
@@ -261,7 +267,7 @@
           <symbol>&quot;)&quot;</symbol>
         </rhs>
       </rule>
-      <rule number="32" usefulness="useful">
+      <rule number="33" usefulness="useful">
         <lhs>exp</lhs>
         <rhs>
           <symbol>&quot;(&quot;</symbol>
@@ -307,22 +313,23 @@
       <terminal symbol-number="34" token-number="289" name="&quot;,&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="35" token-number="290" name="&quot;identifier&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="36" token-number="291" name="&quot;number&quot;" type="float" usefulness="useful"/>
-      <terminal symbol-number="37" token-number="292" name="&quot;oneargfunc&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="38" token-number="293" name="&quot;twoargfunc&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="39" token-number="294" name="&quot;comparison&quot;" type="std::string" usefulness="useful" prec="3" assoc="left"/>
-      <terminal symbol-number="40" token-number="295" name="NEG" type="" usefulness="useful" prec="6" assoc="precedence"/>
+      <terminal symbol-number="37" token-number="292" name="&quot;note&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="38" token-number="293" name="&quot;oneargfunc&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="39" token-number="294" name="&quot;twoargfunc&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="40" token-number="295" name="&quot;comparison&quot;" type="std::string" usefulness="useful" prec="3" assoc="left"/>
+      <terminal symbol-number="41" token-number="296" name="NEG" type="" usefulness="useful" prec="6" assoc="precedence"/>
     </terminals>
     <nonterminals>
-      <nonterminal symbol-number="41" name="$accept" type="" usefulness="useful"/>
-      <nonterminal symbol-number="42" name="program" type="" usefulness="useful"/>
-      <nonterminal symbol-number="43" name="statements" type="Statements" usefulness="useful"/>
-      <nonterminal symbol-number="44" name="assignment" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="45" name="continue_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="46" name="exit_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="47" name="for_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="48" name="if_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="49" name="wait_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="50" name="exp" type="Expression" usefulness="useful"/>
+      <nonterminal symbol-number="42" name="$accept" type="" usefulness="useful"/>
+      <nonterminal symbol-number="43" name="program" type="" usefulness="useful"/>
+      <nonterminal symbol-number="44" name="statements" type="Statements" usefulness="useful"/>
+      <nonterminal symbol-number="45" name="assignment" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="46" name="continue_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="47" name="exit_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="48" name="for_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="49" name="if_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="50" name="wait_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="51" name="exp" type="Expression" usefulness="useful"/>
     </nonterminals>
   </grammar>
 
@@ -504,6 +511,7 @@
         <item rule-number="30" dot="0"/>
         <item rule-number="31" dot="0"/>
         <item rule-number="32" dot="0"/>
+        <item rule-number="33" dot="0"/>
       </itemset>
       <actions>
         <transitions>
@@ -512,9 +520,10 @@
           <transition type="shift" symbol="&quot;(&quot;" state="24"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
           <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
-          <transition type="goto" symbol="exp" state="29"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
+          <transition type="goto" symbol="exp" state="30"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -539,6 +548,7 @@
         <item rule-number="30" dot="0"/>
         <item rule-number="31" dot="0"/>
         <item rule-number="32" dot="0"/>
+        <item rule-number="33" dot="0"/>
       </itemset>
       <actions>
         <transitions>
@@ -547,9 +557,10 @@
           <transition type="shift" symbol="&quot;(&quot;" state="24"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
           <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
-          <transition type="goto" symbol="exp" state="30"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
+          <transition type="goto" symbol="exp" state="31"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -563,7 +574,7 @@
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;=&quot;" state="31"/>
+          <transition type="shift" symbol="&quot;=&quot;" state="32"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -718,7 +729,7 @@
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;to&quot;" state="32"/>
+          <transition type="shift" symbol="&quot;to&quot;" state="33"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -731,8 +742,8 @@
         <item rule-number="19" dot="0"/>
         <item rule-number="20" dot="0"/>
         <item rule-number="21" dot="0"/>
-        <item rule-number="21" dot="1"/>
         <item rule-number="22" dot="0"/>
+        <item rule-number="22" dot="1"/>
         <item rule-number="23" dot="0"/>
         <item rule-number="24" dot="0"/>
         <item rule-number="25" dot="0"/>
@@ -743,6 +754,7 @@
         <item rule-number="30" dot="0"/>
         <item rule-number="31" dot="0"/>
         <item rule-number="32" dot="0"/>
+        <item rule-number="33" dot="0"/>
       </itemset>
       <actions>
         <transitions>
@@ -751,9 +763,10 @@
           <transition type="shift" symbol="&quot;(&quot;" state="24"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
           <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
-          <transition type="goto" symbol="exp" state="33"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
+          <transition type="goto" symbol="exp" state="34"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -763,11 +776,11 @@
 
     <state number="23">
       <itemset>
-        <item rule-number="20" dot="1"/>
+        <item rule-number="21" dot="1"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;number&quot;" state="34"/>
+          <transition type="shift" symbol="&quot;number&quot;" state="35"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -791,7 +804,8 @@
         <item rule-number="30" dot="0"/>
         <item rule-number="31" dot="0"/>
         <item rule-number="32" dot="0"/>
-        <item rule-number="32" dot="1"/>
+        <item rule-number="33" dot="0"/>
+        <item rule-number="33" dot="1"/>
       </itemset>
       <actions>
         <transitions>
@@ -800,9 +814,10 @@
           <transition type="shift" symbol="&quot;(&quot;" state="24"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
           <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
-          <transition type="goto" symbol="exp" state="35"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
+          <transition type="goto" symbol="exp" state="36"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -812,13 +827,13 @@
 
     <state number="25">
       <itemset>
-        <item rule-number="22" dot="1"/>
+        <item rule-number="23" dot="1"/>
       </itemset>
       <actions>
         <transitions/>
         <errors/>
         <reductions>
-          <reduction symbol="$default" rule="22" enabled="true"/>
+          <reduction symbol="$default" rule="23" enabled="true"/>
         </reductions>
       </actions>
       <solved-conflicts/>
@@ -840,14 +855,14 @@
 
     <state number="27">
       <itemset>
-        <item rule-number="30" dot="1"/>
+        <item rule-number="20" dot="1"/>
       </itemset>
       <actions>
-        <transitions>
-          <transition type="shift" symbol="&quot;(&quot;" state="36"/>
-        </transitions>
+        <transitions/>
         <errors/>
-        <reductions/>
+        <reductions>
+          <reduction symbol="$default" rule="20" enabled="true"/>
+        </reductions>
       </actions>
       <solved-conflicts/>
     </state>
@@ -868,26 +883,11 @@
 
     <state number="29">
       <itemset>
-        <item rule-number="16" dot="2"/>
-        <item rule-number="17" dot="2"/>
-        <item rule-number="23" dot="1"/>
-        <item rule-number="24" dot="1"/>
-        <item rule-number="25" dot="1"/>
-        <item rule-number="26" dot="1"/>
-        <item rule-number="27" dot="1"/>
-        <item rule-number="28" dot="1"/>
-        <item rule-number="29" dot="1"/>
+        <item rule-number="32" dot="1"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;and&quot;" state="38"/>
-          <transition type="shift" symbol="&quot;or&quot;" state="39"/>
-          <transition type="shift" symbol="&quot;then&quot;" state="40"/>
-          <transition type="shift" symbol="&quot;-&quot;" state="41"/>
-          <transition type="shift" symbol="&quot;+&quot;" state="42"/>
-          <transition type="shift" symbol="&quot;*&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;/&quot;" state="44"/>
-          <transition type="shift" symbol="&quot;comparison&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;(&quot;" state="38"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -896,6 +896,35 @@
     </state>
 
     <state number="30">
+      <itemset>
+        <item rule-number="16" dot="2"/>
+        <item rule-number="17" dot="2"/>
+        <item rule-number="24" dot="1"/>
+        <item rule-number="25" dot="1"/>
+        <item rule-number="26" dot="1"/>
+        <item rule-number="27" dot="1"/>
+        <item rule-number="28" dot="1"/>
+        <item rule-number="29" dot="1"/>
+        <item rule-number="30" dot="1"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;and&quot;" state="39"/>
+          <transition type="shift" symbol="&quot;or&quot;" state="40"/>
+          <transition type="shift" symbol="&quot;then&quot;" state="41"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="42"/>
+          <transition type="shift" symbol="&quot;+&quot;" state="43"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;comparison&quot;" state="46"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="31">
       <itemset>
         <item rule-number="18" dot="2">
           <lookaheads>
@@ -911,23 +940,23 @@
             <symbol>&quot;identifier&quot;</symbol>
           </lookaheads>
         </item>
-        <item rule-number="23" dot="1"/>
         <item rule-number="24" dot="1"/>
         <item rule-number="25" dot="1"/>
         <item rule-number="26" dot="1"/>
         <item rule-number="27" dot="1"/>
         <item rule-number="28" dot="1"/>
         <item rule-number="29" dot="1"/>
+        <item rule-number="30" dot="1"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;and&quot;" state="38"/>
-          <transition type="shift" symbol="&quot;or&quot;" state="39"/>
-          <transition type="shift" symbol="&quot;-&quot;" state="41"/>
-          <transition type="shift" symbol="&quot;+&quot;" state="42"/>
-          <transition type="shift" symbol="&quot;*&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;/&quot;" state="44"/>
-          <transition type="shift" symbol="&quot;comparison&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;and&quot;" state="39"/>
+          <transition type="shift" symbol="&quot;or&quot;" state="40"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="42"/>
+          <transition type="shift" symbol="&quot;+&quot;" state="43"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;comparison&quot;" state="46"/>
         </transitions>
         <errors/>
         <reductions>
@@ -937,7 +966,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="31">
+    <state number="32">
       <itemset>
         <item rule-number="9" dot="2"/>
         <item rule-number="19" dot="0"/>
@@ -954,6 +983,7 @@
         <item rule-number="30" dot="0"/>
         <item rule-number="31" dot="0"/>
         <item rule-number="32" dot="0"/>
+        <item rule-number="33" dot="0"/>
       </itemset>
       <actions>
         <transitions>
@@ -962,9 +992,10 @@
           <transition type="shift" symbol="&quot;(&quot;" state="24"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
           <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
-          <transition type="goto" symbol="exp" state="46"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
+          <transition type="goto" symbol="exp" state="47"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -972,7 +1003,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="32">
+    <state number="33">
       <itemset>
         <item rule-number="14" dot="3"/>
         <item rule-number="15" dot="3"/>
@@ -990,6 +1021,7 @@
         <item rule-number="30" dot="0"/>
         <item rule-number="31" dot="0"/>
         <item rule-number="32" dot="0"/>
+        <item rule-number="33" dot="0"/>
       </itemset>
       <actions>
         <transitions>
@@ -998,9 +1030,10 @@
           <transition type="shift" symbol="&quot;(&quot;" state="24"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
           <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
-          <transition type="goto" symbol="exp" state="47"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
+          <transition type="goto" symbol="exp" state="48"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -1008,9 +1041,9 @@
       <solved-conflicts/>
     </state>
 
-    <state number="33">
+    <state number="34">
       <itemset>
-        <item rule-number="21" dot="2">
+        <item rule-number="22" dot="2">
           <lookaheads>
             <symbol>$end</symbol>
             <symbol>&quot;and&quot;</symbol>
@@ -1036,13 +1069,35 @@
             <symbol>&quot;comparison&quot;</symbol>
           </lookaheads>
         </item>
-        <item rule-number="23" dot="1"/>
         <item rule-number="24" dot="1"/>
         <item rule-number="25" dot="1"/>
         <item rule-number="26" dot="1"/>
         <item rule-number="27" dot="1"/>
         <item rule-number="28" dot="1"/>
         <item rule-number="29" dot="1"/>
+        <item rule-number="30" dot="1"/>
+      </itemset>
+      <actions>
+        <transitions/>
+        <errors/>
+        <reductions>
+          <reduction symbol="$default" rule="22" enabled="true"/>
+        </reductions>
+      </actions>
+      <solved-conflicts>
+        <resolution rule="22" symbol="&quot;and&quot;" type="reduce">&quot;and&quot; &lt; NEG</resolution>
+        <resolution rule="22" symbol="&quot;or&quot;" type="reduce">&quot;or&quot; &lt; NEG</resolution>
+        <resolution rule="22" symbol="&quot;-&quot;" type="reduce">&quot;-&quot; &lt; NEG</resolution>
+        <resolution rule="22" symbol="&quot;+&quot;" type="reduce">&quot;+&quot; &lt; NEG</resolution>
+        <resolution rule="22" symbol="&quot;*&quot;" type="reduce">&quot;*&quot; &lt; NEG</resolution>
+        <resolution rule="22" symbol="&quot;/&quot;" type="reduce">&quot;/&quot; &lt; NEG</resolution>
+        <resolution rule="22" symbol="&quot;comparison&quot;" type="reduce">&quot;comparison&quot; &lt; NEG</resolution>
+      </solved-conflicts>
+    </state>
+
+    <state number="35">
+      <itemset>
+        <item rule-number="21" dot="2"/>
       </itemset>
       <actions>
         <transitions/>
@@ -1051,87 +1106,30 @@
           <reduction symbol="$default" rule="21" enabled="true"/>
         </reductions>
       </actions>
-      <solved-conflicts>
-        <resolution rule="21" symbol="&quot;and&quot;" type="reduce">&quot;and&quot; &lt; NEG</resolution>
-        <resolution rule="21" symbol="&quot;or&quot;" type="reduce">&quot;or&quot; &lt; NEG</resolution>
-        <resolution rule="21" symbol="&quot;-&quot;" type="reduce">&quot;-&quot; &lt; NEG</resolution>
-        <resolution rule="21" symbol="&quot;+&quot;" type="reduce">&quot;+&quot; &lt; NEG</resolution>
-        <resolution rule="21" symbol="&quot;*&quot;" type="reduce">&quot;*&quot; &lt; NEG</resolution>
-        <resolution rule="21" symbol="&quot;/&quot;" type="reduce">&quot;/&quot; &lt; NEG</resolution>
-        <resolution rule="21" symbol="&quot;comparison&quot;" type="reduce">&quot;comparison&quot; &lt; NEG</resolution>
-      </solved-conflicts>
-    </state>
-
-    <state number="34">
-      <itemset>
-        <item rule-number="20" dot="2"/>
-      </itemset>
-      <actions>
-        <transitions/>
-        <errors/>
-        <reductions>
-          <reduction symbol="$default" rule="20" enabled="true"/>
-        </reductions>
-      </actions>
       <solved-conflicts/>
     </state>
 
-    <state number="35">
+    <state number="36">
       <itemset>
-        <item rule-number="23" dot="1"/>
         <item rule-number="24" dot="1"/>
         <item rule-number="25" dot="1"/>
         <item rule-number="26" dot="1"/>
         <item rule-number="27" dot="1"/>
         <item rule-number="28" dot="1"/>
         <item rule-number="29" dot="1"/>
-        <item rule-number="32" dot="2"/>
+        <item rule-number="30" dot="1"/>
+        <item rule-number="33" dot="2"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;and&quot;" state="38"/>
-          <transition type="shift" symbol="&quot;or&quot;" state="39"/>
-          <transition type="shift" symbol="&quot;-&quot;" state="41"/>
-          <transition type="shift" symbol="&quot;+&quot;" state="42"/>
-          <transition type="shift" symbol="&quot;*&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;/&quot;" state="44"/>
-          <transition type="shift" symbol="&quot;)&quot;" state="48"/>
-          <transition type="shift" symbol="&quot;comparison&quot;" state="45"/>
-        </transitions>
-        <errors/>
-        <reductions/>
-      </actions>
-      <solved-conflicts/>
-    </state>
-
-    <state number="36">
-      <itemset>
-        <item rule-number="19" dot="0"/>
-        <item rule-number="20" dot="0"/>
-        <item rule-number="21" dot="0"/>
-        <item rule-number="22" dot="0"/>
-        <item rule-number="23" dot="0"/>
-        <item rule-number="24" dot="0"/>
-        <item rule-number="25" dot="0"/>
-        <item rule-number="26" dot="0"/>
-        <item rule-number="27" dot="0"/>
-        <item rule-number="28" dot="0"/>
-        <item rule-number="29" dot="0"/>
-        <item rule-number="30" dot="0"/>
-        <item rule-number="30" dot="2"/>
-        <item rule-number="31" dot="0"/>
-        <item rule-number="32" dot="0"/>
-      </itemset>
-      <actions>
-        <transitions>
-          <transition type="shift" symbol="&quot;not&quot;" state="22"/>
-          <transition type="shift" symbol="&quot;-&quot;" state="23"/>
-          <transition type="shift" symbol="&quot;(&quot;" state="24"/>
-          <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
-          <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
-          <transition type="goto" symbol="exp" state="49"/>
+          <transition type="shift" symbol="&quot;and&quot;" state="39"/>
+          <transition type="shift" symbol="&quot;or&quot;" state="40"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="42"/>
+          <transition type="shift" symbol="&quot;+&quot;" state="43"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;)&quot;" state="49"/>
+          <transition type="shift" symbol="&quot;comparison&quot;" state="46"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -1156,6 +1154,7 @@
         <item rule-number="31" dot="0"/>
         <item rule-number="31" dot="2"/>
         <item rule-number="32" dot="0"/>
+        <item rule-number="33" dot="0"/>
       </itemset>
       <actions>
         <transitions>
@@ -1164,8 +1163,9 @@
           <transition type="shift" symbol="&quot;(&quot;" state="24"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
           <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
           <transition type="goto" symbol="exp" state="50"/>
         </transitions>
         <errors/>
@@ -1186,11 +1186,12 @@
         <item rule-number="26" dot="0"/>
         <item rule-number="27" dot="0"/>
         <item rule-number="28" dot="0"/>
-        <item rule-number="28" dot="2"/>
         <item rule-number="29" dot="0"/>
         <item rule-number="30" dot="0"/>
         <item rule-number="31" dot="0"/>
         <item rule-number="32" dot="0"/>
+        <item rule-number="32" dot="2"/>
+        <item rule-number="33" dot="0"/>
       </itemset>
       <actions>
         <transitions>
@@ -1199,8 +1200,9 @@
           <transition type="shift" symbol="&quot;(&quot;" state="24"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
           <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
           <transition type="goto" symbol="exp" state="51"/>
         </transitions>
         <errors/>
@@ -1226,6 +1228,7 @@
         <item rule-number="30" dot="0"/>
         <item rule-number="31" dot="0"/>
         <item rule-number="32" dot="0"/>
+        <item rule-number="33" dot="0"/>
       </itemset>
       <actions>
         <transitions>
@@ -1234,8 +1237,9 @@
           <transition type="shift" symbol="&quot;(&quot;" state="24"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
           <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
           <transition type="goto" symbol="exp" state="52"/>
         </transitions>
         <errors/>
@@ -1245,6 +1249,43 @@
     </state>
 
     <state number="40">
+      <itemset>
+        <item rule-number="19" dot="0"/>
+        <item rule-number="20" dot="0"/>
+        <item rule-number="21" dot="0"/>
+        <item rule-number="22" dot="0"/>
+        <item rule-number="23" dot="0"/>
+        <item rule-number="24" dot="0"/>
+        <item rule-number="25" dot="0"/>
+        <item rule-number="26" dot="0"/>
+        <item rule-number="27" dot="0"/>
+        <item rule-number="28" dot="0"/>
+        <item rule-number="29" dot="0"/>
+        <item rule-number="30" dot="0"/>
+        <item rule-number="30" dot="2"/>
+        <item rule-number="31" dot="0"/>
+        <item rule-number="32" dot="0"/>
+        <item rule-number="33" dot="0"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;not&quot;" state="22"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="23"/>
+          <transition type="shift" symbol="&quot;(&quot;" state="24"/>
+          <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
+          <transition type="shift" symbol="&quot;number&quot;" state="26"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
+          <transition type="goto" symbol="exp" state="53"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="41">
       <itemset>
         <item rule-number="2" dot="0"/>
         <item rule-number="3" dot="0"/>
@@ -1258,7 +1299,7 @@
       </itemset>
       <actions>
         <transitions>
-          <transition type="goto" symbol="statements" state="53"/>
+          <transition type="goto" symbol="statements" state="54"/>
         </transitions>
         <errors/>
         <reductions>
@@ -1268,77 +1309,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="41">
-      <itemset>
-        <item rule-number="19" dot="0"/>
-        <item rule-number="20" dot="0"/>
-        <item rule-number="21" dot="0"/>
-        <item rule-number="22" dot="0"/>
-        <item rule-number="23" dot="0"/>
-        <item rule-number="24" dot="0"/>
-        <item rule-number="24" dot="2"/>
-        <item rule-number="25" dot="0"/>
-        <item rule-number="26" dot="0"/>
-        <item rule-number="27" dot="0"/>
-        <item rule-number="28" dot="0"/>
-        <item rule-number="29" dot="0"/>
-        <item rule-number="30" dot="0"/>
-        <item rule-number="31" dot="0"/>
-        <item rule-number="32" dot="0"/>
-      </itemset>
-      <actions>
-        <transitions>
-          <transition type="shift" symbol="&quot;not&quot;" state="22"/>
-          <transition type="shift" symbol="&quot;-&quot;" state="23"/>
-          <transition type="shift" symbol="&quot;(&quot;" state="24"/>
-          <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
-          <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
-          <transition type="goto" symbol="exp" state="54"/>
-        </transitions>
-        <errors/>
-        <reductions/>
-      </actions>
-      <solved-conflicts/>
-    </state>
-
     <state number="42">
-      <itemset>
-        <item rule-number="19" dot="0"/>
-        <item rule-number="20" dot="0"/>
-        <item rule-number="21" dot="0"/>
-        <item rule-number="22" dot="0"/>
-        <item rule-number="23" dot="0"/>
-        <item rule-number="23" dot="2"/>
-        <item rule-number="24" dot="0"/>
-        <item rule-number="25" dot="0"/>
-        <item rule-number="26" dot="0"/>
-        <item rule-number="27" dot="0"/>
-        <item rule-number="28" dot="0"/>
-        <item rule-number="29" dot="0"/>
-        <item rule-number="30" dot="0"/>
-        <item rule-number="31" dot="0"/>
-        <item rule-number="32" dot="0"/>
-      </itemset>
-      <actions>
-        <transitions>
-          <transition type="shift" symbol="&quot;not&quot;" state="22"/>
-          <transition type="shift" symbol="&quot;-&quot;" state="23"/>
-          <transition type="shift" symbol="&quot;(&quot;" state="24"/>
-          <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
-          <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
-          <transition type="goto" symbol="exp" state="55"/>
-        </transitions>
-        <errors/>
-        <reductions/>
-      </actions>
-      <solved-conflicts/>
-    </state>
-
-    <state number="43">
       <itemset>
         <item rule-number="19" dot="0"/>
         <item rule-number="20" dot="0"/>
@@ -1355,6 +1326,7 @@
         <item rule-number="30" dot="0"/>
         <item rule-number="31" dot="0"/>
         <item rule-number="32" dot="0"/>
+        <item rule-number="33" dot="0"/>
       </itemset>
       <actions>
         <transitions>
@@ -1363,8 +1335,46 @@
           <transition type="shift" symbol="&quot;(&quot;" state="24"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
           <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
+          <transition type="goto" symbol="exp" state="55"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="43">
+      <itemset>
+        <item rule-number="19" dot="0"/>
+        <item rule-number="20" dot="0"/>
+        <item rule-number="21" dot="0"/>
+        <item rule-number="22" dot="0"/>
+        <item rule-number="23" dot="0"/>
+        <item rule-number="24" dot="0"/>
+        <item rule-number="24" dot="2"/>
+        <item rule-number="25" dot="0"/>
+        <item rule-number="26" dot="0"/>
+        <item rule-number="27" dot="0"/>
+        <item rule-number="28" dot="0"/>
+        <item rule-number="29" dot="0"/>
+        <item rule-number="30" dot="0"/>
+        <item rule-number="31" dot="0"/>
+        <item rule-number="32" dot="0"/>
+        <item rule-number="33" dot="0"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;not&quot;" state="22"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="23"/>
+          <transition type="shift" symbol="&quot;(&quot;" state="24"/>
+          <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
+          <transition type="shift" symbol="&quot;number&quot;" state="26"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
           <transition type="goto" symbol="exp" state="56"/>
         </transitions>
         <errors/>
@@ -1390,6 +1400,7 @@
         <item rule-number="30" dot="0"/>
         <item rule-number="31" dot="0"/>
         <item rule-number="32" dot="0"/>
+        <item rule-number="33" dot="0"/>
       </itemset>
       <actions>
         <transitions>
@@ -1398,8 +1409,9 @@
           <transition type="shift" symbol="&quot;(&quot;" state="24"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
           <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
           <transition type="goto" symbol="exp" state="57"/>
         </transitions>
         <errors/>
@@ -1425,6 +1437,7 @@
         <item rule-number="30" dot="0"/>
         <item rule-number="31" dot="0"/>
         <item rule-number="32" dot="0"/>
+        <item rule-number="33" dot="0"/>
       </itemset>
       <actions>
         <transitions>
@@ -1433,8 +1446,9 @@
           <transition type="shift" symbol="&quot;(&quot;" state="24"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
           <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
           <transition type="goto" symbol="exp" state="58"/>
         </transitions>
         <errors/>
@@ -1444,6 +1458,43 @@
     </state>
 
     <state number="46">
+      <itemset>
+        <item rule-number="19" dot="0"/>
+        <item rule-number="20" dot="0"/>
+        <item rule-number="21" dot="0"/>
+        <item rule-number="22" dot="0"/>
+        <item rule-number="23" dot="0"/>
+        <item rule-number="24" dot="0"/>
+        <item rule-number="25" dot="0"/>
+        <item rule-number="26" dot="0"/>
+        <item rule-number="27" dot="0"/>
+        <item rule-number="28" dot="0"/>
+        <item rule-number="28" dot="2"/>
+        <item rule-number="29" dot="0"/>
+        <item rule-number="30" dot="0"/>
+        <item rule-number="31" dot="0"/>
+        <item rule-number="32" dot="0"/>
+        <item rule-number="33" dot="0"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;not&quot;" state="22"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="23"/>
+          <transition type="shift" symbol="&quot;(&quot;" state="24"/>
+          <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
+          <transition type="shift" symbol="&quot;number&quot;" state="26"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
+          <transition type="goto" symbol="exp" state="59"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="47">
       <itemset>
         <item rule-number="9" dot="3">
           <lookaheads>
@@ -1460,23 +1511,23 @@
             <symbol>&quot;identifier&quot;</symbol>
           </lookaheads>
         </item>
-        <item rule-number="23" dot="1"/>
         <item rule-number="24" dot="1"/>
         <item rule-number="25" dot="1"/>
         <item rule-number="26" dot="1"/>
         <item rule-number="27" dot="1"/>
         <item rule-number="28" dot="1"/>
         <item rule-number="29" dot="1"/>
+        <item rule-number="30" dot="1"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;and&quot;" state="38"/>
-          <transition type="shift" symbol="&quot;or&quot;" state="39"/>
-          <transition type="shift" symbol="&quot;-&quot;" state="41"/>
-          <transition type="shift" symbol="&quot;+&quot;" state="42"/>
-          <transition type="shift" symbol="&quot;*&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;/&quot;" state="44"/>
-          <transition type="shift" symbol="&quot;comparison&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;and&quot;" state="39"/>
+          <transition type="shift" symbol="&quot;or&quot;" state="40"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="42"/>
+          <transition type="shift" symbol="&quot;+&quot;" state="43"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;comparison&quot;" state="46"/>
         </transitions>
         <errors/>
         <reductions>
@@ -1486,7 +1537,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="47">
+    <state number="48">
       <itemset>
         <item rule-number="2" dot="0">
           <lookaheads>
@@ -1507,25 +1558,25 @@
         <item rule-number="8" dot="0"/>
         <item rule-number="14" dot="4"/>
         <item rule-number="15" dot="4"/>
-        <item rule-number="23" dot="1"/>
         <item rule-number="24" dot="1"/>
         <item rule-number="25" dot="1"/>
         <item rule-number="26" dot="1"/>
         <item rule-number="27" dot="1"/>
         <item rule-number="28" dot="1"/>
         <item rule-number="29" dot="1"/>
+        <item rule-number="30" dot="1"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;and&quot;" state="38"/>
-          <transition type="shift" symbol="&quot;or&quot;" state="39"/>
-          <transition type="shift" symbol="&quot;step&quot;" state="59"/>
-          <transition type="shift" symbol="&quot;-&quot;" state="41"/>
-          <transition type="shift" symbol="&quot;+&quot;" state="42"/>
-          <transition type="shift" symbol="&quot;*&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;/&quot;" state="44"/>
-          <transition type="shift" symbol="&quot;comparison&quot;" state="45"/>
-          <transition type="goto" symbol="statements" state="60"/>
+          <transition type="shift" symbol="&quot;and&quot;" state="39"/>
+          <transition type="shift" symbol="&quot;or&quot;" state="40"/>
+          <transition type="shift" symbol="&quot;step&quot;" state="60"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="42"/>
+          <transition type="shift" symbol="&quot;+&quot;" state="43"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;comparison&quot;" state="46"/>
+          <transition type="goto" symbol="statements" state="61"/>
         </transitions>
         <errors/>
         <reductions>
@@ -1535,69 +1586,41 @@
       <solved-conflicts/>
     </state>
 
-    <state number="48">
+    <state number="49">
       <itemset>
-        <item rule-number="32" dot="3"/>
+        <item rule-number="33" dot="3"/>
       </itemset>
       <actions>
         <transitions/>
         <errors/>
         <reductions>
-          <reduction symbol="$default" rule="32" enabled="true"/>
+          <reduction symbol="$default" rule="33" enabled="true"/>
         </reductions>
-      </actions>
-      <solved-conflicts/>
-    </state>
-
-    <state number="49">
-      <itemset>
-        <item rule-number="23" dot="1"/>
-        <item rule-number="24" dot="1"/>
-        <item rule-number="25" dot="1"/>
-        <item rule-number="26" dot="1"/>
-        <item rule-number="27" dot="1"/>
-        <item rule-number="28" dot="1"/>
-        <item rule-number="29" dot="1"/>
-        <item rule-number="30" dot="3"/>
-      </itemset>
-      <actions>
-        <transitions>
-          <transition type="shift" symbol="&quot;and&quot;" state="38"/>
-          <transition type="shift" symbol="&quot;or&quot;" state="39"/>
-          <transition type="shift" symbol="&quot;-&quot;" state="41"/>
-          <transition type="shift" symbol="&quot;+&quot;" state="42"/>
-          <transition type="shift" symbol="&quot;*&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;/&quot;" state="44"/>
-          <transition type="shift" symbol="&quot;)&quot;" state="61"/>
-          <transition type="shift" symbol="&quot;comparison&quot;" state="45"/>
-        </transitions>
-        <errors/>
-        <reductions/>
       </actions>
       <solved-conflicts/>
     </state>
 
     <state number="50">
       <itemset>
-        <item rule-number="23" dot="1"/>
         <item rule-number="24" dot="1"/>
         <item rule-number="25" dot="1"/>
         <item rule-number="26" dot="1"/>
         <item rule-number="27" dot="1"/>
         <item rule-number="28" dot="1"/>
         <item rule-number="29" dot="1"/>
+        <item rule-number="30" dot="1"/>
         <item rule-number="31" dot="3"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;and&quot;" state="38"/>
-          <transition type="shift" symbol="&quot;or&quot;" state="39"/>
-          <transition type="shift" symbol="&quot;-&quot;" state="41"/>
-          <transition type="shift" symbol="&quot;+&quot;" state="42"/>
-          <transition type="shift" symbol="&quot;*&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;/&quot;" state="44"/>
-          <transition type="shift" symbol="&quot;,&quot;" state="62"/>
-          <transition type="shift" symbol="&quot;comparison&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;and&quot;" state="39"/>
+          <transition type="shift" symbol="&quot;or&quot;" state="40"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="42"/>
+          <transition type="shift" symbol="&quot;+&quot;" state="43"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;)&quot;" state="62"/>
+          <transition type="shift" symbol="&quot;comparison&quot;" state="46"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -1607,13 +1630,41 @@
 
     <state number="51">
       <itemset>
-        <item rule-number="23" dot="1"/>
         <item rule-number="24" dot="1"/>
         <item rule-number="25" dot="1"/>
         <item rule-number="26" dot="1"/>
         <item rule-number="27" dot="1"/>
         <item rule-number="28" dot="1"/>
-        <item rule-number="28" dot="3">
+        <item rule-number="29" dot="1"/>
+        <item rule-number="30" dot="1"/>
+        <item rule-number="32" dot="3"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;and&quot;" state="39"/>
+          <transition type="shift" symbol="&quot;or&quot;" state="40"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="42"/>
+          <transition type="shift" symbol="&quot;+&quot;" state="43"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;,&quot;" state="63"/>
+          <transition type="shift" symbol="&quot;comparison&quot;" state="46"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="52">
+      <itemset>
+        <item rule-number="24" dot="1"/>
+        <item rule-number="25" dot="1"/>
+        <item rule-number="26" dot="1"/>
+        <item rule-number="27" dot="1"/>
+        <item rule-number="28" dot="1"/>
+        <item rule-number="29" dot="1"/>
+        <item rule-number="29" dot="3">
           <lookaheads>
             <symbol>$end</symbol>
             <symbol>&quot;and&quot;</symbol>
@@ -1634,42 +1685,42 @@
             <symbol>&quot;identifier&quot;</symbol>
           </lookaheads>
         </item>
-        <item rule-number="29" dot="1"/>
+        <item rule-number="30" dot="1"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;-&quot;" state="41"/>
-          <transition type="shift" symbol="&quot;+&quot;" state="42"/>
-          <transition type="shift" symbol="&quot;*&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;/&quot;" state="44"/>
-          <transition type="shift" symbol="&quot;comparison&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="42"/>
+          <transition type="shift" symbol="&quot;+&quot;" state="43"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;comparison&quot;" state="46"/>
         </transitions>
         <errors/>
         <reductions>
-          <reduction symbol="$default" rule="28" enabled="true"/>
+          <reduction symbol="$default" rule="29" enabled="true"/>
         </reductions>
       </actions>
       <solved-conflicts>
-        <resolution rule="28" symbol="&quot;and&quot;" type="reduce">%left &quot;and&quot;</resolution>
-        <resolution rule="28" symbol="&quot;or&quot;" type="reduce">&quot;or&quot; &lt; &quot;and&quot;</resolution>
-        <resolution rule="28" symbol="&quot;-&quot;" type="shift">&quot;and&quot; &lt; &quot;-&quot;</resolution>
-        <resolution rule="28" symbol="&quot;+&quot;" type="shift">&quot;and&quot; &lt; &quot;+&quot;</resolution>
-        <resolution rule="28" symbol="&quot;*&quot;" type="shift">&quot;and&quot; &lt; &quot;*&quot;</resolution>
-        <resolution rule="28" symbol="&quot;/&quot;" type="shift">&quot;and&quot; &lt; &quot;/&quot;</resolution>
-        <resolution rule="28" symbol="&quot;comparison&quot;" type="shift">&quot;and&quot; &lt; &quot;comparison&quot;</resolution>
+        <resolution rule="29" symbol="&quot;and&quot;" type="reduce">%left &quot;and&quot;</resolution>
+        <resolution rule="29" symbol="&quot;or&quot;" type="reduce">&quot;or&quot; &lt; &quot;and&quot;</resolution>
+        <resolution rule="29" symbol="&quot;-&quot;" type="shift">&quot;and&quot; &lt; &quot;-&quot;</resolution>
+        <resolution rule="29" symbol="&quot;+&quot;" type="shift">&quot;and&quot; &lt; &quot;+&quot;</resolution>
+        <resolution rule="29" symbol="&quot;*&quot;" type="shift">&quot;and&quot; &lt; &quot;*&quot;</resolution>
+        <resolution rule="29" symbol="&quot;/&quot;" type="shift">&quot;and&quot; &lt; &quot;/&quot;</resolution>
+        <resolution rule="29" symbol="&quot;comparison&quot;" type="shift">&quot;and&quot; &lt; &quot;comparison&quot;</resolution>
       </solved-conflicts>
     </state>
 
-    <state number="52">
+    <state number="53">
       <itemset>
-        <item rule-number="23" dot="1"/>
         <item rule-number="24" dot="1"/>
         <item rule-number="25" dot="1"/>
         <item rule-number="26" dot="1"/>
         <item rule-number="27" dot="1"/>
         <item rule-number="28" dot="1"/>
         <item rule-number="29" dot="1"/>
-        <item rule-number="29" dot="3">
+        <item rule-number="30" dot="1"/>
+        <item rule-number="30" dot="3">
           <lookaheads>
             <symbol>$end</symbol>
             <symbol>&quot;continue&quot;</symbol>
@@ -1692,30 +1743,30 @@
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;and&quot;" state="38"/>
-          <transition type="shift" symbol="&quot;-&quot;" state="41"/>
-          <transition type="shift" symbol="&quot;+&quot;" state="42"/>
-          <transition type="shift" symbol="&quot;*&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;/&quot;" state="44"/>
-          <transition type="shift" symbol="&quot;comparison&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;and&quot;" state="39"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="42"/>
+          <transition type="shift" symbol="&quot;+&quot;" state="43"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;comparison&quot;" state="46"/>
         </transitions>
         <errors/>
         <reductions>
-          <reduction symbol="$default" rule="29" enabled="true"/>
+          <reduction symbol="$default" rule="30" enabled="true"/>
         </reductions>
       </actions>
       <solved-conflicts>
-        <resolution rule="29" symbol="&quot;and&quot;" type="shift">&quot;or&quot; &lt; &quot;and&quot;</resolution>
-        <resolution rule="29" symbol="&quot;or&quot;" type="reduce">%left &quot;or&quot;</resolution>
-        <resolution rule="29" symbol="&quot;-&quot;" type="shift">&quot;or&quot; &lt; &quot;-&quot;</resolution>
-        <resolution rule="29" symbol="&quot;+&quot;" type="shift">&quot;or&quot; &lt; &quot;+&quot;</resolution>
-        <resolution rule="29" symbol="&quot;*&quot;" type="shift">&quot;or&quot; &lt; &quot;*&quot;</resolution>
-        <resolution rule="29" symbol="&quot;/&quot;" type="shift">&quot;or&quot; &lt; &quot;/&quot;</resolution>
-        <resolution rule="29" symbol="&quot;comparison&quot;" type="shift">&quot;or&quot; &lt; &quot;comparison&quot;</resolution>
+        <resolution rule="30" symbol="&quot;and&quot;" type="shift">&quot;or&quot; &lt; &quot;and&quot;</resolution>
+        <resolution rule="30" symbol="&quot;or&quot;" type="reduce">%left &quot;or&quot;</resolution>
+        <resolution rule="30" symbol="&quot;-&quot;" type="shift">&quot;or&quot; &lt; &quot;-&quot;</resolution>
+        <resolution rule="30" symbol="&quot;+&quot;" type="shift">&quot;or&quot; &lt; &quot;+&quot;</resolution>
+        <resolution rule="30" symbol="&quot;*&quot;" type="shift">&quot;or&quot; &lt; &quot;*&quot;</resolution>
+        <resolution rule="30" symbol="&quot;/&quot;" type="shift">&quot;or&quot; &lt; &quot;/&quot;</resolution>
+        <resolution rule="30" symbol="&quot;comparison&quot;" type="shift">&quot;or&quot; &lt; &quot;comparison&quot;</resolution>
       </solved-conflicts>
     </state>
 
-    <state number="53">
+    <state number="54">
       <itemset>
         <item rule-number="3" dot="1"/>
         <item rule-number="4" dot="1"/>
@@ -1739,8 +1790,8 @@
       <actions>
         <transitions>
           <transition type="shift" symbol="&quot;continue&quot;" state="5"/>
-          <transition type="shift" symbol="&quot;else&quot;" state="63"/>
-          <transition type="shift" symbol="&quot;end&quot;" state="64"/>
+          <transition type="shift" symbol="&quot;else&quot;" state="64"/>
+          <transition type="shift" symbol="&quot;end&quot;" state="65"/>
           <transition type="shift" symbol="&quot;exit&quot;" state="6"/>
           <transition type="shift" symbol="&quot;for&quot;" state="7"/>
           <transition type="shift" symbol="&quot;if&quot;" state="8"/>
@@ -1759,9 +1810,63 @@
       <solved-conflicts/>
     </state>
 
-    <state number="54">
+    <state number="55">
       <itemset>
-        <item rule-number="23" dot="1"/>
+        <item rule-number="24" dot="1"/>
+        <item rule-number="25" dot="1"/>
+        <item rule-number="25" dot="3">
+          <lookaheads>
+            <symbol>$end</symbol>
+            <symbol>&quot;and&quot;</symbol>
+            <symbol>&quot;continue&quot;</symbol>
+            <symbol>&quot;else&quot;</symbol>
+            <symbol>&quot;end&quot;</symbol>
+            <symbol>&quot;exit&quot;</symbol>
+            <symbol>&quot;for&quot;</symbol>
+            <symbol>&quot;if&quot;</symbol>
+            <symbol>&quot;next&quot;</symbol>
+            <symbol>&quot;or&quot;</symbol>
+            <symbol>&quot;step&quot;</symbol>
+            <symbol>&quot;then&quot;</symbol>
+            <symbol>&quot;to&quot;</symbol>
+            <symbol>&quot;wait&quot;</symbol>
+            <symbol>&quot;-&quot;</symbol>
+            <symbol>&quot;+&quot;</symbol>
+            <symbol>&quot;)&quot;</symbol>
+            <symbol>&quot;,&quot;</symbol>
+            <symbol>&quot;identifier&quot;</symbol>
+            <symbol>&quot;comparison&quot;</symbol>
+          </lookaheads>
+        </item>
+        <item rule-number="26" dot="1"/>
+        <item rule-number="27" dot="1"/>
+        <item rule-number="28" dot="1"/>
+        <item rule-number="29" dot="1"/>
+        <item rule-number="30" dot="1"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;*&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="45"/>
+        </transitions>
+        <errors/>
+        <reductions>
+          <reduction symbol="$default" rule="25" enabled="true"/>
+        </reductions>
+      </actions>
+      <solved-conflicts>
+        <resolution rule="25" symbol="&quot;and&quot;" type="reduce">&quot;and&quot; &lt; &quot;-&quot;</resolution>
+        <resolution rule="25" symbol="&quot;or&quot;" type="reduce">&quot;or&quot; &lt; &quot;-&quot;</resolution>
+        <resolution rule="25" symbol="&quot;-&quot;" type="reduce">%left &quot;-&quot;</resolution>
+        <resolution rule="25" symbol="&quot;+&quot;" type="reduce">%left &quot;+&quot;</resolution>
+        <resolution rule="25" symbol="&quot;*&quot;" type="shift">&quot;-&quot; &lt; &quot;*&quot;</resolution>
+        <resolution rule="25" symbol="&quot;/&quot;" type="shift">&quot;-&quot; &lt; &quot;/&quot;</resolution>
+        <resolution rule="25" symbol="&quot;comparison&quot;" type="reduce">&quot;comparison&quot; &lt; &quot;-&quot;</resolution>
+      </solved-conflicts>
+    </state>
+
+    <state number="56">
+      <itemset>
         <item rule-number="24" dot="1"/>
         <item rule-number="24" dot="3">
           <lookaheads>
@@ -1792,11 +1897,12 @@
         <item rule-number="27" dot="1"/>
         <item rule-number="28" dot="1"/>
         <item rule-number="29" dot="1"/>
+        <item rule-number="30" dot="1"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;*&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;/&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="45"/>
         </transitions>
         <errors/>
         <reductions>
@@ -1804,128 +1910,18 @@
         </reductions>
       </actions>
       <solved-conflicts>
-        <resolution rule="24" symbol="&quot;and&quot;" type="reduce">&quot;and&quot; &lt; &quot;-&quot;</resolution>
-        <resolution rule="24" symbol="&quot;or&quot;" type="reduce">&quot;or&quot; &lt; &quot;-&quot;</resolution>
+        <resolution rule="24" symbol="&quot;and&quot;" type="reduce">&quot;and&quot; &lt; &quot;+&quot;</resolution>
+        <resolution rule="24" symbol="&quot;or&quot;" type="reduce">&quot;or&quot; &lt; &quot;+&quot;</resolution>
         <resolution rule="24" symbol="&quot;-&quot;" type="reduce">%left &quot;-&quot;</resolution>
         <resolution rule="24" symbol="&quot;+&quot;" type="reduce">%left &quot;+&quot;</resolution>
-        <resolution rule="24" symbol="&quot;*&quot;" type="shift">&quot;-&quot; &lt; &quot;*&quot;</resolution>
-        <resolution rule="24" symbol="&quot;/&quot;" type="shift">&quot;-&quot; &lt; &quot;/&quot;</resolution>
-        <resolution rule="24" symbol="&quot;comparison&quot;" type="reduce">&quot;comparison&quot; &lt; &quot;-&quot;</resolution>
-      </solved-conflicts>
-    </state>
-
-    <state number="55">
-      <itemset>
-        <item rule-number="23" dot="1"/>
-        <item rule-number="23" dot="3">
-          <lookaheads>
-            <symbol>$end</symbol>
-            <symbol>&quot;and&quot;</symbol>
-            <symbol>&quot;continue&quot;</symbol>
-            <symbol>&quot;else&quot;</symbol>
-            <symbol>&quot;end&quot;</symbol>
-            <symbol>&quot;exit&quot;</symbol>
-            <symbol>&quot;for&quot;</symbol>
-            <symbol>&quot;if&quot;</symbol>
-            <symbol>&quot;next&quot;</symbol>
-            <symbol>&quot;or&quot;</symbol>
-            <symbol>&quot;step&quot;</symbol>
-            <symbol>&quot;then&quot;</symbol>
-            <symbol>&quot;to&quot;</symbol>
-            <symbol>&quot;wait&quot;</symbol>
-            <symbol>&quot;-&quot;</symbol>
-            <symbol>&quot;+&quot;</symbol>
-            <symbol>&quot;)&quot;</symbol>
-            <symbol>&quot;,&quot;</symbol>
-            <symbol>&quot;identifier&quot;</symbol>
-            <symbol>&quot;comparison&quot;</symbol>
-          </lookaheads>
-        </item>
-        <item rule-number="24" dot="1"/>
-        <item rule-number="25" dot="1"/>
-        <item rule-number="26" dot="1"/>
-        <item rule-number="27" dot="1"/>
-        <item rule-number="28" dot="1"/>
-        <item rule-number="29" dot="1"/>
-      </itemset>
-      <actions>
-        <transitions>
-          <transition type="shift" symbol="&quot;*&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;/&quot;" state="44"/>
-        </transitions>
-        <errors/>
-        <reductions>
-          <reduction symbol="$default" rule="23" enabled="true"/>
-        </reductions>
-      </actions>
-      <solved-conflicts>
-        <resolution rule="23" symbol="&quot;and&quot;" type="reduce">&quot;and&quot; &lt; &quot;+&quot;</resolution>
-        <resolution rule="23" symbol="&quot;or&quot;" type="reduce">&quot;or&quot; &lt; &quot;+&quot;</resolution>
-        <resolution rule="23" symbol="&quot;-&quot;" type="reduce">%left &quot;-&quot;</resolution>
-        <resolution rule="23" symbol="&quot;+&quot;" type="reduce">%left &quot;+&quot;</resolution>
-        <resolution rule="23" symbol="&quot;*&quot;" type="shift">&quot;+&quot; &lt; &quot;*&quot;</resolution>
-        <resolution rule="23" symbol="&quot;/&quot;" type="shift">&quot;+&quot; &lt; &quot;/&quot;</resolution>
-        <resolution rule="23" symbol="&quot;comparison&quot;" type="reduce">&quot;comparison&quot; &lt; &quot;+&quot;</resolution>
-      </solved-conflicts>
-    </state>
-
-    <state number="56">
-      <itemset>
-        <item rule-number="23" dot="1"/>
-        <item rule-number="24" dot="1"/>
-        <item rule-number="25" dot="1"/>
-        <item rule-number="25" dot="3">
-          <lookaheads>
-            <symbol>$end</symbol>
-            <symbol>&quot;and&quot;</symbol>
-            <symbol>&quot;continue&quot;</symbol>
-            <symbol>&quot;else&quot;</symbol>
-            <symbol>&quot;end&quot;</symbol>
-            <symbol>&quot;exit&quot;</symbol>
-            <symbol>&quot;for&quot;</symbol>
-            <symbol>&quot;if&quot;</symbol>
-            <symbol>&quot;next&quot;</symbol>
-            <symbol>&quot;or&quot;</symbol>
-            <symbol>&quot;step&quot;</symbol>
-            <symbol>&quot;then&quot;</symbol>
-            <symbol>&quot;to&quot;</symbol>
-            <symbol>&quot;wait&quot;</symbol>
-            <symbol>&quot;-&quot;</symbol>
-            <symbol>&quot;+&quot;</symbol>
-            <symbol>&quot;*&quot;</symbol>
-            <symbol>&quot;/&quot;</symbol>
-            <symbol>&quot;)&quot;</symbol>
-            <symbol>&quot;,&quot;</symbol>
-            <symbol>&quot;identifier&quot;</symbol>
-            <symbol>&quot;comparison&quot;</symbol>
-          </lookaheads>
-        </item>
-        <item rule-number="26" dot="1"/>
-        <item rule-number="27" dot="1"/>
-        <item rule-number="28" dot="1"/>
-        <item rule-number="29" dot="1"/>
-      </itemset>
-      <actions>
-        <transitions/>
-        <errors/>
-        <reductions>
-          <reduction symbol="$default" rule="25" enabled="true"/>
-        </reductions>
-      </actions>
-      <solved-conflicts>
-        <resolution rule="25" symbol="&quot;and&quot;" type="reduce">&quot;and&quot; &lt; &quot;*&quot;</resolution>
-        <resolution rule="25" symbol="&quot;or&quot;" type="reduce">&quot;or&quot; &lt; &quot;*&quot;</resolution>
-        <resolution rule="25" symbol="&quot;-&quot;" type="reduce">&quot;-&quot; &lt; &quot;*&quot;</resolution>
-        <resolution rule="25" symbol="&quot;+&quot;" type="reduce">&quot;+&quot; &lt; &quot;*&quot;</resolution>
-        <resolution rule="25" symbol="&quot;*&quot;" type="reduce">%left &quot;*&quot;</resolution>
-        <resolution rule="25" symbol="&quot;/&quot;" type="reduce">%left &quot;/&quot;</resolution>
-        <resolution rule="25" symbol="&quot;comparison&quot;" type="reduce">&quot;comparison&quot; &lt; &quot;*&quot;</resolution>
+        <resolution rule="24" symbol="&quot;*&quot;" type="shift">&quot;+&quot; &lt; &quot;*&quot;</resolution>
+        <resolution rule="24" symbol="&quot;/&quot;" type="shift">&quot;+&quot; &lt; &quot;/&quot;</resolution>
+        <resolution rule="24" symbol="&quot;comparison&quot;" type="reduce">&quot;comparison&quot; &lt; &quot;+&quot;</resolution>
       </solved-conflicts>
     </state>
 
     <state number="57">
       <itemset>
-        <item rule-number="23" dot="1"/>
         <item rule-number="24" dot="1"/>
         <item rule-number="25" dot="1"/>
         <item rule-number="26" dot="1"/>
@@ -1958,6 +1954,7 @@
         <item rule-number="27" dot="1"/>
         <item rule-number="28" dot="1"/>
         <item rule-number="29" dot="1"/>
+        <item rule-number="30" dot="1"/>
       </itemset>
       <actions>
         <transitions/>
@@ -1967,24 +1964,78 @@
         </reductions>
       </actions>
       <solved-conflicts>
-        <resolution rule="26" symbol="&quot;and&quot;" type="reduce">&quot;and&quot; &lt; &quot;/&quot;</resolution>
-        <resolution rule="26" symbol="&quot;or&quot;" type="reduce">&quot;or&quot; &lt; &quot;/&quot;</resolution>
-        <resolution rule="26" symbol="&quot;-&quot;" type="reduce">&quot;-&quot; &lt; &quot;/&quot;</resolution>
-        <resolution rule="26" symbol="&quot;+&quot;" type="reduce">&quot;+&quot; &lt; &quot;/&quot;</resolution>
+        <resolution rule="26" symbol="&quot;and&quot;" type="reduce">&quot;and&quot; &lt; &quot;*&quot;</resolution>
+        <resolution rule="26" symbol="&quot;or&quot;" type="reduce">&quot;or&quot; &lt; &quot;*&quot;</resolution>
+        <resolution rule="26" symbol="&quot;-&quot;" type="reduce">&quot;-&quot; &lt; &quot;*&quot;</resolution>
+        <resolution rule="26" symbol="&quot;+&quot;" type="reduce">&quot;+&quot; &lt; &quot;*&quot;</resolution>
         <resolution rule="26" symbol="&quot;*&quot;" type="reduce">%left &quot;*&quot;</resolution>
         <resolution rule="26" symbol="&quot;/&quot;" type="reduce">%left &quot;/&quot;</resolution>
-        <resolution rule="26" symbol="&quot;comparison&quot;" type="reduce">&quot;comparison&quot; &lt; &quot;/&quot;</resolution>
+        <resolution rule="26" symbol="&quot;comparison&quot;" type="reduce">&quot;comparison&quot; &lt; &quot;*&quot;</resolution>
       </solved-conflicts>
     </state>
 
     <state number="58">
       <itemset>
-        <item rule-number="23" dot="1"/>
         <item rule-number="24" dot="1"/>
         <item rule-number="25" dot="1"/>
         <item rule-number="26" dot="1"/>
         <item rule-number="27" dot="1"/>
         <item rule-number="27" dot="3">
+          <lookaheads>
+            <symbol>$end</symbol>
+            <symbol>&quot;and&quot;</symbol>
+            <symbol>&quot;continue&quot;</symbol>
+            <symbol>&quot;else&quot;</symbol>
+            <symbol>&quot;end&quot;</symbol>
+            <symbol>&quot;exit&quot;</symbol>
+            <symbol>&quot;for&quot;</symbol>
+            <symbol>&quot;if&quot;</symbol>
+            <symbol>&quot;next&quot;</symbol>
+            <symbol>&quot;or&quot;</symbol>
+            <symbol>&quot;step&quot;</symbol>
+            <symbol>&quot;then&quot;</symbol>
+            <symbol>&quot;to&quot;</symbol>
+            <symbol>&quot;wait&quot;</symbol>
+            <symbol>&quot;-&quot;</symbol>
+            <symbol>&quot;+&quot;</symbol>
+            <symbol>&quot;*&quot;</symbol>
+            <symbol>&quot;/&quot;</symbol>
+            <symbol>&quot;)&quot;</symbol>
+            <symbol>&quot;,&quot;</symbol>
+            <symbol>&quot;identifier&quot;</symbol>
+            <symbol>&quot;comparison&quot;</symbol>
+          </lookaheads>
+        </item>
+        <item rule-number="28" dot="1"/>
+        <item rule-number="29" dot="1"/>
+        <item rule-number="30" dot="1"/>
+      </itemset>
+      <actions>
+        <transitions/>
+        <errors/>
+        <reductions>
+          <reduction symbol="$default" rule="27" enabled="true"/>
+        </reductions>
+      </actions>
+      <solved-conflicts>
+        <resolution rule="27" symbol="&quot;and&quot;" type="reduce">&quot;and&quot; &lt; &quot;/&quot;</resolution>
+        <resolution rule="27" symbol="&quot;or&quot;" type="reduce">&quot;or&quot; &lt; &quot;/&quot;</resolution>
+        <resolution rule="27" symbol="&quot;-&quot;" type="reduce">&quot;-&quot; &lt; &quot;/&quot;</resolution>
+        <resolution rule="27" symbol="&quot;+&quot;" type="reduce">&quot;+&quot; &lt; &quot;/&quot;</resolution>
+        <resolution rule="27" symbol="&quot;*&quot;" type="reduce">%left &quot;*&quot;</resolution>
+        <resolution rule="27" symbol="&quot;/&quot;" type="reduce">%left &quot;/&quot;</resolution>
+        <resolution rule="27" symbol="&quot;comparison&quot;" type="reduce">&quot;comparison&quot; &lt; &quot;/&quot;</resolution>
+      </solved-conflicts>
+    </state>
+
+    <state number="59">
+      <itemset>
+        <item rule-number="24" dot="1"/>
+        <item rule-number="25" dot="1"/>
+        <item rule-number="26" dot="1"/>
+        <item rule-number="27" dot="1"/>
+        <item rule-number="28" dot="1"/>
+        <item rule-number="28" dot="3">
           <lookaheads>
             <symbol>$end</symbol>
             <symbol>&quot;and&quot;</symbol>
@@ -2006,33 +2057,33 @@
             <symbol>&quot;comparison&quot;</symbol>
           </lookaheads>
         </item>
-        <item rule-number="28" dot="1"/>
         <item rule-number="29" dot="1"/>
+        <item rule-number="30" dot="1"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;-&quot;" state="41"/>
-          <transition type="shift" symbol="&quot;+&quot;" state="42"/>
-          <transition type="shift" symbol="&quot;*&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;/&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="42"/>
+          <transition type="shift" symbol="&quot;+&quot;" state="43"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="45"/>
         </transitions>
         <errors/>
         <reductions>
-          <reduction symbol="$default" rule="27" enabled="true"/>
+          <reduction symbol="$default" rule="28" enabled="true"/>
         </reductions>
       </actions>
       <solved-conflicts>
-        <resolution rule="27" symbol="&quot;and&quot;" type="reduce">&quot;and&quot; &lt; &quot;comparison&quot;</resolution>
-        <resolution rule="27" symbol="&quot;or&quot;" type="reduce">&quot;or&quot; &lt; &quot;comparison&quot;</resolution>
-        <resolution rule="27" symbol="&quot;-&quot;" type="shift">&quot;comparison&quot; &lt; &quot;-&quot;</resolution>
-        <resolution rule="27" symbol="&quot;+&quot;" type="shift">&quot;comparison&quot; &lt; &quot;+&quot;</resolution>
-        <resolution rule="27" symbol="&quot;*&quot;" type="shift">&quot;comparison&quot; &lt; &quot;*&quot;</resolution>
-        <resolution rule="27" symbol="&quot;/&quot;" type="shift">&quot;comparison&quot; &lt; &quot;/&quot;</resolution>
-        <resolution rule="27" symbol="&quot;comparison&quot;" type="reduce">%left &quot;comparison&quot;</resolution>
+        <resolution rule="28" symbol="&quot;and&quot;" type="reduce">&quot;and&quot; &lt; &quot;comparison&quot;</resolution>
+        <resolution rule="28" symbol="&quot;or&quot;" type="reduce">&quot;or&quot; &lt; &quot;comparison&quot;</resolution>
+        <resolution rule="28" symbol="&quot;-&quot;" type="shift">&quot;comparison&quot; &lt; &quot;-&quot;</resolution>
+        <resolution rule="28" symbol="&quot;+&quot;" type="shift">&quot;comparison&quot; &lt; &quot;+&quot;</resolution>
+        <resolution rule="28" symbol="&quot;*&quot;" type="shift">&quot;comparison&quot; &lt; &quot;*&quot;</resolution>
+        <resolution rule="28" symbol="&quot;/&quot;" type="shift">&quot;comparison&quot; &lt; &quot;/&quot;</resolution>
+        <resolution rule="28" symbol="&quot;comparison&quot;" type="reduce">%left &quot;comparison&quot;</resolution>
       </solved-conflicts>
     </state>
 
-    <state number="59">
+    <state number="60">
       <itemset>
         <item rule-number="15" dot="5"/>
         <item rule-number="19" dot="0"/>
@@ -2049,6 +2100,7 @@
         <item rule-number="30" dot="0"/>
         <item rule-number="31" dot="0"/>
         <item rule-number="32" dot="0"/>
+        <item rule-number="33" dot="0"/>
       </itemset>
       <actions>
         <transitions>
@@ -2057,9 +2109,10 @@
           <transition type="shift" symbol="&quot;(&quot;" state="24"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
           <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
-          <transition type="goto" symbol="exp" state="65"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
+          <transition type="goto" symbol="exp" state="66"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -2067,7 +2120,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="60">
+    <state number="61">
       <itemset>
         <item rule-number="3" dot="1"/>
         <item rule-number="4" dot="1"/>
@@ -2093,7 +2146,7 @@
           <transition type="shift" symbol="&quot;exit&quot;" state="6"/>
           <transition type="shift" symbol="&quot;for&quot;" state="7"/>
           <transition type="shift" symbol="&quot;if&quot;" state="8"/>
-          <transition type="shift" symbol="&quot;next&quot;" state="66"/>
+          <transition type="shift" symbol="&quot;next&quot;" state="67"/>
           <transition type="shift" symbol="&quot;wait&quot;" state="9"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="10"/>
           <transition type="goto" symbol="assignment" state="11"/>
@@ -2109,21 +2162,21 @@
       <solved-conflicts/>
     </state>
 
-    <state number="61">
+    <state number="62">
       <itemset>
-        <item rule-number="30" dot="4"/>
+        <item rule-number="31" dot="4"/>
       </itemset>
       <actions>
         <transitions/>
         <errors/>
         <reductions>
-          <reduction symbol="$default" rule="30" enabled="true"/>
+          <reduction symbol="$default" rule="31" enabled="true"/>
         </reductions>
       </actions>
       <solved-conflicts/>
     </state>
 
-    <state number="62">
+    <state number="63">
       <itemset>
         <item rule-number="19" dot="0"/>
         <item rule-number="20" dot="0"/>
@@ -2138,8 +2191,9 @@
         <item rule-number="29" dot="0"/>
         <item rule-number="30" dot="0"/>
         <item rule-number="31" dot="0"/>
-        <item rule-number="31" dot="4"/>
         <item rule-number="32" dot="0"/>
+        <item rule-number="32" dot="4"/>
+        <item rule-number="33" dot="0"/>
       </itemset>
       <actions>
         <transitions>
@@ -2148,9 +2202,10 @@
           <transition type="shift" symbol="&quot;(&quot;" state="24"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="25"/>
           <transition type="shift" symbol="&quot;number&quot;" state="26"/>
-          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="27"/>
-          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="28"/>
-          <transition type="goto" symbol="exp" state="67"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="27"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="28"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="29"/>
+          <transition type="goto" symbol="exp" state="68"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -2158,7 +2213,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="63">
+    <state number="64">
       <itemset>
         <item rule-number="2" dot="0"/>
         <item rule-number="3" dot="0"/>
@@ -2171,7 +2226,7 @@
       </itemset>
       <actions>
         <transitions>
-          <transition type="goto" symbol="statements" state="68"/>
+          <transition type="goto" symbol="statements" state="69"/>
         </transitions>
         <errors/>
         <reductions>
@@ -2181,13 +2236,13 @@
       <solved-conflicts/>
     </state>
 
-    <state number="64">
+    <state number="65">
       <itemset>
         <item rule-number="16" dot="5"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;if&quot;" state="69"/>
+          <transition type="shift" symbol="&quot;if&quot;" state="70"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -2195,7 +2250,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="65">
+    <state number="66">
       <itemset>
         <item rule-number="2" dot="0">
           <lookaheads>
@@ -2215,24 +2270,24 @@
         <item rule-number="7" dot="0"/>
         <item rule-number="8" dot="0"/>
         <item rule-number="15" dot="6"/>
-        <item rule-number="23" dot="1"/>
         <item rule-number="24" dot="1"/>
         <item rule-number="25" dot="1"/>
         <item rule-number="26" dot="1"/>
         <item rule-number="27" dot="1"/>
         <item rule-number="28" dot="1"/>
         <item rule-number="29" dot="1"/>
+        <item rule-number="30" dot="1"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;and&quot;" state="38"/>
-          <transition type="shift" symbol="&quot;or&quot;" state="39"/>
-          <transition type="shift" symbol="&quot;-&quot;" state="41"/>
-          <transition type="shift" symbol="&quot;+&quot;" state="42"/>
-          <transition type="shift" symbol="&quot;*&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;/&quot;" state="44"/>
-          <transition type="shift" symbol="&quot;comparison&quot;" state="45"/>
-          <transition type="goto" symbol="statements" state="70"/>
+          <transition type="shift" symbol="&quot;and&quot;" state="39"/>
+          <transition type="shift" symbol="&quot;or&quot;" state="40"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="42"/>
+          <transition type="shift" symbol="&quot;+&quot;" state="43"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;comparison&quot;" state="46"/>
+          <transition type="goto" symbol="statements" state="71"/>
         </transitions>
         <errors/>
         <reductions>
@@ -2242,7 +2297,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="66">
+    <state number="67">
       <itemset>
         <item rule-number="14" dot="6"/>
       </itemset>
@@ -2256,27 +2311,27 @@
       <solved-conflicts/>
     </state>
 
-    <state number="67">
+    <state number="68">
       <itemset>
-        <item rule-number="23" dot="1"/>
         <item rule-number="24" dot="1"/>
         <item rule-number="25" dot="1"/>
         <item rule-number="26" dot="1"/>
         <item rule-number="27" dot="1"/>
         <item rule-number="28" dot="1"/>
         <item rule-number="29" dot="1"/>
-        <item rule-number="31" dot="5"/>
+        <item rule-number="30" dot="1"/>
+        <item rule-number="32" dot="5"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;and&quot;" state="38"/>
-          <transition type="shift" symbol="&quot;or&quot;" state="39"/>
-          <transition type="shift" symbol="&quot;-&quot;" state="41"/>
-          <transition type="shift" symbol="&quot;+&quot;" state="42"/>
-          <transition type="shift" symbol="&quot;*&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;/&quot;" state="44"/>
-          <transition type="shift" symbol="&quot;)&quot;" state="71"/>
-          <transition type="shift" symbol="&quot;comparison&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;and&quot;" state="39"/>
+          <transition type="shift" symbol="&quot;or&quot;" state="40"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="42"/>
+          <transition type="shift" symbol="&quot;+&quot;" state="43"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;)&quot;" state="72"/>
+          <transition type="shift" symbol="&quot;comparison&quot;" state="46"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -2284,7 +2339,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="68">
+    <state number="69">
       <itemset>
         <item rule-number="3" dot="1"/>
         <item rule-number="4" dot="1"/>
@@ -2307,7 +2362,7 @@
       <actions>
         <transitions>
           <transition type="shift" symbol="&quot;continue&quot;" state="5"/>
-          <transition type="shift" symbol="&quot;end&quot;" state="72"/>
+          <transition type="shift" symbol="&quot;end&quot;" state="73"/>
           <transition type="shift" symbol="&quot;exit&quot;" state="6"/>
           <transition type="shift" symbol="&quot;for&quot;" state="7"/>
           <transition type="shift" symbol="&quot;if&quot;" state="8"/>
@@ -2326,7 +2381,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="69">
+    <state number="70">
       <itemset>
         <item rule-number="16" dot="6"/>
       </itemset>
@@ -2340,7 +2395,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="70">
+    <state number="71">
       <itemset>
         <item rule-number="3" dot="1"/>
         <item rule-number="4" dot="1"/>
@@ -2366,7 +2421,7 @@
           <transition type="shift" symbol="&quot;exit&quot;" state="6"/>
           <transition type="shift" symbol="&quot;for&quot;" state="7"/>
           <transition type="shift" symbol="&quot;if&quot;" state="8"/>
-          <transition type="shift" symbol="&quot;next&quot;" state="73"/>
+          <transition type="shift" symbol="&quot;next&quot;" state="74"/>
           <transition type="shift" symbol="&quot;wait&quot;" state="9"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="10"/>
           <transition type="goto" symbol="assignment" state="11"/>
@@ -2382,27 +2437,27 @@
       <solved-conflicts/>
     </state>
 
-    <state number="71">
+    <state number="72">
       <itemset>
-        <item rule-number="31" dot="6"/>
+        <item rule-number="32" dot="6"/>
       </itemset>
       <actions>
         <transitions/>
         <errors/>
         <reductions>
-          <reduction symbol="$default" rule="31" enabled="true"/>
+          <reduction symbol="$default" rule="32" enabled="true"/>
         </reductions>
       </actions>
       <solved-conflicts/>
     </state>
 
-    <state number="72">
+    <state number="73">
       <itemset>
         <item rule-number="17" dot="7"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;if&quot;" state="74"/>
+          <transition type="shift" symbol="&quot;if&quot;" state="75"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -2410,7 +2465,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="73">
+    <state number="74">
       <itemset>
         <item rule-number="15" dot="8"/>
       </itemset>
@@ -2424,7 +2479,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="74">
+    <state number="75">
       <itemset>
         <item rule-number="17" dot="8"/>
       </itemset>

@@ -32,6 +32,26 @@ std::unordered_map<std::string, Expression::Operation> Expression::string_to_ope
   {"pow", POW}
 };
 
+std::unordered_map<std::string, float> note_to_volt_same_octave = {
+  {"c", 0.0},
+  {"c#", 0.08333333},
+  {"db", 0.08333333},
+  {"d", 0.16666666},
+  {"d#", 0.24999999},
+  {"eb", 0.24999999},
+  {"e", 0.33333332},
+  {"f", 0.41666665},
+  {"f#", 0.49999998},
+  {"gb", 0.49999998},
+  {"g", 0.58333331},
+  {"g#", 0.66666664},
+  {"ab", 0.66666664},
+  {"a", 0.74999997},
+  {"a#", 0.8333333},
+  {"bb", 0.8333333},
+  {"b", 0.91666663}
+};
+
 std::unordered_set<std::string> Expression::volatile_inputs = {
   "in1", "in2", "in3", "in4"
 };
@@ -41,6 +61,33 @@ Expression Expression::Not(const Expression &expr) {
   Expression ex;
   ex.type = NOT;
   ex.subexpressions.push_back(expr);
+  return ex;
+}
+
+Expression Expression::Note(const std::string &note_name) {
+  Expression ex;
+  ex.type = NUMBER;
+  // split into name and octave
+  int octave;
+  std::string name;
+  // Number at end might be two chars long, in the case of -1 or 10.
+  if (note_name.size() == 4 || (note_name.size() == 3 && (
+      note_name[1] != '#' && note_name[1] != 'b'))) {
+    name = note_name.substr(0, note_name.size() - 2);
+    octave = strtol(note_name.c_str() + note_name.size() - 2, NULL, 10);
+  } else {
+    name = note_name.substr(0, note_name.size() - 1);
+    octave = strtol(note_name.c_str() + note_name.size() - 1, NULL, 10);
+  }
+  auto found = note_to_volt_same_octave.find(name);
+  // This can happen. Current regex can accept invalid values like b#.
+  // TODO: maybe fix the regex?
+  if (found != note_to_volt_same_octave.end()) {
+    ex.float_value = found->second + octave - 4;
+  } else {
+    // Invalid name.
+    ex.float_value = 0.0f;
+  }
   return ex;
 }
 
