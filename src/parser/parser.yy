@@ -55,6 +55,7 @@
   NOT     "not"
   OR      "or"
   POW     "pow"
+  SAMPLE_RATE "sample_rate"
   SIGN    "sign"
   SIN     "sin"
   STEP    "step"
@@ -73,7 +74,11 @@
 %token <std::string> IDENTIFIER "identifier"
 %token <float> NUMBER "number"
 %token <std::string> NOTE "note"
+%token <std::string> IN_PORT "in_port"
+%token <std::string> OUT_PORT "out_port"
+%token <std::string> ZEROARGFUNC "zeroargfunc"
 %token <std::string> ONEARGFUNC "oneargfunc"
+%token <std::string> ONEPORTFUNC "oneportfunc"
 %token <std::string> TWOARGFUNC "twoargfunc"
 %token <std::string> COMPARISON "comparison"
 %nterm <Expression> exp
@@ -106,6 +111,8 @@ statements:
 
 assignment:
   "identifier" "=" exp  { $$ = Line::Assignment($1, $3, &drv); }
+| "in_port" "=" exp     { $$ = Line::Assignment($1, $3, &drv); }
+| "out_port" "=" exp    { $$ = Line::Assignment($1, $3, &drv); }
 
 continue_statement:
   "continue" "for"      { $$ = Line::Continue($2); }
@@ -145,6 +152,8 @@ exp:
 | "note"        { $$ = drv.factory.Note($1); }
 | MINUS "number" %prec NEG { $$ = drv.factory.Number(-1 * (float) $2);}
 | "not" exp %prec NEG { $$ = drv.factory.Not($2);}
+| "in_port"     { $$ = drv.factory.Variable($1, &drv); }
+| "out_port"    { $$ = drv.factory.Variable($1, &drv); }
 | "identifier"  { $$ = drv.factory.Variable($1, &drv); }
 | exp "+" exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
 | exp "-" exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
@@ -153,6 +162,9 @@ exp:
 | exp COMPARISON exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
 | exp "and" exp { $$ = drv.factory.CreateBinOp($1, $2, $3); }
 | exp "or" exp  { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| "zeroargfunc" "(" ")" { $$ = drv.factory.ZeroArgFunc($1); }
+| "oneportfunc" "(" "in_port" ")" {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
+| "oneportfunc" "(" "out_port" ")" {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
 | "oneargfunc" "(" exp ")" { $$ = drv.factory.OneArgFunc($1, $3); }
 | "twoargfunc" "(" exp "," exp ")" { $$ = drv.factory.TwoArgFunc($1, $3, $5); }
 | "(" exp ")"   { $$ = $2; }

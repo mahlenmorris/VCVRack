@@ -39,6 +39,11 @@ struct Error {
   Error(int line, int column, const std::string message) : line{line},
       column{column}, message{message} {
   }
+  std::string to_string() {
+    return "line: " + std::to_string(line) +
+           ", column: " + std::to_string(column) +
+           " : '" + message + "'.";
+  }
 };
 
 // Conducting the whole scanning and parsing of Calc++.

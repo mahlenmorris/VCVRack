@@ -93,7 +93,11 @@
 
 note  [a-g][#b]?(-1|[0-9]|10)
 id    [a-zA-Z][a-zA-Z_0-9]*
+in_port "in1"|"in2"|"in3"|"in4"|"in5"|"in6"|"in7"|"in8"|"in9"
+out_port "out1"|"out2"|"out3"|"out4"
+zeroargfunc "sample_rate"
 oneargfunc "abs"|"ceiling"|"floor"|"sign"|"sin"
+oneportfunc "connected"
 twoargfunc "max"|"min"|"mod"|"pow"
 comparison "<"|"<="|">"|">="|"=="|"!="
 float ([0-9]*[.])?[0-9]+
@@ -140,9 +144,13 @@ blank [ \t\r]
 
 {note}     return yy::parser::make_NOTE (yytext, loc);
 {float}    return make_NUMBER (yytext, loc);
+{zeroargfunc} return yy::parser::make_ZEROARGFUNC (yytext, loc);
 {oneargfunc} return yy::parser::make_ONEARGFUNC (yytext, loc);
+{oneportfunc} return yy::parser::make_ONEPORTFUNC (yytext, loc);
 {twoargfunc} return yy::parser::make_TWOARGFUNC (yytext, loc);
 {comparison} return yy::parser::make_COMPARISON (yytext, loc);
+{in_port}  return yy::parser::make_IN_PORT (yytext, loc);
+{out_port} return yy::parser::make_OUT_PORT (yytext, loc);
 {id}       return yy::parser::make_IDENTIFIER (yytext, loc);
 .          {
              throw yy::parser::syntax_error

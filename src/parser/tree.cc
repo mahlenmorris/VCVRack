@@ -23,7 +23,9 @@ std::unordered_map<std::string, Expression::Operation> ExpressionFactory::string
   {"or", Expression::OR},
   {"abs", Expression::ABS},
   {"ceiling", Expression::CEILING},
+  {"connected", Expression::CONNECTED},
   {"floor", Expression::FLOOR},
+  {"sample_rate", Expression::SAMPLE_RATE},
   {"sign", Expression::SIGN},
   {"sin", Expression::SIN},
   {"mod", Expression::MOD},
@@ -52,14 +54,6 @@ std::unordered_map<std::string, float> note_to_volt_same_octave = {
   {"b", 0.91666663}
 };
 
-/*
-// The parser seems to need many variants of Variable.
-Expression::Expression(char * var_name, Driver* driver) {
-  // Intentionally _copying_ the name.
-  name = std::string(var_name);
-  variable_ptr = driver->GetVarFromName(name);
-}
-*/
 float Expression::Compute() {
   switch (type) {
     case NUMBER: return float_value;
@@ -76,8 +70,17 @@ float Expression::Compute() {
     }
     break;
     case NOT: return (is_zero(subexpressions[0].Compute()) ? 1.0f : 0.0f);
+    case ZEROARGFUNC: {
+      return zero_arg_compute();
+    }
+    break;
     case ONEARGFUNC: {
       return one_arg_compute(subexpressions[0].Compute());
+    }
+    break;
+    case ONEPORTFUNC: {
+      // CONNECTED is currently only such method.
+      return env->Connected(port);
     }
     break;
     case TWOARGFUNC: {
@@ -105,7 +108,11 @@ bool Expression::Volatile() {
     }
     break;
     case NOT: return subexpressions[0].Volatile();
+    // sample_rate() can change (if user changes it).
+    case ZEROARGFUNC: return false;
     case ONEARGFUNC: return subexpressions[0].Volatile();
+    // Yes, the only such method is volatile.
+    case ONEPORTFUNC: return true;
     default: return false;
   }
 }
@@ -159,6 +166,13 @@ float Expression::binop_compute() {
     case LT: return bool_to_float(lhs < rhs);
     case LTE: return bool_to_float(lhs <= rhs);
     default: return -2.3456f;
+  }
+}
+
+float Expression::zero_arg_compute() {
+  switch (operation) {
+    case SAMPLE_RATE: return env->SampleRate();
+    default: return -9.87654f;
   }
 }
 
@@ -225,12 +239,31 @@ Expression ExpressionFactory::Number(float the_value) {
   return ex;
 }
 
+Expression ExpressionFactory::ZeroArgFunc(const std::string &func_name) {
+  Expression ex;
+  ex.type = Expression::ZEROARGFUNC;
+  ex.operation = string_to_operation.at(func_name);
+  ex.env = env;  // We know sample_rate() requires this.
+  return ex;
+}
+
 Expression ExpressionFactory::OneArgFunc(const std::string &func_name,
                                          const Expression &arg1) {
   Expression ex;
   ex.type = Expression::ONEARGFUNC;
   ex.operation = string_to_operation.at(func_name);
   ex.subexpressions.push_back(arg1);
+  return ex;
+}
+
+Expression ExpressionFactory::OnePortFunc(const std::string &func_name,
+                                          const std::string &port1,
+                                          Driver* driver) {
+  Expression ex;
+  ex.type = Expression::ONEPORTFUNC;
+  ex.operation = string_to_operation.at(func_name);
+  ex.port = driver->GetPortFromName(port1);  // TODO: Make parser do this?
+  ex.env = env;
   return ex;
 }
 
@@ -256,10 +289,12 @@ Expression ExpressionFactory::CreateBinOp(const Expression &lhs,
   return ex;
 }
 
+// TODO: Now that compiler knows if it's a port or not, could
+// avoid deciding here. Or make a new kind of Expression called PORT!?
 Expression ExpressionFactory::Variable(const char *var_name, Driver* driver) {
-  // Intentionally copying the name.
   Expression ex;
   ex.type = Expression::VARIABLE;
+  // Intentionally copying the name.
   ex.name = std::string(var_name);
   if (driver->VarHasPort(var_name)) {
     ex.port = driver->GetPortFromName(ex.name);

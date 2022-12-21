@@ -6,11 +6,18 @@
 
 struct TestEnvironment : Environment {
   float in1, in2, in3, in4;
+  std::unordered_map<int, bool> connected;
   void SetIns(float a, float b, float c, float d) {
     in1 = a;
     in2 = b;
     in3 = c;
     in4 = d;
+  }
+  void setConnected(int index, bool is_connected) {
+    connected[index] = is_connected;
+  }
+  float SampleRate() override {
+    return 43210;  // An unusual sample rate!
   }
   float GetVoltage(const PortPointer &port) {
     EXPECT_EQ(PortPointer::INPUT, port.port_type);
@@ -22,9 +29,9 @@ struct TestEnvironment : Environment {
       default: return -1.2481632;
     }
   }
-  float IsConnected(const PortPointer &port) {
-    (void) port;
-    return 0.0;
+  float Connected(const PortPointer &port) {
+    return (connected.find(port.index) != connected.end() &&
+            connected.at(port.index)) ? 1.0f : 0.0f;
   };
 };
 
@@ -415,4 +422,27 @@ TEST(ParserTest, NoteTest)
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ("out1", drv.lines[0].str1);
     EXPECT_FLOAT_EQ(6.0f + 0.0833333, drv.lines[0].expr1.Compute());
+}
+
+TEST(ParserTest, EnvironmentTest)
+{
+  Driver drv;
+  drv.AddPortForName("in1", true, 0);
+  drv.AddPortForName("in2", true, 1);
+  drv.AddPortForName("in3", true, 2);
+  drv.AddPortForName("in4", true, 3);
+  TestEnvironment test_env;
+  drv.SetEnvironment(&test_env);
+  drv.AddPortForName("in1", true, 7);
+
+
+  EXPECT_EQ(0, drv.parse("out1 = sample_rate()"));
+  ASSERT_EQ(1, drv.lines.size());
+  EXPECT_EQ(43210, drv.lines[0].expr1.Compute());
+
+  EXPECT_EQ(0, drv.parse("out1 = 10 * connected(in1)"));
+  ASSERT_EQ(1, drv.lines.size());
+  EXPECT_EQ(0, drv.lines[0].expr1.Compute());
+  test_env.setConnected(7, true);
+  EXPECT_EQ(10, drv.lines[0].expr1.Compute());
 }

@@ -19,7 +19,9 @@ class Expression {
     BINOP,   // plus, times
     VARIABLE, // in1, out1, foo
     NOT,      // not bool
+    ZEROARGFUNC, // operation
     ONEARGFUNC, // operation (subexpressions[0])
+    ONEPORTFUNC, // operation (port)
     TWOARGFUNC // func2(subexpressions[0], subexpressions[1])
   };
   Type type;
@@ -39,7 +41,9 @@ class Expression {
     OR,
     ABS,
     CEILING,
+    CONNECTED,
     FLOOR,
+    SAMPLE_RATE,
     SIGN,
     SIN,
     MOD,
@@ -63,9 +67,6 @@ class Expression {
   static std::unordered_map<std::string, float> note_to_volt_octave_4;
   Expression() {}
 
-  // The parser seems to need many variants of Variable.
-  Expression(char * var_name, Driver* driver);
-
   // Compute the result of this Expression.
   float Compute();
   // Determine if this Expression can Compute() different results depending on
@@ -79,6 +80,7 @@ class Expression {
  private:
   float bool_to_float(bool value);
   float binop_compute();
+  float zero_arg_compute();
   float one_arg_compute(float arg1);
   float two_arg_compute(float arg1, float arg2);
 };
@@ -90,8 +92,11 @@ class ExpressionFactory {
   Expression Not(const Expression &expr);
   Expression Note(const std::string &note_name);
   Expression Number(float the_value);
+  Expression ZeroArgFunc(const std::string &func_name);
   Expression OneArgFunc(const std::string &func_name,
                                const Expression &arg1);
+  Expression OnePortFunc(const std::string &func_name, const std::string &port1,
+                         Driver* driver);
   Expression TwoArgFunc(const std::string &func_name,
                                const Expression &arg1, const Expression &arg2);
   Expression CreateBinOp(const Expression &lhs,

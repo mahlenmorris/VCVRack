@@ -88,11 +88,18 @@ struct Basically : Module {
   class ProductionEnvironment : public Environment {
     std::vector<Input>* inputs;
     std::vector<Output>* outputs;
+    const ProcessArgs* args;
 
    public:
     ProductionEnvironment(std::vector<Input>* the_inputs,
                           std::vector<Output>* the_outputs) :
        inputs{the_inputs}, outputs{the_outputs} {}
+
+    // ProcessArgs object isn't available when we first create the Environment.
+    // So we need to update it when it is available.
+    void SetProcessArgs(const ProcessArgs* the_args) {
+      args = the_args;
+    }
 
     float GetVoltage(const PortPointer &port) override {
       if (port.port_type == PortPointer::INPUT) {
@@ -101,9 +108,15 @@ struct Basically : Module {
         return outputs->at(port.index).getVoltage();
       }
     }
-    float IsConnected(const PortPointer &port) override {
-      (void) port;
-      return 0.0;
+    float SampleRate() override {
+      return args->sampleRate;
+    }
+    float Connected(const PortPointer &port) override {
+      if (port.port_type == PortPointer::INPUT) {
+        return inputs->at(port.index).isConnected() ? 1.0f : 0.0f;
+      } else {
+        return outputs->at(port.index).isConnected() ? 1.0f : 0.0f;
+      }
     };
 
   };
@@ -152,7 +165,8 @@ struct Basically : Module {
     current_line = 0;
     wait_info.in_wait = false;
 
-    drv.SetEnvironment(new ProductionEnvironment(&inputs, &outputs));
+    environment = new ProductionEnvironment(&inputs, &outputs);
+    drv.SetEnvironment(environment);
     // Add the INn variables to the variable space, and get the pointer to
     // them so module can set them.
     for (size_t i = 0; i < in_list.size(); i++) {
@@ -268,6 +282,8 @@ struct Basically : Module {
   void process(const ProcessArgs& args) override {
     Style style = STYLES[(int) params[STYLE_PARAM].getValue()];
     bool loops = (style != TRIGGER_NO_LOOP_STYLE);
+    // ProcessArgs not available when we first create the Environment.
+    environment->SetProcessArgs(&args);
 
     // Compile if we need to.
     if (module_refresh && !text.empty()) {
@@ -344,6 +360,7 @@ struct Basically : Module {
         if (wait_info.countdown_to_recompute <= 0) {
           wait_info.countdown_to_recompute = std::floor(
               args.sampleRate / 1000.0f);
+          need_to_update_wait = true;
         }
       }
     }
@@ -483,6 +500,7 @@ struct Basically : Module {
   bool running = false;
   bool allow_error_highlight = true;
   Driver drv;
+  ProductionEnvironment* environment;
   std::vector<PCode> pcodes;  // What actually gets executed.
   // Line where execution is currently happening.
   unsigned int current_line;
