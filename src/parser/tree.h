@@ -43,6 +43,8 @@ class Expression {
     CEILING,
     CONNECTED,
     FLOOR,
+    NORMAL,
+    RANDOM,
     SAMPLE_RATE,
     SIGN,
     SIN,

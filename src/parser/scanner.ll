@@ -98,7 +98,7 @@ out_port "out1"|"out2"|"out3"|"out4"
 zeroargfunc "sample_rate"
 oneargfunc "abs"|"ceiling"|"floor"|"sign"|"sin"
 oneportfunc "connected"
-twoargfunc "max"|"min"|"mod"|"pow"
+twoargfunc "max"|"min"|"mod"|"normal"|"pow"|"random"
 comparison "<"|"<="|">"|">="|"=="|"!="
 float ([0-9]*[.])?[0-9]+
 blank [ \t\r]

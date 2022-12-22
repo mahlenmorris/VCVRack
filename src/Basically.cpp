@@ -93,7 +93,9 @@ struct Basically : Module {
    public:
     ProductionEnvironment(std::vector<Input>* the_inputs,
                           std::vector<Output>* the_outputs) :
-       inputs{the_inputs}, outputs{the_outputs} {}
+       inputs{the_inputs}, outputs{the_outputs} {
+
+       }
 
     // ProcessArgs object isn't available when we first create the Environment.
     // So we need to update it when it is available.
@@ -118,7 +120,12 @@ struct Basically : Module {
         return outputs->at(port.index).isConnected() ? 1.0f : 0.0f;
       }
     };
-
+    float Random(float min_value, float max_value) override {
+      return rescale(rack::random::uniform(), 0.0, 1.0, min_value, max_value);
+    }
+    float Normal(float mean, float std_dev) {
+      return rack::random::normal() * std_dev + mean;
+    }
   };
 
   std::unordered_map<std::string, int> out_map { {"out1", OUT1_OUTPUT},
@@ -1147,11 +1154,15 @@ struct BasicallyWidget : ModuleWidget {
     std::pair<std::string, std::string> math_funcs[] = {
       {"abs(x) - this number without a negative sign", "abs(IN1)"},
       {"ceiling(x) - integer value at or above x", "ceiling(IN1)"},
+      {"connected(x) - 1 if named port x has a cable attached, 0 if not", "connected(IN1)"},
       {"floor(x) -  integer value at or below x", "floor(IN1)"},
       {"max(x, y) - larger of x or y", "max(IN1, -5)"},
       {"min(x, y) - smaller of x or y", "min(IN1, 5)"},
       {"mod(x, y) - remainder after dividing x by y", "mod(IN1, 1)"},
+      {"normal(mean, std_dev) - bell curve distribution of random number", "normal(0, 1)"},
       {"pow(x, y) - x to the power of y", "pow(IN1, 0.5)"},
+      {"random(x, y) - uniformly random number: x <= random(x, y) < y", "random(-1, 1)"},
+      {"sample_rate() - number of times BASICally is called per second (e.g., 44100)", "sample_rate()"},
       {"sign(x) - -1, 0, or 1, depending on the sign of x", "sign(IN1)"},
       {"sin(x) - sine of x, which is in radians", "sin(IN1)"}
     };

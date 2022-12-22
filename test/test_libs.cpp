@@ -33,6 +33,12 @@ struct TestEnvironment : Environment {
     return (connected.find(port.index) != connected.end() &&
             connected.at(port.index)) ? 1.0f : 0.0f;
   };
+  float Random(float min_value, float max_value) {
+    return (max_value + min_value) / 2.0;  // Not very random.
+  }
+  float Normal(float mean, float std_dev) {
+    return mean + std_dev;  // Also not random.
+  }
 };
 
 TEST(ParserTest, RunsAtAll)
@@ -435,10 +441,17 @@ TEST(ParserTest, EnvironmentTest)
   drv.SetEnvironment(&test_env);
   drv.AddPortForName("in1", true, 7);
 
-
   EXPECT_EQ(0, drv.parse("out1 = sample_rate()"));
   ASSERT_EQ(1, drv.lines.size());
   EXPECT_EQ(43210, drv.lines[0].expr1.Compute());
+
+  EXPECT_EQ(0, drv.parse("out1 = normal(1, 0.2)"));
+  ASSERT_EQ(1, drv.lines.size());
+  EXPECT_FLOAT_EQ(1.2, drv.lines[0].expr1.Compute());
+
+  EXPECT_EQ(0, drv.parse("out1 = random(0, 10)"));
+  ASSERT_EQ(1, drv.lines.size());
+  EXPECT_EQ(5, drv.lines[0].expr1.Compute());
 
   EXPECT_EQ(0, drv.parse("out1 = 10 * connected(in1)"));
   ASSERT_EQ(1, drv.lines.size());

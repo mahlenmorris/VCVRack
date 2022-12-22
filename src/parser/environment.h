@@ -34,6 +34,8 @@ class Environment {
   // Since a Port can only be constructed at compile time, it should just
   // become part of the function-running Expression.
   virtual float Connected(const PortPointer &port) = 0;
+  virtual float Random(float min_value, float max_value) = 0;
+  virtual float Normal(float mean, float std_dev) = 0; 
 };
 
 #endif // ENVIRONMENT_H

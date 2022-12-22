@@ -114,11 +114,15 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 | --------- | -------------- | -------- |
 |**abs(x)**| absolute value | abs(2.1) == 2.1, abs(-2.1) == 2.1 |
 |**ceiling(x)**| integer value at or above x | ceiling(2.1) == 3, ceiling(-2.1) == -2 |
+|**connected(x)**|1 if named port x has a cable attached, 0 if not | connected(IN1) |
 |**floor(x)**|integer value at or below x|floor(2.1) == 2, floor(-2.1) == -3|
 |**max(x, y)**|the larger of x or y|max(2.1, 2.3) == 2.3, max(2.1, -2.3) == 2.1
 |**min(x, y)**|the smaller of x or y|min(2.1, 2.3) == 2.1, min(2.1, -2.3) == -2.3
 |**mod(x, y)**|the remainder after dividing x by y. Will be negative only if x is negative|mod(10, 2.1) == 1.6
-|**pow(x, y)**|x to the power of y|pow(3, 2) == 9, pow(9, 0.5) == 3
+|**normal(mean, std_dev)**| bell curve distribution of random number | normal(0, 1) |
+|**pow(x, y)**|x to the power of y|pow(3, 2) == 9, pow(9, 0.5) == 3 |
+|**random(min, max)**|uniformly random number: min <= random(x, y) < max | random(-1, 1)|
+|**sample_rate()**|number of times BASICally is called per second (e.g., 44100)|sample_rate() == 48000|
 |**sign(x)**|-1, 0, or 1, depending on the sign of x|sign(2.1) == 1, sign(-2.1) == -1, sign(0) = 0|
 |**sin(x)**|arithmetic sine of x, which is in radians| sin(30 * 0.0174533) == 0.5, sin(3.14159 / 2) == 1
 

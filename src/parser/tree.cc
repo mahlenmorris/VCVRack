@@ -25,6 +25,8 @@ std::unordered_map<std::string, Expression::Operation> ExpressionFactory::string
   {"ceiling", Expression::CEILING},
   {"connected", Expression::CONNECTED},
   {"floor", Expression::FLOOR},
+  {"normal", Expression::NORMAL},
+  {"random", Expression::RANDOM},
   {"sample_rate", Expression::SAMPLE_RATE},
   {"sign", Expression::SIGN},
   {"sin", Expression::SIN},
@@ -193,7 +195,9 @@ float Expression::two_arg_compute(float arg1, float arg2) {
     case MOD: return fmod(arg1, arg2);
     case MAX: return fmax(arg1, arg2);
     case MIN: return fmin(arg1, arg2);
+    case NORMAL: return env->Normal(arg1, arg2);
     case POW: return pow(arg1, arg2);
+    case RANDOM: return env->Random(arg1, arg2);
     default: return 4.56789f;
   }
 }
@@ -273,6 +277,7 @@ Expression ExpressionFactory::TwoArgFunc(const std::string &func_name,
   Expression ex;
   ex.type = Expression::TWOARGFUNC;
   ex.operation = string_to_operation.at(func_name);
+  ex.env = env;  // Sometimes we need this.
   ex.subexpressions.push_back(arg1);
   ex.subexpressions.push_back(arg2);
   return ex;
