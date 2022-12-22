@@ -716,7 +716,7 @@ struct BasicallyTextField : STTextField {
           int topFudge = textOffset.y + 5;  // I'm just trying things until they work.
           // textOffset is in ledDisplayTextField.
           nvgRect(args.vg, 0, topFudge + 12 * (line_number - 1), box.size.x, 12);
-          nvgFillColor(args.vg, nvgRGB(128, 0, 0));
+          nvgFillColor(args.vg, nvgRGB(178, 88, 88));
           nvgFill(args.vg);
         }
         if (module->cursor_override >= 0) {
@@ -883,8 +883,9 @@ struct ErrorWidget : widget::OpaqueWidget {
       Rect r = box.zeroPos();
       Vec bounding_box = r.getBottomRight();
       bool good = (module) ? module->compiles : true;
-      // Fill the rectangle with either Green or Red.
-      NVGcolor main_color = (good ? SCHEME_GREEN : color::RED);
+      // Fill the rectangle with either blue or orange.
+      // For color blind users, these are better choices than green/red.
+      NVGcolor main_color = (good ? SCHEME_BLUE : SCHEME_ORANGE);
       nvgBeginPath(args.vg);
       nvgRect(args.vg, 0.5, 0.5,
               bounding_box.x - 1.0f, bounding_box.y - 1.0f);
@@ -893,8 +894,7 @@ struct ErrorWidget : widget::OpaqueWidget {
 
       std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
       if (font) {
-        // WHITE is really hard to read on YELLOW.
-        nvgFillColor(args.vg, color::BLACK);
+        nvgFillColor(args.vg,  (good ? color::WHITE : color::BLACK));
         nvgFontSize(args.vg, 13);
         nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
         nvgFontFaceId(args.vg, font->handle);
