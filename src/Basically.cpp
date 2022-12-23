@@ -901,9 +901,10 @@ struct ErrorWidget : widget::OpaqueWidget {
       Rect r = box.zeroPos();
       Vec bounding_box = r.getBottomRight();
       bool good = (module) ? module->compiles : true;
+      bool blue_orange = (module) ? module->blue_orange_light : false;
       // Fill the rectangle with either blue or orange.
       // For color blind users, these are better choices than green/red.
-      NVGcolor main_color = module->blue_orange_light ?
+      NVGcolor main_color = blue_orange ?
           (good ? SCHEME_BLUE : SCHEME_ORANGE) :
           (good ? SCHEME_GREEN : color::RED);
       nvgBeginPath(args.vg);
@@ -914,7 +915,7 @@ struct ErrorWidget : widget::OpaqueWidget {
 
       std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
       if (font) {
-        nvgFillColor(args.vg,  module->blue_orange_light ?
+        nvgFillColor(args.vg,  blue_orange ?
            (good ? color::WHITE : color::BLACK) :
            (good ? color::BLACK : color::WHITE));
         nvgFontSize(args.vg, 13);
