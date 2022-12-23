@@ -150,8 +150,71 @@ void testAdds(int size) {
   std::cout << diff.count() << " ms -- unordered_map of size " << size << std::endl;
 }
 
+// Compare access times in an unordered_map for int's vs strings.
+void testKeyType(int size) {
+  // Let's assume that there is NOT a gesture (like DIM) for telling
+  // me how big the array is.
+  std::unordered_map<int, float> unord_int;
+  std::unordered_map<std::string, float> unord_str;
+//  std::unordered_map<int, std::unordered_map<int, float>*> unord_int2;
+  std::unordered_map<std::string, float> unord_str2;
+
+  for (int i = 0; i < size; i++) {
+    float value = i * 0.00001;
+    unord_int[i] = value;
+    unord_str[std::to_string(i)] = value;
+  }
+
+  for (int i = 0; i < (size / 2); i++) {
+    for (int j = 0; j < (size / 2); j++) {
+      float value = i * j * 0.00001;
+      //unord_int2[i][j] = value;
+      unord_str2[std::to_string(i) + "|" + std::to_string(j)] = value;
+    }
+  }
+
+  time_point<Clock> start = Clock::now();
+  for (int i = 0; i < 10000000; i++) {
+    float foo = unord_int[i % size];
+  }
+  time_point<Clock> end = Clock::now();
+  milliseconds diff = duration_cast<milliseconds>(end - start);
+  std::cout << diff.count() << " ms -- unord_int of size " << size << std::endl;
+
+  start = Clock::now();
+  for (int i = 0; i < 10000000; i++) {
+    std::string key = std::to_string(i % size);
+    float foo = unord_str[key];
+  }
+  end = Clock::now();
+  diff = duration_cast<milliseconds>(end - start);
+  std::cout << diff.count() << " ms -- unord_str of size " << size << std::endl;
+
+  start = Clock::now();
+  for (int i = 0; i < 10000000; i++) {
+    std::string key = std::to_string(i % (size / 2)) + "|" +
+      std::to_string(i % (size / 2));
+    float foo = unord_str2[key];
+  }
+  end = Clock::now();
+  diff = duration_cast<milliseconds>(end - start);
+  std::cout << diff.count() << " ms -- unord_str2 of size " << size << std::endl;
+/*
+  start = Clock::now();
+  for (int i = 0; i < 10000000; i++) {
+    int key1 = i % (size / 2);
+    const std::unordered_map<int, float> &second = unord_int2[key1];
+    float foo = second[key1];
+  }
+  end = Clock::now();
+  diff = duration_cast<milliseconds>(end - start);
+  std::cout << diff.count() << " ms -- unord_str of size " << size << std::endl;
+*/
+}
+
 int main(int argc, char *argv[])
 {
+  /*
   testExpression(100);
   testExpression(1000);
   testExpression(10000);
@@ -163,5 +226,8 @@ int main(int argc, char *argv[])
   testAdds(10000);
   testAdds(100000);
   testAdds(1000000);
+  */
 
+  testKeyType(100);
+  testKeyType(1000);
 }
