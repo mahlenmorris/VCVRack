@@ -417,14 +417,18 @@ it easier to identify what each BASICally module is doing, especially when
 you've minimized the size.
 
 #### Screen Colors
-A small number of choices about text colors. There should be more, but
-changing the background color is not a simple as I expected.
+A small number of choices about text colors.
 
 #### Error Line Highlighting
 By default, if BASICally can't understand your code in its entirety, then it
 will attempt to highlight the line where it stopped understanding your code.
 It's not terribly accurate, but gives you a sense of where to change your code.
 If the red highlight is distracting, you can turn it off here.
+
+#### Colorblind-friendly status light
+By default, BASICally uses green and red for the Good/Fix light. In hopes of
+making the distinction clearer to more people, this option turns those colors to
+blue and orange, and makes the error line highlighting orange as well.
 
 #### Syntax/Math Hints
 Just in case you're in the middle of coding and you don't want to look up
