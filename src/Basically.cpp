@@ -123,7 +123,7 @@ struct Basically : Module {
     float Random(float min_value, float max_value) override {
       return rescale(rack::random::uniform(), 0.0, 1.0, min_value, max_value);
     }
-    float Normal(float mean, float std_dev) {
+    float Normal(float mean, float std_dev) override {
       return rack::random::normal() * std_dev + mean;
     }
   };
@@ -195,6 +195,9 @@ struct Basically : Module {
     if (allow_error_highlight) {
       json_object_set_new(rootJ, "allow_error_highlight", json_integer(1));
     }
+    if (blue_orange_light) {
+      json_object_set_new(rootJ, "blue_orange_light", json_integer(1));
+    }
     json_object_set_new(rootJ, "screen_colors", json_integer(screen_colors));
     if (title_text.length() > 0) {
       json_object_set_new(rootJ, "title_text",
@@ -226,6 +229,12 @@ struct Basically : Module {
       allow_error_highlight = json_integer_value(error_highlightJ) == 1;
     } else {
       allow_error_highlight = false;
+    }
+    json_t* blue_orange_lightJ = json_object_get(rootJ, "blue_orange_light");
+    if (blue_orange_lightJ) {
+      blue_orange_light = json_integer_value(blue_orange_lightJ) == 1;
+    } else {
+      blue_orange_light = false;
     }
   }
 
@@ -506,6 +515,7 @@ struct Basically : Module {
   bool compiles = false;
   bool running = false;
   bool allow_error_highlight = true;
+  bool blue_orange_light = false;
   Driver drv;
   ProductionEnvironment* environment;
   std::vector<PCode> pcodes;  // What actually gets executed.
@@ -723,7 +733,8 @@ struct BasicallyTextField : STTextField {
           int topFudge = textOffset.y + 5;  // I'm just trying things until they work.
           // textOffset is in ledDisplayTextField.
           nvgRect(args.vg, 0, topFudge + 12 * (line_number - 1), box.size.x, 12);
-          nvgFillColor(args.vg, nvgRGB(178, 88, 88));
+          nvgFillColor(args.vg,
+              module->blue_orange_light ? SCHEME_ORANGE : nvgRGB(128, 0, 0));
           nvgFill(args.vg);
         }
         if (module->cursor_override >= 0) {
@@ -892,7 +903,9 @@ struct ErrorWidget : widget::OpaqueWidget {
       bool good = (module) ? module->compiles : true;
       // Fill the rectangle with either blue or orange.
       // For color blind users, these are better choices than green/red.
-      NVGcolor main_color = (good ? SCHEME_BLUE : SCHEME_ORANGE);
+      NVGcolor main_color = module->blue_orange_light ?
+          (good ? SCHEME_BLUE : SCHEME_ORANGE) :
+          (good ? SCHEME_GREEN : color::RED);
       nvgBeginPath(args.vg);
       nvgRect(args.vg, 0.5, 0.5,
               bounding_box.x - 1.0f, bounding_box.y - 1.0f);
@@ -901,7 +914,9 @@ struct ErrorWidget : widget::OpaqueWidget {
 
       std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
       if (font) {
-        nvgFillColor(args.vg,  (good ? color::WHITE : color::BLACK));
+        nvgFillColor(args.vg,  module->blue_orange_light ?
+           (good ? color::WHITE : color::BLACK) :
+           (good ? color::BLACK : color::WHITE));
         nvgFontSize(args.vg, 13);
         nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
         nvgFontFaceId(args.vg, font->handle);
@@ -1098,13 +1113,17 @@ struct BasicallyWidget : ModuleWidget {
                                       0xffffff000000,
                                       0xffd714000000,
                                       0xffc000000000,
-                                      0x000000ffffff
+                                      0x29b2ef000000,
+                                      0x000000ffffff,
+                                      0x29b2efffffff
                                     };
     std::string color_names[] = {"Green on Black",
                                  "White on Black",
                                  "Yellow on Black (like Notes)",
                                  "Amber on Black",
-                                 "Black on White"};
+                                 "Blue on Black",
+                                 "Black on White",
+                                 "Blue on White"};
     for (int i = 0; i < std::end(default_colors) - std::begin(default_colors);
          i++) {
       long long int scheme = default_colors[i];
@@ -1117,6 +1136,8 @@ struct BasicallyWidget : ModuleWidget {
     menu->addChild(new MenuSeparator);
     menu->addChild(createBoolPtrMenuItem("Highlight error line", "",
                                           &module->allow_error_highlight));
+    menu->addChild(createBoolPtrMenuItem("Colorblind-friendly status light", "",
+                                          &module->blue_orange_light));
 
     // Add syntax insertions.
     menu->addChild(new MenuSeparator);
