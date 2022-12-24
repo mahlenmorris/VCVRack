@@ -413,6 +413,7 @@ namespace yy {
       // exp
       char dummy1[sizeof (Expression)];
 
+      // array_assignment
       // assignment
       // continue_statement
       // exit_statement
@@ -462,6 +463,8 @@ namespace yy {
       // "/"
       // "("
       // ")"
+      // "["
+      // "]"
       // ","
       // "identifier"
       // "note"
@@ -558,18 +561,20 @@ namespace yy {
     TOK_SLASH = 33,                // "/"
     TOK_LPAREN = 34,               // "("
     TOK_RPAREN = 35,               // ")"
-    TOK_COMMA = 36,                // ","
-    TOK_IDENTIFIER = 37,           // "identifier"
-    TOK_NUMBER = 38,               // "number"
-    TOK_NOTE = 39,                 // "note"
-    TOK_IN_PORT = 40,              // "in_port"
-    TOK_OUT_PORT = 41,             // "out_port"
-    TOK_ZEROARGFUNC = 42,          // "zeroargfunc"
-    TOK_ONEARGFUNC = 43,           // "oneargfunc"
-    TOK_ONEPORTFUNC = 44,          // "oneportfunc"
-    TOK_TWOARGFUNC = 45,           // "twoargfunc"
-    TOK_COMPARISON = 46,           // "comparison"
-    TOK_NEG = 47                   // NEG
+    TOK_LBRACKET = 36,             // "["
+    TOK_RBRACKET = 37,             // "]"
+    TOK_COMMA = 38,                // ","
+    TOK_IDENTIFIER = 39,           // "identifier"
+    TOK_NUMBER = 40,               // "number"
+    TOK_NOTE = 41,                 // "note"
+    TOK_IN_PORT = 42,              // "in_port"
+    TOK_OUT_PORT = 43,             // "out_port"
+    TOK_ZEROARGFUNC = 44,          // "zeroargfunc"
+    TOK_ONEARGFUNC = 45,           // "oneargfunc"
+    TOK_ONEPORTFUNC = 46,          // "oneportfunc"
+    TOK_TWOARGFUNC = 47,           // "twoargfunc"
+    TOK_COMPARISON = 48,           // "comparison"
+    TOK_NEG = 49                   // NEG
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -586,7 +591,7 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 48, ///< Number of tokens.
+        YYNTOKENS = 50, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -624,30 +629,33 @@ namespace yy {
         S_SLASH = 33,                            // "/"
         S_LPAREN = 34,                           // "("
         S_RPAREN = 35,                           // ")"
-        S_COMMA = 36,                            // ","
-        S_IDENTIFIER = 37,                       // "identifier"
-        S_NUMBER = 38,                           // "number"
-        S_NOTE = 39,                             // "note"
-        S_IN_PORT = 40,                          // "in_port"
-        S_OUT_PORT = 41,                         // "out_port"
-        S_ZEROARGFUNC = 42,                      // "zeroargfunc"
-        S_ONEARGFUNC = 43,                       // "oneargfunc"
-        S_ONEPORTFUNC = 44,                      // "oneportfunc"
-        S_TWOARGFUNC = 45,                       // "twoargfunc"
-        S_COMPARISON = 46,                       // "comparison"
-        S_NEG = 47,                              // NEG
-        S_YYACCEPT = 48,                         // $accept
-        S_program = 49,                          // program
-        S_statements = 50,                       // statements
-        S_assignment = 51,                       // assignment
-        S_continue_statement = 52,               // continue_statement
-        S_exit_statement = 53,                   // exit_statement
-        S_for_statement = 54,                    // for_statement
-        S_elseif_group = 55,                     // elseif_group
-        S_elseif_clause = 56,                    // elseif_clause
-        S_if_statement = 57,                     // if_statement
-        S_wait_statement = 58,                   // wait_statement
-        S_exp = 59                               // exp
+        S_LBRACKET = 36,                         // "["
+        S_RBRACKET = 37,                         // "]"
+        S_COMMA = 38,                            // ","
+        S_IDENTIFIER = 39,                       // "identifier"
+        S_NUMBER = 40,                           // "number"
+        S_NOTE = 41,                             // "note"
+        S_IN_PORT = 42,                          // "in_port"
+        S_OUT_PORT = 43,                         // "out_port"
+        S_ZEROARGFUNC = 44,                      // "zeroargfunc"
+        S_ONEARGFUNC = 45,                       // "oneargfunc"
+        S_ONEPORTFUNC = 46,                      // "oneportfunc"
+        S_TWOARGFUNC = 47,                       // "twoargfunc"
+        S_COMPARISON = 48,                       // "comparison"
+        S_NEG = 49,                              // NEG
+        S_YYACCEPT = 50,                         // $accept
+        S_program = 51,                          // program
+        S_statements = 52,                       // statements
+        S_array_assignment = 53,                 // array_assignment
+        S_assignment = 54,                       // assignment
+        S_continue_statement = 55,               // continue_statement
+        S_exit_statement = 56,                   // exit_statement
+        S_for_statement = 57,                    // for_statement
+        S_elseif_group = 58,                     // elseif_group
+        S_elseif_clause = 59,                    // elseif_clause
+        S_if_statement = 60,                     // if_statement
+        S_wait_statement = 61,                   // wait_statement
+        S_exp = 62                               // exp
       };
     };
 
@@ -688,6 +696,7 @@ namespace yy {
         value.move< Expression > (std::move (that.value));
         break;
 
+      case symbol_kind::S_array_assignment: // array_assignment
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_exit_statement: // exit_statement
@@ -740,6 +749,8 @@ namespace yy {
       case symbol_kind::S_SLASH: // "/"
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
+      case symbol_kind::S_LBRACKET: // "["
+      case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_COMMA: // ","
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_NOTE: // "note"
@@ -874,6 +885,7 @@ switch (yykind)
         value.template destroy< Expression > ();
         break;
 
+      case symbol_kind::S_array_assignment: // array_assignment
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_exit_statement: // exit_statement
@@ -926,6 +938,8 @@ switch (yykind)
       case symbol_kind::S_SLASH: // "/"
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
+      case symbol_kind::S_LBRACKET: // "["
+      case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_COMMA: // ","
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_NOTE: // "note"
@@ -1657,6 +1671,36 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_LBRACKET (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_LBRACKET, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LBRACKET (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_LBRACKET, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_RBRACKET (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_RBRACKET, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_RBRACKET (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_RBRACKET, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_COMMA (std::string v, location_type l)
       {
         return symbol_type (token::TOK_COMMA, std::move (v), std::move (l));
@@ -2178,8 +2222,8 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 256,     ///< Last index in yytable_.
-      yynnts_ = 12,  ///< Number of nonterminal symbols.
+      yylast_ = 270,     ///< Last index in yytable_.
+      yynnts_ = 13,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
 
@@ -2209,6 +2253,7 @@ switch (yykind)
         value.copy< Expression > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_array_assignment: // array_assignment
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_exit_statement: // exit_statement
@@ -2261,6 +2306,8 @@ switch (yykind)
       case symbol_kind::S_SLASH: // "/"
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
+      case symbol_kind::S_LBRACKET: // "["
+      case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_COMMA: // ","
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_NOTE: // "note"
@@ -2309,6 +2356,7 @@ switch (yykind)
         value.move< Expression > (YY_MOVE (s.value));
         break;
 
+      case symbol_kind::S_array_assignment: // array_assignment
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_exit_statement: // exit_statement
@@ -2361,6 +2409,8 @@ switch (yykind)
       case symbol_kind::S_SLASH: // "/"
       case symbol_kind::S_LPAREN: // "("
       case symbol_kind::S_RPAREN: // ")"
+      case symbol_kind::S_LBRACKET: // "["
+      case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_COMMA: // ","
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_NOTE: // "note"
@@ -2440,7 +2490,7 @@ switch (yykind)
 
 
 } // yy
-#line 2444 "parser.hh"
+#line 2494 "parser.hh"
 
 
 

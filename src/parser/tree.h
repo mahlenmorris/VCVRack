@@ -116,6 +116,7 @@ struct Statements;
 
 struct Line {
   enum Type {
+    ARRAY_ASSIGNMENT, // array_ptr[expr1] = expr2
     ASSIGNMENT,  // str1 = expr1
     CONTINUE,    // continue str1
     ELSEIF,      // elseif expr1 then state1
@@ -128,14 +129,19 @@ struct Line {
   Type type;
   std::string str1;
 
-  // When assigning to a variable/port.
+  // When assigning to a variable/port/array.
   float* variable_ptr;
   PortPointer assign_port;
+  std::vector<float>* array_ptr;
 
   Expression expr1, expr2, expr3;
   std::vector<Statements> statements;
 
-  // identifiers on both right hand and left hand side of := look the same.
+  static Line ArrayAssignment(const std::string &variable_name,
+                              const Expression &index,
+                              const Expression &value, Driver* driver);
+
+  // identifiers on both right hand and left hand side of = look the same.
   // So the lhs will get turned into a VariableExpression. We need to pull
   // the name out of it.
   static Line Assignment(const std::string &variable_name,

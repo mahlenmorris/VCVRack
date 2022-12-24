@@ -68,6 +68,8 @@
   SLASH   "/"
   LPAREN  "("
   RPAREN  ")"
+  LBRACKET "["
+  RBRACKET "]"
   COMMA   ","
 ;
 
@@ -84,6 +86,7 @@
 %nterm <Expression> exp
 %nterm <Statements> elseif_group
 %nterm <Statements> statements
+%nterm <Line> array_assignment
 %nterm <Line> assignment
 %nterm <Line> continue_statement
 %nterm <Line> elseif_clause
@@ -102,12 +105,16 @@ program:
 
 statements:
   %empty                          {}
+| statements array_assignment     { $$ = $1.add($2); }
 | statements assignment           { $$ = $1.add($2); }
 | statements continue_statement   { $$ = $1.add($2); }
 | statements exit_statement       { $$ = $1.add($2); }
 | statements for_statement        { $$ = $1.add($2); }
 | statements if_statement         { $$ = $1.add($2); }
 | statements wait_statement       { $$ = $1.add($2); }
+
+array_assignment:
+  "identifier" "[" exp "]" "=" exp  { $$ = Line::ArrayAssignment($1, $3, $6, &drv); }
 
 assignment:
   "identifier" "=" exp  { $$ = Line::Assignment($1, $3, &drv); }

@@ -123,6 +123,8 @@ blank [ \t\r]
 "/"        return yy::parser::make_SLASH  (yytext, loc);
 "("        return yy::parser::make_LPAREN (yytext, loc);
 ")"        return yy::parser::make_RPAREN (yytext, loc);
+"["        return yy::parser::make_LBRACKET (yytext, loc);
+"]"        return yy::parser::make_RBRACKET (yytext, loc);
 "="        return yy::parser::make_ASSIGN (yytext, loc);
 ","        return yy::parser::make_COMMA  (yytext, loc);
 "all"      return yy::parser::make_ALL    (yytext, loc);

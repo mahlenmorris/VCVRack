@@ -320,6 +320,18 @@ Expression ExpressionFactory::Variable(char* var_name, Driver* driver) {
   return Variable(std::string(var_name).c_str(), driver);
 }
 
+Line Line::ArrayAssignment(const std::string &variable_name,
+                     const Expression &index,
+                     const Expression &value, Driver* driver) {
+  Line line;
+  line.type = ARRAY_ASSIGNMENT;
+  line.str1 = variable_name;  // Not required, but handy for troubleshooting.
+  line.array_ptr = driver->GetArrayFromName(variable_name);
+  line.expr1 = index;
+  line.expr2 = value;
+  return line;
+}
+
 Line Line::Assignment(const std::string &variable_name, const Expression &expr,
                       Driver* driver) {
   Line line;
