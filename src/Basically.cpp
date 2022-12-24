@@ -387,6 +387,11 @@ struct Basically : Module {
     while (running && !waiting) {
       PCode* pcode = &(pcodes[current_line]);
       switch (pcode->type) {
+        case PCode::ARRAY_ASSIGNMENT: {
+          pcode->DoArrayAssignment();
+          current_line++;
+        }
+        break;
         case PCode::ASSIGNMENT: {
           float rhs = pcode->expr1.Compute();
           SetVariableValue(pcode->variable_ptr, pcode->assign_port, rhs);

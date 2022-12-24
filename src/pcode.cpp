@@ -4,6 +4,7 @@
 // First order of business is to turn a vector of Lines (which may have
 // nested Lines) into a flat vector of PCodes.
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
 #include "parser/tree.h"
@@ -14,6 +15,22 @@ PCode PCode::Wait(const Expression &expr1) {
   new_pcode.type = PCode::WAIT;
   new_pcode.expr1 = expr1;
   return new_pcode;
+}
+
+void PCode::DoArrayAssignment() {
+  int index = (int) floor(expr1.Compute());
+  // Nothing we can do when index is negative, and we have no runtime
+  // error mechanism.
+  if (index < 0) return;
+  if (index < (int) array_ptr->size()) {
+    // Go ahead and assign.
+    array_ptr->at(index) = expr2.Compute();
+    return;
+  }
+  // Need to build out the vector until we reach the point before we can add
+  // this value. NB: this has potential to wreck responsiveness.
+  array_ptr->resize(index + 1, 0.0f);
+  array_ptr->at(index) = expr2.Compute();
 }
 
 PCode PCodeTranslator::Assignment(const std::string str1, float* variable_ptr,
@@ -84,6 +101,15 @@ void PCodeTranslator::AddElseifs(std::vector<int>* jump_positions,
 void PCodeTranslator::AddLineToPCode(const Line &line,
                                      const Exit &innermost_loop) {
   switch (line.type) {
+    case Line::ARRAY_ASSIGNMENT: {
+      PCode assign;
+      assign.type = PCode::ARRAY_ASSIGNMENT;
+      assign.array_ptr = line.array_ptr;
+      assign.expr1 = line.expr1;
+      assign.expr2 = line.expr2;
+      pcodes->push_back(assign);
+    }
+    break;
     case Line::ASSIGNMENT: {
       pcodes->push_back(Assignment(
           line.str1, line.variable_ptr, line.assign_port, line.expr1));
