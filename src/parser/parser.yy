@@ -162,6 +162,7 @@ exp:
 | "in_port"     { $$ = drv.factory.Variable($1, &drv); }
 | "out_port"    { $$ = drv.factory.Variable($1, &drv); }
 | "identifier"  { $$ = drv.factory.Variable($1, &drv); }
+| "identifier" "[" exp "]" { $$ = drv.factory.ArrayVariable($1, $3, &drv); }
 | exp "+" exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
 | exp "-" exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
 | exp "*" exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }

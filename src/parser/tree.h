@@ -9,6 +9,8 @@
 
 #include "environment.h"
 
+typedef std::vector<float> STArray;
+
 class Expression;
 class Driver;
 // Base class for computing expressions.
@@ -18,6 +20,7 @@ class Expression {
     NUMBER,  // 3, 4.5, -283823
     BINOP,   // plus, times
     VARIABLE, // in1, out1, foo
+    ARRAY_VARIABLE, // array[subexpressions[0]]
     NOT,      // not bool
     ZEROARGFUNC, // operation
     ONEARGFUNC, // operation (subexpressions[0])
@@ -61,6 +64,8 @@ class Expression {
   // But other variables are Input or Output ports in the UI. We can avoid
   // always updating them by pointing to their location in the Environment.
   PortPointer port;
+  // And ARRAY_VARIABLE has a pointer to the array it getting data from.
+  STArray* array_ptr;
   Environment* env = nullptr;
 
   std::string name;
@@ -96,14 +101,17 @@ class ExpressionFactory {
   Expression Number(float the_value);
   Expression ZeroArgFunc(const std::string &func_name);
   Expression OneArgFunc(const std::string &func_name,
-                               const Expression &arg1);
+                        const Expression &arg1);
   Expression OnePortFunc(const std::string &func_name, const std::string &port1,
                          Driver* driver);
   Expression TwoArgFunc(const std::string &func_name,
-                               const Expression &arg1, const Expression &arg2);
+                        const Expression &arg1, const Expression &arg2);
   Expression CreateBinOp(const Expression &lhs,
-                                const std::string &op_string,
-                                const Expression &rhs);
+                         const std::string &op_string,
+                         const Expression &rhs);
+  Expression ArrayVariable(const std::string &array_name,
+                           const Expression &arg1,
+                           Driver* driver);
   Expression Variable(const char *var_name, Driver* driver);
   // The parser seems to need many variants of Variable.
   Expression Variable(const std::string &expr, Driver* driver);

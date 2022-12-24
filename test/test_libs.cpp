@@ -70,6 +70,13 @@ TEST(ParserTest, Arrays)
     EXPECT_EQ("a", drv.lines[0].str1);
     EXPECT_EQ(4, drv.lines[0].expr1.Compute());
     EXPECT_EQ(6, drv.lines[0].expr2.Compute());
+
+    EXPECT_EQ(0, drv.parse("b = a[4]"));
+    ASSERT_EQ(1, drv.lines.size());
+
+    EXPECT_EQ(0, drv.parse("b = a[-3]"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(0, drv.lines[0].expr1.Compute());
 }
 
 TEST(ParserTest, SimpleTest)

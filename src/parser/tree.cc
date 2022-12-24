@@ -60,6 +60,14 @@ float Expression::Compute() {
   switch (type) {
     case NUMBER: return float_value;
     case BINOP: return binop_compute();
+    case ARRAY_VARIABLE: {
+      int index = (int) floor(subexpressions[0].Compute());
+      if ((index < 0) || (index >= (int) array_ptr->size())) {
+        return 0.0f;  // The default value if not in the array.
+      }
+      return array_ptr->at(index);
+    }
+    break;
     case VARIABLE: {
       if (port.port_type == PortPointer::NOT_PORT) {
         return *variable_ptr;
@@ -105,6 +113,7 @@ bool Expression::Volatile() {
       return lhs || rhs;
     }
     break;
+    case ARRAY_VARIABLE: return subexpressions[0].Volatile();
     case VARIABLE: {
       return port.port_type == PortPointer::INPUT;
     }
@@ -294,7 +303,17 @@ Expression ExpressionFactory::CreateBinOp(const Expression &lhs,
   return ex;
 }
 
-// TODO: Now that compiler knows if it's a port or not, could
+Expression ExpressionFactory::ArrayVariable(const std::string &array_name,
+                                            const Expression &arg1,
+                                            Driver* driver) {
+  Expression ex;
+  ex.type = Expression::ARRAY_VARIABLE;
+  ex.array_ptr = driver->GetArrayFromName(array_name);
+  ex.subexpressions.push_back(arg1);
+  return ex;
+}
+
+// TODO: Now that compiler knows if var_name is a port or not, could
 // avoid deciding here. Or make a new kind of Expression called PORT!?
 Expression ExpressionFactory::Variable(const char *var_name, Driver* driver) {
   Expression ex;

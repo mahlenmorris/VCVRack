@@ -46,8 +46,6 @@ struct Error {
   }
 };
 
-typedef std::vector<float> STArray;
-
 // Conducting the whole scanning and parsing of Calc++.
 class Driver
 {

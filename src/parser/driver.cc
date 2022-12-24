@@ -30,6 +30,10 @@ Driver::~Driver() {
   for (auto entry : symbol_floats) {
     delete entry.second;
   }
+  // And any arrays.
+  for (auto entry : symbol_arrays) {
+    delete entry.second;
+  }
 }
 
 // Ports are limited in number, so the module adds them before any
