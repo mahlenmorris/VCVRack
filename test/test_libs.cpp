@@ -77,6 +77,12 @@ TEST(ParserTest, Arrays)
     EXPECT_EQ(0, drv.parse("b = a[-3]"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(0, drv.lines[0].expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("a[4] = {1, 0, 1, sin(in1)}"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ("a", drv.lines[0].str1);
+    EXPECT_EQ(4, drv.lines[0].expr1.Compute());
+    EXPECT_EQ(4, drv.lines[0].expr_list.size());
 }
 
 TEST(ParserTest, SimpleTest)

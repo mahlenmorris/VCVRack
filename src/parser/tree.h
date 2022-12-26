@@ -120,6 +120,27 @@ class ExpressionFactory {
   static std::unordered_map<std::string, Expression::Operation> string_to_operation;
 };
 
+struct ExpressionList {
+  std::vector<Expression> expressions;
+
+  ExpressionList() { }
+  ExpressionList(Expression new_expr) {
+    expressions.push_back(new_expr);
+  }
+
+  ExpressionList add(Expression new_expr) {
+    expressions.push_back(new_expr);
+    return *this;
+  }
+  int size() {
+    return expressions.size();
+  }
+  friend std::ostream& operator<<(std::ostream& os, ExpressionList exprs) {
+    os << "ExpressionList(" << std::to_string(exprs.size()) << " Expressions )";
+    return os;
+  }
+};
+
 struct Statements;
 
 struct Line {
@@ -143,11 +164,16 @@ struct Line {
   std::vector<float>* array_ptr;
 
   Expression expr1, expr2, expr3;
+  ExpressionList expr_list;
   std::vector<Statements> statements;
 
   static Line ArrayAssignment(const std::string &variable_name,
                               const Expression &index,
                               const Expression &value, Driver* driver);
+
+  static Line ArrayAssignment(const std::string &variable_name,
+                              const Expression &index,
+                              const ExpressionList &values, Driver* driver);
 
   // identifiers on both right hand and left hand side of = look the same.
   // So the lhs will get turned into a VariableExpression. We need to pull
@@ -193,9 +219,10 @@ struct Statements {
     return lines.size();
   }
   friend std::ostream& operator<<(std::ostream& os, Statements statements) {
-    os << "Statements(" << std::to_string(statements.lines.size()) << " statements )";
+    os << "Statements(" << std::to_string(statements.size()) << " statements )";
     return os;
   }
 };
+
 
 #endif // TREE_HH

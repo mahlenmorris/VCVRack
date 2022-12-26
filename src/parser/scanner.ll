@@ -125,6 +125,8 @@ blank [ \t\r]
 ")"        return yy::parser::make_RPAREN (yytext, loc);
 "["        return yy::parser::make_LBRACKET (yytext, loc);
 "]"        return yy::parser::make_RBRACKET (yytext, loc);
+"{"        return yy::parser::make_LBRACE (yytext, loc);
+"}"        return yy::parser::make_RBRACE (yytext, loc);
 "="        return yy::parser::make_ASSIGN (yytext, loc);
 ","        return yy::parser::make_COMMA  (yytext, loc);
 "all"      return yy::parser::make_ALL    (yytext, loc);

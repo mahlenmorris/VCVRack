@@ -351,6 +351,18 @@ Line Line::ArrayAssignment(const std::string &variable_name,
   return line;
 }
 
+Line Line::ArrayAssignment(const std::string &variable_name,
+                     const Expression &index,
+                     const ExpressionList &values, Driver* driver) {
+  Line line;
+  line.type = ARRAY_ASSIGNMENT;
+  line.str1 = variable_name;  // Not required, but handy for troubleshooting.
+  line.array_ptr = driver->GetArrayFromName(variable_name);
+  line.expr1 = index;
+  line.expr_list = values;
+  return line;
+}
+
 Line Line::Assignment(const std::string &variable_name, const Expression &expr,
                       Driver* driver) {
   Line line;

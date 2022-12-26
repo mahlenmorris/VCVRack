@@ -88,7 +88,7 @@ void PCodeTranslator::AddElseifs(std::vector<int>* jump_positions,
     }
     // If we're not doing the last elseif, then we'll need to add a JUMP to
     // the end of the whole statement.
-    if (!last_falls_through || ((int) elseifs.lines.size()) - i > 1) {
+    if (!last_falls_through || ((int) elseifs.size()) - i > 1) {
       PCode jump_over_elseifs;
       jump_over_elseifs.type = PCode::RELATIVE_JUMP;
       pcodes->push_back(jump_over_elseifs);
@@ -194,7 +194,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       }
       // All JUMP's that need to be updated to point past the whole structure.
       std::vector<int> jump_positions;
-      if (line.statements[1].lines.size() > 0) {
+      if (line.statements[1].size() > 0) {
         // There is at least one "elseif" clause.
         // Need to put a JUMP here so the THEN case will passover the elseifs
         // I'm about to add.
