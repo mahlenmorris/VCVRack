@@ -7,6 +7,9 @@
 #include <cmath>
 #include <vector>
 
+
+#include "plugin.hpp"
+
 #include "parser/tree.h"
 #include "pcode.h"
 
@@ -22,15 +25,31 @@ void PCode::DoArrayAssignment() {
   // Nothing we can do when index is negative, and we have no runtime
   // error mechanism.
   if (index < 0) return;
-  if (index < (int) array_ptr->size()) {
-    // Go ahead and assign.
-    array_ptr->at(index) = expr2.Compute();
-    return;
+  // The logic is different if we are assigning a single value vs. a list.
+  // With a list, we want to ensure that _all_ of the positions we will add to
+  // are available before we start.
+  int required_size = index + 1;
+  if (expr_list.size() > 0) {
+    // foo[1] = { 6, 5, 4, 3} -> foo[1] = 6, foo[2] = 5, ...
+    required_size = index + expr_list.size() + 1;
   }
-  // Need to build out the vector until we reach the point before we can add
-  // this value. NB: this has potential to wreck responsiveness.
-  array_ptr->resize(index + 1, 0.0f);
-  array_ptr->at(index) = expr2.Compute();
+  if (required_size > (int) array_ptr->size()) {
+    // Need to build out the vector until we reach the point before we can add
+    // this value. NB: this has potential to wreck responsiveness.
+    // TODO: should i ALSO be testing capacity()?
+    // Note that adding this call to reserve() had very bad CPU results.
+    //array_ptr->reserve(required_size);
+    array_ptr->resize(required_size, 0.0f);
+  }
+
+  // Go ahead and assign.
+  if (expr_list.size() > 0) {
+    for (int i = 0; i < expr_list.size(); i++) {
+      array_ptr->at(index + i) = expr_list.expressions[i].Compute();
+    }
+  } else {
+    array_ptr->at(index) = expr2.Compute();
+  }
 }
 
 PCode PCodeTranslator::Assignment(const std::string str1, float* variable_ptr,
@@ -107,6 +126,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       assign.array_ptr = line.array_ptr;
       assign.expr1 = line.expr1;
       assign.expr2 = line.expr2;
+      assign.expr_list = line.expr_list;
       pcodes->push_back(assign);
     }
     break;

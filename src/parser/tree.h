@@ -132,7 +132,7 @@ struct ExpressionList {
     expressions.push_back(new_expr);
     return *this;
   }
-  int size() {
+  int size() const {
     return expressions.size();
   }
   friend std::ostream& operator<<(std::ostream& os, ExpressionList exprs) {
@@ -215,7 +215,7 @@ struct Statements {
     lines.push_back(new_line);
     return *this;
   }
-  int size() {
+  int size() const {
     return lines.size();
   }
   friend std::ostream& operator<<(std::ostream& os, Statements statements) {
