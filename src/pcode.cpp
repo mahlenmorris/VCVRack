@@ -4,7 +4,11 @@
 // First order of business is to turn a vector of Lines (which may have
 // nested Lines) into a flat vector of PCodes.
 #include <algorithm>
+#include <cmath>
 #include <vector>
+
+
+#include "plugin.hpp"
 
 #include "parser/tree.h"
 #include "pcode.h"
@@ -14,6 +18,38 @@ PCode PCode::Wait(const Expression &expr1) {
   new_pcode.type = PCode::WAIT;
   new_pcode.expr1 = expr1;
   return new_pcode;
+}
+
+void PCode::DoArrayAssignment() {
+  int index = (int) floor(expr1.Compute());
+  // Nothing we can do when index is negative, and we have no runtime
+  // error mechanism.
+  if (index < 0) return;
+  // The logic is different if we are assigning a single value vs. a list.
+  // With a list, we want to ensure that _all_ of the positions we will add to
+  // are available before we start.
+  int required_size = index + 1;
+  if (expr_list.size() > 0) {
+    // foo[1] = { 6, 5, 4, 3} -> foo[1] = 6, foo[2] = 5, ...
+    required_size = index + expr_list.size() + 1;
+  }
+  if (required_size > (int) array_ptr->size()) {
+    // Need to build out the vector until we reach the point before we can add
+    // this value. NB: this has potential to wreck responsiveness.
+    // TODO: should i ALSO be testing capacity()?
+    // Note that adding this call to reserve() had very bad CPU results.
+    //array_ptr->reserve(required_size);
+    array_ptr->resize(required_size, 0.0f);
+  }
+
+  // Go ahead and assign.
+  if (expr_list.size() > 0) {
+    for (int i = 0; i < expr_list.size(); i++) {
+      array_ptr->at(index + i) = expr_list.expressions[i].Compute();
+    }
+  } else {
+    array_ptr->at(index) = expr2.Compute();
+  }
 }
 
 PCode PCodeTranslator::Assignment(const std::string str1, float* variable_ptr,
@@ -71,7 +107,7 @@ void PCodeTranslator::AddElseifs(std::vector<int>* jump_positions,
     }
     // If we're not doing the last elseif, then we'll need to add a JUMP to
     // the end of the whole statement.
-    if (!last_falls_through || ((int) elseifs.lines.size()) - i > 1) {
+    if (!last_falls_through || ((int) elseifs.size()) - i > 1) {
       PCode jump_over_elseifs;
       jump_over_elseifs.type = PCode::RELATIVE_JUMP;
       pcodes->push_back(jump_over_elseifs);
@@ -84,6 +120,16 @@ void PCodeTranslator::AddElseifs(std::vector<int>* jump_positions,
 void PCodeTranslator::AddLineToPCode(const Line &line,
                                      const Exit &innermost_loop) {
   switch (line.type) {
+    case Line::ARRAY_ASSIGNMENT: {
+      PCode assign;
+      assign.type = PCode::ARRAY_ASSIGNMENT;
+      assign.array_ptr = line.array_ptr;
+      assign.expr1 = line.expr1;
+      assign.expr2 = line.expr2;
+      assign.expr_list = line.expr_list;
+      pcodes->push_back(assign);
+    }
+    break;
     case Line::ASSIGNMENT: {
       pcodes->push_back(Assignment(
           line.str1, line.variable_ptr, line.assign_port, line.expr1));
@@ -168,7 +214,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       }
       // All JUMP's that need to be updated to point past the whole structure.
       std::vector<int> jump_positions;
-      if (line.statements[1].lines.size() > 0) {
+      if (line.statements[1].size() > 0) {
         // There is at least one "elseif" clause.
         // Need to put a JUMP here so the THEN case will passover the elseifs
         // I'm about to add.

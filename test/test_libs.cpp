@@ -61,6 +61,30 @@ TEST(ParserTest, Comments)
     EXPECT_EQ(27, drv.lines[0].expr1.Compute());
 }
 
+TEST(ParserTest, Arrays)
+{
+    Driver drv;
+
+    EXPECT_EQ(0, drv.parse("a[4] = 6"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ("a", drv.lines[0].str1);
+    EXPECT_EQ(4, drv.lines[0].expr1.Compute());
+    EXPECT_EQ(6, drv.lines[0].expr2.Compute());
+
+    EXPECT_EQ(0, drv.parse("b = a[4]"));
+    ASSERT_EQ(1, drv.lines.size());
+
+    EXPECT_EQ(0, drv.parse("b = a[-3]"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(0, drv.lines[0].expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("a[4] = {1, 0, 1, sin(in1)}"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ("a", drv.lines[0].str1);
+    EXPECT_EQ(4, drv.lines[0].expr1.Compute());
+    EXPECT_EQ(4, drv.lines[0].expr_list.size());
+}
+
 TEST(ParserTest, SimpleTest)
 {
     Driver drv;
@@ -384,7 +408,7 @@ TEST(ParserTest, ErrorTest)
   err = drv.errors[0];
   EXPECT_EQ(3, err.line);
   EXPECT_EQ(6, err.column);
-  EXPECT_EQ("syntax error, unexpected end of file, expecting =", err.message);
+  EXPECT_EQ("syntax error, unexpected end of file, expecting = or [", err.message);
 
   EXPECT_EQ(1, drv.parse("out1 = 5 ' comment\nidjfi"));
   ASSERT_EQ(0, drv.lines.size());
@@ -392,7 +416,7 @@ TEST(ParserTest, ErrorTest)
   err = drv.errors[0];
   EXPECT_EQ(2, err.line);
   EXPECT_EQ(6, err.column);
-  EXPECT_EQ("syntax error, unexpected end of file, expecting =", err.message);
+  EXPECT_EQ("syntax error, unexpected end of file, expecting = or [", err.message);
 }
 
 TEST(ParserTest, NoteTest)

@@ -9,6 +9,8 @@
 
 #include "environment.h"
 
+typedef std::vector<float> STArray;
+
 class Expression;
 class Driver;
 // Base class for computing expressions.
@@ -18,6 +20,7 @@ class Expression {
     NUMBER,  // 3, 4.5, -283823
     BINOP,   // plus, times
     VARIABLE, // in1, out1, foo
+    ARRAY_VARIABLE, // array[subexpressions[0]]
     NOT,      // not bool
     ZEROARGFUNC, // operation
     ONEARGFUNC, // operation (subexpressions[0])
@@ -61,6 +64,8 @@ class Expression {
   // But other variables are Input or Output ports in the UI. We can avoid
   // always updating them by pointing to their location in the Environment.
   PortPointer port;
+  // And ARRAY_VARIABLE has a pointer to the array it getting data from.
+  STArray* array_ptr;
   Environment* env = nullptr;
 
   std::string name;
@@ -96,14 +101,17 @@ class ExpressionFactory {
   Expression Number(float the_value);
   Expression ZeroArgFunc(const std::string &func_name);
   Expression OneArgFunc(const std::string &func_name,
-                               const Expression &arg1);
+                        const Expression &arg1);
   Expression OnePortFunc(const std::string &func_name, const std::string &port1,
                          Driver* driver);
   Expression TwoArgFunc(const std::string &func_name,
-                               const Expression &arg1, const Expression &arg2);
+                        const Expression &arg1, const Expression &arg2);
   Expression CreateBinOp(const Expression &lhs,
-                                const std::string &op_string,
-                                const Expression &rhs);
+                         const std::string &op_string,
+                         const Expression &rhs);
+  Expression ArrayVariable(const std::string &array_name,
+                           const Expression &arg1,
+                           Driver* driver);
   Expression Variable(const char *var_name, Driver* driver);
   // The parser seems to need many variants of Variable.
   Expression Variable(const std::string &expr, Driver* driver);
@@ -112,10 +120,32 @@ class ExpressionFactory {
   static std::unordered_map<std::string, Expression::Operation> string_to_operation;
 };
 
+struct ExpressionList {
+  std::vector<Expression> expressions;
+
+  ExpressionList() { }
+  ExpressionList(Expression new_expr) {
+    expressions.push_back(new_expr);
+  }
+
+  ExpressionList add(Expression new_expr) {
+    expressions.push_back(new_expr);
+    return *this;
+  }
+  int size() const {
+    return expressions.size();
+  }
+  friend std::ostream& operator<<(std::ostream& os, ExpressionList exprs) {
+    os << "ExpressionList(" << std::to_string(exprs.size()) << " Expressions )";
+    return os;
+  }
+};
+
 struct Statements;
 
 struct Line {
   enum Type {
+    ARRAY_ASSIGNMENT, // array_ptr[expr1] = expr2
     ASSIGNMENT,  // str1 = expr1
     CONTINUE,    // continue str1
     ELSEIF,      // elseif expr1 then state1
@@ -128,14 +158,24 @@ struct Line {
   Type type;
   std::string str1;
 
-  // When assigning to a variable/port.
+  // When assigning to a variable/port/array.
   float* variable_ptr;
   PortPointer assign_port;
+  std::vector<float>* array_ptr;
 
   Expression expr1, expr2, expr3;
+  ExpressionList expr_list;
   std::vector<Statements> statements;
 
-  // identifiers on both right hand and left hand side of := look the same.
+  static Line ArrayAssignment(const std::string &variable_name,
+                              const Expression &index,
+                              const Expression &value, Driver* driver);
+
+  static Line ArrayAssignment(const std::string &variable_name,
+                              const Expression &index,
+                              const ExpressionList &values, Driver* driver);
+
+  // identifiers on both right hand and left hand side of = look the same.
   // So the lhs will get turned into a VariableExpression. We need to pull
   // the name out of it.
   static Line Assignment(const std::string &variable_name,
@@ -175,13 +215,14 @@ struct Statements {
     lines.push_back(new_line);
     return *this;
   }
-  int size() {
+  int size() const {
     return lines.size();
   }
   friend std::ostream& operator<<(std::ostream& os, Statements statements) {
-    os << "Statements(" << std::to_string(statements.lines.size()) << " statements )";
+    os << "Statements(" << std::to_string(statements.size()) << " statements )";
     return os;
   }
 };
+
 
 #endif // TREE_HH

@@ -20,6 +20,7 @@ structure are properly flattened into the whole program.
 
 struct PCode {
   enum Type {
+    ARRAY_ASSIGNMENT, // array_ptr[expr1] = (expr2|expr_list)
     ASSIGNMENT,  // *variable_ptr = expr1
     WAIT,        // wait expr1
     IFNOT,       // ifnot expr1 jump jump_count
@@ -34,7 +35,9 @@ struct PCode {
   // For assignments to variables/ports.
   float* variable_ptr;
   PortPointer assign_port;
+  STArray* array_ptr;
   Expression expr1, expr2;
+  ExpressionList expr_list;
   int jump_count;
   float step, limit;
   bool stop_execution;
@@ -51,6 +54,8 @@ struct PCode {
     state = NONE;
     stop_execution = false;
   };
+
+  void DoArrayAssignment();
 
   static PCode Wait(const Expression &expr1);
   std::string to_string();

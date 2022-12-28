@@ -68,6 +68,10 @@
   SLASH   "/"
   LPAREN  "("
   RPAREN  ")"
+  LBRACE  "{"
+  RBRACE  "}"
+  LBRACKET "["
+  RBRACKET "]"
   COMMA   ","
 ;
 
@@ -82,8 +86,10 @@
 %token <std::string> TWOARGFUNC "twoargfunc"
 %token <std::string> COMPARISON "comparison"
 %nterm <Expression> exp
+%nterm <ExpressionList> expression_list
 %nterm <Statements> elseif_group
 %nterm <Statements> statements
+%nterm <Line> array_assignment
 %nterm <Line> assignment
 %nterm <Line> continue_statement
 %nterm <Line> elseif_clause
@@ -102,12 +108,17 @@ program:
 
 statements:
   %empty                          {}
+| statements array_assignment     { $$ = $1.add($2); }
 | statements assignment           { $$ = $1.add($2); }
 | statements continue_statement   { $$ = $1.add($2); }
 | statements exit_statement       { $$ = $1.add($2); }
 | statements for_statement        { $$ = $1.add($2); }
 | statements if_statement         { $$ = $1.add($2); }
 | statements wait_statement       { $$ = $1.add($2); }
+
+array_assignment:
+  "identifier" "[" exp "]" "=" exp  { $$ = Line::ArrayAssignment($1, $3, $6, &drv); }
+| "identifier" "[" exp "]" "=" "{" expression_list "}"  { $$ = Line::ArrayAssignment($1, $3, $7, &drv); }
 
 assignment:
   "identifier" "=" exp  { $$ = Line::Assignment($1, $3, &drv); }
@@ -147,6 +158,10 @@ wait_statement:
 %left "*" "/";
 %precedence NEG;   /* unary minus or "not" */
 
+expression_list:
+  exp                         { $$ = ExpressionList($1); }
+| expression_list "," exp     { $$ = $1.add($3); }
+
 exp:
   "number"      { $$ = drv.factory.Number((float) $1); }
 | "note"        { $$ = drv.factory.Note($1); }
@@ -155,6 +170,7 @@ exp:
 | "in_port"     { $$ = drv.factory.Variable($1, &drv); }
 | "out_port"    { $$ = drv.factory.Variable($1, &drv); }
 | "identifier"  { $$ = drv.factory.Variable($1, &drv); }
+| "identifier" "[" exp "]" { $$ = drv.factory.ArrayVariable($1, $3, &drv); }
 | exp "+" exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
 | exp "-" exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
 | exp "*" exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }

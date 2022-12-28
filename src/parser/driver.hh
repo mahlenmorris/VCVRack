@@ -68,6 +68,8 @@ public:
   std::unordered_map<std::string, float*> symbol_floats;
   // Maps the name of a variable to the Port it refers to, if any.
   std::unordered_map<std::string, PortPointer> symbol_ports;
+  // Maps the name of an array variable to a pointer to it.
+  std::unordered_map<std::string, STArray* > symbol_arrays;
 
   Driver();
   ~Driver();
@@ -76,6 +78,7 @@ public:
   float* GetVarFromName(const std::string &name);
   void AddPortForName(const std::string &name, bool is_input, int number);
   PortPointer GetPortFromName(const std::string &name);
+  STArray* GetArrayFromName(const std::string &name);
 
   void SetEnvironment(Environment* env) {
     factory.SetEnvironment(env);

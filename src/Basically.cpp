@@ -387,6 +387,11 @@ struct Basically : Module {
     while (running && !waiting) {
       PCode* pcode = &(pcodes[current_line]);
       switch (pcode->type) {
+        case PCode::ARRAY_ASSIGNMENT: {
+          pcode->DoArrayAssignment();
+          current_line++;
+        }
+        break;
         case PCode::ASSIGNMENT: {
           float rhs = pcode->expr1.Compute();
           SetVariableValue(pcode->variable_ptr, pcode->assign_port, rhs);
@@ -688,14 +693,40 @@ struct TitleTextField : widget::OpaqueWidget {
         // The longer the text, the smaller the font. 20 is our largest size,
         // and it handles 10 chars of this font. 10 is smallest size, it can
         // handle 25 chars.
-        int font_size = std::max(10, (int) floor(20 - (
-          std::max(0, ((int) text.length() - 8)) / 1.7)));
+        int font_size = 24;
+        std::vector<std::string> lines;
+        if ((int) text.length() > 8) {
+          font_size = 15;
+          int nearest_to_mid = -1;
+          int text_length = (int) text.length();
+          // Look for a space we can break on.
+          for (int i = 0; i < text_length; i++) {
+            if (text.at(i) == ' ') {
+              if (abs(i - (text_length / 2)) <
+                abs(nearest_to_mid - (text_length / 2))) {
+                  nearest_to_mid = i;
+              }
+            }
+          }
+          if (nearest_to_mid == -1) {
+            // Just split it for them.
+            lines.push_back(text.substr(0, text_length / 2));
+            lines.push_back(text.substr(text_length / 2));
+          } else {
+            lines.push_back(text.substr(0, nearest_to_mid));
+            lines.push_back(text.substr(nearest_to_mid + 1));
+          }
+        } else {
+          lines.push_back(text);
+        }
         nvgFontSize(args.vg, font_size);
         nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
         nvgFontFaceId(args.vg, font->handle);
         nvgTextLetterSpacing(args.vg, -2);
         // Place on the line just off the left edge.
-        nvgText(args.vg, bounding_box.x / 2, 0, text.c_str(), NULL);
+        for (int i = 0; i < (int) lines.size(); i++) {
+          nvgText(args.vg, bounding_box.x / 2, i * 12, lines[i].c_str(), NULL);
+        }
       }
     }
     Widget::drawLayer(args, layer);

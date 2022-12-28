@@ -30,6 +30,10 @@ Driver::~Driver() {
   for (auto entry : symbol_floats) {
     delete entry.second;
   }
+  // And any arrays.
+  for (auto entry : symbol_arrays) {
+    delete entry.second;
+  }
 }
 
 // Ports are limited in number, so the module adds them before any
@@ -59,6 +63,17 @@ float* Driver::GetVarFromName(const std::string &name) {
     *float_pointer = 0.0f;
     symbol_floats[name] = float_pointer;
     return float_pointer;
+  }
+}
+
+STArray* Driver::GetArrayFromName(const std::string &name) {
+  auto found = symbol_arrays.find(name);
+  if (found != symbol_arrays.end()) {
+    return found->second;
+  } else {
+    STArray* pointer = new std::vector<float>();
+    symbol_arrays[name] = pointer;
+    return pointer;
   }
 }
 
