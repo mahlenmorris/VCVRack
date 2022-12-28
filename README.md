@@ -188,22 +188,65 @@ Unlike BASIC and many other languages, there is no need to set the size of
 the array before using it (i.e, there is no DIM() statement.)
 
 ### IF Statements (Conditional Behavior)
-There are two kinds of IF statements:
+There are four kinds of IF statements:
 
 IF **conditional expression** THEN
+
 **...Statements for True...**
+
 END IF
 
 or
 
 IF **conditional expression** THEN
+
 **...statements for True...**
+
 ELSE
+
 **...Statements for False...**
+
 END IF
 
-The conditional expression evaluates to False if it equals zero; it evaluates to
-True otherwise.
+or
+
+IF **conditional expression 1** THEN
+
+**...Statements for expression 1 is True...**
+
+ELSEIF **conditional expression 2** THEN
+
+**...Statements for expression 2 is True...**
+
+ELSEIF **conditional expression 3** THEN
+
+**...Statements for expression 3 is True...**  *(You can have multiple ELSEIF clauses.)*
+
+END IF
+
+or
+
+IF **conditional expression 1** THEN
+
+**...Statements for expression 1 is True...**
+
+ELSEIF **conditional expression 2** THEN
+
+**...Statements for expression 2 is True...**
+
+ELSEIF **conditional expression 3** THEN
+
+**...Statements for expression 3 is True...**  *(You can have multiple ELSEIF clauses.)*
+
+ELSE
+
+**...Statements for expression 3 is False...**
+
+END IF
+
+
+The conditional expression evaluates to **False** if it equals **zero**; it evaluates to
+**True** otherwise.
 
 Examples:
 ```
@@ -218,6 +261,16 @@ if in1 > 3.7 or foo == -1 then
 else
   out1 = 0
   out2 = 0.5
+end if
+
+if a == 5 then
+  out1 = in2 + 1
+elseif a == 4 then
+  out1 = in2
+elseif a == 3 then
+  out1 = in2 - 1
+else
+  out1 = in3
 end if
 ```
 ### FOR Loops
