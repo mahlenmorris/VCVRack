@@ -411,6 +411,9 @@ tell you where it got confused and why. Note that if the editing window is
 scrolled away from the line where the error occurs, you won't be able to see
 the highlight line until you scroll up (or down) to it.
 
+If the red and green colors are hard to tell apart, there is a menu option to change it
+to blue and orange.
+
 #### STYLE Knob + RUN Button and Input
 There are four options to determine when the code will run. Three of them rely on the RUN Button and trigger/gate, which are described below.
 
