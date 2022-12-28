@@ -24,7 +24,7 @@ context of VCV Rack. Can act like:
 Useful for:
 * quickly trying out an idea
 * simple transformations that would otherwise involve many small utility modules
-* non-standard approaches to otherwise
+* non-standard approaches to otherwise straightforward ideas
 
 ### Examples
 
@@ -162,6 +162,30 @@ Examples:
     WAIT 200 ' Pause for 1/5 of a second.
     ' The next line can be turned on just by removing the initial tick (').
     ' out1 = 2.3 * in1  ' Look, I'm live-coding!
+
+### Arrays
+Simple one-dimensional, 0-indexed arrays are available. The index will have
+floor() act on it internally. Using an index less than zero will be ignored.
+
+    a[3.3] = 2.2  ' Same as a[3] = 2.2
+    a[-1] = 6     ' Ignored, will have no effect.
+
+You can set a series of values in a array quickly by specifying just the
+initial index, and enclosing the series of values with curly braces '{}'
+For example, this will assign value to b[1], b[2], and b[3]. Note that these
+values do not need to be constants, as some other languages require.
+
+    b[1] = { -5, sin(in3), 2.2 }
+
+Reading from an array works the same; The index will have floor() act on
+it internally. Using an index less than zero will return a value of 0.0.
+Accessing any index within the array that hasn't been set will also return
+a value of 0.0.
+
+    out1 = b[1]
+
+Unlike BASIC and many other languages, there is no need to set the size of
+the array before using it (i.e, there is no DIM() statement.)
 
 ### IF Statements (Conditional Behavior)
 There are two kinds of IF statements:
