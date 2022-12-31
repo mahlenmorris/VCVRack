@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "code_block.h"
 #include "parser/environment.h"
 #include "plugin.hpp"
 #include "parser/driver.hh"
@@ -22,23 +23,6 @@ Style STYLES[] = {
   TRIGGER_LOOP_STYLE,
   TRIGGER_NO_LOOP_STYLE,
   GATE
-};
-
-// The execution of WAIT statements needs to be as efficient as I can make them.
-// This data structure just collects all data about the ongoing WAITs.
-struct WaitInfo {
-  int countdown_to_recompute;
-  // Are we currently in a WAIT?
-  bool in_wait;
-  // The expression that computes the wait time could change while the wait is
-  // occuring.
-  bool is_volatile;
-  // The number of process() calls seen in this WAIT. GOes up by one every time
-  // procees is called during the wait.
-  int ticks_so_far;
-  // The number of ticks needed to complete the wait. If is_volatile, then
-  // this needs to be recomputed when INn gets changed.
-  int ticks_limit;
 };
 
 struct Basically : Module {
@@ -169,9 +153,6 @@ struct Basically : Module {
     configOutput(OUT4_OUTPUT, "OUT4");
     configLight(RUN_LIGHT, "Lit when code is currently running.");
 
-    current_line = 0;
-    wait_info.in_wait = false;
-
     environment = new ProductionEnvironment(&inputs, &outputs);
     drv.SetEnvironment(environment);
     // Add the INn variables to the variable space, and get the pointer to
@@ -239,53 +220,10 @@ struct Basically : Module {
   }
 
   void ResetToProgramStart() {
-    current_line = 0;
-    wait_info.in_wait = false;
+    main_block.current_line = 0;
+    main_block.wait_info.in_wait = false;
     // Do we need a gesture that clears all variables? Likely not often;
     // keeping previously defined variables makes live-coding work.
-  }
-
-  // There are times when the module itself needs to get or set a variable's
-  // value. E.g., when executing a FOR-NEXT loop.
-  // Now that varaibles are represented by both a float* and a PortPointer,
-  // we have these methods for doing those operations.
-  // TODO: make a class that bundles the float* and the PortPointer
-  // and these methods?
-  void SetVariableValue(float* variable_ptr, const PortPointer &assign_port,
-                        float value) {
-    switch (assign_port.port_type) {
-      case PortPointer::NOT_PORT: {
-        *variable_ptr = value;
-      }
-      break;
-      case PortPointer::INPUT: {
-        inputs[assign_port.index].setVoltage(value);
-      }
-      break;
-      case PortPointer::OUTPUT: {
-        outputs[assign_port.index].setVoltage(
-                    std::max(-10.0f, std::min(10.0f, value)));
-      }
-      break;
-    }
-  }
-
-  float GetVariableValue(float* variable_ptr, const PortPointer &port) {
-    switch (port.port_type) {
-      case PortPointer::NOT_PORT: {
-        return *variable_ptr;
-      }
-      break;
-      case PortPointer::INPUT: {
-        return inputs[port.index].getVoltage();
-      }
-      break;
-      case PortPointer::OUTPUT: {
-        return outputs[port.index].getVoltage();
-      }
-      break;
-      default: return -8.7654321;  // Error value, should be impossible.
-    }
   }
 
   void processBypass(const ProcessArgs& args) override {
@@ -311,9 +249,10 @@ struct Basically : Module {
       compiles = !drv.parse(lowercase);
       if (compiles) {
         PCodeTranslator translator;
-        translator.LinesToPCode(drv.lines, &pcodes);
+        translator.LinesToPCode(drv.lines, &(main_block.pcodes));
+        main_block.samples_per_millisecond = args.sampleRate / 1000.0f;
          /*
-         for (auto &pcode : pcodes) {
+         for (auto &pcode : main_block.pcodes) {
            // Add to log, for debugging.
            INFO("%s", pcode.to_string().c_str());
          }
@@ -351,7 +290,7 @@ struct Basically : Module {
         running = params[RUN_PARAM].getValue() > 0.1f;
       }
     }
-    if (pcodes.size() == 0) {
+    if (main_block.pcodes.size() == 0) {
       // No lines to run --> don't run!
       running = false;
     }
@@ -361,141 +300,8 @@ struct Basically : Module {
       run_light_countdown = std::floor(args.sampleRate / 20.0f);
     }
 
-    // Update INn variables with current inputs, but only if we _need_ to.
-    bool need_to_update_wait = false;
-    // Need to determine if:
-    // * We need to update the inputs at all.
-    // * We are in a WAIT *and* we need to recompute the wait time.
-    // These are related questions.
     if (running) {
-      // If we're not running, don't need to update inputs, and the WAIT
-      // status doesn't change.
-      if (wait_info.in_wait && wait_info.is_volatile) {
-        // In a WAIT, and the wait interval relies on things that change?
-        wait_info.countdown_to_recompute--;
-        if (wait_info.countdown_to_recompute <= 0) {
-          wait_info.countdown_to_recompute = std::floor(
-              args.sampleRate / 1000.0f);
-          need_to_update_wait = true;
-        }
-      }
-    }
-
-    // Run the PCode vector from the current spot in it.
-    bool waiting = false;
-
-    while (running && !waiting) {
-      PCode* pcode = &(pcodes[current_line]);
-      switch (pcode->type) {
-        case PCode::ARRAY_ASSIGNMENT: {
-          pcode->DoArrayAssignment();
-          current_line++;
-        }
-        break;
-        case PCode::ASSIGNMENT: {
-          float rhs = pcode->expr1.Compute();
-          SetVariableValue(pcode->variable_ptr, pcode->assign_port, rhs);
-          current_line++;
-        }
-        break;
-        case PCode::WAIT: {
-          if (wait_info.in_wait) {
-            // We're currently running through this statement's wait period.
-            // Update it by one tick.
-            wait_info.ticks_so_far++;
-            // If the wait period may have changed, recompute it.
-            if (need_to_update_wait) {
-              wait_info.ticks_limit = std::floor(
-                  pcode->expr1.Compute() * args.sampleRate / 1000.0f);
-            }
-            if (wait_info.ticks_so_far >= wait_info.ticks_limit) {
-              // WAIT has completed, immediately execute next line.
-              wait_info.in_wait = false;
-              current_line++;
-            }
-          } else {
-            // Just arriving at this WAIT statement.
-            int ticks = std::floor(
-                pcode->expr1.Compute() * args.sampleRate / 1000.0f);
-            // A "WAIT 0" (or WAIT -1!) means we should stop running for
-            // this process() call but push to the next line. No reason to
-            // create a WaitInfo.
-            if (ticks <= 0) {
-              current_line++;
-              waiting = true;
-            } else {
-              // This WAIT is longer than a single tick, so we should fill in
-              // the WaitInfo for it.
-              wait_info.is_volatile = pcode->expr1.Volatile();
-              // It wastes a lot of CPU seeing if we need to recompute every tick.
-              // We instead only consider doing so every millisecond.
-              wait_info.countdown_to_recompute =
-                 std::floor(args.sampleRate / 1000.0f);
-              wait_info.ticks_limit = ticks;
-              wait_info.ticks_so_far = 0;
-              wait_info.in_wait = true;
-            }
-          }
-          if (wait_info.in_wait) {
-            waiting = true;
-          }
-        }
-        break;
-        case PCode::IFNOT: {
-          // All this PCode does is determine where to move current_line to.
-          bool expr_val = !Expression::is_zero(pcode->expr1.Compute());
-          if (!expr_val) {
-            current_line += pcode->jump_count;
-          } else {
-            current_line++;
-          }
-        }
-        break;
-        case PCode::RELATIVE_JUMP: {
-          if (pcode->stop_execution) {
-            ResetToProgramStart();
-            running = false;  // TODO: is the the correct behavior for all Styles?
-          } else {
-            // This just specifies a jump of the current_line.
-            current_line += pcode->jump_count;
-          }
-        }
-        break;
-        case PCode::FORLOOP: {
-          float loop_var_value;
-          if (state == PCode::ENTERING_FOR_LOOP) {
-            loop_var_value = GetVariableValue(pcode->variable_ptr,
-                pcode->assign_port);
-            pcode->limit = pcode->expr1.Compute();
-            pcode->step = pcode->expr2.Compute();
-          } else {
-            loop_var_value = GetVariableValue(pcode->variable_ptr,
-                pcode->assign_port) + pcode->step;
-            SetVariableValue(pcode->variable_ptr, pcode->assign_port,
-               loop_var_value);
-          }
-          bool done = false;
-          // If "Step" is negative, we wait until value is _below_ limit.
-          if (pcode->step >= 0.0f) {
-            done = loop_var_value > pcode->limit;
-          } else {
-            done = loop_var_value < pcode->limit;
-          }
-          if (done) {
-            current_line += pcode->jump_count;
-          } else {
-            current_line++;
-          }
-        }
-      }
-      state = pcode->state;
-      if (current_line >= pcodes.size()) {
-        current_line = 0;
-        waiting = true;  // Implicit WAIT at end of program.
-        if (!loops) {
-          running = false;
-        }
-      }
+      running = main_block.Run(&inputs, &outputs, loops);
     }
 
     // Lights.
@@ -507,11 +313,6 @@ struct Basically : Module {
   }
 
   dsp::SchmittTrigger runTrigger;
-  // Full text of program.  Also used by BasicallyTextField for editing.
-  std::string text;
-  // We need to the immediately previous version of the text around to
-  // make undo and redo work; otherwise, we don't know what the change was.
-  std::string previous_text;
   // Set when module changes the text (like at start).
   // Set when editing window needs to refresh based on text.
   bool editor_refresh = false;
@@ -519,21 +320,23 @@ struct Basically : Module {
   bool module_refresh = true;
   bool compiles = false;
   bool running = false;
-  bool allow_error_highlight = true;
-  bool blue_orange_light = false;
   Driver drv;
   ProductionEnvironment* environment;
-  std::vector<PCode> pcodes;  // What actually gets executed.
-  // Line where execution is currently happening.
-  unsigned int current_line;
-  // Some PCodes have different behaviors, depending on how execution got
-  // there. 'state' helps determine the correct behavior.
-  PCode::State state;
-  // Green on Black.
+  CodeBlock main_block;
+
+  ///////
+  // UI related
+  // Full text of program.  Also used by BasicallyTextField for editing.
+  std::string text;
+  // We need to the immediately previous version of the text around to
+  // make undo and redo work; otherwise, we don't know what the change was.
+  std::string previous_text;
+  bool allow_error_highlight = true;
+  bool blue_orange_light = false;
+  // Green on Black is the default.
   long long int screen_colors = 0x00ff00000000;
   // Keeps lights lit long enough to see.
   int run_light_countdown = 0;
-  WaitInfo wait_info;
   // width (in "holes") of the whole module. Changed by the resize bar on the
   // right (within limits), and informs the size of the display and text field.
   // Saved in the json for the module.
