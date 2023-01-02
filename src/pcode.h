@@ -1,7 +1,7 @@
 #ifndef PCODE_H
 #define PCODE_H
 
-#include "environment.h"
+#include "parser/environment.h"
 #include "parser/tree.h"
 /*
 The structures that make up the pseudocode that gets run during a call

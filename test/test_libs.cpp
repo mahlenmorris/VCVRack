@@ -1,17 +1,21 @@
 #include "gtest/gtest.h"
 
+#include "../src/code_block.h"
 #include "../src/parser/driver.hh"
 #include "../src/parser/environment.h"
+#include "../src/pcode.h"
 #include <stdexcept>
 
 struct TestEnvironment : Environment {
-  float in1, in2, in3, in4;
   std::unordered_map<int, bool> connected;
+  std::unordered_map<int, float> outputs;
+  std::unordered_map<int, float> inputs;
+
   void SetIns(float a, float b, float c, float d) {
-    in1 = a;
-    in2 = b;
-    in3 = c;
-    in4 = d;
+    inputs[0] = a;
+    inputs[1] = b;
+    inputs[2] = c;
+    inputs[3] = d;
   }
   void setConnected(int index, bool is_connected) {
     connected[index] = is_connected;
@@ -19,29 +23,33 @@ struct TestEnvironment : Environment {
   float SampleRate() override {
     return 43210;  // An unusual sample rate!
   }
-  float GetVoltage(const PortPointer &port) {
-    EXPECT_EQ(PortPointer::INPUT, port.port_type);
-    switch (port.index) {
-      case 0: return in1;
-      case 1: return in2;
-      case 2: return in3;
-      case 3: return in4;
-      default: return -1.2481632;
+  float GetVoltage(const PortPointer &port) override {
+    if (port.port_type == PortPointer::INPUT) {
+      return inputs[port.index];
+    } else {
+      return outputs[port.index];
     }
   }
-  float Connected(const PortPointer &port) {
+  void SetVoltage(const PortPointer &port, float value) override {
+    if (port.port_type == PortPointer::INPUT) {
+      inputs[port.index] = value;
+    } else {
+      outputs[port.index] = value;
+    }
+  }
+  float Connected(const PortPointer &port) override {
     return (connected.find(port.index) != connected.end() &&
             connected.at(port.index)) ? 1.0f : 0.0f;
-  };
-  float Random(float min_value, float max_value) {
+  }
+  float Random(float min_value, float max_value) override {
     return (max_value + min_value) / 2.0;  // Not very random.
   }
-  float Normal(float mean, float std_dev) {
+  float Normal(float mean, float std_dev) override {
     return mean + std_dev;  // Also not random.
   }
 };
 
-TEST(ParserTest, RunsAtAll)
+TEST(ParserTest, ParsesAtAll)
 {
     Driver drv;
 
@@ -482,4 +490,42 @@ TEST(ParserTest, EnvironmentTest)
   EXPECT_EQ(0, drv.lines[0].expr1.Compute());
   test_env.setConnected(7, true);
   EXPECT_EQ(10, drv.lines[0].expr1.Compute());
+}
+
+TEST(RunTest, RunsAtAll) {
+  Driver drv;
+  PCodeTranslator translator;
+  TestEnvironment test_env;
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse("foo = 3.14159"));
+  ASSERT_EQ(1, drv.lines.size());
+  translator.LinesToPCode(drv.lines, &(block.pcodes));
+
+  EXPECT_TRUE(block.Run(true));
+  EXPECT_EQ(3.14159f, *(drv.GetVarFromName("foo")));
+}
+
+// TODO: Add tests for all the language constructs.
+
+TEST(RunTest, RunsForLoop) {
+  Driver drv;
+  PCodeTranslator translator;
+  TestEnvironment test_env;
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse("for i = 0 to 1 step 0.1 next"));
+  ASSERT_EQ(1, drv.lines.size());
+  translator.LinesToPCode(drv.lines, &(block.pcodes));
+
+  EXPECT_TRUE(block.Run(true));
+  EXPECT_EQ(0.0f, *(drv.GetVarFromName("i")));
+  EXPECT_TRUE(block.Run(true));
+  EXPECT_EQ(0.1f, *(drv.GetVarFromName("i")));
+  EXPECT_TRUE(block.Run(true));
+  EXPECT_EQ(0.2f, *(drv.GetVarFromName("i")));
+  EXPECT_TRUE(block.Run(true));
+  EXPECT_EQ(0.3f, *(drv.GetVarFromName("i")));
+  EXPECT_TRUE(block.Run(true));
+  EXPECT_EQ(0.4f, *(drv.GetVarFromName("i")));
 }

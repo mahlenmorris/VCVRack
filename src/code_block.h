@@ -5,7 +5,7 @@
 // to execute it in a re-entrant way.
 #include <vector>
 
-#include "plugin.hpp"  // We need to know about 'inputs' and 'outputs' arrays.
+#include "parser/environment.h"  // Reading and writing module data.
 #include "pcode.h"
 
 // The execution of WAIT statements needs to be as efficient as I can make them.
@@ -36,8 +36,9 @@ struct CodeBlock {
   // Efficient way to get through a WAIT instruction.
   WaitInfo wait_info;
   float samples_per_millisecond;
+  Environment* environment;
 
-  CodeBlock() {
+  explicit CodeBlock(Environment* env) : environment{env} {
     wait_info.in_wait = false;
     current_line = 0;
   }
@@ -49,11 +50,8 @@ struct CodeBlock {
   // TODO: make a class that bundles the float* and the PortPointer
   // and these methods?
   void SetVariableValue(float* variable_ptr,
-     std::vector<Input>* inputs, std::vector<Output>* outputs,
      const PortPointer &assign_port, float value);
-  float GetVariableValue(float* variable_ptr,
-     std::vector<Input>* inputs, std::vector<Output>* outputs,
-     const PortPointer &port);
+  float GetVariableValue(float* variable_ptr, const PortPointer &port);
   // I imagine we need some sort of status to be returned, but not sure yet
   // what it will be.
   // Only called when the global "running" status of the program is true.
@@ -61,7 +59,7 @@ struct CodeBlock {
   // (like hitting an EXIT ALL).
   // TODO: Does this stop *all* blocks? Just this one? Need a new gesture
   // to just stop one block? EXIT BLOCK?
-  bool Run(std::vector<Input>* inputs, std::vector<Output>* outputs, bool loops);
+  bool Run(bool loops);
 };
 
 #endif // CODE_BLOCK_H

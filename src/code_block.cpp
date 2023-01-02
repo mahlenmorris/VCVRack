@@ -2,6 +2,10 @@
 
 #include "code_block.h"
 
+#include <math.h>
+
+#include "parser/environment.h"
+
 // There are times when the module itself needs to get or set a variable's
 // value. E.g., when executing a FOR-NEXT loop.
 // Now that varaibles are represented by both a float* and a PortPointer,
@@ -9,47 +13,24 @@
 // TODO: make a class that bundles the float* and the PortPointer
 // and these methods?
 void CodeBlock::SetVariableValue(float* variable_ptr,
-    std::vector<Input>* inputs, std::vector<Output>* outputs,
     const PortPointer &assign_port, float value) {
-  switch (assign_port.port_type) {
-    case PortPointer::NOT_PORT: {
-      *variable_ptr = value;
-    }
-    break;
-    case PortPointer::INPUT: {
-      inputs->at(assign_port.index).setVoltage(value);
-    }
-    break;
-    case PortPointer::OUTPUT: {
-      outputs->at(assign_port.index).setVoltage(
-                  std::max(-10.0f, std::min(10.0f, value)));
-    }
-    break;
+  if (assign_port.port_type == PortPointer::NOT_PORT) {
+    *variable_ptr = value;
+  } else {
+    environment->SetVoltage(assign_port, value);
   }
 }
 
 float CodeBlock::GetVariableValue(float* variable_ptr,
-    std::vector<Input>* inputs, std::vector<Output>* outputs,
     const PortPointer &port) {
-  switch (port.port_type) {
-    case PortPointer::NOT_PORT: {
-      return *variable_ptr;
-    }
-    break;
-    case PortPointer::INPUT: {
-      return inputs->at(port.index).getVoltage();
-    }
-    break;
-    case PortPointer::OUTPUT: {
-      return outputs->at(port.index).getVoltage();
-    }
-    break;
-    default: return -8.7654321;  // Error value, should be impossible.
+  if (port.port_type == PortPointer::NOT_PORT) {
+    return *variable_ptr;
+  } else {
+    return environment->GetVoltage(port);
   }
 }
 
-bool CodeBlock::Run(std::vector<Input>* inputs, std::vector<Output>* outputs,
-   bool loops) {
+bool CodeBlock::Run(bool loops) {
   // Recompute the wait time, but only if we _need_ to.
   // Consumed by the PCode::WAIT instruction.
   bool need_to_update_wait = false;
@@ -80,7 +61,7 @@ bool CodeBlock::Run(std::vector<Input>* inputs, std::vector<Output>* outputs,
       break;
       case PCode::ASSIGNMENT: {
         float rhs = pcode->expr1.Compute();
-        SetVariableValue(pcode->variable_ptr, inputs, outputs,
+        SetVariableValue(pcode->variable_ptr,
                          pcode->assign_port, rhs);
         current_line++;
       }
@@ -153,13 +134,13 @@ bool CodeBlock::Run(std::vector<Input>* inputs, std::vector<Output>* outputs,
         float loop_var_value;
         if (state == PCode::ENTERING_FOR_LOOP) {
           loop_var_value = GetVariableValue(pcode->variable_ptr,
-             inputs, outputs, pcode->assign_port);
+              pcode->assign_port);
           pcode->limit = pcode->expr1.Compute();
           pcode->step = pcode->expr2.Compute();
         } else {
           loop_var_value = GetVariableValue(pcode->variable_ptr,
-              inputs, outputs, pcode->assign_port) + pcode->step;
-          SetVariableValue(pcode->variable_ptr, inputs, outputs,
+              pcode->assign_port) + pcode->step;
+          SetVariableValue(pcode->variable_ptr,
             pcode->assign_port, loop_var_value);
         }
         bool done = false;

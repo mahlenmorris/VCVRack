@@ -94,6 +94,13 @@ struct Basically : Module {
         return outputs->at(port.index).getVoltage();
       }
     }
+    void SetVoltage(const PortPointer &port, float value) override {
+      if (port.port_type == PortPointer::INPUT) {
+        return inputs->at(port.index).setVoltage(value);
+      } else {
+        return outputs->at(port.index).setVoltage(value);
+      }
+    }
     float SampleRate() override {
       return args->sampleRate;
     }
@@ -155,6 +162,9 @@ struct Basically : Module {
 
     environment = new ProductionEnvironment(&inputs, &outputs);
     drv.SetEnvironment(environment);
+    // For now, we just have the one block, but we'll add more soon.
+    main_block = new CodeBlock(environment);
+    all_blocks.push_back(main_block);
     // Add the INn variables to the variable space, and get the pointer to
     // them so module can set them.
     for (size_t i = 0; i < in_list.size(); i++) {
@@ -220,8 +230,8 @@ struct Basically : Module {
   }
 
   void ResetToProgramStart() {
-    main_block.current_line = 0;
-    main_block.wait_info.in_wait = false;
+    main_block->current_line = 0;
+    main_block->wait_info.in_wait = false;
     // Do we need a gesture that clears all variables? Likely not often;
     // keeping previously defined variables makes live-coding work.
   }
@@ -249,10 +259,10 @@ struct Basically : Module {
       compiles = !drv.parse(lowercase);
       if (compiles) {
         PCodeTranslator translator;
-        translator.LinesToPCode(drv.lines, &(main_block.pcodes));
-        main_block.samples_per_millisecond = args.sampleRate / 1000.0f;
+        translator.LinesToPCode(drv.lines, &(main_block->pcodes));
+        main_block->samples_per_millisecond = args.sampleRate / 1000.0f;
          /*
-         for (auto &pcode : main_block.pcodes) {
+         for (auto &pcode : main_block->pcodes) {
            // Add to log, for debugging.
            INFO("%s", pcode.to_string().c_str());
          }
@@ -290,7 +300,7 @@ struct Basically : Module {
         running = params[RUN_PARAM].getValue() > 0.1f;
       }
     }
-    if (main_block.pcodes.size() == 0) {
+    if (main_block->pcodes.size() == 0) {
       // No lines to run --> don't run!
       running = false;
     }
@@ -301,7 +311,7 @@ struct Basically : Module {
     }
 
     if (running) {
-      running = main_block.Run(&inputs, &outputs, loops);
+      running = main_block->Run(loops);
     }
 
     // Lights.
@@ -322,7 +332,8 @@ struct Basically : Module {
   bool running = false;
   Driver drv;
   ProductionEnvironment* environment;
-  CodeBlock main_block;
+  std::vector<CodeBlock*> all_blocks;
+  CodeBlock* main_block;  // only one, for now.
 
   ///////
   // UI related
