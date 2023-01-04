@@ -54,9 +54,10 @@ TEST(ParserTest, ParsesAtAll)
     Driver drv;
 
     EXPECT_EQ(0, drv.parse("f = 3 + 4*6"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("f", drv.lines[0].str1);
-    EXPECT_EQ(27, drv.lines[0].expr1.Compute());
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("f", lines->at(0).str1);
+    EXPECT_EQ(27, lines->at(0).expr1.Compute());
 }
 
 TEST(ParserTest, Comments)
@@ -64,9 +65,10 @@ TEST(ParserTest, Comments)
     Driver drv;
 
     EXPECT_EQ(0, drv.parse("' I'm a comment! Look at me \nf=3+4*6 ' Me Too!'"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("f", drv.lines[0].str1);
-    EXPECT_EQ(27, drv.lines[0].expr1.Compute());
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("f", lines->at(0).str1);
+    EXPECT_EQ(27, lines->at(0).expr1.Compute());
 }
 
 TEST(ParserTest, Arrays)
@@ -74,23 +76,24 @@ TEST(ParserTest, Arrays)
     Driver drv;
 
     EXPECT_EQ(0, drv.parse("a[4] = 6"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("a", drv.lines[0].str1);
-    EXPECT_EQ(4, drv.lines[0].expr1.Compute());
-    EXPECT_EQ(6, drv.lines[0].expr2.Compute());
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("a", lines->at(0).str1);
+    EXPECT_EQ(4, lines->at(0).expr1.Compute());
+    EXPECT_EQ(6, lines->at(0).expr2.Compute());
 
     EXPECT_EQ(0, drv.parse("b = a[4]"));
-    ASSERT_EQ(1, drv.lines.size());
+    ASSERT_EQ(1, lines->size());
 
     EXPECT_EQ(0, drv.parse("b = a[-3]"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(0, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(0, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("a[4] = {1, 0, 1, sin(in1)}"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("a", drv.lines[0].str1);
-    EXPECT_EQ(4, drv.lines[0].expr1.Compute());
-    EXPECT_EQ(4, drv.lines[0].expr_list.size());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("a", lines->at(0).str1);
+    EXPECT_EQ(4, lines->at(0).expr1.Compute());
+    EXPECT_EQ(4, lines->at(0).expr_list.size());
 }
 
 TEST(ParserTest, SimpleTest)
@@ -104,41 +107,42 @@ TEST(ParserTest, SimpleTest)
     drv.SetEnvironment(&test_env);
 
     EXPECT_EQ(0, drv.parse("out1 = (3 + 3) * 6"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("out1", drv.lines[0].str1);
-    EXPECT_EQ(36, drv.lines[0].expr1.Compute());
-    EXPECT_FALSE(drv.lines[0].expr1.Volatile());
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("out1", lines->at(0).str1);
+    EXPECT_EQ(36, lines->at(0).expr1.Compute());
+    EXPECT_FALSE(lines->at(0).expr1.Volatile());
 
     // Space at end.
     EXPECT_EQ(0, drv.parse("out1 = (3 + 3) * 6  \n"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("out1", drv.lines[0].str1);
-    EXPECT_EQ(36, drv.lines[0].expr1.Compute());
-    EXPECT_FALSE(drv.lines[0].expr1.Volatile());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("out1", lines->at(0).str1);
+    EXPECT_EQ(36, lines->at(0).expr1.Compute());
+    EXPECT_FALSE(lines->at(0).expr1.Volatile());
 
     test_env.SetIns(0.0, 0.338, 0, 0);
 
     EXPECT_EQ(0, drv.parse("out1 = 3 + in2\n"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("out1", drv.lines[0].str1);
-    EXPECT_FLOAT_EQ(3.338, drv.lines[0].expr1.Compute());
-    EXPECT_TRUE(drv.lines[0].expr1.Volatile());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("out1", lines->at(0).str1);
+    EXPECT_FLOAT_EQ(3.338, lines->at(0).expr1.Compute());
+    EXPECT_TRUE(lines->at(0).expr1.Volatile());
 
     EXPECT_EQ(0, drv.parse("out1 = 3 + in2\nwait 1000"));
-    ASSERT_EQ(2, drv.lines.size());
-    EXPECT_EQ("out1", drv.lines[0].str1);
-    EXPECT_FLOAT_EQ(3.338, drv.lines[0].expr1.Compute());
-    EXPECT_TRUE(drv.lines[0].expr1.Volatile());
-    EXPECT_FLOAT_EQ(1000, drv.lines[1].expr1.Compute());
-    EXPECT_FALSE(drv.lines[1].expr1.Volatile());
+    ASSERT_EQ(2, lines->size());
+    EXPECT_EQ("out1", lines->at(0).str1);
+    EXPECT_FLOAT_EQ(3.338, lines->at(0).expr1.Compute());
+    EXPECT_TRUE(lines->at(0).expr1.Volatile());
+    EXPECT_FLOAT_EQ(1000, lines->at(1).expr1.Compute());
+    EXPECT_FALSE(lines->at(1).expr1.Volatile());
 
     test_env.SetIns(0.0, 1.0f, 0, 0);
     // TODO: negative and float constants.
     EXPECT_EQ(0, drv.parse("out1 = -0.5 + in2 + pow(in2, in4)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("out1", drv.lines[0].str1);
-    EXPECT_FLOAT_EQ(1.5, drv.lines[0].expr1.Compute());
-    EXPECT_TRUE(drv.lines[0].expr1.Volatile());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("out1", lines->at(0).str1);
+    EXPECT_FLOAT_EQ(1.5, lines->at(0).expr1.Compute());
+    EXPECT_TRUE(lines->at(0).expr1.Volatile());
 }
 
 TEST(ParserTest, FunctionTest)
@@ -146,61 +150,62 @@ TEST(ParserTest, FunctionTest)
     Driver drv;
 
     EXPECT_EQ(0, drv.parse("f = abs(2.3)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(2.3f, drv.lines[0].expr1.Compute());
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(2.3f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("f = abs(-1.0 * 2.3)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(2.3f, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(2.3f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("f = ceiling(2.3)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(3.0f, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(3.0f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("f = ceiling(-2.3)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(-2.0f, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(-2.0f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("f = floor(2.3)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(2.0f, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(2.0f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("f = floor(-2.3)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(-3.0f, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(-3.0f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("f = sign(2.3)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(1.0f, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(1.0f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("f = sign(-2.3)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(-1.0f, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(-1.0f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("f = sign(0)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(0, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(0, lines->at(0).expr1.Compute());
 
     // sin of 30 degress = 0.5
     EXPECT_EQ(0, drv.parse("f = sin(30*3.14159265/180)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(0.5f, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(0.5f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("f = max(-2.3, 4)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(4.0f, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(4.0f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("f = min(1.0, max(-0.5, 0.0))"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(0.0f, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(0.0f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("f = mod(10, 4)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(2.0f, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(2.0f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("f = pow(49, 0.5)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(7.0f, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(7.0f, lines->at(0).expr1.Compute());
 }
 
 TEST(ParserTest, NegativeTest)
@@ -208,20 +213,21 @@ TEST(ParserTest, NegativeTest)
     Driver drv;
 
     EXPECT_EQ(0, drv.parse("out1 = 5 -3"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("out1", drv.lines[0].str1);
-    EXPECT_EQ(2, drv.lines[0].expr1.Compute());
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("out1", lines->at(0).str1);
+    EXPECT_EQ(2, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("out1 = 5 - 3"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("out1", drv.lines[0].str1);
-    EXPECT_EQ(2, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("out1", lines->at(0).str1);
+    EXPECT_EQ(2, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("out1 = 1 - -0.33"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("out1", drv.lines[0].str1);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("out1", lines->at(0).str1);
     *(drv.GetVarFromName("in2")) = 1.0f;
-    EXPECT_FLOAT_EQ(1.33, drv.lines[0].expr1.Compute());
+    EXPECT_FLOAT_EQ(1.33, lines->at(0).expr1.Compute());
 }
 
 TEST(ParserTest, BooleanTest)
@@ -235,23 +241,24 @@ TEST(ParserTest, BooleanTest)
     drv.SetEnvironment(&test_env);
 
     EXPECT_EQ(0, drv.parse("if 5 > 3 then wait 0 end if"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(2, drv.lines[0].statements.size());
-    ASSERT_EQ(0, drv.lines[0].statements[1].size());  // no elseifs
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(true, lines->at(0).expr1.Compute());
+    ASSERT_EQ(2, lines->at(0).statements.size());
+    ASSERT_EQ(0, lines->at(0).statements[1].size());  // no elseifs
 
     EXPECT_EQ(0, drv.parse("if 5 < 3 then wait 0 end if"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(false, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(2, drv.lines[0].statements.size());
-    ASSERT_EQ(0, drv.lines[0].statements[1].size());  // no elseifs
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(false, lines->at(0).expr1.Compute());
+    ASSERT_EQ(2, lines->at(0).statements.size());
+    ASSERT_EQ(0, lines->at(0).statements[1].size());  // no elseifs
 
     EXPECT_EQ(0, drv.parse(
       "if 3 > 5 then wait 0 elseif 6 == 9 then out1 = 9 end if"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(false, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(2, drv.lines[0].statements.size());
-    ASSERT_EQ(1, drv.lines[0].statements[1].size());  // one elseifs
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(false, lines->at(0).expr1.Compute());
+    ASSERT_EQ(2, lines->at(0).statements.size());
+    ASSERT_EQ(1, lines->at(0).statements[1].size());  // one elseifs
 
     EXPECT_EQ(0, drv.parse(
       "if 3 < 5 then wait 0 "
@@ -259,72 +266,72 @@ TEST(ParserTest, BooleanTest)
       "elseif 2 == 1 then wait 2 out1 = 2"
       "elseif 2 == 2 then wait 3 out1 = 3 out2 = 5"
       "end if"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(2, drv.lines[0].statements.size());
-    ASSERT_EQ(3, drv.lines[0].statements[1].size());  // three elseifs
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(true, lines->at(0).expr1.Compute());
+    ASSERT_EQ(2, lines->at(0).statements.size());
+    ASSERT_EQ(3, lines->at(0).statements[1].size());  // three elseifs
 
     test_env.SetIns(5.0, 0, 0, 0);
 
     EXPECT_EQ(0, drv.parse("if in1 > 3 then wait 0 end if"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(2, drv.lines[0].statements.size());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(true, lines->at(0).expr1.Compute());
+    ASSERT_EQ(2, lines->at(0).statements.size());
 
     EXPECT_EQ(0, drv.parse("if in1 < 3 then wait 0 end if"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(false, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(2, drv.lines[0].statements.size());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(false, lines->at(0).expr1.Compute());
+    ASSERT_EQ(2, lines->at(0).statements.size());
 
     EXPECT_EQ(0, drv.parse("if 3 > in1 then wait 0 end if"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(false, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(2, drv.lines[0].statements.size());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(false, lines->at(0).expr1.Compute());
+    ASSERT_EQ(2, lines->at(0).statements.size());
 
     EXPECT_EQ(0, drv.parse("if 3 < in1 then wait 0 end if"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(2, drv.lines[0].statements.size());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(true, lines->at(0).expr1.Compute());
+    ASSERT_EQ(2, lines->at(0).statements.size());
 
     EXPECT_EQ(0, drv.parse("ok = 3 < in1 and 2"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(1, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(1, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("ok = 3 < in1 and 0.0"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(0, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(0, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("ok = 3 < in1 and not 0.0"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(1, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(1, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("ok = 3 < in1 or 0.0"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(1, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(1, lines->at(0).expr1.Compute());
 
     // "and" should bind more tightly than "or"
     EXPECT_EQ(0, drv.parse("ok = 1 == 3 and 3 > 2 or 2 == 2"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(1, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(1, lines->at(0).expr1.Compute());
     EXPECT_EQ(0, drv.parse("ok = 1 == 3 and (3 > 2 or 2 == 2)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(0, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(0, lines->at(0).expr1.Compute());
 
     // "not" should bind to "3", not "3 and 3 > 2 or 2 == 2"
     EXPECT_EQ(0, drv.parse("ok = not 3 and 3 > 2 or 2 == 2"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(1, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(1, lines->at(0).expr1.Compute());
     EXPECT_EQ(0, drv.parse("ok = not (3 and 3 > 2 or 2 == 2)"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(0, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(0, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("ok = 1 == 1 and 2 <= 2 and 3 >= 3"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(1, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(1, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("ok = 1 != 1 or 2 < 2 or 3 > 3"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(0, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(0, lines->at(0).expr1.Compute());
 }
 
 TEST(ParserTest, IfThenTest)
@@ -332,9 +339,10 @@ TEST(ParserTest, IfThenTest)
     Driver drv;
 
     EXPECT_EQ(0, drv.parse("if 5 > 3 then out1 = 5 - 3 end if"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(2, drv.lines[0].statements.size());
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(true, lines->at(0).expr1.Compute());
+    ASSERT_EQ(2, lines->at(0).statements.size());
 }
 
 TEST(ParserTest, ForTest)
@@ -342,8 +350,9 @@ TEST(ParserTest, ForTest)
     Driver drv;
 
     EXPECT_EQ(0, drv.parse("for a = 1 to 10 out1 = a / 10 next"));
-    ASSERT_EQ(1, drv.lines.size());
-    Line line = drv.lines[0];
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    Line line = lines->at(0);
     EXPECT_EQ(Line::FORNEXT, line.type);
     EXPECT_EQ("a", line.str1);
     EXPECT_EQ(1, line.expr1.Compute());
@@ -353,8 +362,8 @@ TEST(ParserTest, ForTest)
     ASSERT_EQ(1, line.statements[0].size());
 
     EXPECT_EQ(0, drv.parse("for a = 10 to 1 step -.4 out1 = a / 10 next"));
-    ASSERT_EQ(1, drv.lines.size());
-    line = drv.lines[0];
+    ASSERT_EQ(1, lines->size());
+    line = lines->at(0);
     EXPECT_EQ(Line::FORNEXT, line.type);
     EXPECT_EQ("a", line.str1);
     EXPECT_EQ(10, line.expr1.Compute());
@@ -364,14 +373,14 @@ TEST(ParserTest, ForTest)
     ASSERT_EQ(1, line.statements[0].size());
 
     EXPECT_EQ(0, drv.parse("continue for"));
-    ASSERT_EQ(1, drv.lines.size());
-    line = drv.lines[0];
+    ASSERT_EQ(1, lines->size());
+    line = lines->at(0);
     EXPECT_EQ(Line::CONTINUE, line.type);
     EXPECT_EQ("for", line.str1);
 
     EXPECT_EQ(0, drv.parse("exit for"));
-    ASSERT_EQ(1, drv.lines.size());
-    line = drv.lines[0];
+    ASSERT_EQ(1, lines->size());
+    line = lines->at(0);
     EXPECT_EQ(Line::EXIT, line.type);
     EXPECT_EQ("for", line.str1);
 }
@@ -381,14 +390,15 @@ TEST(ParserTest, AllTest)
     Driver drv;
 
     EXPECT_EQ(0, drv.parse("continue all"));
-    ASSERT_EQ(1, drv.lines.size());
-    Line line = drv.lines[0];
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    Line line = lines->at(0);
     EXPECT_EQ(Line::CONTINUE, line.type);
     EXPECT_EQ("all", line.str1);
 
     EXPECT_EQ(0, drv.parse("exit all"));
-    ASSERT_EQ(1, drv.lines.size());
-    line = drv.lines[0];
+    ASSERT_EQ(1, lines->size());
+    line = lines->at(0);
     EXPECT_EQ(Line::EXIT, line.type);
     EXPECT_EQ("all", line.str1);
 }
@@ -398,11 +408,11 @@ TEST(ParserTest, ErrorTest)
   Driver drv;
 
   EXPECT_EQ(0, drv.parse("out1 = 5 - 3"));
-  ASSERT_EQ(1, drv.lines.size());
+  std::vector<Line>* lines = &(drv.blocks[0].lines);
+  ASSERT_EQ(1, lines->size());
   ASSERT_EQ(0, drv.errors.size());
 
   EXPECT_EQ(1, drv.parse("out1 = 5 - "));
-  ASSERT_EQ(0, drv.lines.size());
   ASSERT_EQ(1, drv.errors.size());
   Error err = drv.errors[0];
   EXPECT_EQ(1, err.line);
@@ -411,7 +421,6 @@ TEST(ParserTest, ErrorTest)
 
   // Effect of a comment.
   EXPECT_EQ(1, drv.parse("out1 = 5\n' comment\nidjfi"));
-  ASSERT_EQ(0, drv.lines.size());
   ASSERT_EQ(1, drv.errors.size());
   err = drv.errors[0];
   EXPECT_EQ(3, err.line);
@@ -419,7 +428,6 @@ TEST(ParserTest, ErrorTest)
   EXPECT_EQ("syntax error, unexpected end of file, expecting = or [", err.message);
 
   EXPECT_EQ(1, drv.parse("out1 = 5 ' comment\nidjfi"));
-  ASSERT_EQ(0, drv.lines.size());
   ASSERT_EQ(1, drv.errors.size());
   err = drv.errors[0];
   EXPECT_EQ(2, err.line);
@@ -432,34 +440,35 @@ TEST(ParserTest, NoteTest)
     Driver drv;
 
     EXPECT_EQ(0, drv.parse("out1 = c3"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("out1", drv.lines[0].str1);
-    EXPECT_EQ(-1.0f, drv.lines[0].expr1.Compute());
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("out1", lines->at(0).str1);
+    EXPECT_EQ(-1.0f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("out1 = c#0"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("out1", drv.lines[0].str1);
-    EXPECT_FLOAT_EQ(-4.0f + 0.0833333, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("out1", lines->at(0).str1);
+    EXPECT_FLOAT_EQ(-4.0f + 0.0833333, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("out1 = c-1"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("out1", drv.lines[0].str1);
-    EXPECT_FLOAT_EQ(-5.0f, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("out1", lines->at(0).str1);
+    EXPECT_FLOAT_EQ(-5.0f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("out1 = c#-1"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("out1", drv.lines[0].str1);
-    EXPECT_FLOAT_EQ(-5.0f + 0.0833333, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("out1", lines->at(0).str1);
+    EXPECT_FLOAT_EQ(-5.0f + 0.0833333, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("out1 = c10"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("out1", drv.lines[0].str1);
-    EXPECT_FLOAT_EQ(6.0f, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("out1", lines->at(0).str1);
+    EXPECT_FLOAT_EQ(6.0f, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("out1 = db10"));
-    ASSERT_EQ(1, drv.lines.size());
-    EXPECT_EQ("out1", drv.lines[0].str1);
-    EXPECT_FLOAT_EQ(6.0f + 0.0833333, drv.lines[0].expr1.Compute());
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("out1", lines->at(0).str1);
+    EXPECT_FLOAT_EQ(6.0f + 0.0833333, lines->at(0).expr1.Compute());
 }
 
 TEST(ParserTest, EnvironmentTest)
@@ -474,23 +483,42 @@ TEST(ParserTest, EnvironmentTest)
   drv.AddPortForName("in1", true, 7);
 
   EXPECT_EQ(0, drv.parse("out1 = sample_rate()"));
-  ASSERT_EQ(1, drv.lines.size());
-  EXPECT_EQ(43210, drv.lines[0].expr1.Compute());
+  std::vector<Line>* lines = &(drv.blocks[0].lines);
+  ASSERT_EQ(1, lines->size());
+  EXPECT_EQ(43210, lines->at(0).expr1.Compute());
 
   EXPECT_EQ(0, drv.parse("out1 = normal(1, 0.2)"));
-  ASSERT_EQ(1, drv.lines.size());
-  EXPECT_FLOAT_EQ(1.2, drv.lines[0].expr1.Compute());
+  ASSERT_EQ(1, lines->size());
+  EXPECT_FLOAT_EQ(1.2, lines->at(0).expr1.Compute());
 
   EXPECT_EQ(0, drv.parse("out1 = random(0, 10)"));
-  ASSERT_EQ(1, drv.lines.size());
-  EXPECT_EQ(5, drv.lines[0].expr1.Compute());
+  ASSERT_EQ(1, lines->size());
+  EXPECT_EQ(5, lines->at(0).expr1.Compute());
 
   EXPECT_EQ(0, drv.parse("out1 = 10 * connected(in1)"));
-  ASSERT_EQ(1, drv.lines.size());
-  EXPECT_EQ(0, drv.lines[0].expr1.Compute());
+  ASSERT_EQ(1, lines->size());
+  EXPECT_EQ(0, lines->at(0).expr1.Compute());
   test_env.setConnected(7, true);
-  EXPECT_EQ(10, drv.lines[0].expr1.Compute());
+  EXPECT_EQ(10, lines->at(0).expr1.Compute());
 }
+
+TEST(ParserTest, BlocksTest)
+{
+    Driver drv;
+
+    EXPECT_EQ(0, drv.parse("out1 = 2 also out2 = 4 end also"));
+    ASSERT_EQ(2, drv.blocks.size());
+
+    EXPECT_EQ(0, drv.parse("out1 = 2"));
+    ASSERT_EQ(1, drv.blocks.size());
+
+    EXPECT_EQ(0, drv.parse("also out1 = 2 end also  also out2 = 4 end also"));
+    ASSERT_EQ(2, drv.blocks.size());  // a Zero-line Main block is created.
+
+    // main block must be first or not at all.
+    EXPECT_EQ(1, drv.parse("also out1 = 2 end also  out2 = 4"));
+}
+
 
 TEST(RunTest, RunsAtAll) {
   Driver drv;
@@ -499,8 +527,9 @@ TEST(RunTest, RunsAtAll) {
   CodeBlock block(&test_env);
 
   EXPECT_EQ(0, drv.parse("foo = 3.14159"));
-  ASSERT_EQ(1, drv.lines.size());
-  translator.LinesToPCode(drv.lines, &(block.pcodes));
+  std::vector<Line>* lines = &(drv.blocks[0].lines);
+  ASSERT_EQ(1, lines->size());
+  translator.LinesToPCode(*lines, &(block.pcodes));
 
   EXPECT_TRUE(block.Run(true));
   EXPECT_EQ(3.14159f, *(drv.GetVarFromName("foo")));
@@ -515,8 +544,9 @@ TEST(RunTest, RunsForLoop) {
   CodeBlock block(&test_env);
 
   EXPECT_EQ(0, drv.parse("for i = 0 to 1 step 0.1 next"));
-  ASSERT_EQ(1, drv.lines.size());
-  translator.LinesToPCode(drv.lines, &(block.pcodes));
+  std::vector<Line>* lines = &(drv.blocks[0].lines);
+  ASSERT_EQ(1, lines->size());
+  translator.LinesToPCode(*lines, &(block.pcodes));
 
   EXPECT_TRUE(block.Run(true));
   EXPECT_EQ(0.0f, *(drv.GetVarFromName("i")));

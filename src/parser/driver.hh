@@ -53,7 +53,7 @@ public:
   // If able to parse, this is the abstract syntax tree for the program.
   // Cannot be executed; needs to be turned into PCode objects before
   // Basically can run it.
-  std::vector<Line> lines;
+  std::vector<Block> blocks;
   // List of syntax errors found before parser gave up.
   std::vector<Error> errors;
   // Knows how to create various kinds of Expression objects.

@@ -410,12 +410,20 @@ namespace yy {
     /// An auxiliary type to compute the largest semantic type.
     union union_type
     {
+      // block
+      // main_block
+      char dummy1[sizeof (Block)];
+
+      // blocks
+      char dummy2[sizeof (Blocks)];
+
       // exp
-      char dummy1[sizeof (Expression)];
+      char dummy3[sizeof (Expression)];
 
       // expression_list
-      char dummy2[sizeof (ExpressionList)];
+      char dummy4[sizeof (ExpressionList)];
 
+      // statement
       // array_assignment
       // assignment
       // continue_statement
@@ -424,21 +432,22 @@ namespace yy {
       // elseif_clause
       // if_statement
       // wait_statement
-      char dummy3[sizeof (Line)];
+      char dummy5[sizeof (Line)];
 
-      // statements
+      // zero_or_more_statements
+      // one_or_more_statements
       // elseif_group
-      char dummy4[sizeof (Statements)];
+      char dummy6[sizeof (Statements)];
 
       // "number"
-      char dummy5[sizeof (float)];
+      char dummy7[sizeof (float)];
 
       // "abs"
       // "all"
+      // "also"
       // "and"
       // "="
       // "ceiling"
-      // "clamp"
       // "continue"
       // "else"
       // "elseif"
@@ -480,7 +489,7 @@ namespace yy {
       // "oneportfunc"
       // "twoargfunc"
       // "comparison"
-      char dummy6[sizeof (std::string)];
+      char dummy8[sizeof (std::string)];
     };
 
     /// The size of the largest semantic type.
@@ -535,10 +544,10 @@ namespace yy {
     TOK_YYUNDEF = 2,               // "invalid token"
     TOK_ABS = 3,                   // "abs"
     TOK_ALL = 4,                   // "all"
-    TOK_AND = 5,                   // "and"
-    TOK_ASSIGN = 6,                // "="
-    TOK_CEILING = 7,               // "ceiling"
-    TOK_CLAMP = 8,                 // "clamp"
+    TOK_ALSO = 5,                  // "also"
+    TOK_AND = 6,                   // "and"
+    TOK_ASSIGN = 7,                // "="
+    TOK_CEILING = 8,               // "ceiling"
     TOK_CONTINUE = 9,              // "continue"
     TOK_ELSE = 10,                 // "else"
     TOK_ELSEIF = 11,               // "elseif"
@@ -605,10 +614,10 @@ namespace yy {
         S_YYUNDEF = 2,                           // "invalid token"
         S_ABS = 3,                               // "abs"
         S_ALL = 4,                               // "all"
-        S_AND = 5,                               // "and"
-        S_ASSIGN = 6,                            // "="
-        S_CEILING = 7,                           // "ceiling"
-        S_CLAMP = 8,                             // "clamp"
+        S_ALSO = 5,                              // "also"
+        S_AND = 6,                               // "and"
+        S_ASSIGN = 7,                            // "="
+        S_CEILING = 8,                           // "ceiling"
         S_CONTINUE = 9,                          // "continue"
         S_ELSE = 10,                             // "else"
         S_ELSEIF = 11,                           // "elseif"
@@ -654,18 +663,23 @@ namespace yy {
         S_NEG = 51,                              // NEG
         S_YYACCEPT = 52,                         // $accept
         S_program = 53,                          // program
-        S_statements = 54,                       // statements
-        S_array_assignment = 55,                 // array_assignment
-        S_assignment = 56,                       // assignment
-        S_continue_statement = 57,               // continue_statement
-        S_exit_statement = 58,                   // exit_statement
-        S_for_statement = 59,                    // for_statement
-        S_elseif_group = 60,                     // elseif_group
-        S_elseif_clause = 61,                    // elseif_clause
-        S_if_statement = 62,                     // if_statement
-        S_wait_statement = 63,                   // wait_statement
-        S_expression_list = 64,                  // expression_list
-        S_exp = 65                               // exp
+        S_blocks = 54,                           // blocks
+        S_block = 55,                            // block
+        S_main_block = 56,                       // main_block
+        S_zero_or_more_statements = 57,          // zero_or_more_statements
+        S_one_or_more_statements = 58,           // one_or_more_statements
+        S_statement = 59,                        // statement
+        S_array_assignment = 60,                 // array_assignment
+        S_assignment = 61,                       // assignment
+        S_continue_statement = 62,               // continue_statement
+        S_exit_statement = 63,                   // exit_statement
+        S_for_statement = 64,                    // for_statement
+        S_elseif_group = 65,                     // elseif_group
+        S_elseif_clause = 66,                    // elseif_clause
+        S_if_statement = 67,                     // if_statement
+        S_wait_statement = 68,                   // wait_statement
+        S_expression_list = 69,                  // expression_list
+        S_exp = 70                               // exp
       };
     };
 
@@ -702,6 +716,15 @@ namespace yy {
       {
         switch (this->kind ())
     {
+      case symbol_kind::S_block: // block
+      case symbol_kind::S_main_block: // main_block
+        value.move< Block > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_blocks: // blocks
+        value.move< Blocks > (std::move (that.value));
+        break;
+
       case symbol_kind::S_exp: // exp
         value.move< Expression > (std::move (that.value));
         break;
@@ -710,6 +733,7 @@ namespace yy {
         value.move< ExpressionList > (std::move (that.value));
         break;
 
+      case symbol_kind::S_statement: // statement
       case symbol_kind::S_array_assignment: // array_assignment
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_continue_statement: // continue_statement
@@ -721,7 +745,8 @@ namespace yy {
         value.move< Line > (std::move (that.value));
         break;
 
-      case symbol_kind::S_statements: // statements
+      case symbol_kind::S_zero_or_more_statements: // zero_or_more_statements
+      case symbol_kind::S_one_or_more_statements: // one_or_more_statements
       case symbol_kind::S_elseif_group: // elseif_group
         value.move< Statements > (std::move (that.value));
         break;
@@ -732,10 +757,10 @@ namespace yy {
 
       case symbol_kind::S_ABS: // "abs"
       case symbol_kind::S_ALL: // "all"
+      case symbol_kind::S_ALSO: // "also"
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CEILING: // "ceiling"
-      case symbol_kind::S_CLAMP: // "clamp"
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
       case symbol_kind::S_ELSEIF: // "elseif"
@@ -799,6 +824,34 @@ namespace yy {
 #else
       basic_symbol (typename Base::kind_type t, const location_type& l)
         : Base (t)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, Block&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const Block& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, Blocks&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const Blocks& v, const location_type& l)
+        : Base (t)
+        , value (v)
         , location (l)
       {}
 #endif
@@ -911,6 +964,15 @@ namespace yy {
         // Value type destructor.
 switch (yykind)
     {
+      case symbol_kind::S_block: // block
+      case symbol_kind::S_main_block: // main_block
+        value.template destroy< Block > ();
+        break;
+
+      case symbol_kind::S_blocks: // blocks
+        value.template destroy< Blocks > ();
+        break;
+
       case symbol_kind::S_exp: // exp
         value.template destroy< Expression > ();
         break;
@@ -919,6 +981,7 @@ switch (yykind)
         value.template destroy< ExpressionList > ();
         break;
 
+      case symbol_kind::S_statement: // statement
       case symbol_kind::S_array_assignment: // array_assignment
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_continue_statement: // continue_statement
@@ -930,7 +993,8 @@ switch (yykind)
         value.template destroy< Line > ();
         break;
 
-      case symbol_kind::S_statements: // statements
+      case symbol_kind::S_zero_or_more_statements: // zero_or_more_statements
+      case symbol_kind::S_one_or_more_statements: // one_or_more_statements
       case symbol_kind::S_elseif_group: // elseif_group
         value.template destroy< Statements > ();
         break;
@@ -941,10 +1005,10 @@ switch (yykind)
 
       case symbol_kind::S_ABS: // "abs"
       case symbol_kind::S_ALL: // "all"
+      case symbol_kind::S_ALSO: // "also"
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CEILING: // "ceiling"
-      case symbol_kind::S_CLAMP: // "clamp"
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
       case symbol_kind::S_ELSEIF: // "elseif"
@@ -1242,6 +1306,21 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_ALSO (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_ALSO, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_ALSO (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_ALSO, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_AND (std::string v, location_type l)
       {
         return symbol_type (token::TOK_AND, std::move (v), std::move (l));
@@ -1282,21 +1361,6 @@ switch (yykind)
       make_CEILING (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOK_CEILING, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_CLAMP (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_CLAMP, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_CLAMP (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_CLAMP, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -2288,9 +2352,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 311,     ///< Last index in yytable_.
-      yynnts_ = 14,  ///< Number of nonterminal symbols.
-      yyfinal_ = 3 ///< Termination state number.
+      yylast_ = 316,     ///< Last index in yytable_.
+      yynnts_ = 19,  ///< Number of nonterminal symbols.
+      yyfinal_ = 48 ///< Termination state number.
     };
 
 
@@ -2315,6 +2379,15 @@ switch (yykind)
   {
     switch (this->kind ())
     {
+      case symbol_kind::S_block: // block
+      case symbol_kind::S_main_block: // main_block
+        value.copy< Block > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_blocks: // blocks
+        value.copy< Blocks > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_exp: // exp
         value.copy< Expression > (YY_MOVE (that.value));
         break;
@@ -2323,6 +2396,7 @@ switch (yykind)
         value.copy< ExpressionList > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_statement: // statement
       case symbol_kind::S_array_assignment: // array_assignment
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_continue_statement: // continue_statement
@@ -2334,7 +2408,8 @@ switch (yykind)
         value.copy< Line > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_statements: // statements
+      case symbol_kind::S_zero_or_more_statements: // zero_or_more_statements
+      case symbol_kind::S_one_or_more_statements: // one_or_more_statements
       case symbol_kind::S_elseif_group: // elseif_group
         value.copy< Statements > (YY_MOVE (that.value));
         break;
@@ -2345,10 +2420,10 @@ switch (yykind)
 
       case symbol_kind::S_ABS: // "abs"
       case symbol_kind::S_ALL: // "all"
+      case symbol_kind::S_ALSO: // "also"
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CEILING: // "ceiling"
-      case symbol_kind::S_CLAMP: // "clamp"
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
       case symbol_kind::S_ELSEIF: // "elseif"
@@ -2424,6 +2499,15 @@ switch (yykind)
     super_type::move (s);
     switch (this->kind ())
     {
+      case symbol_kind::S_block: // block
+      case symbol_kind::S_main_block: // main_block
+        value.move< Block > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_blocks: // blocks
+        value.move< Blocks > (YY_MOVE (s.value));
+        break;
+
       case symbol_kind::S_exp: // exp
         value.move< Expression > (YY_MOVE (s.value));
         break;
@@ -2432,6 +2516,7 @@ switch (yykind)
         value.move< ExpressionList > (YY_MOVE (s.value));
         break;
 
+      case symbol_kind::S_statement: // statement
       case symbol_kind::S_array_assignment: // array_assignment
       case symbol_kind::S_assignment: // assignment
       case symbol_kind::S_continue_statement: // continue_statement
@@ -2443,7 +2528,8 @@ switch (yykind)
         value.move< Line > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_statements: // statements
+      case symbol_kind::S_zero_or_more_statements: // zero_or_more_statements
+      case symbol_kind::S_one_or_more_statements: // one_or_more_statements
       case symbol_kind::S_elseif_group: // elseif_group
         value.move< Statements > (YY_MOVE (s.value));
         break;
@@ -2454,10 +2540,10 @@ switch (yykind)
 
       case symbol_kind::S_ABS: // "abs"
       case symbol_kind::S_ALL: // "all"
+      case symbol_kind::S_ALSO: // "also"
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CEILING: // "ceiling"
-      case symbol_kind::S_CLAMP: // "clamp"
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
       case symbol_kind::S_ELSEIF: // "elseif"
@@ -2568,7 +2654,7 @@ switch (yykind)
 
 
 } // yy
-#line 2572 "parser.hh"
+#line 2658 "parser.hh"
 
 
 

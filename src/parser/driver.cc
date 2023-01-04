@@ -81,8 +81,11 @@ STArray* Driver::GetArrayFromName(const std::string &name) {
 int Driver::parse(const std::string &text)
 {
   location.initialize();
-  // Remove any existing lines from a previous parse().
-  lines.clear();
+  // Remove any existing blocks from a previous parse(). Doesn't affect
+  // currently running program.
+  // Note that we don't erase the variable space, because we want to keep
+  // the current values intact.
+  blocks.clear();
   // Remove any errors from previous parse attempt.
   errors.clear();
   return set_text(text);

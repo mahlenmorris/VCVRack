@@ -209,8 +209,12 @@ struct Line {
 };
 
 struct Statements {
-  std::vector<Line> lines;
 
+  static Statements FirstStatement(Line stat) {
+    Statements stats;
+    stats.lines.push_back(stat);
+    return stats;
+  }
   Statements add(Line new_line) {
     lines.push_back(new_line);
     return *this;
@@ -222,7 +226,47 @@ struct Statements {
     os << "Statements(" << std::to_string(statements.size()) << " statements )";
     return os;
   }
+
+  std::vector<Line> lines;
 };
 
+// A Block is a logical grouping of statements that will be turned into
+// a CodeBlock later.
+struct Block {
+  enum Type {
+    MAIN,  // Block of code that runs every sample that the module is "running".
+    WHEN   // Waits for a condition to become true, and then runs.
+  };
+  static Block MainBlock(Statements stat) {
+    Block block;
+    block.type = Block::MAIN;
+    block.lines = stat.lines;
+    return block;
+  }
+  friend std::ostream& operator<<(std::ostream& os, Block block) {
+    os << "Block(" << std::to_string(block.lines.size()) << " statements)";
+    return os;
+  }
+
+  Type type;
+  std::vector<Line> lines;  // Code.
+  Expression run_condition;
+};
+
+struct Blocks {
+  std::vector<Block> block_list;
+  Blocks() { }
+  explicit Blocks(Block main_block) {
+    block_list.push_back(main_block);
+  }
+  Blocks Add(Block new_block) {
+    block_list.push_back(new_block);
+    return *this;
+  }
+  friend std::ostream& operator<<(std::ostream& os, Blocks blocks) {
+    os << "Blocks(" << std::to_string(blocks.block_list.size()) << " blocks)";
+    return os;
+  }
+};
 
 #endif // TREE_HH

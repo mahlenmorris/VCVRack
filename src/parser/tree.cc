@@ -139,6 +139,7 @@ std::string Expression::to_string() const {
     case BINOP: return "BinOpExpression(" + std::to_string(operation) + ", " +
         subexpressions[0].to_string() + ", " +
         subexpressions[1].to_string() + ")";
+    case ARRAY_VARIABLE: return "ArrayVariable(" + name + ")";
     case VARIABLE: return "VariableExpression(" + name + ")";
     default: return "Expression(some other type)";
   }

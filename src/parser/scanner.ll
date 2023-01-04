@@ -130,6 +130,7 @@ blank [ \t\r]
 "="        return yy::parser::make_ASSIGN (yytext, loc);
 ","        return yy::parser::make_COMMA  (yytext, loc);
 "all"      return yy::parser::make_ALL    (yytext, loc);
+"also"     return yy::parser::make_ALSO   (yytext, loc);
 "and"      return yy::parser::make_AND    (yytext, loc);
 "continue" return yy::parser::make_CONTINUE (yytext, loc);
 "else"     return yy::parser::make_ELSE   (yytext, loc);

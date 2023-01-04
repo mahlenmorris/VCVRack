@@ -259,7 +259,7 @@ struct Basically : Module {
       compiles = !drv.parse(lowercase);
       if (compiles) {
         PCodeTranslator translator;
-        translator.LinesToPCode(drv.lines, &(main_block->pcodes));
+        translator.LinesToPCode(drv.blocks[0].lines, &(main_block->pcodes));
         main_block->samples_per_millisecond = args.sampleRate / 1000.0f;
          /*
          for (auto &pcode : main_block->pcodes) {
