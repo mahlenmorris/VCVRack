@@ -41,6 +41,7 @@ struct CodeBlock {
   explicit CodeBlock(Environment* env) : environment{env} {
     wait_info.in_wait = false;
     current_line = 0;
+    samples_per_millisecond = env->SampleRate() / 1000.0f;
   }
 
   // There are times when the module itself needs to get or set a variable's
