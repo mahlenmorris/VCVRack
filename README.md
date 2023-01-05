@@ -19,6 +19,7 @@ context of VCV Rack. Can act like:
 * a wavefolder
 * a control voltage utility
 * sample and hold
+* a tape delay or tape loop
 * all of the above and more, simultaneously
 
 Useful for:
@@ -44,6 +45,12 @@ Note that STYLE is set to "Start on trigger, don't loop".
 The examples above are all in [this patch](examples/BASICallyExamples1.vcv).
 A patch with some simple/strange/silly ideas for other things BASICally can do
 are in [this patch](examples/BASICallyExperiments.vcv).
+
+#### A tape loop with four playback heads
+![ten second tape loop image](images/BASICallyTapeLoop.png)
+Send audio to IN 2-4 of the VCA MIX and then try listening to the various
+playback heads in OUT1-OUT4 of BASICally. Patch is [here](examples/BASICallyTapeLoop.vcv).
+
 
 <!-- TODO: video of different examples and their output -->
 
