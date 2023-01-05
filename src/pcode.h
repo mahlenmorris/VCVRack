@@ -3,9 +3,10 @@
 
 #include "parser/environment.h"
 #include "parser/tree.h"
+
 /*
 The structures that make up the pseudocode that gets run during a call
-to process(). Needs to be
+to process(). Needs to be:
 * interruptible and efficient, because process() isn't allowed to run for long
 * always have a position (e.g., line number) that we can pick up execution at.
 The Line's that the Parser created are turned into these instructions.
@@ -81,29 +82,6 @@ struct Exit {
   // When an Exit is created, we typically do not know the exit_line_number.
   Exit(const std::string type, int loop_pos) : exit_type{type},
       loop_start_Line_number{loop_pos} {}
-};
-
-// Class for turning nested vector of Line objects into a flat vector of
-// PCode objects.
-class PCodeTranslator {
-public:
-  PCodeTranslator() { }
-  // TODO: This should return a vector of Error objects, so that we can
-  // prevent running and report them.
-  void LinesToPCode(const std::vector<Line> &lines, std::vector<PCode> *pcodes);
-  void AddElseifs(std::vector<int>* jump_positions,
-                  const Statements &elseifs, const Exit &innermost_loop,
-                  bool last_falls_through);
-  PCode Assignment(const std::string str1, float* variable_ptr,
-                   const PortPointer &port, const Expression &expr1);
-
-private:
-  void AddLineToPCode(const Line &line, const Exit &innermost_loop);
-  // Just useful for making Number expressions.
-  ExpressionFactory expression_factory;
-  std::vector<PCode> *pcodes;
-  std::vector<Loop> loops;
-  std::vector<Exit> exits;
 };
 
 #endif // PCODE_H

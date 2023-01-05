@@ -142,10 +142,12 @@ blank [ \t\r]
 "next"     return yy::parser::make_NEXT   (yytext, loc);
 "not"      return yy::parser::make_NOT    (yytext, loc);
 "or"       return yy::parser::make_OR     (yytext, loc);
+"start"    return yy::parser::make_START   (yytext, loc);
 "step"     return yy::parser::make_STEP   (yytext, loc);
 "then"     return yy::parser::make_THEN   (yytext, loc);
 "to"       return yy::parser::make_TO     (yytext, loc);
 "wait"     return yy::parser::make_WAIT   (yytext, loc);
+"when"     return yy::parser::make_WHEN   (yytext, loc);
 
 {note}     return yy::parser::make_NOTE (yytext, loc);
 {float}    return make_NUMBER (yytext, loc);

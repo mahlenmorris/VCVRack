@@ -9,6 +9,7 @@
 
 #include "parser/tree.h"
 #include "pcode.h"
+#include "pcode_trans.h"
 
 PCode PCode::Wait(const Expression &expr1) {
   PCode new_pcode;
@@ -47,6 +48,13 @@ void PCode::DoArrayAssignment() {
   } else {
     array_ptr->at(index) = expr2.Compute();
   }
+}
+
+bool PCodeTranslator::BlockToCodeBlock(CodeBlock* dest, const Block &source) {
+  LinesToPCode(source.lines, &(dest->pcodes));
+  dest->type = source.type;
+  dest->condition = source.condition;
+  return true;
 }
 
 PCode PCodeTranslator::Assignment(const std::string str1, float* variable_ptr,

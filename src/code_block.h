@@ -7,6 +7,7 @@
 
 #include "parser/environment.h"  // Reading and writing module data.
 #include "pcode.h"
+#include "parser/tree.h"
 
 // The execution of WAIT statements needs to be as efficient as I can make them.
 // This data structure just collects all data about the ongoing WAIT, if any.
@@ -25,6 +26,8 @@ struct WaitInfo {
   int ticks_limit;
 };
 
+class PCode;
+
 struct CodeBlock {
   // The "bytecode" instructions we follow.
   std::vector<PCode> pcodes;
@@ -37,10 +40,16 @@ struct CodeBlock {
   WaitInfo wait_info;
   float samples_per_millisecond;
   Environment* environment;
+  Block::Type type;
+  Block::Condition condition;
+  // Some blocks can only run when triggered by an event.
+  // Setting this allows them to know they run.
+  bool in_progress;
 
   explicit CodeBlock(Environment* env) : environment{env} {
     wait_info.in_wait = false;
     current_line = 0;
+    in_progress = false;
     samples_per_millisecond = env->SampleRate() / 1000.0f;
   }
 

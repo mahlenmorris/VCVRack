@@ -8,7 +8,7 @@
 #include "parser/environment.h"
 #include "plugin.hpp"
 #include "parser/driver.hh"
-#include "pcode.h"
+#include "pcode_trans.h"
 #include "st_textfield.hpp"
 
 enum Style {
@@ -228,7 +228,11 @@ struct Basically : Module {
   }
 
   void ResetToProgramStart() {
-    for (auto block : all_blocks) {
+    for (auto block : main_blocks) {
+      block->current_line = 0;
+      block->wait_info.in_wait = false;
+    }
+    for (auto block : start_blocks) {
       block->current_line = 0;
       block->wait_info.in_wait = false;
     }
@@ -250,6 +254,9 @@ struct Basically : Module {
     // ProcessArgs not available when we first create the Environment.
     environment->SetProcessArgs(&args);
 
+    // Will we need to run the WHEN START blocks?
+    bool run_starts = false;
+
     // Compile if we need to.
     if (module_refresh && !text.empty()) {
       module_refresh = false;
@@ -261,14 +268,27 @@ struct Basically : Module {
       if (compiles) {
         PCodeTranslator translator;
         // Remove all existing CodeBlocks.
-        for (auto block : all_blocks) {
+        for (auto block : main_blocks) {
           delete block;
         }
-        all_blocks.clear();
+        main_blocks.clear();
+        for (auto block : start_blocks) {
+          delete block;
+        }
+        start_blocks.clear();
         for (auto ast_block : drv.blocks) {
           CodeBlock* new_block = new CodeBlock(environment);
-          all_blocks.push_back(new_block);
-          translator.LinesToPCode(ast_block.lines, &(new_block->pcodes));
+          if (translator.BlockToCodeBlock(new_block, ast_block)) {
+            // Different lists depending on type.
+            if (new_block->type == Block::MAIN) {
+              main_blocks.push_back(new_block);
+            } else if (new_block->type == Block::WHEN &&
+               new_block->condition == Block::START) {
+              start_blocks.push_back(new_block);
+            }
+          } else {
+            // TODO: Report errors via some new mechanism.
+          }
         }
          /*
          for (auto &pcode : main_block->pcodes) {
@@ -276,8 +296,12 @@ struct Basically : Module {
            INFO("%s", pcode.to_string().c_str());
          }
          */
-        // Recompiled; cannot trust program state.
+        // Recompiled; cannot trust program state. But note we are leaving
+        // *variable* state intact.
         ResetToProgramStart();
+        // And recompiling is when we run the WHEN START blocks.
+        INFO("setting run_starts");
+        run_starts = true;
       }
     }
 
@@ -309,21 +333,39 @@ struct Basically : Module {
         running = params[RUN_PARAM].getValue() > 0.1f;
       }
     }
-    if (all_blocks.size() == 0) {
-      // No code to run --> don't run!
+    if (main_blocks.size() == 0) {
+      // TODO: If we have a START block but no main blocks, are we running?
+      // No code to run --> don't say we're running!
       running = false;
     }
     if (!prev_running && running) {
       // Flash the run light for a brief part of  asecond.
       // Compute how many samples to show the light.
+      // TODO: should we set run_starts here as well?
       run_light_countdown = std::floor(args.sampleRate / 20.0f);
     }
 
-    if (running) {
-      for (CodeBlock* block : all_blocks) {
-        running = block->Run(loops);
+    if (running && run_starts) {
+      for (CodeBlock* block : start_blocks) {
+        INFO("setting in_progress to true");
+        block->in_progress = true;
       }
     }
+
+    if (running) {
+      // Any START blocks run.
+      for (CodeBlock* block : start_blocks) {
+        block->Run(false);
+      }
+
+      for (CodeBlock* block : main_blocks) {
+        block->Run(loops);
+      }
+    }
+    // !!!!!!!!!!!!!!!
+    // BUG: We do NOT have a good way of being told to stop running; the
+    // new Block thing has broken the existing way.
+
 
     // Lights.
     if (run_light_countdown > 0) {
@@ -343,7 +385,10 @@ struct Basically : Module {
   bool running = false;
   Driver drv;
   ProductionEnvironment* environment;
-  std::vector<CodeBlock*> all_blocks;
+  // The untitled default block and any ALSO - END ALSO blocks.
+  std::vector<CodeBlock*> main_blocks;
+  // All WHEN START - END WHEN blocks.
+  std::vector<CodeBlock*> start_blocks;
 
   ///////
   // UI related

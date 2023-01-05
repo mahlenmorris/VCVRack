@@ -58,10 +58,12 @@
   SAMPLE_RATE "sample_rate"
   SIGN    "sign"
   SIN     "sin"
+  START   "start"
   STEP    "step"
   THEN    "then"
   TO      "to"
   WAIT    "wait"
+  WHEN    "when"
   MINUS   "-"
   PLUS    "+"
   STAR    "*"
@@ -118,6 +120,7 @@ blocks:
 
 block:
   "also" one_or_more_statements "end" "also"  { $$ = Block::MainBlock($2); }
+| "when" "start" one_or_more_statements "end" "when" { $$ = Block::WhenBlock($2, $3); }
 
 main_block:
   one_or_more_statements          { $$ = Block::MainBlock($1); }

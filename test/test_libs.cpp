@@ -3,7 +3,7 @@
 #include "../src/code_block.h"
 #include "../src/parser/driver.hh"
 #include "../src/parser/environment.h"
-#include "../src/pcode.h"
+#include "../src/pcode_trans.h"
 #include <stdexcept>
 
 struct TestEnvironment : Environment {
@@ -512,11 +512,15 @@ TEST(ParserTest, BlocksTest)
     EXPECT_EQ(0, drv.parse("out1 = 2"));
     ASSERT_EQ(1, drv.blocks.size());
 
+    // Two ALSO blocks is fine.
     EXPECT_EQ(0, drv.parse("also out1 = 2 end also  also out2 = 4 end also"));
     ASSERT_EQ(2, drv.blocks.size());  // a Zero-line Main block is created.
 
     // main block must be first or not at all.
     EXPECT_EQ(1, drv.parse("also out1 = 2 end also  out2 = 4"));
+
+    EXPECT_EQ(0, drv.parse("out1 = 2  when start f = 0 end when"));
+    ASSERT_EQ(2, drv.blocks.size());
 }
 
 
