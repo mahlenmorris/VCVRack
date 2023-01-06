@@ -254,9 +254,6 @@ struct Basically : Module {
     // ProcessArgs not available when we first create the Environment.
     environment->SetProcessArgs(&args);
 
-    // Will we need to run the WHEN START blocks?
-    bool run_starts = false;
-
     // Compile if we need to.
     if (module_refresh && !text.empty()) {
       module_refresh = false;
@@ -276,6 +273,7 @@ struct Basically : Module {
           delete block;
         }
         start_blocks.clear();
+        running_start_blocks.clear();
         for (auto ast_block : drv.blocks) {
           CodeBlock* new_block = new CodeBlock(environment);
           if (translator.BlockToCodeBlock(new_block, ast_block)) {
@@ -299,9 +297,11 @@ struct Basically : Module {
         // Recompiled; cannot trust program state. But note we are leaving
         // *variable* state intact.
         ResetToProgramStart();
-        // And recompiling is when we run the WHEN START blocks.
-        INFO("setting run_starts");
-        run_starts = true;
+        // And recompiling is when we kick off the WHEN START blocks.
+        for (CodeBlock* block : start_blocks) {
+          block->in_progress = true;
+          running_start_blocks.push_back(block);
+        }
       }
     }
 
@@ -345,19 +345,20 @@ struct Basically : Module {
       run_light_countdown = std::floor(args.sampleRate / 20.0f);
     }
 
-    if (running && run_starts) {
-      for (CodeBlock* block : start_blocks) {
-        INFO("setting in_progress to true");
-        block->in_progress = true;
-      }
-    }
-
     if (running) {
-      // Any START blocks run.
-      for (CodeBlock* block : start_blocks) {
-        block->Run(false);
+      // Any START blocks run or continue running.
+      if (!running_start_blocks.empty()) {
+        size_t i = 0;
+        while (i < running_start_blocks.size()) {
+          CodeBlock* block = running_start_blocks[i];
+          bool finished = !(block->Run(false));
+          if (finished) {
+            running_start_blocks.erase(running_start_blocks.begin() + i);
+          } else {
+            i++;
+          }
+        }
       }
-
       for (CodeBlock* block : main_blocks) {
         block->Run(loops);
       }
@@ -386,9 +387,13 @@ struct Basically : Module {
   Driver drv;
   ProductionEnvironment* environment;
   // The untitled default block and any ALSO - END ALSO blocks.
+  // All main blocks are always running, so we don't need a distinct list.
   std::vector<CodeBlock*> main_blocks;
   // All WHEN START - END WHEN blocks.
   std::vector<CodeBlock*> start_blocks;
+  // The currently running START blocks.
+  std::vector<CodeBlock*> running_start_blocks;
+
 
   ///////
   // UI related
