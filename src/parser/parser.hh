@@ -2141,7 +2141,7 @@ switch (yykind)
     // number is the opposite.  If YYTABLE_NINF, syntax error.
     static const unsigned char yytable_[];
 
-    static const signed char yycheck_[];
+    static const short yycheck_[];
 
     // YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
     // state STATE-NUM.
@@ -2392,9 +2392,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 365,     ///< Last index in yytable_.
+      yylast_ = 418,     ///< Last index in yytable_.
       yynnts_ = 19,  ///< Number of nonterminal symbols.
-      yyfinal_ = 50 ///< Termination state number.
+      yyfinal_ = 51 ///< Termination state number.
     };
 
 

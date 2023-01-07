@@ -14,10 +14,21 @@
 // and these methods?
 void CodeBlock::SetVariableValue(float* variable_ptr,
     const PortPointer &assign_port, float value) {
-  if (assign_port.port_type == PortPointer::NOT_PORT) {
-    *variable_ptr = value;
-  } else {
-    environment->SetVoltage(assign_port, value);
+  switch (assign_port.port_type) {
+    case PortPointer::NOT_PORT: {
+     *variable_ptr = value;
+    }
+    break;
+    case PortPointer::INPUT: {
+      environment->SetVoltage(assign_port, value);
+    }
+    break;
+    case PortPointer::OUTPUT: {
+      // Force output values to -10 <= x <= 10 range.
+      environment->SetVoltage(assign_port,
+          std::max(-10.0f, std::min(10.0f, value)));
+    }
+    break;
   }
 }
 
@@ -31,13 +42,6 @@ float CodeBlock::GetVariableValue(float* variable_ptr,
 }
 
 bool CodeBlock::Run(bool loops) {
-  // Non-MAIN blocks only run when started, and don't automatically loop.
-  if (type != Block::MAIN) {
-    if (!in_progress) {
-      return true;
-    }
-  }
-
   // Recompute the wait time, but only if we _need_ to.
   // Consumed by the PCode::WAIT instruction.
   bool need_to_update_wait = false;
@@ -171,7 +175,6 @@ bool CodeBlock::Run(bool loops) {
       current_line = 0;
       waiting = true;  // Implicit WAIT at end of program.
       if (!loops) {
-        in_progress = false;
         running = false;
       }
     }

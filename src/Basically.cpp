@@ -2,6 +2,7 @@
 #include <cctype>
 #include <cmath>
 #include <unordered_map>
+#include <utility>  // pair
 #include <vector>
 
 #include "code_block.h"
@@ -274,6 +275,11 @@ struct Basically : Module {
         }
         start_blocks.clear();
         running_start_blocks.clear();
+        for (auto p : expression_blocks) {
+          delete p.second;
+        }
+        expression_blocks.clear();
+        running_expression_blocks.clear();
         for (auto ast_block : drv.blocks) {
           CodeBlock* new_block = new CodeBlock(environment);
           if (translator.BlockToCodeBlock(new_block, ast_block)) {
@@ -281,8 +287,12 @@ struct Basically : Module {
             if (new_block->type == Block::MAIN) {
               main_blocks.push_back(new_block);
             } else if (new_block->type == Block::WHEN &&
-               new_block->condition == Block::START) {
+                new_block->condition == Block::START) {
               start_blocks.push_back(new_block);
+            } else if (new_block->type == Block::WHEN &&
+                new_block->condition == Block::EXPRESSION) {
+              expression_blocks.push_back(std::make_pair(ast_block.run_condition, new_block));
+              running_expression_blocks.push_back(false);
             }
           } else {
             // TODO: Report errors via some new mechanism.
@@ -299,7 +309,6 @@ struct Basically : Module {
         ResetToProgramStart();
         // And recompiling is when we kick off the WHEN START blocks.
         for (CodeBlock* block : start_blocks) {
-          block->in_progress = true;
           running_start_blocks.push_back(block);
         }
       }
@@ -333,7 +342,7 @@ struct Basically : Module {
         running = params[RUN_PARAM].getValue() > 0.1f;
       }
     }
-    if (main_blocks.size() == 0) {
+    if (main_blocks.empty() && expression_blocks.empty()) {
       // TODO: If we have a START block but no main blocks, are we running?
       // No code to run --> don't say we're running!
       running = false;
@@ -357,6 +366,19 @@ struct Basically : Module {
           } else {
             i++;
           }
+        }
+      }
+      // For WHEN EXPRESSION blocks, test each expression in turn.
+      for (size_t pos = 0; pos < expression_blocks.size(); pos++) {
+        // If already running, don't test the expression.
+        if (!running_expression_blocks[pos]) {
+          // Run expression, see if now true.
+          running_expression_blocks[pos] =
+            !Expression::is_zero(expression_blocks[pos].first.Compute());
+        }
+        if (running_expression_blocks[pos]) {
+          running_expression_blocks[pos] =
+              expression_blocks[pos].second->Run(false);
         }
       }
       for (CodeBlock* block : main_blocks) {
@@ -393,6 +415,10 @@ struct Basically : Module {
   std::vector<CodeBlock*> start_blocks;
   // The currently running START blocks.
   std::vector<CodeBlock*> running_start_blocks;
+  // All WHEN EXPRESSION blocks. Is a vector to maintain order.
+  std::vector<std::pair<Expression, CodeBlock*> > expression_blocks;
+  // Which ones are running.
+  std::vector<bool> running_expression_blocks;
 
 
   ///////

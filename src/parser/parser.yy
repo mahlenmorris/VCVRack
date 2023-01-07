@@ -121,6 +121,7 @@ blocks:
 block:
   "also" one_or_more_statements "end" "also"  { $$ = Block::MainBlock($2); }
 | "when" "start" one_or_more_statements "end" "when" { $$ = Block::WhenBlock($2, $3); }
+| "when" exp one_or_more_statements "end" "when" { $$ = Block::WhenExpBlock($2, $3); }
 
 main_block:
   one_or_more_statements          { $$ = Block::MainBlock($1); }
@@ -141,7 +142,6 @@ statement:
 | for_statement        { $$ = $1; }
 | if_statement         { $$ = $1; }
 | wait_statement       { $$ = $1; }
-
 
 array_assignment:
   "identifier" "[" exp "]" "=" exp  { $$ = Line::ArrayAssignment($1, $3, $6, &drv); }

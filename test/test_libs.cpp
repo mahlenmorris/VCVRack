@@ -521,6 +521,9 @@ TEST(ParserTest, BlocksTest)
 
     EXPECT_EQ(0, drv.parse("out1 = 2  when start f = 0 end when"));
     ASSERT_EQ(2, drv.blocks.size());
+
+    EXPECT_EQ(0, drv.parse("when foo == 1 foo = 0 end when"));
+    ASSERT_EQ(1, drv.blocks.size());
 }
 
 
@@ -531,10 +534,8 @@ TEST(RunTest, RunsAtAll) {
   CodeBlock block(&test_env);
 
   EXPECT_EQ(0, drv.parse("foo = 3.14159"));
-  std::vector<Line>* lines = &(drv.blocks[0].lines);
-  ASSERT_EQ(1, lines->size());
-  translator.LinesToPCode(*lines, &(block.pcodes));
-
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
   EXPECT_TRUE(block.Run(true));
   EXPECT_EQ(3.14159f, *(drv.GetVarFromName("foo")));
 }
@@ -548,9 +549,8 @@ TEST(RunTest, RunsForLoop) {
   CodeBlock block(&test_env);
 
   EXPECT_EQ(0, drv.parse("for i = 0 to 1 step 0.1 next"));
-  std::vector<Line>* lines = &(drv.blocks[0].lines);
-  ASSERT_EQ(1, lines->size());
-  translator.LinesToPCode(*lines, &(block.pcodes));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
 
   EXPECT_TRUE(block.Run(true));
   EXPECT_EQ(0.0f, *(drv.GetVarFromName("i")));

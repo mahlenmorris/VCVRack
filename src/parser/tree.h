@@ -256,6 +256,14 @@ struct Block {
     block.lines = stat.lines;
     return block;
   }
+  static Block WhenExpBlock(Expression &condition, Statements stat) {
+    Block block;
+    block.type = Block::WHEN;
+    block.condition = Block::EXPRESSION;
+    block.lines = stat.lines;
+    block.run_condition = condition;
+    return block;
+  }
   friend std::ostream& operator<<(std::ostream& os, Block block) {
     os << "Block(" << std::to_string(block.lines.size()) << " statements)";
     return os;
