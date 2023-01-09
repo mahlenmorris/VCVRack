@@ -140,6 +140,20 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
           line.str1, line.variable_ptr, line.assign_port, line.expr1));
     }
     break;
+    case Line::CLEAR: {
+      PCode clear;
+      // Currently no more complicated than that.
+      clear.type = PCode::CLEAR;
+      pcodes->push_back(clear);
+    }
+    break;
+    case Line::RESET: {
+      PCode reset;
+      // Currently no more complicated than that.
+      reset.type = PCode::RESET;
+      pcodes->push_back(reset);
+    }
+    break;
     case Line::CONTINUE: {
       // See what type of continue this is, and then see what the latest
       // loop of that type I can find. Then jump to it.

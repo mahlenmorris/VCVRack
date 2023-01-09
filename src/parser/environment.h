@@ -37,6 +37,14 @@ class Environment {
   virtual float Connected(const PortPointer &port) = 0;
   virtual float Random(float min_value, float max_value) = 0;
   virtual float Normal(float mean, float std_dev) = 0;
+  // The return value of these is uninteresting. They just operate on the
+  // operating environment.
+  virtual void Clear() = 0;
+  virtual void Reset() = 0;
+
+  // Return true only when this sample is when the program was start/restarted/
+  // reset.
+  virtual bool Start() = 0;
 };
 
 #endif // ENVIRONMENT_H

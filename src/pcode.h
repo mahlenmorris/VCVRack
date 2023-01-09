@@ -28,10 +28,15 @@ struct PCode {
     WAIT,        // wait expr1
     IFNOT,       // ifnot expr1 jump jump_count
     RELATIVE_JUMP,  // add jump_count to line_number.
-    FORLOOP      // On ENTERING_FOR_LOOP, compute limit (expr1) & step (expr2).
+    FORLOOP,      // On ENTERING_FOR_LOOP, compute limit (expr1) & step (expr2).
                  // if beyond limit, jump jump_count.
                  // On NONE, add step to str1 value.
                  // if beyond limit, jump jump_count.
+    CLEAR,       // If this were a function, it would need to return something,
+                 // so making a special command for it was fine.
+                 // And may have a list of variables later.
+                 // TODO: Maybe make a Type for one-off commands?
+    RESET        // Like CLEAR, A command with no return value.
   };
   Type type;
   std::string str1;

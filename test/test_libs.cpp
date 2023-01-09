@@ -10,6 +10,8 @@ struct TestEnvironment : Environment {
   std::unordered_map<int, bool> connected;
   std::unordered_map<int, float> outputs;
   std::unordered_map<int, float> inputs;
+  bool clear_called = false;
+  bool starting = false;
 
   void SetIns(float a, float b, float c, float d) {
     inputs[0] = a;
@@ -47,6 +49,11 @@ struct TestEnvironment : Environment {
   float Normal(float mean, float std_dev) override {
     return mean + std_dev;  // Also not random.
   }
+  void Clear() override {
+    clear_called = true;
+  }
+  void Reset() override { }
+  bool Start() override { return starting; }
 };
 
 TEST(ParserTest, ParsesAtAll)
@@ -514,18 +521,17 @@ TEST(ParserTest, BlocksTest)
 
     // Two ALSO blocks is fine.
     EXPECT_EQ(0, drv.parse("also out1 = 2 end also  also out2 = 4 end also"));
-    ASSERT_EQ(2, drv.blocks.size());  // a Zero-line Main block is created.
+    ASSERT_EQ(2, drv.blocks.size());  // two Main blocks are created.
 
     // main block must be first or not at all.
     EXPECT_EQ(1, drv.parse("also out1 = 2 end also  out2 = 4"));
 
-    EXPECT_EQ(0, drv.parse("out1 = 2  when start f = 0 end when"));
+    EXPECT_EQ(0, drv.parse("out1 = 2  when start() f = 0 end when"));
     ASSERT_EQ(2, drv.blocks.size());
 
     EXPECT_EQ(0, drv.parse("when foo == 1 foo = 0 end when"));
     ASSERT_EQ(1, drv.blocks.size());
 }
-
 
 TEST(RunTest, RunsAtAll) {
   Driver drv;
@@ -540,6 +546,36 @@ TEST(RunTest, RunsAtAll) {
   EXPECT_EQ(3.14159f, *(drv.GetVarFromName("foo")));
 }
 
+TEST(RunTest, RunsClear) {
+  Driver drv;
+  PCodeTranslator translator;
+  TestEnvironment test_env;
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse("clear all"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  EXPECT_EQ(false, test_env.clear_called);
+  EXPECT_TRUE(block.Run(true));
+  EXPECT_EQ(true, test_env.clear_called);
+}
+
+TEST(RunTest, StartTest) {
+  Driver drv;
+  PCodeTranslator translator;
+  TestEnvironment test_env;
+  drv.SetEnvironment(&test_env);
+  CodeBlock block(&test_env);
+
+  ASSERT_EQ(0, drv.parse("foo = start()"));
+  ASSERT_EQ(1, drv.blocks.size());
+  std::vector<Line>* lines = &(drv.blocks[0].lines);
+  ASSERT_EQ(1, lines->size());
+  ASSERT_EQ(0, lines->at(0).expr1.Compute());
+  test_env.starting = true;
+  ASSERT_EQ(1, lines->at(0).expr1.Compute());
+}
+
 // TODO: Add tests for all the language constructs.
 
 TEST(RunTest, RunsForLoop) {
@@ -551,6 +587,7 @@ TEST(RunTest, RunsForLoop) {
   EXPECT_EQ(0, drv.parse("for i = 0 to 1 step 0.1 next"));
   ASSERT_EQ(1, drv.blocks.size());
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  ASSERT_EQ(4, block.pcodes.size());
 
   EXPECT_TRUE(block.Run(true));
   EXPECT_EQ(0.0f, *(drv.GetVarFromName("i")));

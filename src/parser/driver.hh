@@ -84,6 +84,16 @@ public:
     factory.SetEnvironment(env);
   }
 
+  // Reset the state of all variables to zero/empty.
+  void Clear() {
+    for (const auto &element : symbol_floats) {
+      *(element.second) = 0.0f;
+    }
+    for (const auto &element : symbol_arrays) {
+      element.second->clear();
+    }
+  }
+
   // Run the parser on the text of string f.  Return 0 on success.
   int parse(const std::string& f);
 

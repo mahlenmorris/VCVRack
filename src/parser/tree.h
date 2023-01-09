@@ -51,6 +51,7 @@ class Expression {
     SAMPLE_RATE,
     SIGN,
     SIN,
+    START,
     MOD,
     MAX,
     MIN,
@@ -147,12 +148,14 @@ struct Line {
   enum Type {
     ARRAY_ASSIGNMENT, // array_ptr[expr1] = expr2
     ASSIGNMENT,  // str1 = expr1
+    CLEAR,       // Set variables to initial state (0.0f).
     CONTINUE,    // continue str1
     ELSEIF,      // elseif expr1 then state1
     EXIT,        // exit str1
     FORNEXT,     // for str1 = expr1 to expr2 state1 next
     IFTHEN,      // if expr1 then state1 [elseifs - state2] end if
     IFTHENELSE,  // if expr1 then state1 [elseifs - state3] else state2 end if
+    RESET,       // Start all blocks from the top, as if newly compiled.
     WAIT         // wait expr1
   };
   Type type;
@@ -181,6 +184,8 @@ struct Line {
   static Line Assignment(const std::string &variable_name,
                          const Expression &expr, Driver* driver);
 
+  static Line ClearAll();
+
   // loop_type is the string identifying the loop type; e.g., "for" or "all".
   static Line Continue(const std::string &loop_type);
 
@@ -202,6 +207,8 @@ struct Line {
                          const Statements &then_state,
                          const Statements &else_state,
                          const Statements &elseifs);
+
+  static Line Reset();
 
   static Line Wait(const Expression &expr);
 
@@ -244,15 +251,6 @@ struct Block {
   static Block MainBlock(Statements stat) {
     Block block;
     block.type = Block::MAIN;
-    block.lines = stat.lines;
-    return block;
-  }
-  static Block WhenBlock(const std::string &condition, Statements stat) {
-    Block block;
-    block.type = Block::WHEN;
-    if (condition.compare("start") == 0) {
-      block.condition = Block::START;
-    }
     block.lines = stat.lines;
     return block;
   }

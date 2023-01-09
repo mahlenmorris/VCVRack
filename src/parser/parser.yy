@@ -41,6 +41,7 @@
   AND     "and"
   ASSIGN  "="
   CEILING "ceiling"
+  CLEAR   "clear"
   CONTINUE "continue"
   ELSE    "else"
   ELSEIF  "elseif"
@@ -55,6 +56,7 @@
   NOT     "not"
   OR      "or"
   POW     "pow"
+  RESET   "reset"
   SAMPLE_RATE "sample_rate"
   SIGN    "sign"
   SIN     "sin"
@@ -98,11 +100,13 @@
 %nterm <Line> statement
 %nterm <Line> array_assignment
 %nterm <Line> assignment
+%nterm <Line> clear_statement
 %nterm <Line> continue_statement
 %nterm <Line> elseif_clause
 %nterm <Line> exit_statement
 %nterm <Line> for_statement
 %nterm <Line> if_statement
+%nterm <Line> reset_statement
 %nterm <Line> wait_statement
 
 %printer { yyo << $$; } <*>;
@@ -120,7 +124,6 @@ blocks:
 
 block:
   "also" one_or_more_statements "end" "also"  { $$ = Block::MainBlock($2); }
-| "when" "start" one_or_more_statements "end" "when" { $$ = Block::WhenBlock($2, $3); }
 | "when" exp one_or_more_statements "end" "when" { $$ = Block::WhenExpBlock($2, $3); }
 
 main_block:
@@ -137,10 +140,12 @@ one_or_more_statements:
 statement:
   array_assignment     { $$ = $1; }
 | assignment           { $$ = $1; }
+| clear_statement      { $$ = $1; }
 | continue_statement   { $$ = $1; }
 | exit_statement       { $$ = $1; }
 | for_statement        { $$ = $1; }
 | if_statement         { $$ = $1; }
+| reset_statement      { $$ = $1; }
 | wait_statement       { $$ = $1; }
 
 array_assignment:
@@ -151,6 +156,9 @@ assignment:
   "identifier" "=" exp  { $$ = Line::Assignment($1, $3, &drv); }
 | "in_port" "=" exp     { $$ = Line::Assignment($1, $3, &drv); }
 | "out_port" "=" exp    { $$ = Line::Assignment($1, $3, &drv); }
+
+clear_statement:
+  "clear" "all"         { $$ = Line::ClearAll(); }
 
 continue_statement:
   "continue" "for"      { $$ = Line::Continue($2); }
@@ -174,6 +182,9 @@ elseif_clause:
 if_statement:
   "if" exp "then" zero_or_more_statements elseif_group "end" "if"       { $$ = Line::IfThen($2, $4, $5); }
 | "if" exp "then" zero_or_more_statements elseif_group "else" zero_or_more_statements "end" "if"  { $$ = Line::IfThenElse($2, $4, $7, $5); }
+
+reset_statement:
+  "reset"               { $$ = Line::Reset(); }
 
 wait_statement:
   "wait" exp            { $$ = Line::Wait($2); }

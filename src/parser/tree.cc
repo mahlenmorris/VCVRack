@@ -30,6 +30,7 @@ std::unordered_map<std::string, Expression::Operation> ExpressionFactory::string
   {"sample_rate", Expression::SAMPLE_RATE},
   {"sign", Expression::SIGN},
   {"sin", Expression::SIN},
+  {"start", Expression::START},
   {"mod", Expression::MOD},
   {"max", Expression::MAX},
   {"min", Expression::MIN},
@@ -119,8 +120,9 @@ bool Expression::Volatile() {
     }
     break;
     case NOT: return subexpressions[0].Volatile();
-    // sample_rate() can change (if user changes it).
-    case ZEROARGFUNC: return false;
+    // sample_rate() doesn't seem to change immediately? But that might be
+    // a bug or Windows-specific. And Start() is volatile.
+    case ZEROARGFUNC: return true;
     case ONEARGFUNC: return subexpressions[0].Volatile();
     // Yes, the only such method is volatile.
     case ONEPORTFUNC: return true;
@@ -141,7 +143,8 @@ std::string Expression::to_string() const {
         subexpressions[1].to_string() + ")";
     case ARRAY_VARIABLE: return "ArrayVariable(" + name + ")";
     case VARIABLE: return "VariableExpression(" + name + ")";
-    default: return "Expression(some other type)";
+    default: return "Expression(type = " + std::to_string(type) +
+                    ", operation = " + std::to_string(operation) + ")";
   }
 }
 
@@ -184,6 +187,7 @@ float Expression::binop_compute() {
 float Expression::zero_arg_compute() {
   switch (operation) {
     case SAMPLE_RATE: return env->SampleRate();
+    case START: return env->Start() ? 1.0f : 0.0f;
     default: return -9.87654f;
   }
 }
@@ -379,6 +383,14 @@ Line Line::Assignment(const std::string &variable_name, const Expression &expr,
   return line;
 }
 
+Line Line::ClearAll() {
+  Line line;
+  line.type = CLEAR;
+  // ALL is the only type of CLEAR we have at the moment, so
+  // no need to qualify.
+  return line;
+}
+
 // loop_type is the string identifying the loop type; e.g., "for" or "all".
 Line Line::Continue(const std::string &loop_type) {
   Line line;
@@ -444,6 +456,12 @@ Line Line::IfThenElse(const Expression &bool_expr,
   line.statements.push_back(then_state);
   line.statements.push_back(else_state);
   line.statements.push_back(elseifs);
+  return line;
+}
+
+Line Line::Reset() {
+  Line line;
+  line.type = RESET;
   return line;
 }
 

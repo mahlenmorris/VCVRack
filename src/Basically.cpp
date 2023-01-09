@@ -74,18 +74,33 @@ struct Basically : Module {
     std::vector<Input>* inputs;
     std::vector<Output>* outputs;
     const ProcessArgs* args;
+    Driver* driver;
+    bool starting;
+    std::vector<CodeBlock*>* main_blocks;
+    std::vector<std::pair<Expression, CodeBlock*> >* expression_blocks;
+    std::vector<bool>* running_expression_blocks;
 
    public:
     ProductionEnvironment(std::vector<Input>* the_inputs,
-                          std::vector<Output>* the_outputs) :
-       inputs{the_inputs}, outputs{the_outputs} {
-
+                          std::vector<Output>* the_outputs,
+                          Driver* the_driver,
+                          std::vector<CodeBlock*>* the_main_blocks,
+                          std::vector<std::pair<Expression, CodeBlock*> >* the_expression_blocks,
+                          std::vector<bool>* the_running_expression_blocks) :
+       inputs{the_inputs}, outputs{the_outputs}, driver{the_driver},
+       main_blocks{the_main_blocks}, expression_blocks{the_expression_blocks},
+       running_expression_blocks{the_running_expression_blocks} {
        }
 
     // ProcessArgs object isn't available when we first create the Environment.
     // So we need to update it when it is available.
     void SetProcessArgs(const ProcessArgs* the_args) {
       args = the_args;
+    }
+
+    // Should be called every sample.
+    void SetStarting(bool start) {
+      starting = start;
     }
 
     float GetVoltage(const PortPointer &port) override {
@@ -117,6 +132,24 @@ struct Basically : Module {
     }
     float Normal(float mean, float std_dev) override {
       return rack::random::normal() * std_dev + mean;
+    }
+    void Clear() override {
+      driver->Clear();
+    }
+    void Reset() override {
+      for (auto block : *main_blocks) {
+        block->current_line = 0;
+        block->wait_info.in_wait = false;
+      }
+      for (size_t pos = 0; pos < running_expression_blocks->size(); pos++) {
+        running_expression_blocks->at(pos) = false;
+        expression_blocks->at(pos).second->current_line = 0;
+        expression_blocks->at(pos).second->wait_info.in_wait = false;
+      }
+    }
+    // True ONLY when the program has just compiled.
+    bool Start() override {
+      return starting;
     }
   };
 
@@ -161,7 +194,8 @@ struct Basically : Module {
     configOutput(OUT4_OUTPUT, "OUT4");
     configLight(RUN_LIGHT, "Lit when code is currently running.");
 
-    environment = new ProductionEnvironment(&inputs, &outputs);
+    environment = new ProductionEnvironment(&inputs, &outputs, &drv,
+      &main_blocks, &expression_blocks, &running_expression_blocks);
     drv.SetEnvironment(environment);
     // For now, we just have the one block, but we'll add more soon.
     // Add the INn variables to the variable space, and get the pointer to
@@ -229,16 +263,9 @@ struct Basically : Module {
   }
 
   void ResetToProgramStart() {
-    for (auto block : main_blocks) {
-      block->current_line = 0;
-      block->wait_info.in_wait = false;
-    }
-    for (auto block : start_blocks) {
-      block->current_line = 0;
-      block->wait_info.in_wait = false;
-    }
-    // Do we need a gesture that clears all variables? Likely not often;
-    // keeping previously defined variables makes live-coding work.
+    environment->Reset();
+    // Note that we do not clear the variable/array state.
+    // Keeping previously defined variables makes live-coding work.
     // TODO: add CLEAR command for just this.
   }
 
@@ -254,6 +281,8 @@ struct Basically : Module {
     bool loops = (style != TRIGGER_NO_LOOP_STYLE);
     // ProcessArgs not available when we first create the Environment.
     environment->SetProcessArgs(&args);
+    // Might be set true below, but vast majority of samples this is false.
+    environment->SetStarting(false);
 
     // Compile if we need to.
     if (module_refresh && !text.empty()) {
@@ -270,11 +299,6 @@ struct Basically : Module {
           delete block;
         }
         main_blocks.clear();
-        for (auto block : start_blocks) {
-          delete block;
-        }
-        start_blocks.clear();
-        running_start_blocks.clear();
         for (auto p : expression_blocks) {
           delete p.second;
         }
@@ -286,9 +310,6 @@ struct Basically : Module {
             // Different lists depending on type.
             if (new_block->type == Block::MAIN) {
               main_blocks.push_back(new_block);
-            } else if (new_block->type == Block::WHEN &&
-                new_block->condition == Block::START) {
-              start_blocks.push_back(new_block);
             } else if (new_block->type == Block::WHEN &&
                 new_block->condition == Block::EXPRESSION) {
               expression_blocks.push_back(std::make_pair(ast_block.run_condition, new_block));
@@ -307,10 +328,8 @@ struct Basically : Module {
         // Recompiled; cannot trust program state. But note we are leaving
         // *variable* state intact.
         ResetToProgramStart();
-        // And recompiling is when we kick off the WHEN START blocks.
-        for (CodeBlock* block : start_blocks) {
-          running_start_blocks.push_back(block);
-        }
+        // Tell the start() function that we are starting.
+        environment->SetStarting(true);
       }
     }
 
@@ -355,20 +374,7 @@ struct Basically : Module {
     }
 
     if (running) {
-      // Any START blocks run or continue running.
-      if (!running_start_blocks.empty()) {
-        size_t i = 0;
-        while (i < running_start_blocks.size()) {
-          CodeBlock* block = running_start_blocks[i];
-          bool finished = !(block->Run(false));
-          if (finished) {
-            running_start_blocks.erase(running_start_blocks.begin() + i);
-          } else {
-            i++;
-          }
-        }
-      }
-      // For WHEN EXPRESSION blocks, test each expression in turn.
+      // WHEN EXPRESSION blocks:
       for (size_t pos = 0; pos < expression_blocks.size(); pos++) {
         // If already running, don't test the expression.
         if (!running_expression_blocks[pos]) {
@@ -376,6 +382,7 @@ struct Basically : Module {
           running_expression_blocks[pos] =
             !Expression::is_zero(expression_blocks[pos].first.Compute());
         }
+        // If now running, Run() a step.
         if (running_expression_blocks[pos]) {
           running_expression_blocks[pos] =
               expression_blocks[pos].second->Run(false);
@@ -385,6 +392,8 @@ struct Basically : Module {
         block->Run(loops);
       }
     }
+
+
     // !!!!!!!!!!!!!!!
     // BUG: We do NOT have a good way of being told to stop running; the
     // new Block thing has broken the existing way.
@@ -411,10 +420,6 @@ struct Basically : Module {
   // The untitled default block and any ALSO - END ALSO blocks.
   // All main blocks are always running, so we don't need a distinct list.
   std::vector<CodeBlock*> main_blocks;
-  // All WHEN START - END WHEN blocks.
-  std::vector<CodeBlock*> start_blocks;
-  // The currently running START blocks.
-  std::vector<CodeBlock*> running_start_blocks;
   // All WHEN EXPRESSION blocks. Is a vector to maintain order.
   std::vector<std::pair<Expression, CodeBlock*> > expression_blocks;
   // Which ones are running.

@@ -16,7 +16,7 @@ void CodeBlock::SetVariableValue(float* variable_ptr,
     const PortPointer &assign_port, float value) {
   switch (assign_port.port_type) {
     case PortPointer::NOT_PORT: {
-     *variable_ptr = value;
+      *variable_ptr = value;
     }
     break;
     case PortPointer::INPUT: {
@@ -74,6 +74,16 @@ bool CodeBlock::Run(bool loops) {
         float rhs = pcode->expr1.Compute();
         SetVariableValue(pcode->variable_ptr,
                          pcode->assign_port, rhs);
+        current_line++;
+      }
+      break;
+      case PCode::CLEAR: {
+        environment->Clear();
+        current_line++;
+      }
+      break;
+      case PCode::RESET: {
+        environment->Reset();
         current_line++;
       }
       break;

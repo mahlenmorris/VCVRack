@@ -95,7 +95,7 @@ note  [a-g][#b]?(-1|[0-9]|10)
 id    [a-zA-Z][a-zA-Z_0-9]*
 in_port "in1"|"in2"|"in3"|"in4"|"in5"|"in6"|"in7"|"in8"|"in9"
 out_port "out1"|"out2"|"out3"|"out4"
-zeroargfunc "sample_rate"
+zeroargfunc "sample_rate"|"start"
 oneargfunc "abs"|"ceiling"|"floor"|"sign"|"sin"
 oneportfunc "connected"
 twoargfunc "max"|"min"|"mod"|"normal"|"pow"|"random"
@@ -132,6 +132,7 @@ blank [ \t\r]
 "all"      return yy::parser::make_ALL    (yytext, loc);
 "also"     return yy::parser::make_ALSO   (yytext, loc);
 "and"      return yy::parser::make_AND    (yytext, loc);
+"clear"    return yy::parser::make_CLEAR (yytext, loc);
 "continue" return yy::parser::make_CONTINUE (yytext, loc);
 "else"     return yy::parser::make_ELSE   (yytext, loc);
 "elseif"   return yy::parser::make_ELSEIF (yytext, loc);
@@ -142,7 +143,7 @@ blank [ \t\r]
 "next"     return yy::parser::make_NEXT   (yytext, loc);
 "not"      return yy::parser::make_NOT    (yytext, loc);
 "or"       return yy::parser::make_OR     (yytext, loc);
-"start"    return yy::parser::make_START   (yytext, loc);
+"reset"    return yy::parser::make_RESET   (yytext, loc);
 "step"     return yy::parser::make_STEP   (yytext, loc);
 "then"     return yy::parser::make_THEN   (yytext, loc);
 "to"       return yy::parser::make_TO     (yytext, loc);
