@@ -164,8 +164,8 @@ the execution of other statements.
 
 Examples:
 
-    out2 = 3.250 ' A C4 note.
-    out2 = c4 ' Also a C4 note.
+    out2 = c3 ' A C3 note.
+    out2 = -1 ' Also a C3 note.
     WAIT 200 ' Pause for 1/5 of a second.
     ' The next line can be turned on just by removing the initial tick (').
     ' out1 = 2.3 * in1  ' Look, I'm live-coding!
@@ -493,7 +493,7 @@ becomes the trigger for the Hold.
 
 * **Run when gate is open** -- While the RUN button is pressed or the RUN input
 is high, then BASICALLY will run. If the button is released or the input
-falls low, then the program will stop. As long as the program isn't changed, when the next button press/input high occurs, exection will pick up from where it left off. For example, suppose a five second WAIT starts, and then after 3.5
+falls low, then the program will stop. As long as the program isn't changed, when the next button press/input high occurs, execution will pick up from where it left off. For example, suppose a five second WAIT starts, and then after 3.5
 seconds the button is released. When the button is later pressed, the WAIT will continue for another 1.5 seconds before moving on to the next statement.
 
 ### Menu Options
@@ -519,8 +519,7 @@ blue and orange, and makes the error line highlighting orange as well.
 
 #### Syntax/Math Hints
 Just in case you're in the middle of coding and you don't want to look up
-this documentation, there's some hints about the syntax of BASICally, as
-well as the complete list of math functions. You can
+this documentation, there's some hints about the syntax of BASICally. You can
 click on a particular statement and it will be inserted into your code.
 
 ### Bypass Behavior
@@ -532,6 +531,14 @@ When the module is bypassed, all OUTn ports are set to zero volts.
 * docB's
 [Formula One](https://library.vcvrack.com/dbRackFormulaOne), which, compared
 to Formula and BASICally, seems to be **very** CPU efficient.
+* docB's [dbRackCsound](https://github.com/docb/dbRackCsound) ([download](https://github.com/docb/dbRackCsound/releases/tag/v2.0.1)),
+which uses the very powerful [CSound](https://csound.com/) engine. Not in the Library as I write this (January 2023).
+* [Monome Teletype](https://community.vcvrack.com/t/monome-teletype/12815),
+which isn't in the Library, but can be acquired via that link. If I understand
+it correctly, it mostly responds to triggers with scripts in a very terse language,
+likely an artifact of [the hardware it is based on](https://market.monome.org/products/teletype).
+* [VCV Prototype](https://vcvrack.com/Prototype#manual), which I _think_ is only available for
+VCV Rack version 1. But you can write code in Lua or Javascript (in an external editor).
 
 ![Line Break image](images/Separator.png)
 
@@ -710,6 +717,11 @@ If this module is bypassed, then OUT will equal IN. If IN has no cable running
 into it, then OUT will be 0.0V, *even if* the "Unplugged value of IN" menu
 option is set to something else.
 
+### Related Modules
+
+* AlliewayAudio's [Bumper](https://library.vcvrack.com/AlliewayAudio_Series_I/Bumper).
+* ML Modules' [Counter](https://library.vcvrack.com/ML_modules/Counter).
+
 ![Line Break image](images/Separator.png)
 
 # Acknowledgements
@@ -718,8 +730,10 @@ Thanks to all of the helpful people on the
 [VCV Rack Community board](https://community.vcvrack.com/) for their
 willingness to help and advise me as I've been learning this new domain.
 
-Many thanks to [Marc Weidenbaum](https://disquiet.com/) for his encouragement and enthusiasm for my module-making efforts.
+Many thanks to [Marc Weidenbaum](https://disquiet.com/) for his
+encouragement and enthusiasm for my module-making efforts.
 
-And my deepest gratitude is to Diane LeVan, for letting me ignore her and/or
+And my deepest gratitude to Diane LeVan, for letting me ignore her and/or
 the world for periods of time just to craft these things. I apologize for
-waking up with new ideas at 5AM, and for having a retirement hobby that is nearly impossible to even start describing to anyone.
+waking up with new ideas at 5AM, and for having a retirement hobby that
+is nearly impossible to even start describing to any of ur friends.
