@@ -19,12 +19,13 @@ context of VCV Rack. Can act like:
 * a wavefolder
 * a control voltage utility
 * sample and hold
+* a tape delay or tape loop
 * all of the above and more, simultaneously
 
 Useful for:
 * quickly trying out an idea
 * simple transformations that would otherwise involve many small utility modules
-* non-standard approaches to otherwise
+* non-standard approaches to otherwise straightforward ideas
 
 ### Examples
 
@@ -44,6 +45,12 @@ Note that STYLE is set to "Start on trigger, don't loop".
 The examples above are all in [this patch](examples/BASICallyExamples1.vcv).
 A patch with some simple/strange/silly ideas for other things BASICally can do
 are in [this patch](examples/BASICallyExperiments.vcv).
+
+#### A tape loop with four playback heads
+![ten second tape loop image](images/BASICallyTapeLoop.png)
+Send audio to IN 2-4 of the VCA MIX and then try listening to the various
+playback heads in OUT1-OUT4 of BASICally. Patch is [here](examples/BASICallyTapeLoop.vcv).
+
 
 <!-- TODO: video of different examples and their output -->
 
@@ -114,11 +121,15 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 | --------- | -------------- | -------- |
 |**abs(x)**| absolute value | abs(2.1) == 2.1, abs(-2.1) == 2.1 |
 |**ceiling(x)**| integer value at or above x | ceiling(2.1) == 3, ceiling(-2.1) == -2 |
+|**connected(x)**|1 if named port x has a cable attached, 0 if not | connected(IN1) |
 |**floor(x)**|integer value at or below x|floor(2.1) == 2, floor(-2.1) == -3|
 |**max(x, y)**|the larger of x or y|max(2.1, 2.3) == 2.3, max(2.1, -2.3) == 2.1
 |**min(x, y)**|the smaller of x or y|min(2.1, 2.3) == 2.1, min(2.1, -2.3) == -2.3
 |**mod(x, y)**|the remainder after dividing x by y. Will be negative only if x is negative|mod(10, 2.1) == 1.6
-|**pow(x, y)**|x to the power of y|pow(3, 2) == 9, pow(9, 0.5) == 3
+|**normal(mean, std_dev)**| bell curve distribution of random number | normal(0, 1) |
+|**pow(x, y)**|x to the power of y|pow(3, 2) == 9, pow(9, 0.5) == 3 |
+|**random(min, max)**|uniformly random number: min <= random(x, y) < max | random(-1, 1)|
+|**sample_rate()**|number of times BASICally is called per second (e.g., 44100)|sample_rate() == 48000|
 |**sign(x)**|-1, 0, or 1, depending on the sign of x|sign(2.1) == 1, sign(-2.1) == -1, sign(0) = 0|
 |**sin(x)**|arithmetic sine of x, which is in radians| sin(30 * 0.0174533) == 0.5, sin(3.14159 / 2) == 1
 
@@ -159,23 +170,90 @@ Examples:
     ' The next line can be turned on just by removing the initial tick (').
     ' out1 = 2.3 * in1  ' Look, I'm live-coding!
 
+### Arrays
+Simple one-dimensional, 0-indexed arrays are available. The index will have
+floor() act on it internally. Using an index less than zero will be ignored.
+
+    a[3.3] = 2.2  ' Same as a[3] = 2.2
+    a[-1] = 6     ' Ignored, will have no effect.
+
+You can set a series of values in a array quickly by specifying just the
+initial index, and enclosing the series of values with curly braces '{}'
+For example, this will assign value to b[1], b[2], and b[3]. Note that these
+values do not need to be constants, as some other languages require.
+
+    b[1] = { -5, sin(in3), 2.2 }
+
+Reading from an array works the same; The index will have floor() act on
+it internally. Using an index less than zero will return a value of 0.0.
+Accessing any index within the array that hasn't been set will also return
+a value of 0.0.
+
+    out1 = b[1]
+
+Unlike BASIC and many other languages, there is no need to set the size of
+the array before using it (i.e, there is no DIM() statement.)
+
 ### IF Statements (Conditional Behavior)
-There are two kinds of IF statements:
+There are four kinds of IF statements:
 
 IF **conditional expression** THEN
+
 **...Statements for True...**
+
 END IF
 
 or
 
 IF **conditional expression** THEN
+
 **...statements for True...**
+
 ELSE
+
 **...Statements for False...**
+
 END IF
 
-The conditional expression evaluates to False if it equals zero; it evaluates to
-True otherwise.
+or
+
+IF **conditional expression 1** THEN
+
+**...Statements for expression 1 is True...**
+
+ELSEIF **conditional expression 2** THEN
+
+**...Statements for expression 2 is True...**
+
+ELSEIF **conditional expression 3** THEN
+
+**...Statements for expression 3 is True...**  *(You can have multiple ELSEIF clauses.)*
+
+END IF
+
+or
+
+IF **conditional expression 1** THEN
+
+**...Statements for expression 1 is True...**
+
+ELSEIF **conditional expression 2** THEN
+
+**...Statements for expression 2 is True...**
+
+ELSEIF **conditional expression 3** THEN
+
+**...Statements for expression 3 is True...**  *(You can have multiple ELSEIF clauses.)*
+
+ELSE
+
+**...Statements for expression 3 is False...**
+
+END IF
+
+
+The conditional expression evaluates to **False** if it equals **zero**; it evaluates to
+**True** otherwise.
 
 Examples:
 ```
@@ -190,6 +268,16 @@ if in1 > 3.7 or foo == -1 then
 else
   out1 = 0
   out2 = 0.5
+end if
+
+if a == 5 then
+  out1 = in2 + 1
+elseif a == 4 then
+  out1 = in2
+elseif a == 3 then
+  out1 = in2 - 1
+else
+  out1 = in3
 end if
 ```
 ### FOR Loops
@@ -383,6 +471,9 @@ tell you where it got confused and why. Note that if the editing window is
 scrolled away from the line where the error occurs, you won't be able to see
 the highlight line until you scroll up (or down) to it.
 
+If the red and green colors are hard to tell apart, there is a menu option to change it
+to blue and orange.
+
 #### STYLE Knob + RUN Button and Input
 There are four options to determine when the code will run. Three of them rely on the RUN Button and trigger/gate, which are described below.
 
@@ -407,15 +498,24 @@ seconds the button is released. When the button is later pressed, the WAIT will 
 
 ### Menu Options
 
+#### Title
+You can specify a short title that will appear above the INn ports. This may make
+it easier to identify what each BASICally module is doing, especially when
+you've minimized the size.
+
 #### Screen Colors
-A small number of choices about text colors. There should be more, but
-changing the background color is not a simple as I expected.
+A small number of choices about text colors.
 
 #### Error Line Highlighting
 By default, if BASICally can't understand your code in its entirety, then it
 will attempt to highlight the line where it stopped understanding your code.
 It's not terribly accurate, but gives you a sense of where to change your code.
 If the red highlight is distracting, you can turn it off here.
+
+#### Colorblind-friendly status light
+By default, BASICally uses green and red for the Good/Fix light. In hopes of
+making the distinction clearer to more people, this option turns those colors to
+blue and orange, and makes the error line highlighting orange as well.
 
 #### Syntax/Math Hints
 Just in case you're in the middle of coding and you don't want to look up
@@ -424,10 +524,6 @@ click on a particular statement and it will be inserted into your code.
 
 ### Bypass Behavior
 When the module is bypassed, all OUTn ports are set to zero volts.
-
-### Known Bugs
-* In this release, if the amount of time in a WAIT involves a computation with IN5 or IN6 (e.g., "WAIT abs(in5) * 10")
-the WAIT will incorrectly not notice changes to IN5 or IN6 while it is waiting. 
 
 ### Related Modules
 * Frank Buss's

@@ -4,7 +4,11 @@
 // First order of business is to turn a vector of Lines (which may have
 // nested Lines) into a flat vector of PCodes.
 #include <algorithm>
+#include <cmath>
 #include <vector>
+
+
+#include "plugin.hpp"
 
 #include "parser/tree.h"
 #include "pcode.h"
@@ -16,19 +20,46 @@ PCode PCode::Wait(const Expression &expr1) {
   return new_pcode;
 }
 
+void PCode::DoArrayAssignment() {
+  int index = (int) floor(expr1.Compute());
+  // Nothing we can do when index is negative, and we have no runtime
+  // error mechanism.
+  if (index < 0) return;
+  // The logic is different if we are assigning a single value vs. a list.
+  // With a list, we want to ensure that _all_ of the positions we will add to
+  // are available before we start.
+  int required_size = index + 1;
+  if (expr_list.size() > 0) {
+    // foo[1] = { 6, 5, 4, 3} -> foo[1] = 6, foo[2] = 5, ...
+    required_size = index + expr_list.size() + 1;
+  }
+  if (required_size > (int) array_ptr->size()) {
+    // Need to build out the vector until we reach the point before we can add
+    // this value. NB: this has potential to wreck responsiveness.
+    // TODO: should i ALSO be testing capacity()?
+    // Note that adding this call to reserve() had very bad CPU results.
+    //array_ptr->reserve(required_size);
+    array_ptr->resize(required_size, 0.0f);
+  }
+
+  // Go ahead and assign.
+  if (expr_list.size() > 0) {
+    for (int i = 0; i < expr_list.size(); i++) {
+      array_ptr->at(index + i) = expr_list.expressions[i].Compute();
+    }
+  } else {
+    array_ptr->at(index) = expr2.Compute();
+  }
+}
+
 PCode PCodeTranslator::Assignment(const std::string str1, float* variable_ptr,
+                                  const PortPointer &port,
                                   const Expression &expr1) {
   PCode assign;
   assign.type = PCode::ASSIGNMENT;
   assign.str1 = str1;
-  // Optimize a bit for assignments to OUTn values.
-  auto found = out_map.find(str1);
-  if (found != out_map.end()) {
-    assign.out_enum_value = found->second;
-  } else {
-    assign.out_enum_value = -1;
-  }
   assign.variable_ptr = variable_ptr;
+  assign.assign_port = port;
   assign.expr1 = expr1;
   return assign;
 }
@@ -52,12 +83,56 @@ std::string PCode::to_string() {
     ")";
 }
 
+void PCodeTranslator::AddElseifs(std::vector<int>* jump_positions,
+                                 const Statements &elseifs,
+                                 const Exit &innermost_loop,
+                                 bool last_falls_through) {
+  // Each 'elseif' is effectively an IFTHEN with no elseifs in it. I think?
+  for (int i = 0; i < (int) elseifs.lines.size(); i++) {
+    const Line &line = elseifs.lines[i];
+    // IFNOT
+    // then Statements
+    // (if not the last elseif) JUMP past all elseifs
+    PCode ifnot;
+    ifnot.type = PCode::IFNOT;
+    ifnot.expr1 = line.expr1;
+    pcodes->push_back(ifnot);
+    // Need to find this IFNOT PCode later, so I can fill in jump_count
+    // after adding all of the statements.
+    int ifnot_position = pcodes->size() - 1;
+    // Add all of the THEN-clause Lines. Note that some of these might
+    // also be control-flow Lines of unknown PCode length.
+    for (auto &loop_line : line.statements[0].lines) {
+      AddLineToPCode(loop_line, innermost_loop);
+    }
+    // If we're not doing the last elseif, then we'll need to add a JUMP to
+    // the end of the whole statement.
+    if (!last_falls_through || ((int) elseifs.size()) - i > 1) {
+      PCode jump_over_elseifs;
+      jump_over_elseifs.type = PCode::RELATIVE_JUMP;
+      pcodes->push_back(jump_over_elseifs);
+      jump_positions->push_back(pcodes->size() - 1);
+    }
+    pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
+  }
+}
+
 void PCodeTranslator::AddLineToPCode(const Line &line,
                                      const Exit &innermost_loop) {
   switch (line.type) {
+    case Line::ARRAY_ASSIGNMENT: {
+      PCode assign;
+      assign.type = PCode::ARRAY_ASSIGNMENT;
+      assign.array_ptr = line.array_ptr;
+      assign.expr1 = line.expr1;
+      assign.expr2 = line.expr2;
+      assign.expr_list = line.expr_list;
+      pcodes->push_back(assign);
+    }
+    break;
     case Line::ASSIGNMENT: {
       pcodes->push_back(Assignment(
-          line.str1, line.variable_ptr, line.expr1));
+          line.str1, line.variable_ptr, line.assign_port, line.expr1));
     }
     break;
     case Line::CONTINUE: {
@@ -117,28 +192,14 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
     case Line::IFTHEN: {
       // IFNOT
       // then Statements
-      // ...
-      PCode new_pcode;
-      new_pcode.type = PCode::IFNOT;
-      new_pcode.expr1 = line.expr1;
-      pcodes->push_back(new_pcode);
-      // Need to find this IFNOT PCode later, so I can fill in jump_count
-      // after adding all of the statements.
-      int ifnot_position = pcodes->size() - 1;
-      // Add all of the THEN-clause Lines. Note that some of these might
-      // also be control-flow Lines of unknown PCode length.
-      for (auto &loop_line : line.statements[0].lines) {
-        AddLineToPCode(loop_line, innermost_loop);
-      }
-      pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
-    }
-    break;
-    case Line::IFTHENELSE: {
+      // (if elseifs) JUMP past all elseifs
+      // (elseifs)
       // IFNOT
       // then Statements
       // ...
-      // RELATIVE_JUMP
-      // else Statements
+      // The IFNOT's jump to the next IFNOT.
+      // The JUMPs at the bottom of each set of statements passes to the end
+      // of the whole structure.
       PCode ifnot;
       ifnot.type = PCode::IFNOT;
       ifnot.expr1 = line.expr1;
@@ -151,20 +212,79 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       for (auto &loop_line : line.statements[0].lines) {
         AddLineToPCode(loop_line, innermost_loop);
       }
+      // All JUMP's that need to be updated to point past the whole structure.
+      std::vector<int> jump_positions;
+      if (line.statements[1].size() > 0) {
+        // There is at least one "elseif" clause.
+        // Need to put a JUMP here so the THEN case will passover the elseifs
+        // I'm about to add.
+        PCode jump_over_elseifs;
+        jump_over_elseifs.type = PCode::RELATIVE_JUMP;
+        pcodes->push_back(jump_over_elseifs);
+        jump_positions.push_back(pcodes->size() - 1);
+      }
+      pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
+      // Now add the elseifs.
+      AddElseifs(&jump_positions, line.statements[1], innermost_loop, true);
+      // Now resolve the jumps, if any.
+      for (int position : jump_positions) {
+        pcodes->at(position).jump_count = pcodes->size() - position;
+      }
+    }
+    break;
+    case Line::ELSEIF: {
+      // The compiler is broken if we land here.
+    }
+    break;
+    case Line::IFTHENELSE: {
+      // IFNOT
+      // then Statements
+      // (if elseifs) JUMP past all elseifs
+      // (elseifs)
+      // IFNOT
+      // then Statements
+      // ...
+      // RELATIVE_JUMP
+      // else Statements
+      // The IFNOT's jump to the next IFNOT. The last IFNOT jumps to the start
+      // of the else.
+      // The JUMPs at the bottom of each set of statements passes to the end
+      // of the whole structure.
+      PCode ifnot;
+      ifnot.type = PCode::IFNOT;
+      ifnot.expr1 = line.expr1;
+      pcodes->push_back(ifnot);
+      // Need to find this IFNOT PCode later, so I can fill in jump_count
+      // after adding all of the statements.
+      int ifnot_position = pcodes->size() - 1;
+      // Add all of the THEN-clause Lines. Note that some of these might
+      // also be control-flow Lines of unknown PCode length.
+      for (auto &loop_line : line.statements[0].lines) {
+        AddLineToPCode(loop_line, innermost_loop);
+      }
+      // All JUMP's that need to be updated to point past the whole structure.
+      std::vector<int> jump_positions;
+
       // After THEN statements, need to skip over the ELSE statements.
       PCode jump;
       jump.type = PCode::RELATIVE_JUMP;
       pcodes->push_back(jump);
       // Need to find jump later.
-      int jump_position = pcodes->size() - 1;
+      jump_positions.push_back(pcodes->size() - 1);
       // Finish the ifnot.
       pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
+      // Now add the elseifs.
+      AddElseifs(&jump_positions, line.statements[2], innermost_loop, false);
+
       // Add the ELSE clause.
       for (auto &loop_line : line.statements[1].lines) {
         AddLineToPCode(loop_line, innermost_loop);
       }
-      // Finish the jump.
-      pcodes->at(jump_position).jump_count = pcodes->size() - jump_position;
+      // Now resolve the jumps, if any.
+      for (int position : jump_positions) {
+        pcodes->at(position).jump_count = pcodes->size() - position;
+      }
+
     }
     break;
     case Line::FORNEXT: {
@@ -173,20 +293,15 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       // statements
       // WAIT 0
       // RELATIVE_JUMP (back to FORLOOP).
-      PCode assign = Assignment(line.str1, line.variable_ptr, line.expr1);
+      PCode assign = Assignment(line.str1, line.variable_ptr,
+                                line.assign_port, line.expr1);
       // Tells the FORLOOP to re-evaluate limit
       assign.state = PCode::ENTERING_FOR_LOOP;
       pcodes->push_back(assign);
       PCode forloop;
       forloop.type = PCode::FORLOOP;
       forloop.str1 = line.str1;  // Variable name.
-      // Optimize a bit for assignments to OUTn values.
-      auto found = out_map.find(forloop.str1);
-      if (found != out_map.end()) {
-        forloop.out_enum_value = found->second;
-      } else {
-        forloop.out_enum_value = -1;
-      }
+      forloop.assign_port = line.assign_port;
       forloop.variable_ptr = line.variable_ptr;
       forloop.expr1 = line.expr2;  // Limit.
       forloop.expr2 = line.expr3;  // Step.
@@ -205,7 +320,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       // Remove from stack.
       loops.pop_back();  // TODO: confirm it is the "for" item we placed?
       // Insert smallest possible WAIT.
-      pcodes->push_back(PCode::Wait(Expression::Number(0.0f)));
+      pcodes->push_back(PCode::Wait(expression_factory.Number(0.0f)));
       PCode jump_back;
       jump_back.type = PCode::RELATIVE_JUMP;
       // jump_count must be negative to go backwards in program to FORLOOP.

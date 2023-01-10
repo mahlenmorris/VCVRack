@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include "tree.h"
 #include "parser.hh"
 
 // Give Flex the prototype of yylex we want ...
@@ -38,6 +39,11 @@ struct Error {
   Error(int line, int column, const std::string message) : line{line},
       column{column}, message{message} {
   }
+  std::string to_string() {
+    return "line: " + std::to_string(line) +
+           ", column: " + std::to_string(column) +
+           " : '" + message + "'.";
+  }
 };
 
 // Conducting the whole scanning and parsing of Calc++.
@@ -50,6 +56,8 @@ public:
   std::vector<Line> lines;
   // List of syntax errors found before parser gave up.
   std::vector<Error> errors;
+  // Knows how to create various kinds of Expression objects.
+  ExpressionFactory factory;
   // Whether to generate parser debug traces.
   bool trace_parsing;
   // Whether to generate scanner debug traces.
@@ -58,11 +66,23 @@ public:
   yy::location location;
   // Maps the name of a variable to a pointer to it.
   std::unordered_map<std::string, float*> symbol_floats;
+  // Maps the name of a variable to the Port it refers to, if any.
+  std::unordered_map<std::string, PortPointer> symbol_ports;
+  // Maps the name of an array variable to a pointer to it.
+  std::unordered_map<std::string, STArray* > symbol_arrays;
 
   Driver();
   ~Driver();
 
+  bool VarHasPort(const std::string &name);
   float* GetVarFromName(const std::string &name);
+  void AddPortForName(const std::string &name, bool is_input, int number);
+  PortPointer GetPortFromName(const std::string &name);
+  STArray* GetArrayFromName(const std::string &name);
+
+  void SetEnvironment(Environment* env) {
+    factory.SetEnvironment(env);
+  }
 
   // Run the parser on the text of string f.  Return 0 on success.
   int parse(const std::string& f);

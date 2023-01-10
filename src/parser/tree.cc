@@ -8,28 +8,32 @@
 #include <vector>
 #include "driver.hh"
 
-std::unordered_map<std::string, Expression::Operation> Expression::string_to_operation = {
-  {"+", PLUS},
-  {"-", MINUS},
-  {"*", TIMES},
-  {"/", DIVIDE},
-  {"==", EQUAL},
-  {"!=", NOT_EQUAL},
-  {">", GT},
-  {">=", GTE},
-  {"<", LT},
-  {"<=", LTE},
-  {"and", AND},
-  {"or", OR},
-  {"abs", ABS},
-  {"ceiling", CEILING},
-  {"floor", FLOOR},
-  {"sign", SIGN},
-  {"sin", SIN},
-  {"mod", MOD},
-  {"max", MAX},
-  {"min", MIN},
-  {"pow", POW}
+std::unordered_map<std::string, Expression::Operation> ExpressionFactory::string_to_operation = {
+  {"+", Expression::PLUS},
+  {"-", Expression::MINUS},
+  {"*", Expression::TIMES},
+  {"/", Expression::DIVIDE},
+  {"==", Expression::EQUAL},
+  {"!=", Expression::NOT_EQUAL},
+  {">", Expression::GT},
+  {">=", Expression::GTE},
+  {"<", Expression::LT},
+  {"<=", Expression::LTE},
+  {"and", Expression::AND},
+  {"or", Expression::OR},
+  {"abs", Expression::ABS},
+  {"ceiling", Expression::CEILING},
+  {"connected", Expression::CONNECTED},
+  {"floor", Expression::FLOOR},
+  {"normal", Expression::NORMAL},
+  {"random", Expression::RANDOM},
+  {"sample_rate", Expression::SAMPLE_RATE},
+  {"sign", Expression::SIGN},
+  {"sin", Expression::SIN},
+  {"mod", Expression::MOD},
+  {"max", Expression::MAX},
+  {"min", Expression::MIN},
+  {"pow", Expression::POW}
 };
 
 std::unordered_map<std::string, float> note_to_volt_same_octave = {
@@ -52,116 +56,41 @@ std::unordered_map<std::string, float> note_to_volt_same_octave = {
   {"b", 0.91666663}
 };
 
-std::unordered_set<std::string> Expression::volatile_inputs = {
-  "in1", "in2", "in3", "in4"
-};
-
-
-Expression Expression::Not(const Expression &expr) {
-  Expression ex;
-  ex.type = NOT;
-  ex.subexpressions.push_back(expr);
-  return ex;
-}
-
-Expression Expression::Note(const std::string &note_name) {
-  Expression ex;
-  ex.type = NUMBER;
-  // split into name and octave
-  int octave;
-  std::string name;
-  // Number at end might be two chars long, in the case of -1 or 10.
-  if (note_name.size() == 4 || (note_name.size() == 3 && (
-      note_name[1] != '#' && note_name[1] != 'b'))) {
-    name = note_name.substr(0, note_name.size() - 2);
-    octave = strtol(note_name.c_str() + note_name.size() - 2, NULL, 10);
-  } else {
-    name = note_name.substr(0, note_name.size() - 1);
-    octave = strtol(note_name.c_str() + note_name.size() - 1, NULL, 10);
-  }
-  auto found = note_to_volt_same_octave.find(name);
-  // This can happen. Current regex can accept invalid values like b#.
-  // TODO: maybe fix the regex?
-  if (found != note_to_volt_same_octave.end()) {
-    ex.float_value = found->second + octave - 4;
-  } else {
-    // Invalid name.
-    ex.float_value = 0.0f;
-  }
-  return ex;
-}
-
-Expression Expression::Number(float the_value) {
-  Expression ex;
-  ex.type = NUMBER;
-  ex.float_value = the_value;
-  return ex;
-}
-
-Expression Expression::OneArgFunc(const std::string &func_name,
-                                  const Expression &arg1) {
-  Expression ex;
-  ex.type = ONEARGFUNC;
-  ex.operation = string_to_operation.at(func_name);
-  ex.subexpressions.push_back(arg1);
-  return ex;
-}
-
-Expression Expression::TwoArgFunc(const std::string &func_name,
-                                  const Expression &arg1,
-                                  const Expression &arg2) {
-  Expression ex;
-  ex.type = TWOARGFUNC;
-  ex.operation = string_to_operation.at(func_name);
-  ex.subexpressions.push_back(arg1);
-  ex.subexpressions.push_back(arg2);
-  return ex;
-}
-
-Expression Expression::CreateBinOp(const Expression &lhs,
-                                   const std::string &op_string,
-                                   const Expression &rhs) {
-  Expression ex;
-  ex.type = BINOP;
-  ex.subexpressions.push_back(lhs);
-  ex.subexpressions.push_back(rhs);
-  ex.operation = string_to_operation.at(op_string);
-  return ex;
-}
-
-Expression Expression::Variable(const char *var_name, Driver* driver) {
-  // Intentionally copying the name.
-  Expression ex;
-  ex.type = VARIABLE;
-  ex.name = std::string(var_name);
-  ex.variable_ptr = driver->GetVarFromName(ex.name);
-  return ex;
-}
-// The parser seems to need many variants of Variable.
-Expression Expression::Variable(const std::string &expr, Driver* driver) {
-  // Intentionally copying the name.
-  return Variable(expr.c_str(), driver);
-}
-// The parser seems to need many variants of Variable.
-Expression::Expression(char * var_name, Driver* driver) {
-  // Intentionally _copying_ the name.
-  name = std::string(var_name);
-  variable_ptr = driver->GetVarFromName(name);
-}
-
-Expression Expression::Variable(char* var_name, Driver* driver) {
-  // Intentionally copying the name.
-  return Variable(std::string(var_name).c_str(), driver);
-}
-
 float Expression::Compute() {
   switch (type) {
     case NUMBER: return float_value;
     case BINOP: return binop_compute();
-    case VARIABLE: return *variable_ptr;
+    case ARRAY_VARIABLE: {
+      int index = (int) floor(subexpressions[0].Compute());
+      if ((index < 0) || (index >= (int) array_ptr->size())) {
+        return 0.0f;  // The default value if not in the array.
+      }
+      return array_ptr->at(index);
+    }
+    break;
+    case VARIABLE: {
+      if (port.port_type == PortPointer::NOT_PORT) {
+        return *variable_ptr;
+      } else {
+        // Rather than constantly refreshing the INn variable names, even when
+        // they may not be read, we just allow them to be read directly from
+        // the module.
+        return env->GetVoltage(port);
+      }
+    }
+    break;
     case NOT: return (is_zero(subexpressions[0].Compute()) ? 1.0f : 0.0f);
+    case ZEROARGFUNC: {
+      return zero_arg_compute();
+    }
+    break;
     case ONEARGFUNC: {
       return one_arg_compute(subexpressions[0].Compute());
+    }
+    break;
+    case ONEPORTFUNC: {
+      // CONNECTED is currently only such method.
+      return env->Connected(port);
     }
     break;
     case TWOARGFUNC: {
@@ -173,28 +102,28 @@ float Expression::Compute() {
   }
 }
 
-bool Expression::Volatile(std::unordered_set<std::string>* volatile_deps) {
+bool Expression::Volatile() {
   switch (type) {
     case NUMBER: return false;
     case TWOARGFUNC:
     case BINOP: {
       // Must ensure both get called to complete volatile_deps!
-      bool lhs = subexpressions[0].Volatile(volatile_deps);
-      bool rhs = subexpressions[1].Volatile(volatile_deps);
+      bool lhs = subexpressions[0].Volatile();
+      bool rhs = subexpressions[1].Volatile();
       return lhs || rhs;
     }
     break;
+    case ARRAY_VARIABLE: return subexpressions[0].Volatile();
     case VARIABLE: {
-      if (volatile_inputs.find(name) == volatile_inputs.end()) {
-        return false;
-      } else {
-        volatile_deps->insert(name);
-        return true;
-      }
+      return port.port_type == PortPointer::INPUT;
     }
     break;
-    case NOT: return subexpressions[0].Volatile(volatile_deps);
-    case ONEARGFUNC: return subexpressions[0].Volatile(volatile_deps);
+    case NOT: return subexpressions[0].Volatile();
+    // sample_rate() can change (if user changes it).
+    case ZEROARGFUNC: return false;
+    case ONEARGFUNC: return subexpressions[0].Volatile();
+    // Yes, the only such method is volatile.
+    case ONEPORTFUNC: return true;
     default: return false;
   }
 }
@@ -251,6 +180,13 @@ float Expression::binop_compute() {
   }
 }
 
+float Expression::zero_arg_compute() {
+  switch (operation) {
+    case SAMPLE_RATE: return env->SampleRate();
+    default: return -9.87654f;
+  }
+}
+
 float Expression::one_arg_compute(float arg1) {
   switch (operation) {
     case ABS: return std::abs(arg1);
@@ -268,16 +204,176 @@ float Expression::two_arg_compute(float arg1, float arg2) {
     case MOD: return fmod(arg1, arg2);
     case MAX: return fmax(arg1, arg2);
     case MIN: return fmin(arg1, arg2);
+    case NORMAL: return env->Normal(arg1, arg2);
     case POW: return pow(arg1, arg2);
+    case RANDOM: return env->Random(arg1, arg2);
     default: return 4.56789f;
   }
 }
 
-Line Line::Assignment(const std::string &variable_name, const Expression &expr, Driver* driver) {
+Expression ExpressionFactory::Not(const Expression &expr) {
+  Expression ex;
+  ex.type = Expression::NOT;
+  ex.subexpressions.push_back(expr);
+  return ex;
+}
+
+Expression ExpressionFactory::Note(const std::string &note_name) {
+  Expression ex;
+  ex.type = Expression::NUMBER;
+  // split into name and octave
+  int octave;
+  std::string name;
+  // Number at end might be two chars long, in the case of -1 or 10.
+  if (note_name.size() == 4 || (note_name.size() == 3 && (
+      note_name[1] != '#' && note_name[1] != 'b'))) {
+    name = note_name.substr(0, note_name.size() - 2);
+    octave = strtol(note_name.c_str() + note_name.size() - 2, NULL, 10);
+  } else {
+    name = note_name.substr(0, note_name.size() - 1);
+    octave = strtol(note_name.c_str() + note_name.size() - 1, NULL, 10);
+  }
+  auto found = note_to_volt_same_octave.find(name);
+  // This can happen. Current regex can accept invalid values like b#.
+  // TODO: maybe fix the regex?
+  if (found != note_to_volt_same_octave.end()) {
+    ex.float_value = found->second + octave - 4;
+  } else {
+    // Invalid name.
+    ex.float_value = 0.0f;
+  }
+  return ex;
+}
+
+Expression ExpressionFactory::Number(float the_value) {
+  Expression ex;
+  ex.type = Expression::NUMBER;
+  ex.float_value = the_value;
+  return ex;
+}
+
+Expression ExpressionFactory::ZeroArgFunc(const std::string &func_name) {
+  Expression ex;
+  ex.type = Expression::ZEROARGFUNC;
+  ex.operation = string_to_operation.at(func_name);
+  ex.env = env;  // We know sample_rate() requires this.
+  return ex;
+}
+
+Expression ExpressionFactory::OneArgFunc(const std::string &func_name,
+                                         const Expression &arg1) {
+  Expression ex;
+  ex.type = Expression::ONEARGFUNC;
+  ex.operation = string_to_operation.at(func_name);
+  ex.subexpressions.push_back(arg1);
+  return ex;
+}
+
+Expression ExpressionFactory::OnePortFunc(const std::string &func_name,
+                                          const std::string &port1,
+                                          Driver* driver) {
+  Expression ex;
+  ex.type = Expression::ONEPORTFUNC;
+  ex.operation = string_to_operation.at(func_name);
+  ex.port = driver->GetPortFromName(port1);  // TODO: Make parser do this?
+  ex.env = env;
+  return ex;
+}
+
+Expression ExpressionFactory::TwoArgFunc(const std::string &func_name,
+                                         const Expression &arg1,
+                                         const Expression &arg2) {
+  Expression ex;
+  ex.type = Expression::TWOARGFUNC;
+  ex.operation = string_to_operation.at(func_name);
+  ex.env = env;  // Sometimes we need this.
+  ex.subexpressions.push_back(arg1);
+  ex.subexpressions.push_back(arg2);
+  return ex;
+}
+
+Expression ExpressionFactory::CreateBinOp(const Expression &lhs,
+                                          const std::string &op_string,
+                                          const Expression &rhs) {
+  Expression ex;
+  ex.type = Expression::BINOP;
+  ex.subexpressions.push_back(lhs);
+  ex.subexpressions.push_back(rhs);
+  ex.operation = string_to_operation.at(op_string);
+  return ex;
+}
+
+Expression ExpressionFactory::ArrayVariable(const std::string &array_name,
+                                            const Expression &arg1,
+                                            Driver* driver) {
+  Expression ex;
+  ex.type = Expression::ARRAY_VARIABLE;
+  ex.array_ptr = driver->GetArrayFromName(array_name);
+  ex.subexpressions.push_back(arg1);
+  return ex;
+}
+
+// TODO: Now that compiler knows if var_name is a port or not, could
+// avoid deciding here. Or make a new kind of Expression called PORT!?
+Expression ExpressionFactory::Variable(const char *var_name, Driver* driver) {
+  Expression ex;
+  ex.type = Expression::VARIABLE;
+  // Intentionally copying the name.
+  ex.name = std::string(var_name);
+  if (driver->VarHasPort(var_name)) {
+    ex.port = driver->GetPortFromName(ex.name);
+    ex.env = env;
+  } else {
+    ex.variable_ptr = driver->GetVarFromName(ex.name);
+  }
+  return ex;
+}
+// The parser seems to need many variants of Variable.
+Expression ExpressionFactory::Variable(const std::string &expr, Driver* driver) {
+  // Intentionally copying the name.
+  return Variable(expr.c_str(), driver);
+}
+
+Expression ExpressionFactory::Variable(char* var_name, Driver* driver) {
+  // Intentionally copying the name.
+  return Variable(std::string(var_name).c_str(), driver);
+}
+
+Line Line::ArrayAssignment(const std::string &variable_name,
+                     const Expression &index,
+                     const Expression &value, Driver* driver) {
+  Line line;
+  line.type = ARRAY_ASSIGNMENT;
+  line.str1 = variable_name;  // Not required, but handy for troubleshooting.
+  line.array_ptr = driver->GetArrayFromName(variable_name);
+  line.expr1 = index;
+  line.expr2 = value;
+  return line;
+}
+
+Line Line::ArrayAssignment(const std::string &variable_name,
+                     const Expression &index,
+                     const ExpressionList &values, Driver* driver) {
+  Line line;
+  line.type = ARRAY_ASSIGNMENT;
+  line.str1 = variable_name;  // Not required, but handy for troubleshooting.
+  line.array_ptr = driver->GetArrayFromName(variable_name);
+  line.expr1 = index;
+  line.expr_list = values;
+  return line;
+}
+
+Line Line::Assignment(const std::string &variable_name, const Expression &expr,
+                      Driver* driver) {
   Line line;
   line.type = ASSIGNMENT;
   line.str1 = variable_name;
-  line.variable_ptr = driver->GetVarFromName(variable_name);
+  if (driver->VarHasPort(variable_name)) {
+    line.assign_port = driver->GetPortFromName(variable_name);
+    line.variable_ptr = nullptr;
+  } else {
+    line.variable_ptr = driver->GetVarFromName(variable_name);
+  }
   line.expr1 = expr;
   return line;
 }
@@ -299,11 +395,17 @@ Line Line::Exit(const std::string &loop_type) {
 }
 
 Line Line::ForNext(const Line &assign, const Expression &limit,
-                   const Expression &step, const Statements &state) {
+                   const Expression &step, const Statements &state,
+                   Driver* driver) {
   Line line;
   line.type = FORNEXT;
   line.str1 = assign.str1;
-  line.variable_ptr = assign.variable_ptr;
+  if (driver->VarHasPort(line.str1)) {
+    line.assign_port = driver->GetPortFromName(line.str1);
+    line.variable_ptr = nullptr;
+  } else {
+    line.variable_ptr = driver->GetVarFromName(line.str1);
+  }
   line.expr1 = assign.expr1;
   line.expr2 = limit;
   line.expr3 = step;
@@ -311,23 +413,36 @@ Line Line::ForNext(const Line &assign, const Expression &limit,
   return line;
 }
 
-Line Line::IfThen(const Expression &bool_expr,
+Line Line::ElseIf(const Expression &bool_expr,
                   const Statements &state1) {
   Line line;
-  line.type = IFTHEN;
+  line.type = ELSEIF;
   line.expr1 = bool_expr;
   line.statements.push_back(state1);
   return line;
 }
 
+Line Line::IfThen(const Expression &bool_expr,
+                  const Statements &then_state,
+                  const Statements &elseifs) {
+  Line line;
+  line.type = IFTHEN;
+  line.expr1 = bool_expr;
+  line.statements.push_back(then_state);
+  line.statements.push_back(elseifs);
+  return line;
+}
+
 Line Line::IfThenElse(const Expression &bool_expr,
-                      const Statements &state1,
-                      const Statements &state2) {
+                      const Statements &then_state,
+                      const Statements &else_state,
+                      const Statements &elseifs) {
   Line line;
   line.type = IFTHENELSE;
   line.expr1 = bool_expr;
-  line.statements.push_back(state1);
-  line.statements.push_back(state2);
+  line.statements.push_back(then_state);
+  line.statements.push_back(else_state);
+  line.statements.push_back(elseifs);
   return line;
 }
 

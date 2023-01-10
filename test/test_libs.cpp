@@ -1,7 +1,45 @@
 #include "gtest/gtest.h"
 
 #include "../src/parser/driver.hh"
+#include "../src/parser/environment.h"
 #include <stdexcept>
+
+struct TestEnvironment : Environment {
+  float in1, in2, in3, in4;
+  std::unordered_map<int, bool> connected;
+  void SetIns(float a, float b, float c, float d) {
+    in1 = a;
+    in2 = b;
+    in3 = c;
+    in4 = d;
+  }
+  void setConnected(int index, bool is_connected) {
+    connected[index] = is_connected;
+  }
+  float SampleRate() override {
+    return 43210;  // An unusual sample rate!
+  }
+  float GetVoltage(const PortPointer &port) {
+    EXPECT_EQ(PortPointer::INPUT, port.port_type);
+    switch (port.index) {
+      case 0: return in1;
+      case 1: return in2;
+      case 2: return in3;
+      case 3: return in4;
+      default: return -1.2481632;
+    }
+  }
+  float Connected(const PortPointer &port) {
+    return (connected.find(port.index) != connected.end() &&
+            connected.at(port.index)) ? 1.0f : 0.0f;
+  };
+  float Random(float min_value, float max_value) {
+    return (max_value + min_value) / 2.0;  // Not very random.
+  }
+  float Normal(float mean, float std_dev) {
+    return mean + std_dev;  // Also not random.
+  }
+};
 
 TEST(ParserTest, RunsAtAll)
 {
@@ -23,57 +61,76 @@ TEST(ParserTest, Comments)
     EXPECT_EQ(27, drv.lines[0].expr1.Compute());
 }
 
-TEST(ParserTest, SimpleTest)
+TEST(ParserTest, Arrays)
 {
     Driver drv;
 
-    std::unordered_set<std::string> volatile_deps;
+    EXPECT_EQ(0, drv.parse("a[4] = 6"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ("a", drv.lines[0].str1);
+    EXPECT_EQ(4, drv.lines[0].expr1.Compute());
+    EXPECT_EQ(6, drv.lines[0].expr2.Compute());
+
+    EXPECT_EQ(0, drv.parse("b = a[4]"));
+    ASSERT_EQ(1, drv.lines.size());
+
+    EXPECT_EQ(0, drv.parse("b = a[-3]"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ(0, drv.lines[0].expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("a[4] = {1, 0, 1, sin(in1)}"));
+    ASSERT_EQ(1, drv.lines.size());
+    EXPECT_EQ("a", drv.lines[0].str1);
+    EXPECT_EQ(4, drv.lines[0].expr1.Compute());
+    EXPECT_EQ(4, drv.lines[0].expr_list.size());
+}
+
+TEST(ParserTest, SimpleTest)
+{
+    Driver drv;
+    drv.AddPortForName("in1", true, 0);
+    drv.AddPortForName("in2", true, 1);
+    drv.AddPortForName("in3", true, 2);
+    drv.AddPortForName("in4", true, 3);
+    TestEnvironment test_env;
+    drv.SetEnvironment(&test_env);
 
     EXPECT_EQ(0, drv.parse("out1 = (3 + 3) * 6"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ("out1", drv.lines[0].str1);
     EXPECT_EQ(36, drv.lines[0].expr1.Compute());
-    EXPECT_FALSE(drv.lines[0].expr1.Volatile(&volatile_deps));
-    EXPECT_TRUE(volatile_deps.empty());
+    EXPECT_FALSE(drv.lines[0].expr1.Volatile());
 
     // Space at end.
     EXPECT_EQ(0, drv.parse("out1 = (3 + 3) * 6  \n"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ("out1", drv.lines[0].str1);
     EXPECT_EQ(36, drv.lines[0].expr1.Compute());
-    EXPECT_FALSE(drv.lines[0].expr1.Volatile(&volatile_deps));
-    EXPECT_TRUE(volatile_deps.empty());
+    EXPECT_FALSE(drv.lines[0].expr1.Volatile());
+
+    test_env.SetIns(0.0, 0.338, 0, 0);
 
     EXPECT_EQ(0, drv.parse("out1 = 3 + in2\n"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ("out1", drv.lines[0].str1);
-    *(drv.GetVarFromName("in2")) = 0.338;
     EXPECT_FLOAT_EQ(3.338, drv.lines[0].expr1.Compute());
-    EXPECT_TRUE(drv.lines[0].expr1.Volatile(&volatile_deps));
-    EXPECT_EQ(1, volatile_deps.size());
-    volatile_deps.clear();
+    EXPECT_TRUE(drv.lines[0].expr1.Volatile());
 
     EXPECT_EQ(0, drv.parse("out1 = 3 + in2\nwait 1000"));
     ASSERT_EQ(2, drv.lines.size());
     EXPECT_EQ("out1", drv.lines[0].str1);
     EXPECT_FLOAT_EQ(3.338, drv.lines[0].expr1.Compute());
-    EXPECT_TRUE(drv.lines[0].expr1.Volatile(&volatile_deps));
-    EXPECT_EQ(1, volatile_deps.size());
-    volatile_deps.clear();
+    EXPECT_TRUE(drv.lines[0].expr1.Volatile());
     EXPECT_FLOAT_EQ(1000, drv.lines[1].expr1.Compute());
-    EXPECT_FALSE(drv.lines[1].expr1.Volatile(&volatile_deps));
-    EXPECT_TRUE(volatile_deps.empty());
+    EXPECT_FALSE(drv.lines[1].expr1.Volatile());
 
+    test_env.SetIns(0.0, 1.0f, 0, 0);
     // TODO: negative and float constants.
     EXPECT_EQ(0, drv.parse("out1 = -0.5 + in2 + pow(in2, in4)"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ("out1", drv.lines[0].str1);
-    *(drv.GetVarFromName("in2")) = 1.0f;
     EXPECT_FLOAT_EQ(1.5, drv.lines[0].expr1.Compute());
-    EXPECT_TRUE(drv.lines[0].expr1.Volatile(&volatile_deps));
-    EXPECT_EQ(2, volatile_deps.size());
-    EXPECT_TRUE(volatile_deps.find("in2") != volatile_deps.end());
-    EXPECT_TRUE(volatile_deps.find("in4") != volatile_deps.end());
+    EXPECT_TRUE(drv.lines[0].expr1.Volatile());
 }
 
 TEST(ParserTest, FunctionTest)
@@ -162,48 +219,64 @@ TEST(ParserTest, NegativeTest)
 TEST(ParserTest, BooleanTest)
 {
     Driver drv;
+    drv.AddPortForName("in1", true, 0);
+    drv.AddPortForName("in2", true, 1);
+    drv.AddPortForName("in3", true, 2);
+    drv.AddPortForName("in4", true, 3);
+    TestEnvironment test_env;
+    drv.SetEnvironment(&test_env);
 
     EXPECT_EQ(0, drv.parse("if 5 > 3 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
+    ASSERT_EQ(0, drv.lines[0].statements[1].size());  // no elseifs
 
     EXPECT_EQ(0, drv.parse("if 5 < 3 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(false, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
+    ASSERT_EQ(0, drv.lines[0].statements[1].size());  // no elseifs
 
-    EXPECT_EQ(0, drv.parse("if 3 > 5 then wait 0 end if"));
+    EXPECT_EQ(0, drv.parse(
+      "if 3 > 5 then wait 0 elseif 6 == 9 then out1 = 9 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(false, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
+    ASSERT_EQ(1, drv.lines[0].statements[1].size());  // one elseifs
 
-    EXPECT_EQ(0, drv.parse("if 3 < 5 then wait 0 end if"));
+    EXPECT_EQ(0, drv.parse(
+      "if 3 < 5 then wait 0 "
+      "elseif 2 == 0 then wait 1 "
+      "elseif 2 == 1 then wait 2 out1 = 2"
+      "elseif 2 == 2 then wait 3 out1 = 3 out2 = 5"
+      "end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
+    ASSERT_EQ(3, drv.lines[0].statements[1].size());  // three elseifs
 
-    *(drv.GetVarFromName("in1")) = 5.0f;
+    test_env.SetIns(5.0, 0, 0, 0);
 
     EXPECT_EQ(0, drv.parse("if in1 > 3 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
 
     EXPECT_EQ(0, drv.parse("if in1 < 3 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(false, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
 
     EXPECT_EQ(0, drv.parse("if 3 > in1 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(false, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
 
     EXPECT_EQ(0, drv.parse("if 3 < in1 then wait 0 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
 
     EXPECT_EQ(0, drv.parse("ok = 3 < in1 and 2"));
     ASSERT_EQ(1, drv.lines.size());
@@ -253,7 +326,7 @@ TEST(ParserTest, IfThenTest)
     EXPECT_EQ(0, drv.parse("if 5 > 3 then out1 = 5 - 3 end if"));
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ(true, drv.lines[0].expr1.Compute());
-    ASSERT_EQ(1, drv.lines[0].statements.size());
+    ASSERT_EQ(2, drv.lines[0].statements.size());
 }
 
 TEST(ParserTest, ForTest)
@@ -335,7 +408,7 @@ TEST(ParserTest, ErrorTest)
   err = drv.errors[0];
   EXPECT_EQ(3, err.line);
   EXPECT_EQ(6, err.column);
-  EXPECT_EQ("syntax error, unexpected end of file, expecting =", err.message);
+  EXPECT_EQ("syntax error, unexpected end of file, expecting = or [", err.message);
 
   EXPECT_EQ(1, drv.parse("out1 = 5 ' comment\nidjfi"));
   ASSERT_EQ(0, drv.lines.size());
@@ -343,7 +416,7 @@ TEST(ParserTest, ErrorTest)
   err = drv.errors[0];
   EXPECT_EQ(2, err.line);
   EXPECT_EQ(6, err.column);
-  EXPECT_EQ("syntax error, unexpected end of file, expecting =", err.message);
+  EXPECT_EQ("syntax error, unexpected end of file, expecting = or [", err.message);
 }
 
 TEST(ParserTest, NoteTest)
@@ -379,4 +452,34 @@ TEST(ParserTest, NoteTest)
     ASSERT_EQ(1, drv.lines.size());
     EXPECT_EQ("out1", drv.lines[0].str1);
     EXPECT_FLOAT_EQ(6.0f + 0.0833333, drv.lines[0].expr1.Compute());
+}
+
+TEST(ParserTest, EnvironmentTest)
+{
+  Driver drv;
+  drv.AddPortForName("in1", true, 0);
+  drv.AddPortForName("in2", true, 1);
+  drv.AddPortForName("in3", true, 2);
+  drv.AddPortForName("in4", true, 3);
+  TestEnvironment test_env;
+  drv.SetEnvironment(&test_env);
+  drv.AddPortForName("in1", true, 7);
+
+  EXPECT_EQ(0, drv.parse("out1 = sample_rate()"));
+  ASSERT_EQ(1, drv.lines.size());
+  EXPECT_EQ(43210, drv.lines[0].expr1.Compute());
+
+  EXPECT_EQ(0, drv.parse("out1 = normal(1, 0.2)"));
+  ASSERT_EQ(1, drv.lines.size());
+  EXPECT_FLOAT_EQ(1.2, drv.lines[0].expr1.Compute());
+
+  EXPECT_EQ(0, drv.parse("out1 = random(0, 10)"));
+  ASSERT_EQ(1, drv.lines.size());
+  EXPECT_EQ(5, drv.lines[0].expr1.Compute());
+
+  EXPECT_EQ(0, drv.parse("out1 = 10 * connected(in1)"));
+  ASSERT_EQ(1, drv.lines.size());
+  EXPECT_EQ(0, drv.lines[0].expr1.Compute());
+  test_env.setConnected(7, true);
+  EXPECT_EQ(10, drv.lines[0].expr1.Compute());
 }
