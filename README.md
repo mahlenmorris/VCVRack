@@ -736,4 +736,4 @@ encouragement and enthusiasm for my module-making efforts.
 And my deepest gratitude to Diane LeVan, for letting me ignore her and/or
 the world for periods of time just to craft these things. I apologize for
 waking up with new ideas at 5AM, and for having a retirement hobby that
-is nearly impossible to even start describing to any of ur friends.
+is nearly impossible to even *start* describing to any of our friends.
