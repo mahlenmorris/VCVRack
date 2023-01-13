@@ -29,6 +29,12 @@ struct WaitInfo {
 class PCode;
 
 struct CodeBlock {
+  enum RunStatus {
+    CONTINUES,  // This block will continue running.
+    STOPPED,    // This block has hit the end.
+    RAN_RESET   // This block ran RESET, must bail on this sample.
+  };
+
   // The "bytecode" instructions we follow.
   std::vector<PCode> pcodes;
   // Line where execution is currently happening.
@@ -58,14 +64,12 @@ struct CodeBlock {
   void SetVariableValue(float* variable_ptr,
      const PortPointer &assign_port, float value);
   float GetVariableValue(float* variable_ptr, const PortPointer &port);
-  // I imagine we need some sort of status to be returned, but not sure yet
-  // what it will be.
+
   // Only called when the global "running" status of the program is true.
-  // Returns false if the block believes we should stop running
-  // (like hitting an EXIT ALL).
-  // TODO: Does this stop *all* blocks? Just this one? Need a new gesture
+  // Returns STOPPED if the block believes we should stop running.
+  // TODO: how to handle EXIT ALL? Does this stop *all* blocks? Just this one? Need a new gesture
   // to just stop one block? EXIT BLOCK?
-  bool Run(bool loops);
+  CodeBlock::RunStatus Run(bool loops);
 };
 
 #endif // CODE_BLOCK_H

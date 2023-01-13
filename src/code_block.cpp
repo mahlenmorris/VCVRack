@@ -41,7 +41,7 @@ float CodeBlock::GetVariableValue(float* variable_ptr,
   }
 }
 
-bool CodeBlock::Run(bool loops) {
+CodeBlock::RunStatus CodeBlock::Run(bool loops) {
   // Recompute the wait time, but only if we _need_ to.
   // Consumed by the PCode::WAIT instruction.
   bool need_to_update_wait = false;
@@ -84,7 +84,7 @@ bool CodeBlock::Run(bool loops) {
       break;
       case PCode::RESET: {
         environment->Reset();
-        current_line++;
+        return RAN_RESET;
       }
       break;
       case PCode::WAIT: {
@@ -189,5 +189,5 @@ bool CodeBlock::Run(bool loops) {
       }
     }
   }
-  return running;
+  return running ? CONTINUES : STOPPED;
 }

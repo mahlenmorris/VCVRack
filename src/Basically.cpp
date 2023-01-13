@@ -421,7 +421,10 @@ struct Basically : Module {
       run_light_countdown = std::floor(args.sampleRate / 20.0f);
     }
 
+    // If RESET is called anywhere in here, we need to end execution,
+    // or we end up in an infinite loop.
     if (running) {
+      CodeBlock::RunStatus run_status = CodeBlock::CONTINUES;
       // WHEN EXPRESSION blocks:
       for (size_t pos = 0; pos < expression_blocks.size(); pos++) {
         // If already running, don't test the expression.
@@ -432,12 +435,20 @@ struct Basically : Module {
         }
         // If now running, Run() a step.
         if (running_expression_blocks[pos]) {
-          running_expression_blocks[pos] =
-              expression_blocks[pos].second->Run(false);
+          run_status = expression_blocks[pos].second->Run(false);
+          if (run_status == CodeBlock::RAN_RESET) {
+            break;
+          }
+          running_expression_blocks[pos] = run_status == CodeBlock::CONTINUES;
         }
       }
-      for (CodeBlock* block : main_blocks) {
-        block->Run(loops);
+      if (run_status != CodeBlock::RAN_RESET) {
+        for (CodeBlock* block : main_blocks) {
+          run_status = block->Run(loops);
+          if (run_status == CodeBlock::RAN_RESET) {
+            break;
+          }
+        }
       }
     }
 
