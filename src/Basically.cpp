@@ -85,7 +85,7 @@ struct Basically : Module {
     std::vector<CodeBlock*>* main_blocks;
     std::vector<std::pair<Expression, CodeBlock*> >* expression_blocks;
     std::vector<bool>* running_expression_blocks;
-    std::unordered_map<InputId, TriggerInfo*> triggers;
+    std::unordered_map<int, TriggerInfo*> triggers;
 
    public:
     ProductionEnvironment(std::vector<Input>* the_inputs,
@@ -111,7 +111,7 @@ struct Basically : Module {
         trig->index = (InputId) index;
         trig->trigger.reset();
         trig->current_value = false;
-        triggers[(InputId) index] = trig;
+        triggers[index] = trig;
       }
     }
 
@@ -186,7 +186,7 @@ struct Basically : Module {
     }
 
     bool Trigger(const PortPointer &port) override {
-      auto found = triggers.find((InputId) port.index);
+      auto found = triggers.find(port.index);
       if (found != triggers.end()) {
         return found->second->current_value;
       } else {
@@ -240,7 +240,7 @@ struct Basically : Module {
 
     environment = new ProductionEnvironment(&inputs, &outputs, &drv,
       &main_blocks, &expression_blocks, &running_expression_blocks);
-    drv.SetEnvironment(environment);
+    drv.SetEnvironment((Environment*) environment);
     // For now, we just have the one block, but we'll add more soon.
     // Add the INn variables to the variable space, and get the pointer to
     // them so module can set them.
@@ -349,7 +349,7 @@ struct Basically : Module {
         expression_blocks.clear();
         running_expression_blocks.clear();
         for (auto ast_block : drv.blocks) {
-          CodeBlock* new_block = new CodeBlock(environment);
+          CodeBlock* new_block = new CodeBlock((Environment*) environment);
           if (translator.BlockToCodeBlock(new_block, ast_block)) {
             // Different lists depending on type.
             if (new_block->type == Block::MAIN) {
