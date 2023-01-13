@@ -54,6 +54,10 @@ struct TestEnvironment : Environment {
   }
   void Reset() override { }
   bool Start() override { return starting; }
+
+  bool Trigger(const PortPointer &port) override {
+    return (port.port_type == PortPointer::INPUT);
+  }
 };
 
 TEST(ParserTest, ParsesAtAll)
@@ -507,6 +511,15 @@ TEST(ParserTest, EnvironmentTest)
   EXPECT_EQ(0, lines->at(0).expr1.Compute());
   test_env.setConnected(7, true);
   EXPECT_EQ(10, lines->at(0).expr1.Compute());
+
+  EXPECT_EQ(0, drv.trigger_port_indexes.size());
+  ASSERT_EQ(0, drv.parse("out1 = 10 * trigger(in1)"));
+  ASSERT_EQ(1, lines->size());
+  EXPECT_EQ(1, drv.trigger_port_indexes.size());
+  EXPECT_EQ(10, lines->at(0).expr1.Compute());
+
+  // Should not compile for an out port.
+  ASSERT_EQ(1, drv.parse("out1 = 10 * trigger(out1)"));
 }
 
 TEST(ParserTest, BlocksTest)

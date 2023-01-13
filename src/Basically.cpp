@@ -70,6 +70,12 @@ struct Basically : Module {
     }
   };
 
+  struct TriggerInfo {
+    InputId index;
+    dsp::SchmittTrigger trigger;
+    bool current_value;
+  };
+
   class ProductionEnvironment : public Environment {
     std::vector<Input>* inputs;
     std::vector<Output>* outputs;
@@ -79,6 +85,7 @@ struct Basically : Module {
     std::vector<CodeBlock*>* main_blocks;
     std::vector<std::pair<Expression, CodeBlock*> >* expression_blocks;
     std::vector<bool>* running_expression_blocks;
+    std::unordered_map<InputId, TriggerInfo*> triggers;
 
    public:
     ProductionEnvironment(std::vector<Input>* the_inputs,
@@ -91,6 +98,32 @@ struct Basically : Module {
        main_blocks{the_main_blocks}, expression_blocks{the_expression_blocks},
        running_expression_blocks{the_running_expression_blocks} {
        }
+
+    // When program has been recompiled, call this to set up trigger monitoring.
+     void ResetTriggers() {
+      // First, clear existing map.
+      for (auto t : triggers) {
+        delete t.second;
+      }
+      triggers.clear();
+      for (int index : driver->trigger_port_indexes) {
+        TriggerInfo* trig = new TriggerInfo();
+        trig->index = (InputId) index;
+        trig->trigger.reset();
+        trig->current_value = false;
+        triggers[(InputId) index] = trig;
+      }
+    }
+
+    void UpdateTriggers() {
+      for (auto t : triggers) {
+        TriggerInfo* value = t.second;
+        bool was_low = !(value->trigger.isHigh());
+        value->trigger.process(rescale(
+            inputs->at(t.first).getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+        value->current_value = was_low && value->trigger.isHigh();
+      }
+    }
 
     // ProcessArgs object isn't available when we first create the Environment.
     // So we need to update it when it is available.
@@ -150,6 +183,17 @@ struct Basically : Module {
     // True ONLY when the program has just compiled.
     bool Start() override {
       return starting;
+    }
+
+    bool Trigger(const PortPointer &port) override {
+      auto found = triggers.find((InputId) port.index);
+      if (found != triggers.end()) {
+        return found->second->current_value;
+      } else {
+        // Only a compilation error should cause this, but best way to fail
+        // is to say false.
+        return false;
+      }
     }
   };
 
@@ -330,8 +374,12 @@ struct Basically : Module {
         ResetToProgramStart();
         // Tell the start() function that we are starting.
         environment->SetStarting(true);
+        environment->ResetTriggers();
       }
     }
+
+    // Update the environment's notion of our trigger state.
+    environment->UpdateTriggers();
 
     // Determine if we are running or not.
     // This section is more complicated than needed to avoid unneeded

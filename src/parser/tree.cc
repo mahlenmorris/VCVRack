@@ -31,6 +31,7 @@ std::unordered_map<std::string, Expression::Operation> ExpressionFactory::string
   {"sign", Expression::SIGN},
   {"sin", Expression::SIN},
   {"start", Expression::START},
+  {"trigger", Expression::TRIGGER},
   {"mod", Expression::MOD},
   {"max", Expression::MAX},
   {"min", Expression::MIN},
@@ -90,8 +91,11 @@ float Expression::Compute() {
     }
     break;
     case ONEPORTFUNC: {
-      // CONNECTED is currently only such method.
-      return env->Connected(port);
+      switch (operation) {
+        case CONNECTED: return env->Connected(port);
+        case TRIGGER: return env->Trigger(port) ? 1.0f : 0.0f;
+        default: return -8.642f;
+      }
     }
     break;
     case TWOARGFUNC: {
@@ -124,7 +128,7 @@ bool Expression::Volatile() {
     // a bug or Windows-specific. And Start() is volatile.
     case ZEROARGFUNC: return true;
     case ONEARGFUNC: return subexpressions[0].Volatile();
-    // Yes, the only such method is volatile.
+    // Yes, both conneted() and trigger are volatile.
     case ONEPORTFUNC: return true;
     default: return false;
   }
@@ -281,6 +285,10 @@ Expression ExpressionFactory::OnePortFunc(const std::string &func_name,
   ex.type = Expression::ONEPORTFUNC;
   ex.operation = string_to_operation.at(func_name);
   ex.port = driver->GetPortFromName(port1);  // TODO: Make parser do this?
+  if (ex.operation == Expression::TRIGGER) {
+    // So that Environment can know to inspect these ports every sample.
+    driver->trigger_port_indexes.insert(ex.port.index);
+  }
   ex.env = env;
   return ex;
 }

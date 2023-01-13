@@ -20,6 +20,7 @@
 #ifndef DRIVER_HH
 #define DRIVER_HH
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 #include <vector>
 #include "tree.h"
@@ -70,6 +71,9 @@ public:
   std::unordered_map<std::string, PortPointer> symbol_ports;
   // Maps the name of an array variable to a pointer to it.
   std::unordered_map<std::string, STArray* > symbol_arrays;
+  // List of INn port indexes that need trigger() to be maintained
+  // for the current program. Cleared with every attempted compile.
+  std::unordered_set<int> trigger_port_indexes;
 
   Driver();
   ~Driver();

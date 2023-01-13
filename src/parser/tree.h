@@ -28,7 +28,7 @@ class Expression {
     TWOARGFUNC // func2(subexpressions[0], subexpressions[1])
   };
   Type type;
-  // Which BinOp is this?
+  // Which method/operation is this?
   enum Operation {
     PLUS,
     MINUS,
@@ -52,6 +52,7 @@ class Expression {
     SIGN,
     SIN,
     START,
+    TRIGGER,
     MOD,
     MAX,
     MIN,

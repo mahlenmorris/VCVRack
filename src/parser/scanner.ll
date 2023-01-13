@@ -97,7 +97,6 @@ in_port "in1"|"in2"|"in3"|"in4"|"in5"|"in6"|"in7"|"in8"|"in9"
 out_port "out1"|"out2"|"out3"|"out4"
 zeroargfunc "sample_rate"|"start"
 oneargfunc "abs"|"ceiling"|"floor"|"sign"|"sin"
-oneportfunc "connected"
 twoargfunc "max"|"min"|"mod"|"normal"|"pow"|"random"
 comparison "<"|"<="|">"|">="|"=="|"!="
 float ([0-9]*[.])?[0-9]+
@@ -133,6 +132,7 @@ blank [ \t\r]
 "also"     return yy::parser::make_ALSO   (yytext, loc);
 "and"      return yy::parser::make_AND    (yytext, loc);
 "clear"    return yy::parser::make_CLEAR (yytext, loc);
+"connected" return yy::parser::make_CONNECTED (yytext, loc);
 "continue" return yy::parser::make_CONTINUE (yytext, loc);
 "else"     return yy::parser::make_ELSE   (yytext, loc);
 "elseif"   return yy::parser::make_ELSEIF (yytext, loc);
@@ -147,6 +147,7 @@ blank [ \t\r]
 "step"     return yy::parser::make_STEP   (yytext, loc);
 "then"     return yy::parser::make_THEN   (yytext, loc);
 "to"       return yy::parser::make_TO     (yytext, loc);
+"trigger"  return yy::parser::make_TRIGGER (yytext, loc);
 "wait"     return yy::parser::make_WAIT   (yytext, loc);
 "when"     return yy::parser::make_WHEN   (yytext, loc);
 
@@ -154,7 +155,6 @@ blank [ \t\r]
 {float}    return make_NUMBER (yytext, loc);
 {zeroargfunc} return yy::parser::make_ZEROARGFUNC (yytext, loc);
 {oneargfunc} return yy::parser::make_ONEARGFUNC (yytext, loc);
-{oneportfunc} return yy::parser::make_ONEPORTFUNC (yytext, loc);
 {twoargfunc} return yy::parser::make_TWOARGFUNC (yytext, loc);
 {comparison} return yy::parser::make_COMPARISON (yytext, loc);
 {in_port}  return yy::parser::make_IN_PORT (yytext, loc);

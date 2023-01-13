@@ -88,5 +88,8 @@ int Driver::parse(const std::string &text)
   blocks.clear();
   // Remove any errors from previous parse attempt.
   errors.clear();
+  // Clear the list of INn ports that have trigger() called on them.
+  trigger_port_indexes.clear();
+  // Actually attempt to compile.
   return set_text(text);
 }

@@ -42,6 +42,7 @@
   ASSIGN  "="
   CEILING "ceiling"
   CLEAR   "clear"
+  CONNECTED "connected"
   CONTINUE "continue"
   ELSE    "else"
   ELSEIF  "elseif"
@@ -64,6 +65,7 @@
   STEP    "step"
   THEN    "then"
   TO      "to"
+  TRIGGER "trigger"
   WAIT    "wait"
   WHEN    "when"
   MINUS   "-"
@@ -86,7 +88,6 @@
 %token <std::string> OUT_PORT "out_port"
 %token <std::string> ZEROARGFUNC "zeroargfunc"
 %token <std::string> ONEARGFUNC "oneargfunc"
-%token <std::string> ONEPORTFUNC "oneportfunc"
 %token <std::string> TWOARGFUNC "twoargfunc"
 %token <std::string> COMPARISON "comparison"
 %nterm <Expression> exp
@@ -217,8 +218,9 @@ exp:
 | exp "and" exp { $$ = drv.factory.CreateBinOp($1, $2, $3); }
 | exp "or" exp  { $$ = drv.factory.CreateBinOp($1, $2, $3); }
 | "zeroargfunc" "(" ")" { $$ = drv.factory.ZeroArgFunc($1); }
-| "oneportfunc" "(" "in_port" ")" {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
-| "oneportfunc" "(" "out_port" ")" {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
+| "connected" "(" "in_port" ")" {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
+| "connected" "(" "out_port" ")" {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
+| "trigger"   "(" "in_port" ")" {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
 | "oneargfunc" "(" exp ")" { $$ = drv.factory.OneArgFunc($1, $3); }
 | "twoargfunc" "(" exp "," exp ")" { $$ = drv.factory.TwoArgFunc($1, $3, $5); }
 | "(" exp ")"   { $$ = $2; }
