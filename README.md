@@ -352,18 +352,191 @@ For the two STYLES that support halting the program, which are:
 * Start on trigger, loop
 * Start on trigger, don't loop
 
-encountering an  **EXIT ALL** will actually halt the program. A trigger/button
+encountering an **EXIT ALL** will actually halt the program. A trigger/button
 press to RUN will start it again.
+
+### CLEAR ALL
+TODO: fill in
+
+### RESET
+TODO: fill in
+
+
+
+## Multithreading: ALSO and WHEN blocks
+
+**Note: This section has kind of advanced topics, or at least they have the
+potential to make BASICally more confusing, especially if you are new to
+programming in general. You don't need to know this part to make BASICally do
+useful things for you, so feel free to skip this section the first
+time you learn about BASICally. But come back later; this
+may be useful to you soon.**
+
+The code style above (one big loop of code that gets repeated) doesn't allow
+for certain kinds of programs to be easily written, and can be less efficient
+than required. For example:
+* Any initialization code will get executed every time. One can minimize this
+to an extent by setting and checking an "init" variable being non-zero, but
+this concept could be better integrated into the language.
+* Running two loops with WAITs in them would be diabolically difficult to write.
+* Checking for a trigger at an IN port is difficult, and impossible during a
+WAIT.
+
+To allow BASICally to do these things, version 2.0.6 introduced "multithreading"
+and "blocks".
+
+### Blocks
+There are two kinds of Blocks of code.
+
+#### ALSO Blocks
+ALSO blocks each run continuously, exactly the way the (un-blocked) code examples
+elsewhere in this manual do. For example:
+
+```
+FOR OUT1 = -5 TO 5 STEP 0.1
+  WAIT 100
+NEXT
+```
+
+Causes OUT1 to emit a stepped saw wave with a period of 10 seconds.
+
+However, if you wanted the same program to also run this downward saw on OUT2:
+
+```
+FOR OUT2 = 5 TO -1 STEP -0.2
+  WAIT 75
+NEXT
+```
+
+that would be very difficult. But with ALSO blocks, it's easy.
+
+```
+FOR OUT1 = -5 TO 5 STEP 0.1
+  WAIT 100
+NEXT
+
+ALSO
+FOR OUT2 = 5 TO -1 STEP -0.2
+  WAIT 75
+NEXT
+END ALSO
+```
+
+Now both loops will run at the same time!
+
+The ALSO ... END ALSO is the new part here. Each ALSO block runs simultaneously
+with all of the other blocks. The ALSO blocks are run in the order that they
+appear in the program. So in this example:
+
+```
+' Block1
+IF IN1 == 0 THEN
+  foo = random(0, 1)
+END IF
+
+' Block2
+ALSO
+out1 = foo * 10
+END ALSO
+```
+
+Then the **foo** variable that Block2 uses will be changed when Block1
+changes it. They share the same "variable space".
+
+As we see in these examples, if there is code at the top of
+the program that isn't otherwise in a block, BASICally treats it like an ALSO
+block. Note that these all work the same:
+```
+(some code)
+
+ALSO
+(more code)
+END ALSO
+```
+
+```
+ALSO
+(some code)
+END ALSO
+
+ALSO
+(more code)
+END ALSO
+```
+
+But the following won't compile:
+
+```
+ALSO
+(some code)
+END ALSO
+
+(more code)
+```
+
+#### WHEN blocks
+WHEN Blocks are of the form:
+```
+WHEN (condition)
+(some code)
+END WHEN
+```
+For example:
+```
+WHEN foo > 3
+FOR OUT1 = -5 TO 5 STEP 0.1
+  WAIT 100
+NEXT
+END WHEN
+```
+
+BASICally will wait for the condition (in this case,
+"foo > 3") to be true, and then will start running the FOR-NEXT loop.
+Once the FOR-NEXT loop has completed, the block will stop running until
+the condition is true again. All of this is independent of the ALSO blocks;
+they will continue running simultaneously.
+
+WHEN Blocks are useful when used with the start() or trigger()
+methods, *especially* for running the "initialization" code mentioned above:
+
+```
+' A trigger to IN9 resets the speed the notes are played.
+FOR n = 0 TO 3
+  out1 = note[n]
+  WAIT pause_length
+NEXT
+
+WHEN start() OR trigger(in9)
+IF start() THEN
+  note[0] = { c3, g3, c4, c4 }  ' The notes in my score.
+END IF
+pause_length = random(100, 2000)  '  How fast we play the notes.
+END WHEN
+```
+
+### Details of Multithreading
+
+Some notes about how this all works under the hood.
+
+Every sample, BASICally does the following:
+* Walk through the list of WHEN Blocks, in the order they appear in the code.
+* * If a WHEN block is not already running, then the (condition) is evaluated, and
+if it is true, then the Block is started.
+* * If a WHEN block was already running (or was just started in the step above),
+then it is run for one sample's worth of time.
+* Walk through the ALSO Blocks, in the order they appear in the code.
+* * Each ALSO Block is run for one sample's worth of time.
+
 
 ### Other Things to Note
 BASICally is intended for the very casual user, with the hope that examples
 alone will suffice to suggest how programs can be written. Because of the UI
 limitations, detailed error reporting is difficult to provide. But if you
-hover your mouse over the little red area to the left that says "Fix!", it
+hover your mouse over the little red area to the left that says "Fix", it
 will attempt to point out the first place that BASICally couldn't understand
 the code.  
 
-Programs are typically *very* short. For that reason, this language doesn't need
+Programs are typically short. For that reason, this language doesn't need
 the features that are useful for writing long programs but increase the
 amount of boilerplate code. Here are a few surprising differences
 from more robust languages:
