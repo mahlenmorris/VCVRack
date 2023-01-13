@@ -26,8 +26,6 @@ struct WaitInfo {
   int ticks_limit;
 };
 
-class PCode;
-
 struct CodeBlock {
   enum RunStatus {
     CONTINUES,  // This block will continue running.
