@@ -124,7 +124,9 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 |**random(min, max)**|uniformly random number: min <= random(x, y) < max | random(-1, 1)|
 |**sample_rate()**|number of times BASICally is called per second (e.g., 44100)|sample_rate() == 48000|
 |**sign(x)**|-1, 0, or 1, depending on the sign of x|sign(2.1) == 1, sign(-2.1) == -1, sign(0) = 0|
-|**sin(x)**|arithmetic sine of x, which is in radians| sin(30 * 0.0174533) == 0.5, sin(3.14159 / 2) == 1
+|**sin(x)**|arithmetic sine of x, which is in radians| sin(30 * 0.0174533) == 0.5, sin(3.14159 / 2) == 1|
+|**start()**|True *only* for the moment when a program has just been recompiled. Useful for blocks that initialize variables at startup| WHEN start() ...|
+|**trigger(INn)**|True *only* for the moment when the INn port has received a trigger. Useful for WHEN blocks that wish to change the behavior of the program whenever this trigger is seen.| WHEN trigger(in9) ...| 
 
 ### WAIT Statements
 Always in the form:
@@ -356,12 +358,27 @@ encountering an **EXIT ALL** will actually halt the program. A trigger/button
 press to RUN will start it again.
 
 ### CLEAR ALL
-TODO: fill in
+"CLEAR ALL" resets all variables to 0, and resets all arrays to empty.
 
 ### RESET
-TODO: fill in
+Whenever a "RESET" is executed, it immediately stops processing this sample, and on the
+next sample each block (see Multithreading, below) will start from scratch. It does NOT
+change any variable values. This is very similar to the state when you've just typed a
+character into the editing window and the code compiles correctly, with one
+exception; recompiling the code makes start() become true, but RESET does NOT make start() become true.
 
+Note that RESET's effect is **immediate**. For example:
 
+```
+...
+IF trigger(in7) OR foo > 20 THEN
+  RESET
+  out2 = 0
+END IF
+...
+```
+
+the "out2 = 0" will NEVER be executed.
 
 ## Multithreading: ALSO and WHEN blocks
 
