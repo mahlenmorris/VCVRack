@@ -555,7 +555,7 @@ TEST(RunTest, RunsAtAll) {
   EXPECT_EQ(0, drv.parse("foo = 3.14159"));
   ASSERT_EQ(1, drv.blocks.size());
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
-  EXPECT_TRUE(block.Run(true));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
   EXPECT_EQ(3.14159f, *(drv.GetVarFromName("foo")));
 }
 
@@ -569,7 +569,7 @@ TEST(RunTest, RunsClear) {
   ASSERT_EQ(1, drv.blocks.size());
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
   EXPECT_EQ(false, test_env.clear_called);
-  EXPECT_TRUE(block.Run(true));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
   EXPECT_EQ(true, test_env.clear_called);
 }
 
@@ -602,14 +602,14 @@ TEST(RunTest, RunsForLoop) {
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
   ASSERT_EQ(4, block.pcodes.size());
 
-  EXPECT_TRUE(block.Run(true));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
   EXPECT_EQ(0.0f, *(drv.GetVarFromName("i")));
-  EXPECT_TRUE(block.Run(true));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
   EXPECT_EQ(0.1f, *(drv.GetVarFromName("i")));
-  EXPECT_TRUE(block.Run(true));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
   EXPECT_EQ(0.2f, *(drv.GetVarFromName("i")));
-  EXPECT_TRUE(block.Run(true));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
   EXPECT_EQ(0.3f, *(drv.GetVarFromName("i")));
-  EXPECT_TRUE(block.Run(true));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
   EXPECT_EQ(0.4f, *(drv.GetVarFromName("i")));
 }

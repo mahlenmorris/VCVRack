@@ -27,10 +27,13 @@
 #include "parser.hh"
 
 // Give Flex the prototype of yylex we want ...
+// TODO: move this to scanner.ll
+typedef void* yyscan_t;
 # define YY_DECL \
-  yy::parser::symbol_type yylex (Driver& drv)
+  yy::Parser::symbol_type yylex (yyscan_t yyscanner, yy::location& loc)
 // ... and declare it for the parser's sake.
 YY_DECL;
+// From scanner.cc
 
 struct Error {
   int line;

@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <thread>
 #include <unordered_map>
 #include <utility>  // pair
 #include <vector>
@@ -90,16 +91,20 @@ struct Basically : Module {
    public:
     ProductionEnvironment(std::vector<Input>* the_inputs,
                           std::vector<Output>* the_outputs,
-                          Driver* the_driver,
-                          std::vector<CodeBlock*>* the_main_blocks,
-                          std::vector<std::pair<Expression, CodeBlock*> >* the_expression_blocks,
-                          std::vector<bool>* the_running_expression_blocks) :
-       inputs{the_inputs}, outputs{the_outputs}, driver{the_driver},
-       main_blocks{the_main_blocks}, expression_blocks{the_expression_blocks},
-       running_expression_blocks{the_running_expression_blocks} {
+                          Driver* the_driver) :
+       inputs{the_inputs}, outputs{the_outputs}, driver{the_driver} {
        }
 
-    // When program has been recompiled, call this to set up trigger monitoring.
+     // Must be called every time the program is recompiled.
+    void ResetBlocks(std::vector<CodeBlock*>* the_main_blocks,
+        std::vector<std::pair<Expression, CodeBlock*> >* the_expression_blocks,
+        std::vector<bool>* the_running_expression_blocks) {
+          main_blocks = the_main_blocks;
+          expression_blocks = the_expression_blocks;
+          running_expression_blocks = the_running_expression_blocks;
+     }
+
+     // When program has been recompiled, call this to set up trigger monitoring.
      void ResetTriggers() {
       // First, clear existing map.
       for (auto t : triggers) {
@@ -170,16 +175,19 @@ struct Basically : Module {
       driver->Clear();
     }
     void Reset() override {
-      for (auto block : *main_blocks) {
-        block->current_line = 0;
-        block->wait_info.in_wait = false;
-      }
-      for (size_t pos = 0; pos < running_expression_blocks->size(); pos++) {
-        running_expression_blocks->at(pos) = false;
-        expression_blocks->at(pos).second->current_line = 0;
-        expression_blocks->at(pos).second->wait_info.in_wait = false;
+      if (main_blocks) {
+        for (auto block : *main_blocks) {
+          block->current_line = 0;
+          block->wait_info.in_wait = false;
+        }
+        for (size_t pos = 0; pos < running_expression_blocks->size(); pos++) {
+          running_expression_blocks->at(pos) = false;
+          expression_blocks->at(pos).second->current_line = 0;
+          expression_blocks->at(pos).second->wait_info.in_wait = false;
+        }
       }
     }
+
     // True ONLY when the program has just compiled.
     bool Start() override {
       return starting;
@@ -196,6 +204,73 @@ struct Basically : Module {
       }
     }
   };
+
+  // Class devoted to handling the lengthy (compared to single sample)
+  // process of compiling the code.
+  // TODO: Typing in comments recompiles every on every keystroke.
+  // This is a good place to include logic for determining if a compile actually
+  // changed anything. Maybe some sort of hash on the AST (Line) structure? Or
+  // even just a hash on the list of tokens?
+  struct CompilationThread {
+    Driver* driver;
+    Environment* environment;
+    std::string text;  // Text to compile.
+    bool running;  // TRUE if still compiling, false if completed.
+    bool useful; // TRUE if last completed compile created something for module to use.
+    // Product of a successful compilation.
+    std::vector<CodeBlock*>* main_blocks;
+    std::vector<std::pair<Expression, CodeBlock*> >* expression_blocks;
+    std::vector<bool>* running_expression_blocks;
+
+    explicit CompilationThread(Driver* drv, Environment* env) : driver{drv},
+        environment{env} {
+      running = false;
+      useful = false;
+    }
+
+    void SetText(const std::string &new_text) {
+      text = new_text;
+    }
+
+    // If compilation succeeds, sets flag saying so and prepares vectors
+    // of main_blocks and expression_blocks for module to use later.
+    void Compile() {
+      running = true;
+      useful = false;
+      // We are deliberately case-insensitive.
+      std::string lowercase;
+      lowercase.resize(text.size());
+      std::transform(text.begin(), text.end(),
+                     lowercase.begin(), ::tolower);
+      bool compiles = !driver->parse(lowercase);
+      if (!compiles) {  // Nothing more to do.
+        running = false;
+        return;
+      }
+      PCodeTranslator translator;
+      main_blocks = new std::vector<CodeBlock*>();
+      expression_blocks = new std::vector<std::pair<Expression, CodeBlock*> >();
+      running_expression_blocks = new std::vector<bool>();
+      for (auto ast_block : driver->blocks) {
+        CodeBlock* new_block = new CodeBlock(environment);
+        if (translator.BlockToCodeBlock(new_block, ast_block)) {
+          // Different lists depending on type.
+          if (new_block->type == Block::MAIN) {
+            main_blocks->push_back(new_block);
+          } else if (new_block->type == Block::WHEN &&
+              new_block->condition == Block::EXPRESSION) {
+            expression_blocks->push_back(std::make_pair(ast_block.run_condition, new_block));
+            running_expression_blocks->push_back(false);
+          }
+        } else {
+          // TODO: Report errors via some new mechanism.
+        }
+      }
+      useful = true;
+      running = false;
+    }
+  };
+
 
   std::unordered_map<std::string, int> out_map { {"out1", OUT1_OUTPUT},
                                                  {"out2", OUT2_OUTPUT},
@@ -238,8 +313,7 @@ struct Basically : Module {
     configOutput(OUT4_OUTPUT, "OUT4");
     configLight(RUN_LIGHT, "Lit when code is currently running.");
 
-    environment = new ProductionEnvironment(&inputs, &outputs, &drv,
-      &main_blocks, &expression_blocks, &running_expression_blocks);
+    environment = new ProductionEnvironment(&inputs, &outputs, &drv);
     drv.SetEnvironment((Environment*) environment);
     // For now, we just have the one block, but we'll add more soon.
     // Add the INn variables to the variable space, and get the pointer to
@@ -253,6 +327,13 @@ struct Basically : Module {
     for (auto output : out_map) {
       drv.AddPortForName(output.first, false, output.second);
     }
+    compile_in_progress = false;
+    compiler = new CompilationThread(&drv, (Environment*) environment);
+
+    // Filling in empty values for these until something compiles.
+    main_blocks = new std::vector<CodeBlock*>();
+    expression_blocks = new std::vector<std::pair<Expression, CodeBlock*> >();
+    running_expression_blocks = new std::vector<bool>();
   }
 
   // If asked to, save the curve data in json for reading when loaded.
@@ -328,53 +409,60 @@ struct Basically : Module {
     // Might be set true below, but vast majority of samples this is false.
     environment->SetStarting(false);
 
-    // Compile if we need to.
-    if (module_refresh && !text.empty()) {
-      module_refresh = false;
-      std::string lowercase;
-      lowercase.resize(text.size());
-      std::transform(text.begin(), text.end(),
-                     lowercase.begin(), ::tolower);
-      compiles = !drv.parse(lowercase);
-      if (compiles) {
-        PCodeTranslator translator;
-        // Remove all existing CodeBlocks.
-        for (auto block : main_blocks) {
-          delete block;
-        }
-        main_blocks.clear();
-        for (auto p : expression_blocks) {
-          delete p.second;
-        }
-        expression_blocks.clear();
-        running_expression_blocks.clear();
-        for (auto ast_block : drv.blocks) {
-          CodeBlock* new_block = new CodeBlock((Environment*) environment);
-          if (translator.BlockToCodeBlock(new_block, ast_block)) {
-            // Different lists depending on type.
-            if (new_block->type == Block::MAIN) {
-              main_blocks.push_back(new_block);
-            } else if (new_block->type == Block::WHEN &&
-                new_block->condition == Block::EXPRESSION) {
-              expression_blocks.push_back(std::make_pair(ast_block.run_condition, new_block));
-              running_expression_blocks.push_back(false);
+    // If a compilation is already in progress, see if it has completed.
+    if (compile_in_progress) {
+      if (compiler->running) {
+        samples_per_compile++;
+        // OK, we'll keep waiting.
+      } else {
+        compile_in_progress = false;
+        // No longer need thread that was running it.
+        compile_thread->join();  // It should be done by now, right?
+        delete compile_thread;
+        INFO("compile took %i samples to complete", samples_per_compile);
+        if (compiler->useful) {
+          // Got something we can use. First, clean upi the old ones.
+          if (main_blocks) {
+            for (auto block : *main_blocks) {
+              delete block;
             }
-          } else {
-            // TODO: Report errors via some new mechanism.
+            delete main_blocks;
           }
+          if (expression_blocks) {
+            for (auto p : *expression_blocks) {
+              delete p.second;
+            }
+            delete expression_blocks;
+          }
+          if (running_expression_blocks) {
+            delete running_expression_blocks;
+          }
+          // Now replace with the new ones.
+          main_blocks = compiler->main_blocks;
+          expression_blocks = compiler->expression_blocks;
+          running_expression_blocks = compiler->running_expression_blocks;
+          environment->ResetBlocks(main_blocks, expression_blocks,
+              running_expression_blocks);
+          // Recompiled; cannot trust program state. But note we are leaving
+          // *variable* state intact.
+          ResetToProgramStart();
+          // Tell the start() function that we are starting.
+          environment->SetStarting(true);
+          environment->ResetTriggers();
+          compiles = true;
+        } else {
+          compiles = false;
         }
-         /*
-         for (auto &pcode : main_block->pcodes) {
-           // Add to log, for debugging.
-           INFO("%s", pcode.to_string().c_str());
-         }
-         */
-        // Recompiled; cannot trust program state. But note we are leaving
-        // *variable* state intact.
-        ResetToProgramStart();
-        // Tell the start() function that we are starting.
-        environment->SetStarting(true);
-        environment->ResetTriggers();
+      }
+    } else {
+      // Do not currently have compile in progress.
+      if (module_refresh && !text.empty()) {
+        module_refresh = false;
+        // Start a new compile.
+        compiler->SetText(text);
+        samples_per_compile = 0;
+        compile_thread = new std::thread(&CompilationThread::Compile, compiler);
+        compile_in_progress = true;
       }
     }
 
@@ -409,7 +497,7 @@ struct Basically : Module {
         running = params[RUN_PARAM].getValue() > 0.1f;
       }
     }
-    if (main_blocks.empty() && expression_blocks.empty()) {
+    if (main_blocks->empty() && expression_blocks->empty()) {
       // TODO: If we have a START block but no main blocks, are we running?
       // No code to run --> don't say we're running!
       running = false;
@@ -426,24 +514,24 @@ struct Basically : Module {
     if (running) {
       CodeBlock::RunStatus run_status = CodeBlock::CONTINUES;
       // WHEN EXPRESSION blocks:
-      for (size_t pos = 0; pos < expression_blocks.size(); pos++) {
+      for (size_t pos = 0; pos < expression_blocks->size(); pos++) {
         // If already running, don't test the expression.
-        if (!running_expression_blocks[pos]) {
+        if (!running_expression_blocks->at(pos)) {
           // Run expression, see if now true.
-          running_expression_blocks[pos] =
-            !Expression::is_zero(expression_blocks[pos].first.Compute());
+          running_expression_blocks->at(pos) =
+            !Expression::is_zero(expression_blocks->at(pos).first.Compute());
         }
         // If now running, Run() a step.
-        if (running_expression_blocks[pos]) {
-          run_status = expression_blocks[pos].second->Run(false);
+        if (running_expression_blocks->at(pos)) {
+          run_status = expression_blocks->at(pos).second->Run(false);
           if (run_status == CodeBlock::RAN_RESET) {
             break;
           }
-          running_expression_blocks[pos] = run_status == CodeBlock::CONTINUES;
+          running_expression_blocks->at(pos) = run_status == CodeBlock::CONTINUES;
         }
       }
       if (run_status != CodeBlock::RAN_RESET) {
-        for (CodeBlock* block : main_blocks) {
+        for (CodeBlock* block : *main_blocks) {
           run_status = block->Run(loops);
           if (run_status == CodeBlock::RAN_RESET) {
             break;
@@ -474,15 +562,19 @@ struct Basically : Module {
   bool module_refresh = true;
   bool compiles = false;
   bool running = false;
+  int samples_per_compile;  // Do not submit, just curious.
   Driver drv;
+  CompilationThread* compiler;
+  std::thread* compile_thread;
+  bool compile_in_progress = false;
   ProductionEnvironment* environment;
   // The untitled default block and any ALSO - END ALSO blocks.
   // All main blocks are always running, so we don't need a distinct list.
-  std::vector<CodeBlock*> main_blocks;
+  std::vector<CodeBlock*>* main_blocks;
   // All WHEN EXPRESSION blocks. Is a vector to maintain order.
-  std::vector<std::pair<Expression, CodeBlock*> > expression_blocks;
+  std::vector<std::pair<Expression, CodeBlock*> >* expression_blocks;
   // Which ones are running.
-  std::vector<bool> running_expression_blocks;
+  std::vector<bool>* running_expression_blocks;
 
 
   ///////

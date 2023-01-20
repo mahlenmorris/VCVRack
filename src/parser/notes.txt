@@ -1,0 +1,16 @@
+January 17, 2023
+Notes on conversion to a reentrant Flex scanner.
+
+By adding '%option reentrant':
+- All of the Flex globals (of which there are many) have been wrapped into
+   a struct called yyguts_t (defined around line 752 of scanner.cc).
+- Many methods seem to have access (how?) to a yyguts_t* called 'yyscanner'.
+- The most important of these _might_ be yylex, which is defined by defining
+  YY_DECL, which is defined by me
+  in driver.hh. It seems to be the first call, at least.
+- It's possible that yylex is a REALLY long function.
+- Why is the parser.cc convinced that yylex is called with 'drv' as an argument?
+Ah, it's the %param setting in parser.yy. Better to separate them into the
+%parse-param and %lex-param settings.
+- OK, parser works again, now I need to get scanner working.
+- Done!

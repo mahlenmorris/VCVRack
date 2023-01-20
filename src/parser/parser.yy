@@ -9,6 +9,7 @@
 %header
 
 %define api.token.raw
+%define api.parser.class {Parser}
 
 %define api.token.constructor
 %define api.value.type variant
@@ -18,10 +19,13 @@
   #include <string>
   #include "tree.h"
   class Driver;
+  typedef void* yyscan_t;
 }
 
 // The parsing context.
-%param { Driver& drv }
+// If we don't include this, parser cannot access Driver instance.
+%parse-param { Driver& drv } { void* yyscanner } {yy::location& loc}
+%lex-param { void* yyscanner } {yy::location& loc}
 
 %locations
 
@@ -30,7 +34,7 @@
 %define parse.lac full
 
 %code {
-# include "driver.hh"
+#include "driver.hh"
 }
 
 %define api.token.prefix {TOK_}
@@ -227,7 +231,7 @@ exp:
 %%
 
 void
-yy::parser::error (const location_type& l, const std::string& m)
+yy::Parser::error (const location_type& l, const std::string& m)
 {
   drv.errors.push_back(Error(l.begin.line, l.begin.column, m));
 }

@@ -3,14 +3,19 @@
  */
 
 %{ /* -*- C++ -*- */
-# include <cerrno>
-# include <climits>
-# include <cstdlib>
-# include <cstring> // strerror
-# include <string>
-# include "driver.hh"
-# include "parser.hh"
+#include <cerrno>
+#include <climits>
+#include <cstdlib>
+#include <cstring> // strerror
+#include <string>
+#include "driver.hh"
+#include "parser.hh"
+
 %}
+/*
+  #define YY_DECL yy::Parser::symbol_type yylex(yyscan_t yyscanner, yy::location& loc)
+  #define yyterminate() return yy::Parser::make_END(loc)
+*/
 
 %{
 #if defined __clang__
@@ -83,12 +88,12 @@
 #endif
 %}
 
-%option noyywrap nounput noinput batch debug
+%option reentrant noyywrap nounput noinput batch debug
 
 %{
   // A number symbol corresponding to the value in S.
-  yy::parser::symbol_type
-  make_NUMBER (const std::string &s, const yy::parser::location_type& loc);
+  yy::Parser::symbol_type
+  make_NUMBER (const std::string &s, const yy::Parser::location_type& loc);
 %}
 
 note  [a-g][#b]?(-1|[0-9]|10)
@@ -104,86 +109,93 @@ blank [ \t\r]
 
 %{
   // Code run each time a pattern is matched.
-  # define YY_USER_ACTION  loc.columns (yyleng);
+  #define YY_USER_ACTION  loc.columns (yyleng);
 %}
 %%
 %{
   // A handy shortcut to the location held by the driver.
-  yy::location& loc = drv.location;
+  //yy::location& loc = drv.location;
   // Code run each time yylex is called.
   loc.step ();
 %}
 {blank}+   loc.step ();
 \n+        loc.lines (yyleng); loc.step ();
 "' ".*     // Comments, skip over. Hint: '.' will not match \n. But location might need fixing.
-"-"        return yy::parser::make_MINUS  (yytext, loc);
-"+"        return yy::parser::make_PLUS   (yytext, loc);
-"*"        return yy::parser::make_STAR   (yytext, loc);
-"/"        return yy::parser::make_SLASH  (yytext, loc);
-"("        return yy::parser::make_LPAREN (yytext, loc);
-")"        return yy::parser::make_RPAREN (yytext, loc);
-"["        return yy::parser::make_LBRACKET (yytext, loc);
-"]"        return yy::parser::make_RBRACKET (yytext, loc);
-"{"        return yy::parser::make_LBRACE (yytext, loc);
-"}"        return yy::parser::make_RBRACE (yytext, loc);
-"="        return yy::parser::make_ASSIGN (yytext, loc);
-","        return yy::parser::make_COMMA  (yytext, loc);
-"all"      return yy::parser::make_ALL    (yytext, loc);
-"also"     return yy::parser::make_ALSO   (yytext, loc);
-"and"      return yy::parser::make_AND    (yytext, loc);
-"clear"    return yy::parser::make_CLEAR (yytext, loc);
-"connected" return yy::parser::make_CONNECTED (yytext, loc);
-"continue" return yy::parser::make_CONTINUE (yytext, loc);
-"else"     return yy::parser::make_ELSE   (yytext, loc);
-"elseif"   return yy::parser::make_ELSEIF (yytext, loc);
-"end"      return yy::parser::make_END    (yytext, loc);
-"exit"     return yy::parser::make_EXIT   (yytext, loc);
-"for"      return yy::parser::make_FOR    (yytext, loc);
-"if"       return yy::parser::make_IF     (yytext, loc);
-"next"     return yy::parser::make_NEXT   (yytext, loc);
-"not"      return yy::parser::make_NOT    (yytext, loc);
-"or"       return yy::parser::make_OR     (yytext, loc);
-"reset"    return yy::parser::make_RESET   (yytext, loc);
-"step"     return yy::parser::make_STEP   (yytext, loc);
-"then"     return yy::parser::make_THEN   (yytext, loc);
-"to"       return yy::parser::make_TO     (yytext, loc);
-"trigger"  return yy::parser::make_TRIGGER (yytext, loc);
-"wait"     return yy::parser::make_WAIT   (yytext, loc);
-"when"     return yy::parser::make_WHEN   (yytext, loc);
+"-"        return yy::Parser::make_MINUS  (yytext, loc);
+"+"        return yy::Parser::make_PLUS   (yytext, loc);
+"*"        return yy::Parser::make_STAR   (yytext, loc);
+"/"        return yy::Parser::make_SLASH  (yytext, loc);
+"("        return yy::Parser::make_LPAREN (yytext, loc);
+")"        return yy::Parser::make_RPAREN (yytext, loc);
+"["        return yy::Parser::make_LBRACKET (yytext, loc);
+"]"        return yy::Parser::make_RBRACKET (yytext, loc);
+"{"        return yy::Parser::make_LBRACE (yytext, loc);
+"}"        return yy::Parser::make_RBRACE (yytext, loc);
+"="        return yy::Parser::make_ASSIGN (yytext, loc);
+","        return yy::Parser::make_COMMA  (yytext, loc);
+"all"      return yy::Parser::make_ALL    (yytext, loc);
+"also"     return yy::Parser::make_ALSO   (yytext, loc);
+"and"      return yy::Parser::make_AND    (yytext, loc);
+"clear"    return yy::Parser::make_CLEAR (yytext, loc);
+"connected" return yy::Parser::make_CONNECTED (yytext, loc);
+"continue" return yy::Parser::make_CONTINUE (yytext, loc);
+"else"     return yy::Parser::make_ELSE   (yytext, loc);
+"elseif"   return yy::Parser::make_ELSEIF (yytext, loc);
+"end"      return yy::Parser::make_END    (yytext, loc);
+"exit"     return yy::Parser::make_EXIT   (yytext, loc);
+"for"      return yy::Parser::make_FOR    (yytext, loc);
+"if"       return yy::Parser::make_IF     (yytext, loc);
+"next"     return yy::Parser::make_NEXT   (yytext, loc);
+"not"      return yy::Parser::make_NOT    (yytext, loc);
+"or"       return yy::Parser::make_OR     (yytext, loc);
+"reset"    return yy::Parser::make_RESET   (yytext, loc);
+"step"     return yy::Parser::make_STEP   (yytext, loc);
+"then"     return yy::Parser::make_THEN   (yytext, loc);
+"to"       return yy::Parser::make_TO     (yytext, loc);
+"trigger"  return yy::Parser::make_TRIGGER (yytext, loc);
+"wait"     return yy::Parser::make_WAIT   (yytext, loc);
+"when"     return yy::Parser::make_WHEN   (yytext, loc);
 
-{note}     return yy::parser::make_NOTE (yytext, loc);
+{note}     return yy::Parser::make_NOTE (yytext, loc);
 {float}    return make_NUMBER (yytext, loc);
-{zeroargfunc} return yy::parser::make_ZEROARGFUNC (yytext, loc);
-{oneargfunc} return yy::parser::make_ONEARGFUNC (yytext, loc);
-{twoargfunc} return yy::parser::make_TWOARGFUNC (yytext, loc);
-{comparison} return yy::parser::make_COMPARISON (yytext, loc);
-{in_port}  return yy::parser::make_IN_PORT (yytext, loc);
-{out_port} return yy::parser::make_OUT_PORT (yytext, loc);
-{id}       return yy::parser::make_IDENTIFIER (yytext, loc);
+{zeroargfunc} return yy::Parser::make_ZEROARGFUNC (yytext, loc);
+{oneargfunc} return yy::Parser::make_ONEARGFUNC (yytext, loc);
+{twoargfunc} return yy::Parser::make_TWOARGFUNC (yytext, loc);
+{comparison} return yy::Parser::make_COMPARISON (yytext, loc);
+{in_port}  return yy::Parser::make_IN_PORT (yytext, loc);
+{out_port} return yy::Parser::make_OUT_PORT (yytext, loc);
+{id}       return yy::Parser::make_IDENTIFIER (yytext, loc);
 .          {
-             throw yy::parser::syntax_error
+             throw yy::Parser::syntax_error
                (loc, "invalid character: " + std::string(yytext));
 }
-<<EOF>>    return yy::parser::make_YYEOF (loc);
+<<EOF>>    return yy::Parser::make_YYEOF (loc);
 %%
 
-yy::parser::symbol_type
-make_NUMBER (const std::string &s, const yy::parser::location_type& loc) {
+yy::Parser::symbol_type
+make_NUMBER (const std::string &s, const yy::Parser::location_type& loc) {
   errno = 0;
   float n = strtof(s.c_str(), NULL);
-  return yy::parser::make_NUMBER (n, loc);
+  return yy::Parser::make_NUMBER (n, loc);
 }
 
 int
 Driver::set_text(const std::string &text) {
-  yy_flex_debug = trace_scanning;
+  yyscan_t scanner;
+
+  yylex_init(&scanner);
+  yy::location* loc = new yy::location();
+  // yy_flex_debug = trace_scanning;
   // Creates a buffer from the string.
-  YY_BUFFER_STATE input_buffer = yy_scan_string(text.c_str());
+  YY_BUFFER_STATE input_buffer = yy_scan_string(text.c_str(), scanner);
   // Tell Flex to use this buffer.
-  yy_switch_to_buffer(input_buffer);
-  yy::parser parse(*this);
-  parse.set_debug_level(trace_parsing);
-  int res = parse();
-  yy_delete_buffer(input_buffer);  // Free the buffer
+  yy_switch_to_buffer(input_buffer, scanner);
+
+  yy::Parser the_parser(*this, scanner, *loc);
+  the_parser.set_debug_level(trace_parsing);
+  int res = the_parser.parse();
+  yy_delete_buffer(input_buffer, scanner);  // Free the buffer
+  yylex_destroy(scanner);
+  delete loc;
   return res;
 }
