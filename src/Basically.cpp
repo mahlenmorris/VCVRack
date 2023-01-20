@@ -896,6 +896,7 @@ struct BasicallyDisplay : LedDisplay {
       // Show something inviting when being shown in the module browser.
       textField->text = &module_browser_text;
     }
+    textField->textUpdated();
 		addChild(textField);
 	}
   // The BasicallyWidget changes size, so we have to reflaect that.

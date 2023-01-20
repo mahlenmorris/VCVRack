@@ -1,3 +1,9 @@
+Useful commands:
+
+tail -f /C/Users/mahle/Documents/Rack2/log.txt
+
+
+
 January 17, 2023
 Notes on conversion to a reentrant Flex scanner.
 
