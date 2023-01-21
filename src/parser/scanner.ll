@@ -101,7 +101,7 @@ id    [a-zA-Z][a-zA-Z_0-9]*
 in_port "in1"|"in2"|"in3"|"in4"|"in5"|"in6"|"in7"|"in8"|"in9"
 out_port "out1"|"out2"|"out3"|"out4"
 zeroargfunc "sample_rate"|"start"
-oneargfunc "abs"|"ceiling"|"floor"|"sign"|"sin"
+oneargfunc "abs"|"ceiling"|"floor"|"log2"|"loge"|"log10"|"sign"|"sin"
 twoargfunc "max"|"min"|"mod"|"normal"|"pow"|"random"
 comparison "<"|"<="|">"|">="|"=="|"!="
 float ([0-9]*[.])?[0-9]+

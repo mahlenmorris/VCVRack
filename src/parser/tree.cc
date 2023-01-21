@@ -25,6 +25,9 @@ std::unordered_map<std::string, Expression::Operation> ExpressionFactory::string
   {"ceiling", Expression::CEILING},
   {"connected", Expression::CONNECTED},
   {"floor", Expression::FLOOR},
+  {"log2", Expression::LOG2},
+  {"loge", Expression::LOGE},
+  {"log10", Expression::LOG10},
   {"normal", Expression::NORMAL},
   {"random", Expression::RANDOM},
   {"sample_rate", Expression::SAMPLE_RATE},
@@ -196,11 +199,21 @@ float Expression::zero_arg_compute() {
   }
 }
 
+// logX(y) functions don't have useful values for Y <= 0.
+// So we'll return 0. This function turns any Y <= 0 into 1, thus causing
+// a log function to return 0.
+float SafeLogArg(float arg) {
+  return (arg < 0.0f || Expression::is_zero(arg)) ? 1.0f : arg;
+}
+
 float Expression::one_arg_compute(float arg1) {
   switch (operation) {
     case ABS: return std::abs(arg1);
     case CEILING: return ceil(arg1);
     case FLOOR: return floor(arg1);
+    case LOG2: return log2(SafeLogArg(arg1));
+    case LOGE: return log(SafeLogArg(arg1));
+    case LOG10: return log10(SafeLogArg(arg1));
     case SIGN: return (std::signbit(arg1) ? -1.0f :
                        (Expression::is_zero(arg1) ? 0.0f: 1.0f));
     case SIN: return sin(arg1);

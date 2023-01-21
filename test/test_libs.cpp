@@ -217,6 +217,42 @@ TEST(ParserTest, FunctionTest)
     EXPECT_EQ(0, drv.parse("f = pow(49, 0.5)"));
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(7.0f, lines->at(0).expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("f = log2(8)"));
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(3.0f, lines->at(0).expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("f = log2(0)"));
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(0.0f, lines->at(0).expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("f = log2(-3)"));
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(0.0f, lines->at(0).expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("f = loge(8)"));
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(2.07944154f, lines->at(0).expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("f = loge(0)"));
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(0.0f, lines->at(0).expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("f = loge(-3)"));
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(0.0f, lines->at(0).expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("f = log10(100)"));
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(2.0f, lines->at(0).expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("f = log10(0)"));
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(0.0f, lines->at(0).expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("f = log10(-3)"));
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(0.0f, lines->at(0).expr1.Compute());
 }
 
 TEST(ParserTest, NegativeTest)

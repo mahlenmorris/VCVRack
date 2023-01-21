@@ -55,6 +55,9 @@
 <p class="pre">   "abs"
    "ceiling"
    "floor"
+   "log2"
+   "loge"
+   "log10"
    "max"
    "min"
    "pow"
@@ -176,169 +179,172 @@
   <li><b>"floor"</b> &lt;std::string&gt; (271)</li>
   <li><b>"for"</b> &lt;std::string&gt; (272) <a href="#rule_27">27</a> <a href="#rule_29">29</a> <a href="#rule_31">31</a> <a href="#rule_32">32</a></li>
   <li><b>"if"</b> &lt;std::string&gt; (273) <a href="#rule_36">36</a> <a href="#rule_37">37</a></li>
-  <li><b>"max"</b> &lt;std::string&gt; (274)</li>
-  <li><b>"min"</b> &lt;std::string&gt; (275)</li>
-  <li><b>"next"</b> &lt;std::string&gt; (276) <a href="#rule_31">31</a> <a href="#rule_32">32</a></li>
-  <li><b>"not"</b> &lt;std::string&gt; (277) <a href="#rule_45">45</a></li>
-  <li><b>"or"</b> &lt;std::string&gt; (278) <a href="#rule_56">56</a></li>
-  <li><b>"pow"</b> &lt;std::string&gt; (279)</li>
-  <li><b>"reset"</b> &lt;std::string&gt; (280) <a href="#rule_38">38</a></li>
-  <li><b>"sample_rate"</b> &lt;std::string&gt; (281)</li>
-  <li><b>"sign"</b> &lt;std::string&gt; (282)</li>
-  <li><b>"sin"</b> &lt;std::string&gt; (283)</li>
-  <li><b>"start"</b> &lt;std::string&gt; (284)</li>
-  <li><b>"step"</b> &lt;std::string&gt; (285) <a href="#rule_32">32</a></li>
-  <li><b>"then"</b> &lt;std::string&gt; (286) <a href="#rule_35">35</a> <a href="#rule_36">36</a> <a href="#rule_37">37</a></li>
-  <li><b>"to"</b> &lt;std::string&gt; (287) <a href="#rule_31">31</a> <a href="#rule_32">32</a></li>
-  <li><b>"trigger"</b> &lt;std::string&gt; (288) <a href="#rule_60">60</a></li>
-  <li><b>"wait"</b> &lt;std::string&gt; (289) <a href="#rule_39">39</a></li>
-  <li><b>"when"</b> &lt;std::string&gt; (290) <a href="#rule_6">6</a></li>
-  <li><b>"-"</b> &lt;std::string&gt; (291) <a href="#rule_44">44</a> <a href="#rule_51">51</a></li>
-  <li><b>"+"</b> &lt;std::string&gt; (292) <a href="#rule_50">50</a></li>
-  <li><b>"*"</b> &lt;std::string&gt; (293) <a href="#rule_52">52</a></li>
-  <li><b>"/"</b> &lt;std::string&gt; (294) <a href="#rule_53">53</a></li>
-  <li><b>"("</b> &lt;std::string&gt; (295) <a href="#rule_57">57</a> <a href="#rule_58">58</a> <a href="#rule_59">59</a> <a href="#rule_60">60</a> <a href="#rule_61">61</a> <a href="#rule_62">62</a> <a href="#rule_63">63</a></li>
-  <li><b>")"</b> &lt;std::string&gt; (296) <a href="#rule_57">57</a> <a href="#rule_58">58</a> <a href="#rule_59">59</a> <a href="#rule_60">60</a> <a href="#rule_61">61</a> <a href="#rule_62">62</a> <a href="#rule_63">63</a></li>
-  <li><b>"{"</b> &lt;std::string&gt; (297) <a href="#rule_22">22</a></li>
-  <li><b>"}"</b> &lt;std::string&gt; (298) <a href="#rule_22">22</a></li>
-  <li><b>"["</b> &lt;std::string&gt; (299) <a href="#rule_21">21</a> <a href="#rule_22">22</a> <a href="#rule_49">49</a></li>
-  <li><b>"]"</b> &lt;std::string&gt; (300) <a href="#rule_21">21</a> <a href="#rule_22">22</a> <a href="#rule_49">49</a></li>
-  <li><b>","</b> &lt;std::string&gt; (301) <a href="#rule_41">41</a> <a href="#rule_62">62</a></li>
-  <li><b>"identifier"</b> &lt;std::string&gt; (302) <a href="#rule_21">21</a> <a href="#rule_22">22</a> <a href="#rule_23">23</a> <a href="#rule_48">48</a> <a href="#rule_49">49</a></li>
-  <li><b>"number"</b> &lt;float&gt; (303) <a href="#rule_42">42</a> <a href="#rule_44">44</a></li>
-  <li><b>"note"</b> &lt;std::string&gt; (304) <a href="#rule_43">43</a></li>
-  <li><b>"in_port"</b> &lt;std::string&gt; (305) <a href="#rule_24">24</a> <a href="#rule_46">46</a> <a href="#rule_58">58</a> <a href="#rule_60">60</a></li>
-  <li><b>"out_port"</b> &lt;std::string&gt; (306) <a href="#rule_25">25</a> <a href="#rule_47">47</a> <a href="#rule_59">59</a></li>
-  <li><b>"zeroargfunc"</b> &lt;std::string&gt; (307) <a href="#rule_57">57</a></li>
-  <li><b>"oneargfunc"</b> &lt;std::string&gt; (308) <a href="#rule_61">61</a></li>
-  <li><b>"twoargfunc"</b> &lt;std::string&gt; (309) <a href="#rule_62">62</a></li>
-  <li><b>"comparison"</b> &lt;std::string&gt; (310) <a href="#rule_54">54</a></li>
-  <li><b>NEG</b> (311)</li>
+  <li><b>"log2"</b> &lt;std::string&gt; (274)</li>
+  <li><b>"loge"</b> &lt;std::string&gt; (275)</li>
+  <li><b>"log10"</b> &lt;std::string&gt; (276)</li>
+  <li><b>"max"</b> &lt;std::string&gt; (277)</li>
+  <li><b>"min"</b> &lt;std::string&gt; (278)</li>
+  <li><b>"next"</b> &lt;std::string&gt; (279) <a href="#rule_31">31</a> <a href="#rule_32">32</a></li>
+  <li><b>"not"</b> &lt;std::string&gt; (280) <a href="#rule_45">45</a></li>
+  <li><b>"or"</b> &lt;std::string&gt; (281) <a href="#rule_56">56</a></li>
+  <li><b>"pow"</b> &lt;std::string&gt; (282)</li>
+  <li><b>"reset"</b> &lt;std::string&gt; (283) <a href="#rule_38">38</a></li>
+  <li><b>"sample_rate"</b> &lt;std::string&gt; (284)</li>
+  <li><b>"sign"</b> &lt;std::string&gt; (285)</li>
+  <li><b>"sin"</b> &lt;std::string&gt; (286)</li>
+  <li><b>"start"</b> &lt;std::string&gt; (287)</li>
+  <li><b>"step"</b> &lt;std::string&gt; (288) <a href="#rule_32">32</a></li>
+  <li><b>"then"</b> &lt;std::string&gt; (289) <a href="#rule_35">35</a> <a href="#rule_36">36</a> <a href="#rule_37">37</a></li>
+  <li><b>"to"</b> &lt;std::string&gt; (290) <a href="#rule_31">31</a> <a href="#rule_32">32</a></li>
+  <li><b>"trigger"</b> &lt;std::string&gt; (291) <a href="#rule_60">60</a></li>
+  <li><b>"wait"</b> &lt;std::string&gt; (292) <a href="#rule_39">39</a></li>
+  <li><b>"when"</b> &lt;std::string&gt; (293) <a href="#rule_6">6</a></li>
+  <li><b>"-"</b> &lt;std::string&gt; (294) <a href="#rule_44">44</a> <a href="#rule_51">51</a></li>
+  <li><b>"+"</b> &lt;std::string&gt; (295) <a href="#rule_50">50</a></li>
+  <li><b>"*"</b> &lt;std::string&gt; (296) <a href="#rule_52">52</a></li>
+  <li><b>"/"</b> &lt;std::string&gt; (297) <a href="#rule_53">53</a></li>
+  <li><b>"("</b> &lt;std::string&gt; (298) <a href="#rule_57">57</a> <a href="#rule_58">58</a> <a href="#rule_59">59</a> <a href="#rule_60">60</a> <a href="#rule_61">61</a> <a href="#rule_62">62</a> <a href="#rule_63">63</a></li>
+  <li><b>")"</b> &lt;std::string&gt; (299) <a href="#rule_57">57</a> <a href="#rule_58">58</a> <a href="#rule_59">59</a> <a href="#rule_60">60</a> <a href="#rule_61">61</a> <a href="#rule_62">62</a> <a href="#rule_63">63</a></li>
+  <li><b>"{"</b> &lt;std::string&gt; (300) <a href="#rule_22">22</a></li>
+  <li><b>"}"</b> &lt;std::string&gt; (301) <a href="#rule_22">22</a></li>
+  <li><b>"["</b> &lt;std::string&gt; (302) <a href="#rule_21">21</a> <a href="#rule_22">22</a> <a href="#rule_49">49</a></li>
+  <li><b>"]"</b> &lt;std::string&gt; (303) <a href="#rule_21">21</a> <a href="#rule_22">22</a> <a href="#rule_49">49</a></li>
+  <li><b>","</b> &lt;std::string&gt; (304) <a href="#rule_41">41</a> <a href="#rule_62">62</a></li>
+  <li><b>"identifier"</b> &lt;std::string&gt; (305) <a href="#rule_21">21</a> <a href="#rule_22">22</a> <a href="#rule_23">23</a> <a href="#rule_48">48</a> <a href="#rule_49">49</a></li>
+  <li><b>"number"</b> &lt;float&gt; (306) <a href="#rule_42">42</a> <a href="#rule_44">44</a></li>
+  <li><b>"note"</b> &lt;std::string&gt; (307) <a href="#rule_43">43</a></li>
+  <li><b>"in_port"</b> &lt;std::string&gt; (308) <a href="#rule_24">24</a> <a href="#rule_46">46</a> <a href="#rule_58">58</a> <a href="#rule_60">60</a></li>
+  <li><b>"out_port"</b> &lt;std::string&gt; (309) <a href="#rule_25">25</a> <a href="#rule_47">47</a> <a href="#rule_59">59</a></li>
+  <li><b>"zeroargfunc"</b> &lt;std::string&gt; (310) <a href="#rule_57">57</a></li>
+  <li><b>"oneargfunc"</b> &lt;std::string&gt; (311) <a href="#rule_61">61</a></li>
+  <li><b>"twoargfunc"</b> &lt;std::string&gt; (312) <a href="#rule_62">62</a></li>
+  <li><b>"comparison"</b> &lt;std::string&gt; (313) <a href="#rule_54">54</a></li>
+  <li><b>NEG</b> (314)</li>
 </ul>
 
 <h3><a name="nonterminals" id="nonterminals"></a> Nonterminals, with rules where they appear</h3>
 
 <ul>
-  <li><b>$accept</b> (57)
+  <li><b>$accept</b> (60)
     <ul>
       <li>on left: <a href="#rule_0">0</a></li>
     </ul>
   </li>
-  <li><b>program</b> (58)
+  <li><b>program</b> (61)
     <ul>
       <li>on left: <a href="#rule_1">1</a></li>
       <li>on right: <a href="#rule_0">0</a></li>
     </ul>
   </li>
-  <li><b>blocks</b> &lt;Blocks&gt; (59)
+  <li><b>blocks</b> &lt;Blocks&gt; (62)
     <ul>
       <li>on left: <a href="#rule_2">2</a> <a href="#rule_3">3</a> <a href="#rule_4">4</a></li>
       <li>on right: <a href="#rule_1">1</a> <a href="#rule_4">4</a></li>
     </ul>
   </li>
-  <li><b>block</b> &lt;Block&gt; (60)
+  <li><b>block</b> &lt;Block&gt; (63)
     <ul>
       <li>on left: <a href="#rule_5">5</a> <a href="#rule_6">6</a></li>
       <li>on right: <a href="#rule_3">3</a> <a href="#rule_4">4</a></li>
     </ul>
   </li>
-  <li><b>main_block</b> &lt;Block&gt; (61)
+  <li><b>main_block</b> &lt;Block&gt; (64)
     <ul>
       <li>on left: <a href="#rule_7">7</a></li>
       <li>on right: <a href="#rule_2">2</a></li>
     </ul>
   </li>
-  <li><b>zero_or_more_statements</b> &lt;Statements&gt; (62)
+  <li><b>zero_or_more_statements</b> &lt;Statements&gt; (65)
     <ul>
       <li>on left: <a href="#rule_8">8</a> <a href="#rule_9">9</a></li>
       <li>on right: <a href="#rule_9">9</a> <a href="#rule_31">31</a> <a href="#rule_32">32</a> <a href="#rule_35">35</a> <a href="#rule_36">36</a> <a href="#rule_37">37</a></li>
     </ul>
   </li>
-  <li><b>one_or_more_statements</b> &lt;Statements&gt; (63)
+  <li><b>one_or_more_statements</b> &lt;Statements&gt; (66)
     <ul>
       <li>on left: <a href="#rule_10">10</a> <a href="#rule_11">11</a></li>
       <li>on right: <a href="#rule_5">5</a> <a href="#rule_6">6</a> <a href="#rule_7">7</a> <a href="#rule_11">11</a></li>
     </ul>
   </li>
-  <li><b>statement</b> &lt;Line&gt; (64)
+  <li><b>statement</b> &lt;Line&gt; (67)
     <ul>
       <li>on left: <a href="#rule_12">12</a> <a href="#rule_13">13</a> <a href="#rule_14">14</a> <a href="#rule_15">15</a> <a href="#rule_16">16</a> <a href="#rule_17">17</a> <a href="#rule_18">18</a> <a href="#rule_19">19</a> <a href="#rule_20">20</a></li>
       <li>on right: <a href="#rule_9">9</a> <a href="#rule_10">10</a> <a href="#rule_11">11</a></li>
     </ul>
   </li>
-  <li><b>array_assignment</b> &lt;Line&gt; (65)
+  <li><b>array_assignment</b> &lt;Line&gt; (68)
     <ul>
       <li>on left: <a href="#rule_21">21</a> <a href="#rule_22">22</a></li>
       <li>on right: <a href="#rule_12">12</a></li>
     </ul>
   </li>
-  <li><b>assignment</b> &lt;Line&gt; (66)
+  <li><b>assignment</b> &lt;Line&gt; (69)
     <ul>
       <li>on left: <a href="#rule_23">23</a> <a href="#rule_24">24</a> <a href="#rule_25">25</a></li>
       <li>on right: <a href="#rule_13">13</a> <a href="#rule_31">31</a> <a href="#rule_32">32</a></li>
     </ul>
   </li>
-  <li><b>clear_statement</b> &lt;Line&gt; (67)
+  <li><b>clear_statement</b> &lt;Line&gt; (70)
     <ul>
       <li>on left: <a href="#rule_26">26</a></li>
       <li>on right: <a href="#rule_14">14</a></li>
     </ul>
   </li>
-  <li><b>continue_statement</b> &lt;Line&gt; (68)
+  <li><b>continue_statement</b> &lt;Line&gt; (71)
     <ul>
       <li>on left: <a href="#rule_27">27</a> <a href="#rule_28">28</a></li>
       <li>on right: <a href="#rule_15">15</a></li>
     </ul>
   </li>
-  <li><b>exit_statement</b> &lt;Line&gt; (69)
+  <li><b>exit_statement</b> &lt;Line&gt; (72)
     <ul>
       <li>on left: <a href="#rule_29">29</a> <a href="#rule_30">30</a></li>
       <li>on right: <a href="#rule_16">16</a></li>
     </ul>
   </li>
-  <li><b>for_statement</b> &lt;Line&gt; (70)
+  <li><b>for_statement</b> &lt;Line&gt; (73)
     <ul>
       <li>on left: <a href="#rule_31">31</a> <a href="#rule_32">32</a></li>
       <li>on right: <a href="#rule_17">17</a></li>
     </ul>
   </li>
-  <li><b>elseif_group</b> &lt;Statements&gt; (71)
+  <li><b>elseif_group</b> &lt;Statements&gt; (74)
     <ul>
       <li>on left: <a href="#rule_33">33</a> <a href="#rule_34">34</a></li>
       <li>on right: <a href="#rule_34">34</a> <a href="#rule_36">36</a> <a href="#rule_37">37</a></li>
     </ul>
   </li>
-  <li><b>elseif_clause</b> &lt;Line&gt; (72)
+  <li><b>elseif_clause</b> &lt;Line&gt; (75)
     <ul>
       <li>on left: <a href="#rule_35">35</a></li>
       <li>on right: <a href="#rule_34">34</a></li>
     </ul>
   </li>
-  <li><b>if_statement</b> &lt;Line&gt; (73)
+  <li><b>if_statement</b> &lt;Line&gt; (76)
     <ul>
       <li>on left: <a href="#rule_36">36</a> <a href="#rule_37">37</a></li>
       <li>on right: <a href="#rule_18">18</a></li>
     </ul>
   </li>
-  <li><b>reset_statement</b> &lt;Line&gt; (74)
+  <li><b>reset_statement</b> &lt;Line&gt; (77)
     <ul>
       <li>on left: <a href="#rule_38">38</a></li>
       <li>on right: <a href="#rule_19">19</a></li>
     </ul>
   </li>
-  <li><b>wait_statement</b> &lt;Line&gt; (75)
+  <li><b>wait_statement</b> &lt;Line&gt; (78)
     <ul>
       <li>on left: <a href="#rule_39">39</a></li>
       <li>on right: <a href="#rule_20">20</a></li>
     </ul>
   </li>
-  <li><b>expression_list</b> &lt;ExpressionList&gt; (76)
+  <li><b>expression_list</b> &lt;ExpressionList&gt; (79)
     <ul>
       <li>on left: <a href="#rule_40">40</a> <a href="#rule_41">41</a></li>
       <li>on right: <a href="#rule_22">22</a> <a href="#rule_41">41</a></li>
     </ul>
   </li>
-  <li><b>exp</b> &lt;Expression&gt; (77)
+  <li><b>exp</b> &lt;Expression&gt; (80)
     <ul>
       <li>on left: <a href="#rule_42">42</a> <a href="#rule_43">43</a> <a href="#rule_44">44</a> <a href="#rule_45">45</a> <a href="#rule_46">46</a> <a href="#rule_47">47</a> <a href="#rule_48">48</a> <a href="#rule_49">49</a> <a href="#rule_50">50</a> <a href="#rule_51">51</a> <a href="#rule_52">52</a> <a href="#rule_53">53</a> <a href="#rule_54">54</a> <a href="#rule_55">55</a> <a href="#rule_56">56</a> <a href="#rule_57">57</a> <a href="#rule_58">58</a> <a href="#rule_59">59</a> <a href="#rule_60">60</a> <a href="#rule_61">61</a> <a href="#rule_62">62</a> <a href="#rule_63">63</a></li>
       <li>on right: <a href="#rule_6">6</a> <a href="#rule_21">21</a> <a href="#rule_22">22</a> <a href="#rule_23">23</a> <a href="#rule_24">24</a> <a href="#rule_25">25</a> <a href="#rule_31">31</a> <a href="#rule_32">32</a> <a href="#rule_35">35</a> <a href="#rule_36">36</a> <a href="#rule_37">37</a> <a href="#rule_39">39</a> <a href="#rule_40">40</a> <a href="#rule_41">41</a> <a href="#rule_45">45</a> <a href="#rule_49">49</a> <a href="#rule_50">50</a> <a href="#rule_51">51</a> <a href="#rule_52">52</a> <a href="#rule_53">53</a> <a href="#rule_54">54</a> <a href="#rule_55">55</a> <a href="#rule_56">56</a> <a href="#rule_61">61</a> <a href="#rule_62">62</a> <a href="#rule_63">63</a></li>

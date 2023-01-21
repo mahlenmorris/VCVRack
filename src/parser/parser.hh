@@ -461,6 +461,9 @@ namespace yy {
       // "floor"
       // "for"
       // "if"
+      // "log2"
+      // "loge"
+      // "log10"
       // "max"
       // "min"
       // "next"
@@ -566,44 +569,47 @@ namespace yy {
     TOK_FLOOR = 16,                // "floor"
     TOK_FOR = 17,                  // "for"
     TOK_IF = 18,                   // "if"
-    TOK_MAX = 19,                  // "max"
-    TOK_MIN = 20,                  // "min"
-    TOK_NEXT = 21,                 // "next"
-    TOK_NOT = 22,                  // "not"
-    TOK_OR = 23,                   // "or"
-    TOK_POW = 24,                  // "pow"
-    TOK_RESET = 25,                // "reset"
-    TOK_SAMPLE_RATE = 26,          // "sample_rate"
-    TOK_SIGN = 27,                 // "sign"
-    TOK_SIN = 28,                  // "sin"
-    TOK_START = 29,                // "start"
-    TOK_STEP = 30,                 // "step"
-    TOK_THEN = 31,                 // "then"
-    TOK_TO = 32,                   // "to"
-    TOK_TRIGGER = 33,              // "trigger"
-    TOK_WAIT = 34,                 // "wait"
-    TOK_WHEN = 35,                 // "when"
-    TOK_MINUS = 36,                // "-"
-    TOK_PLUS = 37,                 // "+"
-    TOK_STAR = 38,                 // "*"
-    TOK_SLASH = 39,                // "/"
-    TOK_LPAREN = 40,               // "("
-    TOK_RPAREN = 41,               // ")"
-    TOK_LBRACE = 42,               // "{"
-    TOK_RBRACE = 43,               // "}"
-    TOK_LBRACKET = 44,             // "["
-    TOK_RBRACKET = 45,             // "]"
-    TOK_COMMA = 46,                // ","
-    TOK_IDENTIFIER = 47,           // "identifier"
-    TOK_NUMBER = 48,               // "number"
-    TOK_NOTE = 49,                 // "note"
-    TOK_IN_PORT = 50,              // "in_port"
-    TOK_OUT_PORT = 51,             // "out_port"
-    TOK_ZEROARGFUNC = 52,          // "zeroargfunc"
-    TOK_ONEARGFUNC = 53,           // "oneargfunc"
-    TOK_TWOARGFUNC = 54,           // "twoargfunc"
-    TOK_COMPARISON = 55,           // "comparison"
-    TOK_NEG = 56                   // NEG
+    TOK_LOG2 = 19,                 // "log2"
+    TOK_LOGE = 20,                 // "loge"
+    TOK_LOG10 = 21,                // "log10"
+    TOK_MAX = 22,                  // "max"
+    TOK_MIN = 23,                  // "min"
+    TOK_NEXT = 24,                 // "next"
+    TOK_NOT = 25,                  // "not"
+    TOK_OR = 26,                   // "or"
+    TOK_POW = 27,                  // "pow"
+    TOK_RESET = 28,                // "reset"
+    TOK_SAMPLE_RATE = 29,          // "sample_rate"
+    TOK_SIGN = 30,                 // "sign"
+    TOK_SIN = 31,                  // "sin"
+    TOK_START = 32,                // "start"
+    TOK_STEP = 33,                 // "step"
+    TOK_THEN = 34,                 // "then"
+    TOK_TO = 35,                   // "to"
+    TOK_TRIGGER = 36,              // "trigger"
+    TOK_WAIT = 37,                 // "wait"
+    TOK_WHEN = 38,                 // "when"
+    TOK_MINUS = 39,                // "-"
+    TOK_PLUS = 40,                 // "+"
+    TOK_STAR = 41,                 // "*"
+    TOK_SLASH = 42,                // "/"
+    TOK_LPAREN = 43,               // "("
+    TOK_RPAREN = 44,               // ")"
+    TOK_LBRACE = 45,               // "{"
+    TOK_RBRACE = 46,               // "}"
+    TOK_LBRACKET = 47,             // "["
+    TOK_RBRACKET = 48,             // "]"
+    TOK_COMMA = 49,                // ","
+    TOK_IDENTIFIER = 50,           // "identifier"
+    TOK_NUMBER = 51,               // "number"
+    TOK_NOTE = 52,                 // "note"
+    TOK_IN_PORT = 53,              // "in_port"
+    TOK_OUT_PORT = 54,             // "out_port"
+    TOK_ZEROARGFUNC = 55,          // "zeroargfunc"
+    TOK_ONEARGFUNC = 56,           // "oneargfunc"
+    TOK_TWOARGFUNC = 57,           // "twoargfunc"
+    TOK_COMPARISON = 58,           // "comparison"
+    TOK_NEG = 59                   // NEG
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -620,7 +626,7 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 57, ///< Number of tokens.
+        YYNTOKENS = 60, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -641,65 +647,68 @@ namespace yy {
         S_FLOOR = 16,                            // "floor"
         S_FOR = 17,                              // "for"
         S_IF = 18,                               // "if"
-        S_MAX = 19,                              // "max"
-        S_MIN = 20,                              // "min"
-        S_NEXT = 21,                             // "next"
-        S_NOT = 22,                              // "not"
-        S_OR = 23,                               // "or"
-        S_POW = 24,                              // "pow"
-        S_RESET = 25,                            // "reset"
-        S_SAMPLE_RATE = 26,                      // "sample_rate"
-        S_SIGN = 27,                             // "sign"
-        S_SIN = 28,                              // "sin"
-        S_START = 29,                            // "start"
-        S_STEP = 30,                             // "step"
-        S_THEN = 31,                             // "then"
-        S_TO = 32,                               // "to"
-        S_TRIGGER = 33,                          // "trigger"
-        S_WAIT = 34,                             // "wait"
-        S_WHEN = 35,                             // "when"
-        S_MINUS = 36,                            // "-"
-        S_PLUS = 37,                             // "+"
-        S_STAR = 38,                             // "*"
-        S_SLASH = 39,                            // "/"
-        S_LPAREN = 40,                           // "("
-        S_RPAREN = 41,                           // ")"
-        S_LBRACE = 42,                           // "{"
-        S_RBRACE = 43,                           // "}"
-        S_LBRACKET = 44,                         // "["
-        S_RBRACKET = 45,                         // "]"
-        S_COMMA = 46,                            // ","
-        S_IDENTIFIER = 47,                       // "identifier"
-        S_NUMBER = 48,                           // "number"
-        S_NOTE = 49,                             // "note"
-        S_IN_PORT = 50,                          // "in_port"
-        S_OUT_PORT = 51,                         // "out_port"
-        S_ZEROARGFUNC = 52,                      // "zeroargfunc"
-        S_ONEARGFUNC = 53,                       // "oneargfunc"
-        S_TWOARGFUNC = 54,                       // "twoargfunc"
-        S_COMPARISON = 55,                       // "comparison"
-        S_NEG = 56,                              // NEG
-        S_YYACCEPT = 57,                         // $accept
-        S_program = 58,                          // program
-        S_blocks = 59,                           // blocks
-        S_block = 60,                            // block
-        S_main_block = 61,                       // main_block
-        S_zero_or_more_statements = 62,          // zero_or_more_statements
-        S_one_or_more_statements = 63,           // one_or_more_statements
-        S_statement = 64,                        // statement
-        S_array_assignment = 65,                 // array_assignment
-        S_assignment = 66,                       // assignment
-        S_clear_statement = 67,                  // clear_statement
-        S_continue_statement = 68,               // continue_statement
-        S_exit_statement = 69,                   // exit_statement
-        S_for_statement = 70,                    // for_statement
-        S_elseif_group = 71,                     // elseif_group
-        S_elseif_clause = 72,                    // elseif_clause
-        S_if_statement = 73,                     // if_statement
-        S_reset_statement = 74,                  // reset_statement
-        S_wait_statement = 75,                   // wait_statement
-        S_expression_list = 76,                  // expression_list
-        S_exp = 77                               // exp
+        S_LOG2 = 19,                             // "log2"
+        S_LOGE = 20,                             // "loge"
+        S_LOG10 = 21,                            // "log10"
+        S_MAX = 22,                              // "max"
+        S_MIN = 23,                              // "min"
+        S_NEXT = 24,                             // "next"
+        S_NOT = 25,                              // "not"
+        S_OR = 26,                               // "or"
+        S_POW = 27,                              // "pow"
+        S_RESET = 28,                            // "reset"
+        S_SAMPLE_RATE = 29,                      // "sample_rate"
+        S_SIGN = 30,                             // "sign"
+        S_SIN = 31,                              // "sin"
+        S_START = 32,                            // "start"
+        S_STEP = 33,                             // "step"
+        S_THEN = 34,                             // "then"
+        S_TO = 35,                               // "to"
+        S_TRIGGER = 36,                          // "trigger"
+        S_WAIT = 37,                             // "wait"
+        S_WHEN = 38,                             // "when"
+        S_MINUS = 39,                            // "-"
+        S_PLUS = 40,                             // "+"
+        S_STAR = 41,                             // "*"
+        S_SLASH = 42,                            // "/"
+        S_LPAREN = 43,                           // "("
+        S_RPAREN = 44,                           // ")"
+        S_LBRACE = 45,                           // "{"
+        S_RBRACE = 46,                           // "}"
+        S_LBRACKET = 47,                         // "["
+        S_RBRACKET = 48,                         // "]"
+        S_COMMA = 49,                            // ","
+        S_IDENTIFIER = 50,                       // "identifier"
+        S_NUMBER = 51,                           // "number"
+        S_NOTE = 52,                             // "note"
+        S_IN_PORT = 53,                          // "in_port"
+        S_OUT_PORT = 54,                         // "out_port"
+        S_ZEROARGFUNC = 55,                      // "zeroargfunc"
+        S_ONEARGFUNC = 56,                       // "oneargfunc"
+        S_TWOARGFUNC = 57,                       // "twoargfunc"
+        S_COMPARISON = 58,                       // "comparison"
+        S_NEG = 59,                              // NEG
+        S_YYACCEPT = 60,                         // $accept
+        S_program = 61,                          // program
+        S_blocks = 62,                           // blocks
+        S_block = 63,                            // block
+        S_main_block = 64,                       // main_block
+        S_zero_or_more_statements = 65,          // zero_or_more_statements
+        S_one_or_more_statements = 66,           // one_or_more_statements
+        S_statement = 67,                        // statement
+        S_array_assignment = 68,                 // array_assignment
+        S_assignment = 69,                       // assignment
+        S_clear_statement = 70,                  // clear_statement
+        S_continue_statement = 71,               // continue_statement
+        S_exit_statement = 72,                   // exit_statement
+        S_for_statement = 73,                    // for_statement
+        S_elseif_group = 74,                     // elseif_group
+        S_elseif_clause = 75,                    // elseif_clause
+        S_if_statement = 76,                     // if_statement
+        S_reset_statement = 77,                  // reset_statement
+        S_wait_statement = 78,                   // wait_statement
+        S_expression_list = 79,                  // expression_list
+        S_exp = 80                               // exp
       };
     };
 
@@ -793,6 +802,9 @@ namespace yy {
       case symbol_kind::S_FLOOR: // "floor"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
+      case symbol_kind::S_LOG2: // "log2"
+      case symbol_kind::S_LOGE: // "loge"
+      case symbol_kind::S_LOG10: // "log10"
       case symbol_kind::S_MAX: // "max"
       case symbol_kind::S_MIN: // "min"
       case symbol_kind::S_NEXT: // "next"
@@ -1048,6 +1060,9 @@ switch (yykind)
       case symbol_kind::S_FLOOR: // "floor"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
+      case symbol_kind::S_LOG2: // "log2"
+      case symbol_kind::S_LOGE: // "loge"
+      case symbol_kind::S_LOG10: // "log10"
       case symbol_kind::S_MAX: // "max"
       case symbol_kind::S_MIN: // "min"
       case symbol_kind::S_NEXT: // "next"
@@ -1545,6 +1560,51 @@ switch (yykind)
       make_IF (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOK_IF, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LOG2 (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_LOG2, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LOG2 (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_LOG2, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LOGE (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_LOGE, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LOGE (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_LOGE, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LOG10 (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_LOG10, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LOG10 (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_LOG10, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -2461,7 +2521,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 443,     ///< Last index in yytable_.
+      yylast_ = 458,     ///< Last index in yytable_.
       yynnts_ = 21,  ///< Number of nonterminal symbols.
       yyfinal_ = 56 ///< Termination state number.
     };
@@ -2547,6 +2607,9 @@ switch (yykind)
       case symbol_kind::S_FLOOR: // "floor"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
+      case symbol_kind::S_LOG2: // "log2"
+      case symbol_kind::S_LOGE: // "loge"
+      case symbol_kind::S_LOG10: // "log10"
       case symbol_kind::S_MAX: // "max"
       case symbol_kind::S_MIN: // "min"
       case symbol_kind::S_NEXT: // "next"
@@ -2674,6 +2737,9 @@ switch (yykind)
       case symbol_kind::S_FLOOR: // "floor"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
+      case symbol_kind::S_LOG2: // "log2"
+      case symbol_kind::S_LOGE: // "loge"
+      case symbol_kind::S_LOG10: // "log10"
       case symbol_kind::S_MAX: // "max"
       case symbol_kind::S_MIN: // "min"
       case symbol_kind::S_NEXT: // "next"
@@ -2779,7 +2845,7 @@ switch (yykind)
 
 
 } // yy
-#line 2783 "parser.hh"
+#line 2849 "parser.hh"
 
 
 

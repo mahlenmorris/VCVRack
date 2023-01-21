@@ -2,7 +2,8 @@ Useful commands:
 
 tail -f /C/Users/mahle/Documents/Rack2/log.txt
 
-
+cd src/parser ; make clean scanner.cc parser.cc ; cd -
+make dist install
 
 January 17, 2023
 Notes on conversion to a reentrant Flex scanner.
