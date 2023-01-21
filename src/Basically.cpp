@@ -419,7 +419,6 @@ struct Basically : Module {
         // No longer need thread that was running it.
         compile_thread->join();  // It should be done by now, right?
         delete compile_thread;
-        INFO("compile took %i samples to complete", samples_per_compile);
         if (compiler->useful) {
           // Got something we can use. First, clean upi the old ones.
           if (main_blocks) {
@@ -584,6 +583,9 @@ struct Basically : Module {
   // We need to the immediately previous version of the text around to
   // make undo and redo work; otherwise, we don't know what the change was.
   std::string previous_text;
+  // We want to track the previous placement of the cursor, so that an
+  // undo can take us back there.
+  int previous_cursor = 0;
   bool allow_error_highlight = true;
   bool blue_orange_light = false;
   // Green on Black is the default.
@@ -606,17 +608,16 @@ struct Basically : Module {
 struct TextEditAction : history::ModuleAction {
   std::string old_text;
   std::string new_text;
-  int cursor;
+  int old_cursor, new_cursor;
   int old_width;
   int new_width;
 
   TextEditAction(int64_t id, std::string oldText, std::string newText,
-     int cursor_pos) {
+     int old_cursor_pos, int new_cursor_pos) : old_text{oldText},
+         new_text{newText}, old_cursor{old_cursor_pos},
+         new_cursor{new_cursor_pos} {
     moduleId = id;
     name = "edit code";
-    old_text = oldText;
-    new_text = newText;
-    cursor = cursor_pos;
     old_width = new_width = -1;
   }
   TextEditAction(int64_t id, int old_width, int new_width) :
@@ -633,7 +634,7 @@ struct TextEditAction : history::ModuleAction {
         module->editor_refresh = true;
         // Tell module it needs to re-evaluate 'text'.
         module->module_refresh = true;
-        module->cursor_override = cursor;
+        module->cursor_override = old_cursor;
       } else {
         module->width = this->old_width;
       }
@@ -649,7 +650,7 @@ struct TextEditAction : history::ModuleAction {
         module->editor_refresh = true;
         // Tell module it needs to re-evaluate 'text'.
         module->module_refresh = true;
-        module->cursor_override = cursor;
+        module->cursor_override = new_cursor;
       } else {
         module->width = this->new_width;
       }
@@ -870,10 +871,11 @@ struct BasicallyTextField : STTextField {
       if (module->text != module->previous_text) {
         APP->history->push(
           new TextEditAction(module->id, module->previous_text,
-                             module->text, cursor));
+                             module->text, module->previous_cursor, cursor));
         module->previous_text = module->text;
         module->module_refresh = true;
       }
+      module->previous_cursor = cursor;
     }
 	}
 };
