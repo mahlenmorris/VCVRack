@@ -534,54 +534,56 @@
       <terminal symbol-number="32" token-number="287" name="&quot;start&quot;" type="std::string" usefulness="unused-in-grammar"/>
       <terminal symbol-number="33" token-number="288" name="&quot;step&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="34" token-number="289" name="&quot;then&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="35" token-number="290" name="&quot;to&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="36" token-number="291" name="&quot;trigger&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="37" token-number="292" name="&quot;wait&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="38" token-number="293" name="&quot;when&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="39" token-number="294" name="&quot;-&quot;" type="std::string" usefulness="useful" prec="4" assoc="left"/>
-      <terminal symbol-number="40" token-number="295" name="&quot;+&quot;" type="std::string" usefulness="useful" prec="4" assoc="left"/>
-      <terminal symbol-number="41" token-number="296" name="&quot;*&quot;" type="std::string" usefulness="useful" prec="5" assoc="left"/>
-      <terminal symbol-number="42" token-number="297" name="&quot;/&quot;" type="std::string" usefulness="useful" prec="5" assoc="left"/>
-      <terminal symbol-number="43" token-number="298" name="&quot;(&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="44" token-number="299" name="&quot;)&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="45" token-number="300" name="&quot;{&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="46" token-number="301" name="&quot;}&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="47" token-number="302" name="&quot;[&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="48" token-number="303" name="&quot;]&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="49" token-number="304" name="&quot;,&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="50" token-number="305" name="&quot;identifier&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="51" token-number="306" name="&quot;number&quot;" type="float" usefulness="useful"/>
-      <terminal symbol-number="52" token-number="307" name="&quot;note&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="53" token-number="308" name="&quot;in_port&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="54" token-number="309" name="&quot;out_port&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="55" token-number="310" name="&quot;zeroargfunc&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="56" token-number="311" name="&quot;oneargfunc&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="57" token-number="312" name="&quot;twoargfunc&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="58" token-number="313" name="&quot;comparison&quot;" type="std::string" usefulness="useful" prec="3" assoc="left"/>
-      <terminal symbol-number="59" token-number="314" name="NEG" type="" usefulness="useful" prec="6" assoc="precedence"/>
+      <terminal symbol-number="35" token-number="290" name="&quot;time&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="36" token-number="291" name="&quot;time_millis&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="37" token-number="292" name="&quot;to&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="38" token-number="293" name="&quot;trigger&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="39" token-number="294" name="&quot;wait&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="40" token-number="295" name="&quot;when&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="41" token-number="296" name="&quot;-&quot;" type="std::string" usefulness="useful" prec="4" assoc="left"/>
+      <terminal symbol-number="42" token-number="297" name="&quot;+&quot;" type="std::string" usefulness="useful" prec="4" assoc="left"/>
+      <terminal symbol-number="43" token-number="298" name="&quot;*&quot;" type="std::string" usefulness="useful" prec="5" assoc="left"/>
+      <terminal symbol-number="44" token-number="299" name="&quot;/&quot;" type="std::string" usefulness="useful" prec="5" assoc="left"/>
+      <terminal symbol-number="45" token-number="300" name="&quot;(&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="46" token-number="301" name="&quot;)&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="47" token-number="302" name="&quot;{&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="48" token-number="303" name="&quot;}&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="49" token-number="304" name="&quot;[&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="50" token-number="305" name="&quot;]&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="51" token-number="306" name="&quot;,&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="52" token-number="307" name="&quot;identifier&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="53" token-number="308" name="&quot;number&quot;" type="float" usefulness="useful"/>
+      <terminal symbol-number="54" token-number="309" name="&quot;note&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="55" token-number="310" name="&quot;in_port&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="56" token-number="311" name="&quot;out_port&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="57" token-number="312" name="&quot;zeroargfunc&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="58" token-number="313" name="&quot;oneargfunc&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="59" token-number="314" name="&quot;twoargfunc&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="60" token-number="315" name="&quot;comparison&quot;" type="std::string" usefulness="useful" prec="3" assoc="left"/>
+      <terminal symbol-number="61" token-number="316" name="NEG" type="" usefulness="useful" prec="6" assoc="precedence"/>
     </terminals>
     <nonterminals>
-      <nonterminal symbol-number="60" name="$accept" type="" usefulness="useful"/>
-      <nonterminal symbol-number="61" name="program" type="" usefulness="useful"/>
-      <nonterminal symbol-number="62" name="blocks" type="Blocks" usefulness="useful"/>
-      <nonterminal symbol-number="63" name="block" type="Block" usefulness="useful"/>
-      <nonterminal symbol-number="64" name="main_block" type="Block" usefulness="useful"/>
-      <nonterminal symbol-number="65" name="zero_or_more_statements" type="Statements" usefulness="useful"/>
-      <nonterminal symbol-number="66" name="one_or_more_statements" type="Statements" usefulness="useful"/>
-      <nonterminal symbol-number="67" name="statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="68" name="array_assignment" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="69" name="assignment" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="70" name="clear_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="71" name="continue_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="72" name="exit_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="73" name="for_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="74" name="elseif_group" type="Statements" usefulness="useful"/>
-      <nonterminal symbol-number="75" name="elseif_clause" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="76" name="if_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="77" name="reset_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="78" name="wait_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="79" name="expression_list" type="ExpressionList" usefulness="useful"/>
-      <nonterminal symbol-number="80" name="exp" type="Expression" usefulness="useful"/>
+      <nonterminal symbol-number="62" name="$accept" type="" usefulness="useful"/>
+      <nonterminal symbol-number="63" name="program" type="" usefulness="useful"/>
+      <nonterminal symbol-number="64" name="blocks" type="Blocks" usefulness="useful"/>
+      <nonterminal symbol-number="65" name="block" type="Block" usefulness="useful"/>
+      <nonterminal symbol-number="66" name="main_block" type="Block" usefulness="useful"/>
+      <nonterminal symbol-number="67" name="zero_or_more_statements" type="Statements" usefulness="useful"/>
+      <nonterminal symbol-number="68" name="one_or_more_statements" type="Statements" usefulness="useful"/>
+      <nonterminal symbol-number="69" name="statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="70" name="array_assignment" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="71" name="assignment" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="72" name="clear_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="73" name="continue_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="74" name="exit_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="75" name="for_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="76" name="elseif_group" type="Statements" usefulness="useful"/>
+      <nonterminal symbol-number="77" name="elseif_clause" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="78" name="if_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="79" name="reset_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="80" name="wait_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="81" name="expression_list" type="ExpressionList" usefulness="useful"/>
+      <nonterminal symbol-number="82" name="exp" type="Expression" usefulness="useful"/>
     </nonterminals>
   </grammar>
 

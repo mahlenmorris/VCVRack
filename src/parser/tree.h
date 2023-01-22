@@ -55,6 +55,8 @@ class Expression {
     SIGN,
     SIN,
     START,
+    TIME,
+    TIME_MILLIS,
     TRIGGER,
     MOD,
     MAX,

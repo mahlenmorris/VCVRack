@@ -477,6 +477,8 @@ namespace yy {
       // "start"
       // "step"
       // "then"
+      // "time"
+      // "time_millis"
       // "to"
       // "trigger"
       // "wait"
@@ -585,31 +587,33 @@ namespace yy {
     TOK_START = 32,                // "start"
     TOK_STEP = 33,                 // "step"
     TOK_THEN = 34,                 // "then"
-    TOK_TO = 35,                   // "to"
-    TOK_TRIGGER = 36,              // "trigger"
-    TOK_WAIT = 37,                 // "wait"
-    TOK_WHEN = 38,                 // "when"
-    TOK_MINUS = 39,                // "-"
-    TOK_PLUS = 40,                 // "+"
-    TOK_STAR = 41,                 // "*"
-    TOK_SLASH = 42,                // "/"
-    TOK_LPAREN = 43,               // "("
-    TOK_RPAREN = 44,               // ")"
-    TOK_LBRACE = 45,               // "{"
-    TOK_RBRACE = 46,               // "}"
-    TOK_LBRACKET = 47,             // "["
-    TOK_RBRACKET = 48,             // "]"
-    TOK_COMMA = 49,                // ","
-    TOK_IDENTIFIER = 50,           // "identifier"
-    TOK_NUMBER = 51,               // "number"
-    TOK_NOTE = 52,                 // "note"
-    TOK_IN_PORT = 53,              // "in_port"
-    TOK_OUT_PORT = 54,             // "out_port"
-    TOK_ZEROARGFUNC = 55,          // "zeroargfunc"
-    TOK_ONEARGFUNC = 56,           // "oneargfunc"
-    TOK_TWOARGFUNC = 57,           // "twoargfunc"
-    TOK_COMPARISON = 58,           // "comparison"
-    TOK_NEG = 59                   // NEG
+    TOK_TIME = 35,                 // "time"
+    TOK_TIME_MILLIS = 36,          // "time_millis"
+    TOK_TO = 37,                   // "to"
+    TOK_TRIGGER = 38,              // "trigger"
+    TOK_WAIT = 39,                 // "wait"
+    TOK_WHEN = 40,                 // "when"
+    TOK_MINUS = 41,                // "-"
+    TOK_PLUS = 42,                 // "+"
+    TOK_STAR = 43,                 // "*"
+    TOK_SLASH = 44,                // "/"
+    TOK_LPAREN = 45,               // "("
+    TOK_RPAREN = 46,               // ")"
+    TOK_LBRACE = 47,               // "{"
+    TOK_RBRACE = 48,               // "}"
+    TOK_LBRACKET = 49,             // "["
+    TOK_RBRACKET = 50,             // "]"
+    TOK_COMMA = 51,                // ","
+    TOK_IDENTIFIER = 52,           // "identifier"
+    TOK_NUMBER = 53,               // "number"
+    TOK_NOTE = 54,                 // "note"
+    TOK_IN_PORT = 55,              // "in_port"
+    TOK_OUT_PORT = 56,             // "out_port"
+    TOK_ZEROARGFUNC = 57,          // "zeroargfunc"
+    TOK_ONEARGFUNC = 58,           // "oneargfunc"
+    TOK_TWOARGFUNC = 59,           // "twoargfunc"
+    TOK_COMPARISON = 60,           // "comparison"
+    TOK_NEG = 61                   // NEG
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -626,7 +630,7 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 60, ///< Number of tokens.
+        YYNTOKENS = 62, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -663,52 +667,54 @@ namespace yy {
         S_START = 32,                            // "start"
         S_STEP = 33,                             // "step"
         S_THEN = 34,                             // "then"
-        S_TO = 35,                               // "to"
-        S_TRIGGER = 36,                          // "trigger"
-        S_WAIT = 37,                             // "wait"
-        S_WHEN = 38,                             // "when"
-        S_MINUS = 39,                            // "-"
-        S_PLUS = 40,                             // "+"
-        S_STAR = 41,                             // "*"
-        S_SLASH = 42,                            // "/"
-        S_LPAREN = 43,                           // "("
-        S_RPAREN = 44,                           // ")"
-        S_LBRACE = 45,                           // "{"
-        S_RBRACE = 46,                           // "}"
-        S_LBRACKET = 47,                         // "["
-        S_RBRACKET = 48,                         // "]"
-        S_COMMA = 49,                            // ","
-        S_IDENTIFIER = 50,                       // "identifier"
-        S_NUMBER = 51,                           // "number"
-        S_NOTE = 52,                             // "note"
-        S_IN_PORT = 53,                          // "in_port"
-        S_OUT_PORT = 54,                         // "out_port"
-        S_ZEROARGFUNC = 55,                      // "zeroargfunc"
-        S_ONEARGFUNC = 56,                       // "oneargfunc"
-        S_TWOARGFUNC = 57,                       // "twoargfunc"
-        S_COMPARISON = 58,                       // "comparison"
-        S_NEG = 59,                              // NEG
-        S_YYACCEPT = 60,                         // $accept
-        S_program = 61,                          // program
-        S_blocks = 62,                           // blocks
-        S_block = 63,                            // block
-        S_main_block = 64,                       // main_block
-        S_zero_or_more_statements = 65,          // zero_or_more_statements
-        S_one_or_more_statements = 66,           // one_or_more_statements
-        S_statement = 67,                        // statement
-        S_array_assignment = 68,                 // array_assignment
-        S_assignment = 69,                       // assignment
-        S_clear_statement = 70,                  // clear_statement
-        S_continue_statement = 71,               // continue_statement
-        S_exit_statement = 72,                   // exit_statement
-        S_for_statement = 73,                    // for_statement
-        S_elseif_group = 74,                     // elseif_group
-        S_elseif_clause = 75,                    // elseif_clause
-        S_if_statement = 76,                     // if_statement
-        S_reset_statement = 77,                  // reset_statement
-        S_wait_statement = 78,                   // wait_statement
-        S_expression_list = 79,                  // expression_list
-        S_exp = 80                               // exp
+        S_TIME = 35,                             // "time"
+        S_TIME_MILLIS = 36,                      // "time_millis"
+        S_TO = 37,                               // "to"
+        S_TRIGGER = 38,                          // "trigger"
+        S_WAIT = 39,                             // "wait"
+        S_WHEN = 40,                             // "when"
+        S_MINUS = 41,                            // "-"
+        S_PLUS = 42,                             // "+"
+        S_STAR = 43,                             // "*"
+        S_SLASH = 44,                            // "/"
+        S_LPAREN = 45,                           // "("
+        S_RPAREN = 46,                           // ")"
+        S_LBRACE = 47,                           // "{"
+        S_RBRACE = 48,                           // "}"
+        S_LBRACKET = 49,                         // "["
+        S_RBRACKET = 50,                         // "]"
+        S_COMMA = 51,                            // ","
+        S_IDENTIFIER = 52,                       // "identifier"
+        S_NUMBER = 53,                           // "number"
+        S_NOTE = 54,                             // "note"
+        S_IN_PORT = 55,                          // "in_port"
+        S_OUT_PORT = 56,                         // "out_port"
+        S_ZEROARGFUNC = 57,                      // "zeroargfunc"
+        S_ONEARGFUNC = 58,                       // "oneargfunc"
+        S_TWOARGFUNC = 59,                       // "twoargfunc"
+        S_COMPARISON = 60,                       // "comparison"
+        S_NEG = 61,                              // NEG
+        S_YYACCEPT = 62,                         // $accept
+        S_program = 63,                          // program
+        S_blocks = 64,                           // blocks
+        S_block = 65,                            // block
+        S_main_block = 66,                       // main_block
+        S_zero_or_more_statements = 67,          // zero_or_more_statements
+        S_one_or_more_statements = 68,           // one_or_more_statements
+        S_statement = 69,                        // statement
+        S_array_assignment = 70,                 // array_assignment
+        S_assignment = 71,                       // assignment
+        S_clear_statement = 72,                  // clear_statement
+        S_continue_statement = 73,               // continue_statement
+        S_exit_statement = 74,                   // exit_statement
+        S_for_statement = 75,                    // for_statement
+        S_elseif_group = 76,                     // elseif_group
+        S_elseif_clause = 77,                    // elseif_clause
+        S_if_statement = 78,                     // if_statement
+        S_reset_statement = 79,                  // reset_statement
+        S_wait_statement = 80,                   // wait_statement
+        S_expression_list = 81,                  // expression_list
+        S_exp = 82                               // exp
       };
     };
 
@@ -818,6 +824,8 @@ namespace yy {
       case symbol_kind::S_START: // "start"
       case symbol_kind::S_STEP: // "step"
       case symbol_kind::S_THEN: // "then"
+      case symbol_kind::S_TIME: // "time"
+      case symbol_kind::S_TIME_MILLIS: // "time_millis"
       case symbol_kind::S_TO: // "to"
       case symbol_kind::S_TRIGGER: // "trigger"
       case symbol_kind::S_WAIT: // "wait"
@@ -1076,6 +1084,8 @@ switch (yykind)
       case symbol_kind::S_START: // "start"
       case symbol_kind::S_STEP: // "step"
       case symbol_kind::S_THEN: // "then"
+      case symbol_kind::S_TIME: // "time"
+      case symbol_kind::S_TIME_MILLIS: // "time_millis"
       case symbol_kind::S_TO: // "to"
       case symbol_kind::S_TRIGGER: // "trigger"
       case symbol_kind::S_WAIT: // "wait"
@@ -1805,6 +1815,36 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_TIME (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_TIME, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_TIME (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_TIME, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_TIME_MILLIS (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_TIME_MILLIS, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_TIME_MILLIS (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_TIME_MILLIS, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_TO (std::string v, location_type l)
       {
         return symbol_type (token::TOK_TO, std::move (v), std::move (l));
@@ -2260,7 +2300,7 @@ switch (yykind)
     static const signed char yydefact_[];
 
     // YYPGOTO[NTERM-NUM].
-    static const signed char yypgoto_[];
+    static const short yypgoto_[];
 
     // YYDEFGOTO[NTERM-NUM].
     static const unsigned char yydefgoto_[];
@@ -2521,7 +2561,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 458,     ///< Last index in yytable_.
+      yylast_ = 414,     ///< Last index in yytable_.
       yynnts_ = 21,  ///< Number of nonterminal symbols.
       yyfinal_ = 56 ///< Termination state number.
     };
@@ -2623,6 +2663,8 @@ switch (yykind)
       case symbol_kind::S_START: // "start"
       case symbol_kind::S_STEP: // "step"
       case symbol_kind::S_THEN: // "then"
+      case symbol_kind::S_TIME: // "time"
+      case symbol_kind::S_TIME_MILLIS: // "time_millis"
       case symbol_kind::S_TO: // "to"
       case symbol_kind::S_TRIGGER: // "trigger"
       case symbol_kind::S_WAIT: // "wait"
@@ -2753,6 +2795,8 @@ switch (yykind)
       case symbol_kind::S_START: // "start"
       case symbol_kind::S_STEP: // "step"
       case symbol_kind::S_THEN: // "then"
+      case symbol_kind::S_TIME: // "time"
+      case symbol_kind::S_TIME_MILLIS: // "time_millis"
       case symbol_kind::S_TO: // "to"
       case symbol_kind::S_TRIGGER: // "trigger"
       case symbol_kind::S_WAIT: // "wait"
@@ -2845,7 +2889,7 @@ switch (yykind)
 
 
 } // yy
-#line 2849 "parser.hh"
+#line 2893 "parser.hh"
 
 
 

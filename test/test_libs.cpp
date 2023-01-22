@@ -49,6 +49,9 @@ struct TestEnvironment : Environment {
   float Normal(float mean, float std_dev) override {
     return mean + std_dev;  // Also not random.
   }
+  float Time(bool millis) override {
+    return millis ? 1000.0 : 1.0;
+  }
   void Clear() override {
     clear_called = true;
   }
@@ -542,6 +545,14 @@ TEST(ParserTest, EnvironmentTest)
   ASSERT_EQ(1, lines->size());
   EXPECT_EQ(5, lines->at(0).expr1.Compute());
 
+  EXPECT_EQ(0, drv.parse("out1 = time()"));
+  ASSERT_EQ(1, lines->size());
+  EXPECT_EQ(1, lines->at(0).expr1.Compute());
+
+  EXPECT_EQ(0, drv.parse("out1 = time_millis()"));
+  ASSERT_EQ(1, lines->size());
+  EXPECT_EQ(1000, lines->at(0).expr1.Compute());
+
   EXPECT_EQ(0, drv.parse("out1 = 10 * connected(in1)"));
   ASSERT_EQ(1, lines->size());
   EXPECT_EQ(0, lines->at(0).expr1.Compute());
@@ -599,6 +610,7 @@ TEST(RunTest, RunsClear) {
   Driver drv;
   PCodeTranslator translator;
   TestEnvironment test_env;
+  drv.SetEnvironment(&test_env);
   CodeBlock block(&test_env);
 
   EXPECT_EQ(0, drv.parse("clear all"));

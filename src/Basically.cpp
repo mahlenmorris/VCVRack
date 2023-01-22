@@ -87,12 +87,15 @@ struct Basically : Module {
     std::vector<std::pair<Expression, CodeBlock*> >* expression_blocks;
     std::vector<bool>* running_expression_blocks;
     std::unordered_map<int, TriggerInfo*> triggers;
+    std::chrono::steady_clock::time_point time_start;
+
 
    public:
     ProductionEnvironment(std::vector<Input>* the_inputs,
                           std::vector<Output>* the_outputs,
                           Driver* the_driver) :
        inputs{the_inputs}, outputs{the_outputs}, driver{the_driver} {
+         time_start = std::chrono::steady_clock::now();
        }
 
      // Must be called every time the program is recompiled.
@@ -170,6 +173,17 @@ struct Basically : Module {
     }
     float Normal(float mean, float std_dev) override {
       return rack::random::normal() * std_dev + mean;
+    }
+    float Time(bool millis) override {
+      if (millis) {
+        std::chrono::duration<double, std::milli> elapsed =
+          std::chrono::steady_clock::now() - time_start;
+        return elapsed.count();
+      } else {
+        std::chrono::duration<double> elapsed =
+          std::chrono::steady_clock::now() - time_start;
+        return elapsed.count();
+      }
     }
     void Clear() override {
       driver->Clear();

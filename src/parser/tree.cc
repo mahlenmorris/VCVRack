@@ -34,6 +34,8 @@ std::unordered_map<std::string, Expression::Operation> ExpressionFactory::string
   {"sign", Expression::SIGN},
   {"sin", Expression::SIN},
   {"start", Expression::START},
+  {"time", Expression::TIME},
+  {"time_millis", Expression::TIME_MILLIS},
   {"trigger", Expression::TRIGGER},
   {"mod", Expression::MOD},
   {"max", Expression::MAX},
@@ -129,6 +131,7 @@ bool Expression::Volatile() {
     case NOT: return subexpressions[0].Volatile();
     // sample_rate() doesn't seem to change immediately? But that might be
     // a bug or Windows-specific. And Start() is volatile.
+    // And the time funcs are.
     case ZEROARGFUNC: return true;
     case ONEARGFUNC: return subexpressions[0].Volatile();
     // Yes, both conneted() and trigger are volatile.
@@ -195,6 +198,8 @@ float Expression::zero_arg_compute() {
   switch (operation) {
     case SAMPLE_RATE: return env->SampleRate();
     case START: return env->Start() ? 1.0f : 0.0f;
+    case TIME: return env->Time(false);
+    case TIME_MILLIS: return env->Time(true);
     default: return -9.87654f;
   }
 }

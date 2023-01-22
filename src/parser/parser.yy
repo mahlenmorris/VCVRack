@@ -71,6 +71,8 @@
   START   "start"
   STEP    "step"
   THEN    "then"
+  TIME    "time"
+  TIME_MILLIS "time_millis"
   TO      "to"
   TRIGGER "trigger"
   WAIT    "wait"

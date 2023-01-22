@@ -40,6 +40,7 @@ class Environment {
   // Hard to test these without making these overridable.
   virtual float Random(float min_value, float max_value) = 0;
   virtual float Normal(float mean, float std_dev) = 0;
+  virtual float Time(bool millis) = 0;
 
   // These just change the operating environment.
   virtual void Clear() = 0;
