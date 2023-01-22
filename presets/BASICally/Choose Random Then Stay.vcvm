@@ -1,0 +1,22 @@
+{
+  "plugin": "StochasticTelegraph",
+  "model": "BASICally",
+  "version": "2.0.6",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    }
+  ],
+  "data": {
+    "text": "if random(0, 1) > 0.9 THEN\n  out1 = random(0, 10)\n  ' Trigger on OUT2.\n  out2 = 10\n  wait 1\n  out2 = 0\n  ' Let's not change again for\n  ' a while.\n  wait 20000 ' 20 seconds\nelse \n  WAIT 4000 ' 4 seconds\nend if\n\n",
+    "width": 21,
+    "allow_error_highlight": 1,
+    "screen_colors": 1095216660480,
+    "title_text": "Choose Random Then Stay"
+  }
+}
