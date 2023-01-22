@@ -53,6 +53,8 @@ struct Basically : Module {
     OUT2_OUTPUT,
     OUT3_OUTPUT,
     OUT4_OUTPUT,
+    OUT5_OUTPUT,
+    OUT6_OUTPUT,
     OUTPUTS_LEN
   };
   enum LightId {
@@ -289,7 +291,9 @@ struct Basically : Module {
   std::unordered_map<std::string, int> out_map { {"out1", OUT1_OUTPUT},
                                                  {"out2", OUT2_OUTPUT},
                                                  {"out3", OUT3_OUTPUT},
-                                                 {"out4", OUT4_OUTPUT}
+                                                 {"out4", OUT4_OUTPUT},
+                                                 {"out5", OUT5_OUTPUT},
+                                                 {"out6", OUT6_OUTPUT}
                                                };
   std::vector<InPortInfo> in_list { {"in1", IN1_INPUT},
                                     {"in2", IN2_INPUT},
@@ -325,6 +329,8 @@ struct Basically : Module {
     configOutput(OUT2_OUTPUT, "OUT2");
     configOutput(OUT3_OUTPUT, "OUT3");
     configOutput(OUT4_OUTPUT, "OUT4");
+    configOutput(OUT5_OUTPUT, "OUT5");
+    configOutput(OUT6_OUTPUT, "OUT6");
     configLight(RUN_LIGHT, "Lit when code is currently running.");
 
     environment = new ProductionEnvironment(&inputs, &outputs, &drv);
@@ -413,6 +419,8 @@ struct Basically : Module {
     outputs[OUT2_OUTPUT].setVoltage(0.0f);
     outputs[OUT3_OUTPUT].setVoltage(0.0f);
     outputs[OUT4_OUTPUT].setVoltage(0.0f);
+    outputs[OUT5_OUTPUT].setVoltage(0.0f);
+    outputs[OUT6_OUTPUT].setVoltage(0.0f);
   }
 
   void process(const ProcessArgs& args) override {
@@ -1164,14 +1172,18 @@ struct BasicallyWidget : ModuleWidget {
       module, Basically::IN9_INPUT));
 
     // The Outputs
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(11.071, 101.601)),
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.496, 101.601)),
       module, Basically::OUT1_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.22, 101.601)),
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.645, 101.601)),
       module, Basically::OUT2_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(11.071, 115.601)),
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(24.794, 101.601)),
       module, Basically::OUT3_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.22, 115.601)),
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.496, 115.601)),
       module, Basically::OUT4_OUTPUT));
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.645, 115.601)),
+      module, Basically::OUT5_OUTPUT));
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(24.794, 115.601)),
+      module, Basically::OUT6_OUTPUT));
 
     // Resize bar on right.
     ModuleResizeHandle* rightHandle = new ModuleResizeHandle;
