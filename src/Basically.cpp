@@ -90,13 +90,16 @@ struct Basically : Module {
     std::vector<bool>* running_expression_blocks;
     std::unordered_map<int, TriggerInfo*> triggers;
     std::chrono::steady_clock::time_point time_start;
-
+    // Map output index to whether or not we should clamp values for it.
+    std::unordered_map<int, bool>* out_index_to_clamp;
 
    public:
     ProductionEnvironment(std::vector<Input>* the_inputs,
                           std::vector<Output>* the_outputs,
-                          Driver* the_driver) :
-       inputs{the_inputs}, outputs{the_outputs}, driver{the_driver} {
+                          Driver* the_driver,
+                          std::unordered_map<int, bool>* clamp_info) :
+       inputs{the_inputs}, outputs{the_outputs}, driver{the_driver},
+       out_index_to_clamp{clamp_info} {
          time_start = std::chrono::steady_clock::now();
        }
 
@@ -155,9 +158,14 @@ struct Basically : Module {
     }
     void SetVoltage(const PortPointer &port, float value) override {
       if (port.port_type == PortPointer::INPUT) {
-        return inputs->at(port.index).setVoltage(value);
+        inputs->at(port.index).setVoltage(value);
       } else {
-        return outputs->at(port.index).setVoltage(value);
+        // Force output values to -10 <= x <= 10 range.
+        // Set in menu.
+        if (out_index_to_clamp->at(port.index)) {
+          value = clamp(value, -10.0f, 10.0f);
+        }
+        outputs->at(port.index).setVoltage(value);
       }
     }
     float SampleRate() override {
@@ -288,13 +296,13 @@ struct Basically : Module {
   };
 
 
-  std::unordered_map<std::string, int> out_map { {"out1", OUT1_OUTPUT},
-                                                 {"out2", OUT2_OUTPUT},
-                                                 {"out3", OUT3_OUTPUT},
-                                                 {"out4", OUT4_OUTPUT},
-                                                 {"out5", OUT5_OUTPUT},
-                                                 {"out6", OUT6_OUTPUT}
-                                               };
+  std::map<std::string, int> out_map { {"out1", OUT1_OUTPUT},
+                                       {"out2", OUT2_OUTPUT},
+                                       {"out3", OUT3_OUTPUT},
+                                       {"out4", OUT4_OUTPUT},
+                                       {"out5", OUT5_OUTPUT},
+                                       {"out6", OUT6_OUTPUT}
+                                     };
   std::vector<InPortInfo> in_list { {"in1", IN1_INPUT},
                                     {"in2", IN2_INPUT},
                                     {"in3", IN3_INPUT},
@@ -333,7 +341,8 @@ struct Basically : Module {
     configOutput(OUT6_OUTPUT, "OUT6");
     configLight(RUN_LIGHT, "Lit when code is currently running.");
 
-    environment = new ProductionEnvironment(&inputs, &outputs, &drv);
+    environment = new ProductionEnvironment(&inputs, &outputs, &drv,
+        &clamp_info);
     drv.SetEnvironment((Environment*) environment);
     // For now, we just have the one block, but we'll add more soon.
     // Add the INn variables to the variable space, and get the pointer to
@@ -344,8 +353,10 @@ struct Basically : Module {
     // Add the OUTn variables to the symbol table, just so we're sure they
     // are present. But we don't appear to need to keep the pointers in
     // the module.
+    // Also initialize clamp_info to all True;
     for (auto output : out_map) {
       drv.AddPortForName(output.first, false, output.second);
+      clamp_info[output.second] = true;
     }
     compile_in_progress = false;
     compiler = new CompilationThread(&drv, (Environment*) environment);
@@ -356,11 +367,25 @@ struct Basically : Module {
     running_expression_blocks = new std::vector<bool>();
   }
 
-  // If asked to, save the curve data in json for reading when loaded.
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "text", json_stringn(text.c_str(), text.size()));
     json_object_set_new(rootJ, "width", json_integer(width));
+
+    // OUTn clamping.
+    json_t* clampJ = json_object();
+    for (const auto& key_value : clamp_info ) {
+      // Store only the false values, since those will be less numerous,
+      // and any new OUTn's should default to True.
+      if (!key_value.second) {
+        json_object_set_new(clampJ, std::to_string(key_value.first).c_str(),
+                            json_integer(0));
+      }
+    }
+    if (json_object_size(clampJ) > 0) {
+      json_object_set_new(rootJ, "clamp", clampJ);
+    }
+
     if (allow_error_highlight) {
       json_object_set_new(rootJ, "allow_error_highlight", json_integer(1));
     }
@@ -390,6 +415,19 @@ struct Basically : Module {
     json_t* widthJ = json_object_get(rootJ, "width");
 		if (widthJ)
 			width = json_integer_value(widthJ);
+
+    // OUTn clamping.
+    json_t* clampJ = json_object_get(rootJ, "clamp");
+		if (clampJ) {
+      const char *key;
+      json_t *value;
+      // Assuming that all values in clamp_info have been set to true.
+      json_object_foreach(clampJ, key, value) {
+        int index = strtol(key, NULL, 10);
+        clamp_info[index] = false;
+      }
+    }
+
     json_t* screenJ = json_object_get(rootJ, "screen_colors");
 		if (screenJ)
 			screen_colors = json_integer_value(screenJ);
@@ -596,7 +634,7 @@ struct Basically : Module {
   std::vector<std::pair<Expression, CodeBlock*> >* expression_blocks;
   // Which ones are running.
   std::vector<bool>* running_expression_blocks;
-
+  std::unordered_map<int, bool> clamp_info;
 
   ///////
   // UI related
@@ -1255,11 +1293,26 @@ struct BasicallyWidget : ModuleWidget {
                                           &module->allow_error_highlight));
     menu->addChild(createBoolPtrMenuItem("Colorblind-friendly status light", "",
                                           &module->blue_orange_light));
+    // Clamping
+    MenuItem* clamp_menu = createSubmenuItem("Clamp OUTn values to (-10V, 10V)", "",
+      [=](Menu* menu) {
+          for (auto line : module->out_map) {
+            // We use out_map, but want the name capitalized.
+            std::string upper(line.first);
+            std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+            menu->addChild(createBoolMenuItem(upper, "",
+                [=]() {return module->clamp_info[line.second];},
+                [=](bool checked) {module->clamp_info[line.second] = checked;}
+            ));
+          }
+      }
+    );
+    menu->addChild(clamp_menu);
 
     // Add syntax insertions.
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel(
-      "Language hints (select to insert into code)"));
+      "Language hints (selecting inserts code)"));
     std::pair<std::string, std::string> syntax[] = {
       {"OUT1 = IN1 + IN2", "OUT1 = IN1 + IN2\n"},
       {"WAIT 200", "WAIT 200\n"},

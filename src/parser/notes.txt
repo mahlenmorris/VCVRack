@@ -5,6 +5,8 @@ tail -f /C/Users/mahle/Documents/Rack2/log.txt
 cd src/parser ; make clean scanner.cc parser.cc ; cd -
 make dist install
 
+../Rack-SDK/helper.py createmodule BASICally res/Basically.svg src/Basically2.cpp
+
 January 17, 2023
 Notes on conversion to a reentrant Flex scanner.
 

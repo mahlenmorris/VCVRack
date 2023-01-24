@@ -14,21 +14,10 @@
 // and these methods?
 void CodeBlock::SetVariableValue(float* variable_ptr,
     const PortPointer &assign_port, float value) {
-  switch (assign_port.port_type) {
-    case PortPointer::NOT_PORT: {
+  if (assign_port.port_type == PortPointer::NOT_PORT) {
       *variable_ptr = value;
-    }
-    break;
-    case PortPointer::INPUT: {
-      environment->SetVoltage(assign_port, value);
-    }
-    break;
-    case PortPointer::OUTPUT: {
-      // Force output values to -10 <= x <= 10 range.
-      environment->SetVoltage(assign_port,
-          std::max(-10.0f, std::min(10.0f, value)));
-    }
-    break;
+  } else {
+    environment->SetVoltage(assign_port, value);
   }
 }
 
