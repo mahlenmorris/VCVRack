@@ -885,17 +885,17 @@ struct BasicallyTextField : STTextField {
               module->blue_orange_light ? SCHEME_ORANGE : nvgRGB(128, 0, 0));
           nvgFill(args.vg);
         }
-        if (module->cursor_override >= 0) {
-          // Undo/redo must have just happened.
-          // Move cursor (with no selection) to where the cursor was when we
-          // did edit.
-          cursor = module->cursor_override;
-          selection = module->cursor_override;
-          module->cursor_override = -1;
-          // Since we just forcibly moved the cursor, need to reposition window
-          // to show it.
-          extended.RepositionWindow(cursor);
-        }
+      }
+      if (module && module->cursor_override >= 0) {
+        // Undo/redo must have just happened.
+        // Move cursor (with no selection) to where the cursor was when we
+        // did edit.
+        cursor = module->cursor_override;
+        selection = module->cursor_override;
+        module->cursor_override = -1;
+        // Since we just forcibly moved the cursor, need to reposition window
+        // to show it.
+        extended.RepositionWindow(cursor);
       }
   	}
   	STTextField::drawLayer(args, layer);  // Draw text.
@@ -963,10 +963,11 @@ struct BasicallyDisplay : LedDisplay {
 	}
   // The BasicallyWidget changes size, so we have to reflaect that.
   void step() override {
-    if (textField->module && textField->module->width > 7) {
-      show();
-    } else {
+    // At smallest szie, hide the screen.
+    if (textField->module && textField->module->width <= 7) {
       hide();
+    } else {
+      show();
     }
     textField->box.size = box.size;
     LedDisplay::step();
@@ -1133,7 +1134,10 @@ struct BasicallyWidget : ModuleWidget {
 		if (module) {
       // Set box width from loaded Module when available.
 			box.size.x = module->width * RACK_GRID_WIDTH;
-		}
+    } else {
+      // Like when showing the module in the module browser.
+      box.size.x = Basically::DEFAULT_WIDTH * RACK_GRID_WIDTH;
+    }
 
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
     topRightScrew = createWidget<ScrewSilver>(
@@ -1150,8 +1154,8 @@ struct BasicallyWidget : ModuleWidget {
     codeDisplay = createWidget<BasicallyDisplay>(
       mm2px(Vec(31.149, 11.844)));
 		codeDisplay->box.size = mm2px(Vec(60.0, 110.0));
-		codeDisplay->setModule(module);
     codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 7.1;
+		codeDisplay->setModule(module);
 
 		addChild(codeDisplay);
 
