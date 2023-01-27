@@ -1152,8 +1152,8 @@ struct BasicallyWidget : ModuleWidget {
     addChild(bottomRightScrew);
 
     codeDisplay = createWidget<BasicallyDisplay>(
-      mm2px(Vec(31.149, 11.844)));
-		codeDisplay->box.size = mm2px(Vec(60.0, 110.0));
+      mm2px(Vec(31.149, 5.9)));
+		codeDisplay->box.size = mm2px(Vec(60.0, 117.0));
     codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 7.1;
 		codeDisplay->setModule(module);
 
