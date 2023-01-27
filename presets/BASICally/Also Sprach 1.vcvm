@@ -1,0 +1,21 @@
+{
+  "plugin": "StochasticTelegraph",
+  "model": "BASICally",
+  "version": "2.0.6",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    }
+  ],
+  "data": {
+    "text": "' Also sprach BASICally.\nout1 = c3\nWAIT 2000\nout1 = g3\nWAIT 2000\nout1 = c4\nWAIT 4000\n",
+    "width": 18,
+    "screen_colors": 1095216660480,
+    "title_text": "Also Sprach 1"
+  }
+}
