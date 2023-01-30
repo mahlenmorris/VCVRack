@@ -17,7 +17,8 @@ enum Style {
   ALWAYS_STYLE,
   TRIGGER_LOOP_STYLE,
   TRIGGER_NO_LOOP_STYLE,
-  GATE
+  GATE,
+  NO_STYLE
 };
 
 Style STYLES[] = {
@@ -203,6 +204,7 @@ struct Basically : Module {
         for (auto block : *main_blocks) {
           block->current_line = 0;
           block->wait_info.in_wait = false;
+          // NOTE: we do not reset the run_status.
         }
         for (size_t pos = 0; pos < running_expression_blocks->size(); pos++) {
           running_expression_blocks->at(pos) = false;
@@ -463,6 +465,16 @@ struct Basically : Module {
 
   void process(const ProcessArgs& args) override {
     Style style = STYLES[(int) params[STYLE_PARAM].getValue()];
+    // Changing from a style that doesn't care about stopping to one that does
+    // can mess things up. So if we see the style change, we reset the
+    // run_status on all the blocks.
+    if (style != previous_style) {
+      previous_style = style;
+      // Tell each ALSO block they are primed to run.
+      for (CodeBlock* block : *main_blocks) {
+        block->run_status = CodeBlock::CONTINUES;
+      }
+    }
     bool loops = (style != TRIGGER_NO_LOOP_STYLE);
     // ProcessArgs not available when we first create the Environment.
     environment->SetProcessArgs(&args);
@@ -545,6 +557,10 @@ struct Basically : Module {
         if (asked_to_start_run) {
           running = true;
           ResetToProgramStart();
+          // Tell each ALSO block they are primed to run.
+          for (CodeBlock* block : *main_blocks) {
+            block->run_status = CodeBlock::CONTINUES;
+          }
         }
       }
     } else {  // style == GATE
@@ -590,11 +606,21 @@ struct Basically : Module {
         }
       }
       if (run_status != CodeBlock::RAN_RESET) {
+        // See if any are still running after this step.
+        bool any_main_blocks_running = false;
         for (CodeBlock* block : *main_blocks) {
-          run_status = block->Run(loops);
-          if (run_status == CodeBlock::RAN_RESET) {
-            break;
+          if (block->run_status != CodeBlock::STOPPED) {
+            run_status = block->Run(loops);
+            if (run_status == CodeBlock::CONTINUES) {
+              any_main_blocks_running = true;
+            }
+            if (run_status == CodeBlock::RAN_RESET) {
+              break;
+            }
           }
+        }
+        if (!main_blocks->empty() && !any_main_blocks_running) {
+          running = false;
         }
       }
     }
@@ -621,6 +647,7 @@ struct Basically : Module {
   bool module_refresh = true;
   bool compiles = false;
   bool running = false;
+  Style previous_style = NO_STYLE;
   int samples_per_compile;  // Do not submit, just curious.
   Driver drv;
   CompilationThread* compiler;

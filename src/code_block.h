@@ -46,6 +46,9 @@ struct CodeBlock {
   Environment* environment;
   Block::Type type;
   Block::Condition condition;
+  // Some (not all) STYLE settings mean that we should track the
+  // running/not running status on a per-block level.
+  RunStatus run_status;
 
   explicit CodeBlock(Environment* env) : environment{env} {
     wait_info.in_wait = false;

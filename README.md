@@ -126,7 +126,7 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 |**sign(x)**|-1, 0, or 1, depending on the sign of x|sign(2.1) == 1, sign(-2.1) == -1, sign(0) = 0|
 |**sin(x)**|arithmetic sine of x, which is in radians| sin(30 * 0.0174533) == 0.5, sin(3.14159 / 2) == 1|
 |**start()**|True *only* for the moment when a program has just been recompiled. Useful for blocks that initialize variables at startup| WHEN start() ...|
-|**trigger(INn)**|True *only* for the moment when the INn port has received a trigger. Useful for WHEN blocks that wish to change the behavior of the program whenever this trigger is seen.| WHEN trigger(in9) ...| 
+|**trigger(INn)**|True *only* for the moment when the INn port has received a trigger. Useful for WHEN blocks that wish to change the behavior of the program whenever this trigger is seen.| WHEN trigger(in9) ...|
 
 ### WAIT Statements
 Always in the form:
@@ -347,15 +347,15 @@ next
 ```
 ### CONTINUE ALL and EXIT ALL
 Similarly, you can use **CONTINUE ALL** to move execution to the top of the
-program.
+program (or ALSO block).
 
 For the two STYLES that support halting the program, which are:
 
 * Start on trigger, loop
 * Start on trigger, don't loop
 
-encountering an **EXIT ALL** will actually halt the program. A trigger/button
-press to RUN will start it again.
+encountering an **EXIT ALL** will actually halt the program/block. A trigger
+to the RUN input or pushing the RUN button will start it again.
 
 ### CLEAR ALL
 "CLEAR ALL" resets all variables to 0, and resets all arrays to empty.

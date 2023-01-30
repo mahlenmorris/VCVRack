@@ -73,7 +73,8 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
       break;
       case PCode::RESET: {
         environment->Reset();
-        return RAN_RESET;
+        run_status = RAN_RESET;
+        return run_status;
       }
       break;
       case PCode::WAIT: {
@@ -133,7 +134,7 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
         if (pcode->stop_execution) {
           current_line = 0;
           wait_info.in_wait = false;
-          running = false;  // TODO: is the the correct behavior for all Styles?
+          running = false;
         } else {
           // This just specifies a jump of the current_line.
           current_line += pcode->jump_count;
@@ -178,5 +179,6 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
       }
     }
   }
-  return running ? CONTINUES : STOPPED;
+  run_status = running ? CONTINUES : STOPPED;
+  return run_status;
 }
