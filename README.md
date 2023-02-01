@@ -116,6 +116,9 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 |**ceiling(x)**| integer value at or above x | ceiling(2.1) == 3, ceiling(-2.1) == -2 |
 |**connected(x)**|1 if named port x has a cable attached, 0 if not | connected(IN1) |
 |**floor(x)**|integer value at or below x|floor(2.1) == 2, floor(-2.1) == -3|
+|**log2(x)**|Base 2 logarithm of x; returns zero for x <= 0|log2(8) == 3|
+|**loge(x)**|Natural logarithm of x; returns zero for x <= 0|loge(8) == 2.07944|
+|**log10(x)**|Base 10 logarithm of x; returns zero for x <= 0|log10(100) == 2|
 |**max(x, y)**|the larger of x or y|max(2.1, 2.3) == 2.3, max(2.1, -2.3) == 2.1
 |**min(x, y)**|the smaller of x or y|min(2.1, 2.3) == 2.1, min(2.1, -2.3) == -2.3
 |**mod(x, y)**|the remainder after dividing x by y. Will be negative only if x is negative|mod(10, 2.1) == 1.6
@@ -126,6 +129,8 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 |**sign(x)**|-1, 0, or 1, depending on the sign of x|sign(2.1) == 1, sign(-2.1) == -1, sign(0) = 0|
 |**sin(x)**|arithmetic sine of x, which is in radians| sin(30 * 0.0174533) == 0.5, sin(3.14159 / 2) == 1|
 |**start()**|True *only* for the moment when a program has just been recompiled. Useful for blocks that initialize variables at startup| WHEN start() ...|
+|**time()**|The number of seconds since this BASICally module started running|IF time() > 60 THEN ' It's been a minute.|
+|**time_millis()**|The number of milliseconds since this BASICally module started running|IF time_millis() > 60000 THEN ' It's been a minute.|
 |**trigger(INn)**|True *only* for the moment when the INn port has received a trigger. Useful for WHEN blocks that wish to change the behavior of the program whenever this trigger is seen.| WHEN trigger(in9) ...|
 
 ### WAIT Statements

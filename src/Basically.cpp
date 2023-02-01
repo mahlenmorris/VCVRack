@@ -1342,13 +1342,17 @@ struct BasicallyWidget : ModuleWidget {
     menu->addChild(createMenuLabel(
       "Language hints (selecting inserts code)"));
     std::pair<std::string, std::string> syntax[] = {
-      {"OUT1 = IN1 + IN2", "OUT1 = IN1 + IN2\n"},
+      {"OUT1 = IN1 + offset[n]", "OUT1 = IN1 + offset[n]\n"},
       {"WAIT 200", "WAIT 200\n"},
-      {"' I'm a comment.", "' I'm a comment.\n"},
+      {"' I'm a comment!", "' I'm a comment! Only humans read me.\n"},
       {"IF IN1 == 0 THEN OUT1 = IN2 * IN2 END IF\n",
        "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN2\nEND IF\n"},
-      {"IF IN1 == 0 THEN OUT1 = IN2 * IN1 ELSE OUT1 = IN2 * IN1 END IF\n",
-       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSE\n  OUT1 = IN2 * IN1\nEND IF\n"},
+      {"IF IN1 == 0 THEN OUT1 = IN2 * IN2 ELSEIF IN1 < 2 THEN OUT1 = IN2 END IF\n",
+       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN2\nELSEIF IN1 < 2 THEN\n  OUT1 = IN2\nEND IF\n"},
+      {"IF IN1 == 0 THEN OUT1 = IN2 * IN1 ELSE OUT1 = -5 END IF\n",
+       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSE\n  OUT1 = -5\nEND IF\n"},
+      {"IF IN1 == 0 THEN OUT1 = IN2 * IN1 ELSEIF IN1 < 2 THEN OUT1 = IN2 ELSE OUT1 = -5 END IF\n",
+       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSEIF IN1 < 2 THEN\n  OUT1 = IN2\nELSE\n  OUT1 = -5\nEND IF\n"},
       {"FOR i = 0 TO 10 foo = IN1 + i NEXT\n",
        "FOR i = 0 TO 10\n  foo = IN1 + i\nNEXT\n"},
       {"FOR i = 0 TO 10 STEP 0.2 foo = IN1 + i NEXT\n",
@@ -1356,7 +1360,12 @@ struct BasicallyWidget : ModuleWidget {
       {"CONTINUE FOR", "CONTINUE FOR\n"},
       {"EXIT FOR", "EXIT FOR\n"},
       {"CONTINUE ALL", "CONTINUE ALL\n"},
-      {"EXIT ALL", "EXIT ALL\n"}
+      {"EXIT ALL", "EXIT ALL\n"},
+      {"CLEAR ALL", "CLEAR ALL\n"},
+      {"RESET", "RESET\n"},
+      {"ALSO ... END ALSO", "ALSO\n  out1 = mod(out1 + random(0, 0.1))\nEND ALSO"},
+      {"WHEN start() limit = 200 curr = 0 END WHEN",
+       "WHEN start()\n  limit = 200\n  curr = 0\nEND WHEN"}
     };
     MenuItem* syntax_menu = createSubmenuItem("Syntax", "",
       [=](Menu* menu) {
@@ -1373,17 +1382,32 @@ struct BasicallyWidget : ModuleWidget {
     std::pair<std::string, std::string> math_funcs[] = {
       {"abs(x) - this number without a negative sign", "abs(IN1)"},
       {"ceiling(x) - integer value at or above x", "ceiling(IN1)"},
-      {"connected(x) - 1 if named port x has a cable attached, 0 if not", "connected(IN1)"},
-      {"floor(x) -  integer value at or below x", "floor(IN1)"},
+      {"connected(x) - 1 if named port x has a cable attached, 0 if not",
+       "connected(IN1)"},
+      {"floor(x) - integer value at or below x", "floor(IN1)"},
+      {"log2(x) - Base 2 logarithm of x; 0 for x <= 0", "log2(in1)"},
+      {"loge(x) - Natural logarithm of x; 0 for x <= 0", "loge(in2)"},
+      {"log10(x) - Base 10 logarithm of x; 0 for x <= 0", "log10(in3)"},
       {"max(x, y) - larger of x or y", "max(IN1, -5)"},
       {"min(x, y) - smaller of x or y", "min(IN1, 5)"},
       {"mod(x, y) - remainder after dividing x by y", "mod(IN1, 1)"},
-      {"normal(mean, std_dev) - bell curve distribution of random number", "normal(0, 1)"},
+      {"normal(mean, std_dev) - bell curve distribution of random number",
+       "normal(0, 1)"},
       {"pow(x, y) - x to the power of y", "pow(IN1, 0.5)"},
-      {"random(x, y) - uniformly random number: x <= random(x, y) < y", "random(-1, 1)"},
-      {"sample_rate() - number of times BASICally is called per second (e.g., 44100)", "sample_rate()"},
+      {"random(x, y) - uniformly random number: x <= random(x, y) < y",
+       "random(-1, 1)"},
+      {"sample_rate() - sample rate as set in menu. SOMETIMES also be number of times BASICally is called per second (e.g., 44100)",
+       "sample_rate()"},
       {"sign(x) - -1, 0, or 1, depending on the sign of x", "sign(IN1)"},
-      {"sin(x) - sine of x, which is in radians", "sin(IN1)"}
+      {"sin(x) - sine of x, which is in radians", "sin(IN1)"},
+      {"start() - 1 only for the moment when the program is loaded or changed",
+       "WHEN start()"},
+      {"time() - Number of seconds since this BASICally module started running",
+       "IF time() > 60 THEN ' It's been a minute."},
+      {"time_millis() - Number of milliseconds since this BASICally module started running",
+       "IF time_millis() > 1000 THEN ' It's been a second."},
+      {"trigger(x) - 1 only for the moment when the IN port x receives a trigger",
+       "WHEN trigger(IN9)"}
     };
     MenuItem* math_menu = createSubmenuItem("Math", "",
       [=](Menu* menu) {
