@@ -478,13 +478,12 @@ struct Basically : Module {
     bool loops = (style != TRIGGER_NO_LOOP_STYLE);
     // ProcessArgs not available when we first create the Environment.
     environment->SetProcessArgs(&args);
-    // Might be set true below, but vast majority of samples this is false.
+    // Might be set true below, but for vast majority of samples this is false.
     environment->SetStarting(false);
 
     // If a compilation is already in progress, see if it has completed.
     if (compile_in_progress) {
       if (compiler->running) {
-        samples_per_compile++;
         // OK, we'll keep waiting.
       } else {
         compile_in_progress = false;
@@ -531,7 +530,6 @@ struct Basically : Module {
         module_refresh = false;
         // Start a new compile.
         compiler->SetText(text);
-        samples_per_compile = 0;
         compile_thread = new std::thread(&CompilationThread::Compile, compiler);
         compile_in_progress = true;
       }
@@ -648,7 +646,6 @@ struct Basically : Module {
   bool compiles = false;
   bool running = false;
   Style previous_style = NO_STYLE;
-  int samples_per_compile;  // Do not submit, just curious.
   Driver drv;
   CompilationThread* compiler;
   std::thread* compile_thread;
