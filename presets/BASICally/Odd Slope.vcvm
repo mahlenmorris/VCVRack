@@ -1,0 +1,21 @@
+{
+  "plugin": "StochasticTelegraph",
+  "model": "BASICally",
+  "version": "2.0.6",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    }
+  ],
+  "data": {
+    "text": "' IN1 influences the rise and fall rates\n' of OUT1.\n' Make sure IN1 is not zero, or FOR loop\n' never ends!\nif in1 != 0 THEN\n  height = 10 - in1\n  for out1 = -2 to height step (0.03 * in1)\n    wait 5\r  next\nend if\nif in1 != 0 THEN\n  for out1 = height to -5 step (-0.09 * in1)\n    wait 5\r  next\rend if",
+    "width": 25,
+    "screen_colors": 1095216660480,
+    "title_text": "Odd Slope"
+  }
+}
