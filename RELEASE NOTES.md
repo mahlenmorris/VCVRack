@@ -1,5 +1,25 @@
 # Release Notes
 
+### 2.0.7
+#### [fill in date]
+* Added notion of "ALSO blocks" that run in parallel.
+* Added notion of "WHEN blocks" that are started when a condition is met.
+* Added "CLEAR ALL" command, which sets all variables to zero and empties all
+arrays.
+* Added "RESET" command, which interrupts all blocks and restarts them from the beginning.
+* Added start() and trigger(INn) functions, to know when the program has
+just been compiled or a trigger has been received.
+* Added log2(), loge(), and log10() functions.
+* Added time() and time_millis() functions for tracking the execution time
+more easily.
+* Added some factory Presets illustrating some interesting features of the
+module.
+* Added two more OUT ports, for a total of six.
+* Added the ability to "unclamp" OUTn ports; they are normally limited to the
+range -10 <= x <= 10. Useful for debugging scripts.  
+* Fixed a few couple UI bugs, including undo/redo crashing Rack at times.
+* Made the screen portion a couple of lines taller.
+
 ### 2.0.5
 #### January 9, 2023
 
