@@ -74,7 +74,7 @@ Always in the form:
 
 **variable name** = **mathematical expression**
 
-Set values of the OUT1, OUT2, OUT3 and OUT4 ports for connected modules to
+Set values of the OUT1, OUT2, OUT3, OUT4, OUT5, and OUT6 ports for other modules to
 read via connected cables. Assignment is also used for setting variables for
 use elsewhere by your program.
 
@@ -95,8 +95,8 @@ Examples:
 * All variables start with the value 0.0 when first read.
 * Variables stay available in the environment of a module until the patch
 is restarted. This is true even if the code that created the variable has been removed from the program.
-* OUT1-4 are clamped to the range -10v <--> 10v. Input values and internal
-values are not clamped.
+* OUT1-6 are by default clamped to the range -10v <--> 10v. You can make
+individual OUT ports unclamped in [the module menu](#clampunclamp-outn-values). Input values and internal values are not clamped.
 * [Scientific pitch notation](https://en.m.wikipedia.org/wiki/Scientific_pitch_notation) is supported (e.g., c4, Db2, d#8), turning them into
 V/OCT values. So you can use **out1 = c4**, send OUT1 to a VCO in the default position, and the VCO will output a tone at middle C.
 
@@ -704,6 +704,18 @@ If the red highlight is distracting, you can turn it off here.
 By default, BASICally uses green and red for the Good/Fix light. In hopes of
 making the distinction clearer to more people, this option turns those colors to
 blue and orange, and makes the error line highlighting orange as well.
+
+#### Clamp/unclamp OUTn values
+Normally OUTn values are not allowed to go below -10V or go above 10V; the bulk
+of VCV Rack modules do not have meaningful uses for values outside of that
+range. However, values within BASICally can be any floating point number, and
+it can be useful (especially for debugging a script) to see the true value of
+a variable in an OUTn. You can clamp/unclamp each of the OUTn ports individually
+in this menu.
+
+Two modules that can usefully display the unclamped values are
+[ML Modules' Volt Meter](https://library.vcvrack.com/ML_modules/VoltMeter) and
+[NYSTHI's MultiVoltimetro](https://library.vcvrack.com/NYSTHI/MultiVoltimetro).
 
 #### Syntax/Math Hints
 Just in case you're in the middle of coding and you don't want to look up
