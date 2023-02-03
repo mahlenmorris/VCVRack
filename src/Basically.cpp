@@ -90,7 +90,7 @@ struct Basically : Module {
     std::vector<std::pair<Expression, CodeBlock*> >* expression_blocks;
     std::vector<bool>* running_expression_blocks;
     std::unordered_map<int, TriggerInfo*> triggers;
-    std::chrono::steady_clock::time_point time_start;
+    std::chrono::high_resolution_clock::time_point time_start;
     // Map output index to whether or not we should clamp values for it.
     std::unordered_map<int, bool>* out_index_to_clamp;
 
@@ -101,7 +101,7 @@ struct Basically : Module {
                           std::unordered_map<int, bool>* clamp_info) :
        inputs{the_inputs}, outputs{the_outputs}, driver{the_driver},
        out_index_to_clamp{clamp_info} {
-         time_start = std::chrono::steady_clock::now();
+         time_start = std::chrono::high_resolution_clock::now();
        }
 
      // Must be called every time the program is recompiled.
@@ -188,11 +188,11 @@ struct Basically : Module {
     float Time(bool millis) override {
       if (millis) {
         std::chrono::duration<double, std::milli> elapsed =
-          std::chrono::steady_clock::now() - time_start;
+          std::chrono::high_resolution_clock::now() - time_start;
         return elapsed.count();
       } else {
         std::chrono::duration<double> elapsed =
-          std::chrono::steady_clock::now() - time_start;
+          std::chrono::high_resolution_clock::now() - time_start;
         return elapsed.count();
       }
     }

@@ -129,9 +129,14 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 |**sign(x)**|-1, 0, or 1, depending on the sign of x|sign(2.1) == 1, sign(-2.1) == -1, sign(0) = 0|
 |**sin(x)**|arithmetic sine of x, which is in radians| sin(30 * 0.0174533) == 0.5, sin(3.14159 / 2) == 1|
 |**start()**|True *only* for the moment when a program has just been recompiled. Useful for blocks that initialize variables at startup| WHEN start() ...|
-|**time()**|The number of seconds since this BASICally module started running|IF time() > 60 THEN ' It's been a minute.|
-|**time_millis()**|The number of milliseconds since this BASICally module started running|IF time_millis() > 60000 THEN ' It's been a minute.|
+|**time()**|The number of seconds (see note below) since this BASICally module started running|IF time() > 60 THEN ' It's been a minute.|
+|**time_millis()**|The approximate (see note below) number of milliseconds since this BASICally module started running|IF time_millis() > 60000 THEN ' It's been a minute.|
 |**trigger(INn)**|True *only* for the moment when the INn port has received a trigger. Useful for WHEN blocks that wish to change the behavior of the program whenever this trigger is seen.| WHEN trigger(in9) ...|
+
+**Note on time() and time_millis()**: The resolution of these clocks appears to be
+system-dependent. On my Windows system, for one, the minimum non-zero interval
+between calls to time_millis() is about 16 milliseconds. This makes them
+unsuitable for making, say, consistent 40Hz signals.
 
 ### WAIT Statements
 Always in the form:
