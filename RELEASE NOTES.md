@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.7
-#### [fill in date]
+#### February 6, 2023
 * Added notion of "ALSO blocks" that run in parallel.
 * Added notion of "WHEN blocks" that are started when a condition is met.
 * Added "CLEAR ALL" command, which sets all variables to zero and empties all
