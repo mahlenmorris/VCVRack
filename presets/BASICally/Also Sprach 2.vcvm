@@ -1,0 +1,22 @@
+{
+  "plugin": "StochasticTelegraph",
+  "model": "BASICally",
+  "version": "2.0.6",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    }
+  ],
+  "data": {
+    "text": "' A trigger to IN9 resets the speed the notes are played.\nFOR n = 0 TO 3\n  out1 = note[n]\n  WAIT pause_length\nNEXT\n\nWHEN start() or trigger(in9)\n  note[0] = { c3, g3, c4, c4 }  ' The notes in my score.\n  pause_length = random(100, 1000)  '  How fast we play the notes.\n  RESET  ' Forces main block to restart now\nEND WHEN\n",
+    "width": 33,
+    "allow_error_highlight": 1,
+    "screen_colors": 1095216660480,
+    "title_text": "Also Sprach 2"
+  }
+}

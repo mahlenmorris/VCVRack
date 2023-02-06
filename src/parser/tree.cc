@@ -25,11 +25,18 @@ std::unordered_map<std::string, Expression::Operation> ExpressionFactory::string
   {"ceiling", Expression::CEILING},
   {"connected", Expression::CONNECTED},
   {"floor", Expression::FLOOR},
+  {"log2", Expression::LOG2},
+  {"loge", Expression::LOGE},
+  {"log10", Expression::LOG10},
   {"normal", Expression::NORMAL},
   {"random", Expression::RANDOM},
   {"sample_rate", Expression::SAMPLE_RATE},
   {"sign", Expression::SIGN},
   {"sin", Expression::SIN},
+  {"start", Expression::START},
+  {"time", Expression::TIME},
+  {"time_millis", Expression::TIME_MILLIS},
+  {"trigger", Expression::TRIGGER},
   {"mod", Expression::MOD},
   {"max", Expression::MAX},
   {"min", Expression::MIN},
@@ -89,8 +96,11 @@ float Expression::Compute() {
     }
     break;
     case ONEPORTFUNC: {
-      // CONNECTED is currently only such method.
-      return env->Connected(port);
+      switch (operation) {
+        case CONNECTED: return env->Connected(port);
+        case TRIGGER: return env->Trigger(port) ? 1.0f : 0.0f;
+        default: return -8.642f;
+      }
     }
     break;
     case TWOARGFUNC: {
@@ -119,10 +129,12 @@ bool Expression::Volatile() {
     }
     break;
     case NOT: return subexpressions[0].Volatile();
-    // sample_rate() can change (if user changes it).
-    case ZEROARGFUNC: return false;
+    // sample_rate() doesn't seem to change immediately? But that might be
+    // a bug or Windows-specific. And Start() is volatile.
+    // And the time funcs are.
+    case ZEROARGFUNC: return true;
     case ONEARGFUNC: return subexpressions[0].Volatile();
-    // Yes, the only such method is volatile.
+    // Yes, both conneted() and trigger are volatile.
     case ONEPORTFUNC: return true;
     default: return false;
   }
@@ -139,8 +151,10 @@ std::string Expression::to_string() const {
     case BINOP: return "BinOpExpression(" + std::to_string(operation) + ", " +
         subexpressions[0].to_string() + ", " +
         subexpressions[1].to_string() + ")";
+    case ARRAY_VARIABLE: return "ArrayVariable(" + name + ")";
     case VARIABLE: return "VariableExpression(" + name + ")";
-    default: return "Expression(some other type)";
+    default: return "Expression(type = " + std::to_string(type) +
+                    ", operation = " + std::to_string(operation) + ")";
   }
 }
 
@@ -183,8 +197,18 @@ float Expression::binop_compute() {
 float Expression::zero_arg_compute() {
   switch (operation) {
     case SAMPLE_RATE: return env->SampleRate();
+    case START: return env->Start() ? 1.0f : 0.0f;
+    case TIME: return env->Time(false);
+    case TIME_MILLIS: return env->Time(true);
     default: return -9.87654f;
   }
+}
+
+// logX(y) functions don't have useful values for Y <= 0.
+// So we'll return 0. This function turns any Y <= 0 into 1, thus causing
+// a log function to return 0.
+float SafeLogArg(float arg) {
+  return (arg < 0.0f || Expression::is_zero(arg)) ? 1.0f : arg;
 }
 
 float Expression::one_arg_compute(float arg1) {
@@ -192,6 +216,9 @@ float Expression::one_arg_compute(float arg1) {
     case ABS: return std::abs(arg1);
     case CEILING: return ceil(arg1);
     case FLOOR: return floor(arg1);
+    case LOG2: return log2(SafeLogArg(arg1));
+    case LOGE: return log(SafeLogArg(arg1));
+    case LOG10: return log10(SafeLogArg(arg1));
     case SIGN: return (std::signbit(arg1) ? -1.0f :
                        (Expression::is_zero(arg1) ? 0.0f: 1.0f));
     case SIN: return sin(arg1);
@@ -276,6 +303,10 @@ Expression ExpressionFactory::OnePortFunc(const std::string &func_name,
   ex.type = Expression::ONEPORTFUNC;
   ex.operation = string_to_operation.at(func_name);
   ex.port = driver->GetPortFromName(port1);  // TODO: Make parser do this?
+  if (ex.operation == Expression::TRIGGER) {
+    // So that Environment can know to inspect these ports every sample.
+    driver->trigger_port_indexes.insert(ex.port.index);
+  }
   ex.env = env;
   return ex;
 }
@@ -378,6 +409,14 @@ Line Line::Assignment(const std::string &variable_name, const Expression &expr,
   return line;
 }
 
+Line Line::ClearAll() {
+  Line line;
+  line.type = CLEAR;
+  // ALL is the only type of CLEAR we have at the moment, so
+  // no need to qualify.
+  return line;
+}
+
 // loop_type is the string identifying the loop type; e.g., "for" or "all".
 Line Line::Continue(const std::string &loop_type) {
   Line line;
@@ -443,6 +482,12 @@ Line Line::IfThenElse(const Expression &bool_expr,
   line.statements.push_back(then_state);
   line.statements.push_back(else_state);
   line.statements.push_back(elseifs);
+  return line;
+}
+
+Line Line::Reset() {
+  Line line;
+  line.type = RESET;
   return line;
 }
 

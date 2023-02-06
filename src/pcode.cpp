@@ -7,11 +7,9 @@
 #include <cmath>
 #include <vector>
 
-
-#include "plugin.hpp"
-
 #include "parser/tree.h"
 #include "pcode.h"
+#include "pcode_trans.h"
 
 PCode PCode::Wait(const Expression &expr1) {
   PCode new_pcode;
@@ -50,6 +48,13 @@ void PCode::DoArrayAssignment() {
   } else {
     array_ptr->at(index) = expr2.Compute();
   }
+}
+
+bool PCodeTranslator::BlockToCodeBlock(CodeBlock* dest, const Block &source) {
+  LinesToPCode(source.lines, &(dest->pcodes));
+  dest->type = source.type;
+  dest->condition = source.condition;
+  return true;
 }
 
 PCode PCodeTranslator::Assignment(const std::string str1, float* variable_ptr,
@@ -133,6 +138,20 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
     case Line::ASSIGNMENT: {
       pcodes->push_back(Assignment(
           line.str1, line.variable_ptr, line.assign_port, line.expr1));
+    }
+    break;
+    case Line::CLEAR: {
+      PCode clear;
+      // Currently no more complicated than that.
+      clear.type = PCode::CLEAR;
+      pcodes->push_back(clear);
+    }
+    break;
+    case Line::RESET: {
+      PCode reset;
+      // Currently no more complicated than that.
+      reset.type = PCode::RESET;
+      pcodes->push_back(reset);
     }
     break;
     case Line::CONTINUE: {

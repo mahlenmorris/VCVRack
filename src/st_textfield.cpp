@@ -45,12 +45,12 @@ struct STTextFieldSelectAllItem : ui::MenuItem {
 
 STTextField::STTextField() {
   fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
-  textOffset = math::Vec(5, 5);
+  textOffset = math::Vec(3, 3);
   color = nvgRGB(0xff, 0xd7, 0x14);
   bgColor = nvgRGB(0x00, 0x00, 0x00);
 	box.size.y = BND_WIDGET_HEIGHT;
   text = &placeholder;  // must be correctly set by caller!
-	extended.Initialize(26, 1);
+	extended.Initialize(28, 1);
 }
 
 void STTextField::drawLayer(const DrawArgs& args, int layer) {

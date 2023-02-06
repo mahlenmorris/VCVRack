@@ -20,16 +20,20 @@
 #ifndef DRIVER_HH
 #define DRIVER_HH
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 #include <vector>
 #include "tree.h"
 #include "parser.hh"
 
 // Give Flex the prototype of yylex we want ...
+// TODO: move this to scanner.ll
+typedef void* yyscan_t;
 # define YY_DECL \
-  yy::parser::symbol_type yylex (Driver& drv)
+  yy::Parser::symbol_type yylex (yyscan_t yyscanner, yy::location& loc)
 // ... and declare it for the parser's sake.
 YY_DECL;
+// From scanner.cc
 
 struct Error {
   int line;
@@ -53,7 +57,7 @@ public:
   // If able to parse, this is the abstract syntax tree for the program.
   // Cannot be executed; needs to be turned into PCode objects before
   // Basically can run it.
-  std::vector<Line> lines;
+  std::vector<Block> blocks;
   // List of syntax errors found before parser gave up.
   std::vector<Error> errors;
   // Knows how to create various kinds of Expression objects.
@@ -70,6 +74,9 @@ public:
   std::unordered_map<std::string, PortPointer> symbol_ports;
   // Maps the name of an array variable to a pointer to it.
   std::unordered_map<std::string, STArray* > symbol_arrays;
+  // List of INn port indexes that need trigger() to be maintained
+  // for the current program. Cleared with every attempted compile.
+  std::unordered_set<int> trigger_port_indexes;
 
   Driver();
   ~Driver();
@@ -82,6 +89,16 @@ public:
 
   void SetEnvironment(Environment* env) {
     factory.SetEnvironment(env);
+  }
+
+  // Reset the state of all variables to zero/empty.
+  void Clear() {
+    for (const auto &element : symbol_floats) {
+      *(element.second) = 0.0f;
+    }
+    for (const auto &element : symbol_arrays) {
+      element.second->clear();
+    }
   }
 
   // Run the parser on the text of string f.  Return 0 on success.

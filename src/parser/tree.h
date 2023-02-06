@@ -28,7 +28,7 @@ class Expression {
     TWOARGFUNC // func2(subexpressions[0], subexpressions[1])
   };
   Type type;
-  // Which BinOp is this?
+  // Which method/operation is this?
   enum Operation {
     PLUS,
     MINUS,
@@ -46,11 +46,18 @@ class Expression {
     CEILING,
     CONNECTED,
     FLOOR,
+    LOG2,
+    LOGE,
+    LOG10,
     NORMAL,
     RANDOM,
     SAMPLE_RATE,
     SIGN,
     SIN,
+    START,
+    TIME,
+    TIME_MILLIS,
+    TRIGGER,
     MOD,
     MAX,
     MIN,
@@ -147,12 +154,14 @@ struct Line {
   enum Type {
     ARRAY_ASSIGNMENT, // array_ptr[expr1] = expr2
     ASSIGNMENT,  // str1 = expr1
+    CLEAR,       // Set variables to initial state (0.0f).
     CONTINUE,    // continue str1
     ELSEIF,      // elseif expr1 then state1
     EXIT,        // exit str1
     FORNEXT,     // for str1 = expr1 to expr2 state1 next
     IFTHEN,      // if expr1 then state1 [elseifs - state2] end if
     IFTHENELSE,  // if expr1 then state1 [elseifs - state3] else state2 end if
+    RESET,       // Start all blocks from the top, as if newly compiled.
     WAIT         // wait expr1
   };
   Type type;
@@ -181,6 +190,8 @@ struct Line {
   static Line Assignment(const std::string &variable_name,
                          const Expression &expr, Driver* driver);
 
+  static Line ClearAll();
+
   // loop_type is the string identifying the loop type; e.g., "for" or "all".
   static Line Continue(const std::string &loop_type);
 
@@ -203,14 +214,20 @@ struct Line {
                          const Statements &else_state,
                          const Statements &elseifs);
 
+  static Line Reset();
+
   static Line Wait(const Expression &expr);
 
   friend std::ostream& operator<<(std::ostream& os, Line line);
 };
 
 struct Statements {
-  std::vector<Line> lines;
 
+  static Statements FirstStatement(Line stat) {
+    Statements stats;
+    stats.lines.push_back(stat);
+    return stats;
+  }
   Statements add(Line new_line) {
     lines.push_back(new_line);
     return *this;
@@ -222,7 +239,60 @@ struct Statements {
     os << "Statements(" << std::to_string(statements.size()) << " statements )";
     return os;
   }
+
+  std::vector<Line> lines;
 };
 
+// A Block is a logical grouping of statements that will be turned into
+// a CodeBlock later.
+struct Block {
+  enum Type {
+    MAIN,  // Block of code that runs every sample that the module is "running".
+    WHEN   // Waits for a condition to become true, and then runs.
+  };
+  enum Condition {
+    START,  // Run when the program is compiled and starts running.
+    EXPRESSION
+  };
+  static Block MainBlock(Statements stat) {
+    Block block;
+    block.type = Block::MAIN;
+    block.lines = stat.lines;
+    return block;
+  }
+  static Block WhenExpBlock(Expression &condition, Statements stat) {
+    Block block;
+    block.type = Block::WHEN;
+    block.condition = Block::EXPRESSION;
+    block.lines = stat.lines;
+    block.run_condition = condition;
+    return block;
+  }
+  friend std::ostream& operator<<(std::ostream& os, Block block) {
+    os << "Block(" << std::to_string(block.lines.size()) << " statements)";
+    return os;
+  }
+
+  Type type;
+  Condition condition;
+  std::vector<Line> lines;  // Code.
+  Expression run_condition;
+};
+
+struct Blocks {
+  std::vector<Block> block_list;
+  Blocks() { }
+  explicit Blocks(Block main_block) {
+    block_list.push_back(main_block);
+  }
+  Blocks Add(Block new_block) {
+    block_list.push_back(new_block);
+    return *this;
+  }
+  friend std::ostream& operator<<(std::ostream& os, Blocks blocks) {
+    os << "Blocks(" << std::to_string(blocks.block_list.size()) << " blocks)";
+    return os;
+  }
+};
 
 #endif // TREE_HH

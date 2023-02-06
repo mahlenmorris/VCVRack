@@ -81,7 +81,7 @@ Always in the form:
 
 **variable name** = **mathematical expression**
 
-Set values of the OUT1, OUT2, OUT3 and OUT4 ports for connected modules to
+Set values of the OUT1, OUT2, OUT3, OUT4, OUT5, and OUT6 ports for other modules to
 read via connected cables. Assignment is also used for setting variables for
 use elsewhere by your program.
 
@@ -102,8 +102,8 @@ Examples:
 * All variables start with the value 0.0 when first read.
 * Variables stay available in the environment of a module until the patch
 is restarted. This is true even if the code that created the variable has been removed from the program.
-* OUT1-4 are clamped to the range -10v <--> 10v. Input values and internal
-values are not clamped.
+* OUT1-6 are by default clamped to the range -10v <--> 10v. You can make
+individual OUT ports unclamped in [the module menu](#clampunclamp-outn-values). Input values and internal values are not clamped.
 * [Scientific pitch notation](https://en.m.wikipedia.org/wiki/Scientific_pitch_notation) is supported (e.g., c4, Db2, d#8), turning them into
 V/OCT values. So you can use **out1 = c4**, send OUT1 to a VCO in the default position, and the VCO will output a tone at middle C.
 
@@ -123,6 +123,9 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 |**ceiling(x)**| integer value at or above x | ceiling(2.1) == 3, ceiling(-2.1) == -2 |
 |**connected(x)**|1 if named port x has a cable attached, 0 if not | connected(IN1) |
 |**floor(x)**|integer value at or below x|floor(2.1) == 2, floor(-2.1) == -3|
+|**log2(x)**|Base 2 logarithm of x; returns zero for x <= 0|log2(8) == 3|
+|**loge(x)**|Natural logarithm of x; returns zero for x <= 0|loge(8) == 2.07944|
+|**log10(x)**|Base 10 logarithm of x; returns zero for x <= 0|log10(100) == 2|
 |**max(x, y)**|the larger of x or y|max(2.1, 2.3) == 2.3, max(2.1, -2.3) == 2.1
 |**min(x, y)**|the smaller of x or y|min(2.1, 2.3) == 2.1, min(2.1, -2.3) == -2.3
 |**mod(x, y)**|the remainder after dividing x by y. Will be negative only if x is negative|mod(10, 2.1) == 1.6
@@ -131,7 +134,16 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 |**random(min, max)**|uniformly random number: min <= random(x, y) < max | random(-1, 1)|
 |**sample_rate()**|number of times BASICally is called per second (e.g., 44100)|sample_rate() == 48000|
 |**sign(x)**|-1, 0, or 1, depending on the sign of x|sign(2.1) == 1, sign(-2.1) == -1, sign(0) = 0|
-|**sin(x)**|arithmetic sine of x, which is in radians| sin(30 * 0.0174533) == 0.5, sin(3.14159 / 2) == 1
+|**sin(x)**|arithmetic sine of x, which is in radians| sin(30 * 0.0174533) == 0.5, sin(3.14159 / 2) == 1|
+|**start()**|True *only* for the moment when a program has just been recompiled. Useful for blocks that initialize variables at startup| WHEN start() ...|
+|**time()**|The number of seconds (see note below) since this BASICally module started running|IF time() > 60 THEN ' It's been a minute.|
+|**time_millis()**|The approximate (see note below) number of milliseconds since this BASICally module started running|IF time_millis() > 60000 THEN ' It's been a minute.|
+|**trigger(INn)**|True *only* for the moment when the INn port has received a trigger. Useful for WHEN blocks that wish to change the behavior of the program whenever this trigger is seen.| WHEN trigger(in9) ...|
+
+**Note on time() and time_millis()**: The resolution of these clocks appears to be
+system-dependent. On my Windows system, for one, the minimum non-zero interval
+between calls to time_millis() is about 16 milliseconds. This makes them
+unsuitable for making, say, consistent 40Hz signals.
 
 ### WAIT Statements
 Always in the form:
@@ -352,25 +364,213 @@ next
 ```
 ### CONTINUE ALL and EXIT ALL
 Similarly, you can use **CONTINUE ALL** to move execution to the top of the
-program.
+program (or ALSO block).
 
 For the two STYLES that support halting the program, which are:
 
 * Start on trigger, loop
 * Start on trigger, don't loop
 
-encountering an  **EXIT ALL** will actually halt the program. A trigger/button
-press to RUN will start it again.
+encountering an **EXIT ALL** will actually halt the program/block. A trigger
+to the RUN input or pushing the RUN button will start it again.
+
+### CLEAR ALL
+"CLEAR ALL" resets all variables to 0, and resets all arrays to empty.
+
+### RESET
+Whenever a "RESET" is executed, it immediately stops processing this sample, and on the
+next sample each block (see Multithreading, below) will start from scratch. It does NOT
+change any variable values. This is very similar to the state when you've just typed a
+character into the editing window and the code compiles correctly, with one
+exception; recompiling the code makes start() become true, but RESET does NOT make start() become true.
+
+Note that RESET's effect is **immediate**. For example:
+
+```
+...
+IF trigger(in7) OR foo > 20 THEN
+  RESET
+  out2 = 0
+END IF
+...
+```
+
+the "out2 = 0" will NEVER be executed.
+
+## Multithreading: ALSO and WHEN blocks
+
+**Note: This section has kind of advanced topics, or at least they have the
+potential to make BASICally more confusing, especially if you are new to
+programming in general. You don't need to know this part to make BASICally do
+useful things for you, so feel free to skip this section the first
+time you learn about BASICally. But come back later; this
+may be useful to you soon.**
+
+The code style above (one big loop of code that gets repeated) doesn't allow
+for certain kinds of programs to be easily written, and can be less efficient
+than required. For example:
+* Any initialization code will get executed every time. One can minimize this
+to an extent by setting and checking an "init" variable being non-zero, but
+this concept could be better integrated into the language.
+* Running two loops with WAITs in them would be diabolically difficult to write.
+* Checking for a trigger at an IN port is difficult, and impossible during a
+WAIT.
+
+To allow BASICally to do these things, version 2.0.6 introduced "multithreading"
+and "blocks".
+
+### Blocks
+There are two kinds of Blocks of code.
+
+#### ALSO Blocks
+ALSO blocks each run continuously, exactly the way the (un-blocked) code examples
+elsewhere in this manual do. For example:
+
+```
+FOR OUT1 = -5 TO 5 STEP 0.1
+  WAIT 100
+NEXT
+```
+
+Causes OUT1 to emit a stepped saw wave with a period of 10 seconds.
+
+However, if you wanted the same program to also run this downward saw on OUT2:
+
+```
+FOR OUT2 = 5 TO -1 STEP -0.2
+  WAIT 75
+NEXT
+```
+
+that would be very difficult. But with ALSO blocks, it's easy.
+
+```
+FOR OUT1 = -5 TO 5 STEP 0.1
+  WAIT 100
+NEXT
+
+ALSO
+FOR OUT2 = 5 TO -1 STEP -0.2
+  WAIT 75
+NEXT
+END ALSO
+```
+
+Now both loops will run at the same time!
+
+The ALSO ... END ALSO is the new part here. Each ALSO block runs simultaneously
+with all of the other blocks. The ALSO blocks are run in the order that they
+appear in the program. So in this example:
+
+```
+' Block1
+IF IN1 == 0 THEN
+  foo = random(0, 1)
+END IF
+
+' Block2
+ALSO
+out1 = foo * 10
+END ALSO
+```
+
+Then the **foo** variable that Block2 uses will be changed when Block1
+changes it. They share the same "variable space".
+
+As we see in these examples, if there is code at the top of
+the program that isn't otherwise in a block, BASICally treats it like an ALSO
+block. Note that these all work the same:
+```
+(some code)
+
+ALSO
+(more code)
+END ALSO
+```
+
+```
+ALSO
+(some code)
+END ALSO
+
+ALSO
+(more code)
+END ALSO
+```
+
+But the following won't compile:
+
+```
+ALSO
+(some code)
+END ALSO
+
+(more code)
+```
+
+#### WHEN blocks
+WHEN Blocks are of the form:
+```
+WHEN (condition)
+(some code)
+END WHEN
+```
+For example:
+```
+WHEN foo > 3
+FOR OUT1 = -5 TO 5 STEP 0.1
+  WAIT 100
+NEXT
+END WHEN
+```
+
+BASICally will wait for the condition (in this case,
+"foo > 3") to be true, and then will start running the FOR-NEXT loop.
+Once the FOR-NEXT loop has completed, the block will stop running until
+the condition is true again. All of this is independent of the ALSO blocks;
+they will continue running simultaneously.
+
+WHEN Blocks are useful when used with the start() or trigger()
+methods, *especially* for running the "initialization" code mentioned above:
+
+```
+' A trigger to IN9 resets the speed the notes are played.
+FOR n = 0 TO 3
+  out1 = note[n]
+  WAIT pause_length
+NEXT
+
+WHEN start() OR trigger(in9)
+IF start() THEN
+  note[0] = { c3, g3, c4, c4 }  ' The notes in my score.
+END IF
+pause_length = random(100, 2000)  '  How fast we play the notes.
+END WHEN
+```
+
+### Details of Multithreading
+
+Some notes about how this all works under the hood.
+
+Every sample, BASICally does the following:
+* Walk through the list of WHEN Blocks, in the order they appear in the code.
+* * If a WHEN block is not already running, then the (condition) is evaluated, and
+if it is true, then the Block is started.
+* * If a WHEN block was already running (or was just started in the step above),
+then it is run for one sample's worth of time.
+* Walk through the ALSO Blocks, in the order they appear in the code.
+* * Each ALSO Block is run for one sample's worth of time.
+
 
 ### Other Things to Note
 BASICally is intended for the very casual user, with the hope that examples
 alone will suffice to suggest how programs can be written. Because of the UI
 limitations, detailed error reporting is difficult to provide. But if you
-hover your mouse over the little red area to the left that says "Fix!", it
+hover your mouse over the little red area to the left that says "Fix", it
 will attempt to point out the first place that BASICally couldn't understand
 the code.  
 
-Programs are typically *very* short. For that reason, this language doesn't need
+Programs are typically short. For that reason, this language doesn't need
 the features that are useful for writing long programs but increase the
 amount of boilerplate code. Here are a few surprising differences
 from more robust languages:
@@ -516,6 +716,18 @@ If the red highlight is distracting, you can turn it off here.
 By default, BASICally uses green and red for the Good/Fix light. In hopes of
 making the distinction clearer to more people, this option turns those colors to
 blue and orange, and makes the error line highlighting orange as well.
+
+#### Clamp/unclamp OUTn values
+Normally OUTn values are not allowed to go below -10V or go above 10V; the bulk
+of VCV Rack modules do not have meaningful uses for values outside of that
+range. However, values within BASICally can be any floating point number, and
+it can be useful (especially for debugging a script) to see the true value of
+a variable in an OUTn. You can clamp/unclamp each of the OUTn ports individually
+in this menu.
+
+Two modules that can usefully display the unclamped values are
+[ML Modules' Volt Meter](https://library.vcvrack.com/ML_modules/VoltMeter) and
+[NYSTHI's MultiVoltimetro](https://library.vcvrack.com/NYSTHI/MultiVoltimetro).
 
 #### Syntax/Math Hints
 Just in case you're in the middle of coding and you don't want to look up

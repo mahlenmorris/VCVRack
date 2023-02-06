@@ -45,13 +45,14 @@
 #ifndef YY_YY_PARSER_HH_INCLUDED
 # define YY_YY_PARSER_HH_INCLUDED
 // "%code requires" blocks.
-#line 17 "parser.yy"
+#line 18 "parser.yy"
 
   #include <string>
   #include "tree.h"
   class Driver;
+  typedef void* yyscan_t;
 
-#line 55 "parser.hh"
+#line 56 "parser.hh"
 
 # include <cassert>
 # include <cstdlib> // std::abort
@@ -191,13 +192,13 @@
 #endif
 
 namespace yy {
-#line 195 "parser.hh"
+#line 196 "parser.hh"
 
 
 
 
   /// A Bison parser.
-  class parser
+  class Parser
   {
   public:
 #ifdef YYSTYPE
@@ -410,35 +411,48 @@ namespace yy {
     /// An auxiliary type to compute the largest semantic type.
     union union_type
     {
+      // block
+      // main_block
+      char dummy1[sizeof (Block)];
+
+      // blocks
+      char dummy2[sizeof (Blocks)];
+
       // exp
-      char dummy1[sizeof (Expression)];
+      char dummy3[sizeof (Expression)];
 
       // expression_list
-      char dummy2[sizeof (ExpressionList)];
+      char dummy4[sizeof (ExpressionList)];
 
+      // statement
       // array_assignment
       // assignment
+      // clear_statement
       // continue_statement
       // exit_statement
       // for_statement
       // elseif_clause
       // if_statement
+      // reset_statement
       // wait_statement
-      char dummy3[sizeof (Line)];
+      char dummy5[sizeof (Line)];
 
-      // statements
+      // zero_or_more_statements
+      // one_or_more_statements
       // elseif_group
-      char dummy4[sizeof (Statements)];
+      char dummy6[sizeof (Statements)];
 
       // "number"
-      char dummy5[sizeof (float)];
+      char dummy7[sizeof (float)];
 
       // "abs"
       // "all"
+      // "also"
       // "and"
       // "="
       // "ceiling"
-      // "clamp"
+      // "clear"
+      // "connected"
       // "continue"
       // "else"
       // "elseif"
@@ -447,19 +461,28 @@ namespace yy {
       // "floor"
       // "for"
       // "if"
+      // "log2"
+      // "loge"
+      // "log10"
       // "max"
       // "min"
       // "next"
       // "not"
       // "or"
       // "pow"
+      // "reset"
       // "sample_rate"
       // "sign"
       // "sin"
+      // "start"
       // "step"
       // "then"
+      // "time"
+      // "time_millis"
       // "to"
+      // "trigger"
       // "wait"
+      // "when"
       // "-"
       // "+"
       // "*"
@@ -477,10 +500,9 @@ namespace yy {
       // "out_port"
       // "zeroargfunc"
       // "oneargfunc"
-      // "oneportfunc"
       // "twoargfunc"
       // "comparison"
-      char dummy6[sizeof (std::string)];
+      char dummy8[sizeof (std::string)];
     };
 
     /// The size of the largest semantic type.
@@ -535,53 +557,63 @@ namespace yy {
     TOK_YYUNDEF = 2,               // "invalid token"
     TOK_ABS = 3,                   // "abs"
     TOK_ALL = 4,                   // "all"
-    TOK_AND = 5,                   // "and"
-    TOK_ASSIGN = 6,                // "="
-    TOK_CEILING = 7,               // "ceiling"
-    TOK_CLAMP = 8,                 // "clamp"
-    TOK_CONTINUE = 9,              // "continue"
-    TOK_ELSE = 10,                 // "else"
-    TOK_ELSEIF = 11,               // "elseif"
-    TOK_END = 12,                  // "end"
-    TOK_EXIT = 13,                 // "exit"
-    TOK_FLOOR = 14,                // "floor"
-    TOK_FOR = 15,                  // "for"
-    TOK_IF = 16,                   // "if"
-    TOK_MAX = 17,                  // "max"
-    TOK_MIN = 18,                  // "min"
-    TOK_NEXT = 19,                 // "next"
-    TOK_NOT = 20,                  // "not"
-    TOK_OR = 21,                   // "or"
-    TOK_POW = 22,                  // "pow"
-    TOK_SAMPLE_RATE = 23,          // "sample_rate"
-    TOK_SIGN = 24,                 // "sign"
-    TOK_SIN = 25,                  // "sin"
-    TOK_STEP = 26,                 // "step"
-    TOK_THEN = 27,                 // "then"
-    TOK_TO = 28,                   // "to"
-    TOK_WAIT = 29,                 // "wait"
-    TOK_MINUS = 30,                // "-"
-    TOK_PLUS = 31,                 // "+"
-    TOK_STAR = 32,                 // "*"
-    TOK_SLASH = 33,                // "/"
-    TOK_LPAREN = 34,               // "("
-    TOK_RPAREN = 35,               // ")"
-    TOK_LBRACE = 36,               // "{"
-    TOK_RBRACE = 37,               // "}"
-    TOK_LBRACKET = 38,             // "["
-    TOK_RBRACKET = 39,             // "]"
-    TOK_COMMA = 40,                // ","
-    TOK_IDENTIFIER = 41,           // "identifier"
-    TOK_NUMBER = 42,               // "number"
-    TOK_NOTE = 43,                 // "note"
-    TOK_IN_PORT = 44,              // "in_port"
-    TOK_OUT_PORT = 45,             // "out_port"
-    TOK_ZEROARGFUNC = 46,          // "zeroargfunc"
-    TOK_ONEARGFUNC = 47,           // "oneargfunc"
-    TOK_ONEPORTFUNC = 48,          // "oneportfunc"
-    TOK_TWOARGFUNC = 49,           // "twoargfunc"
-    TOK_COMPARISON = 50,           // "comparison"
-    TOK_NEG = 51                   // NEG
+    TOK_ALSO = 5,                  // "also"
+    TOK_AND = 6,                   // "and"
+    TOK_ASSIGN = 7,                // "="
+    TOK_CEILING = 8,               // "ceiling"
+    TOK_CLEAR = 9,                 // "clear"
+    TOK_CONNECTED = 10,            // "connected"
+    TOK_CONTINUE = 11,             // "continue"
+    TOK_ELSE = 12,                 // "else"
+    TOK_ELSEIF = 13,               // "elseif"
+    TOK_END = 14,                  // "end"
+    TOK_EXIT = 15,                 // "exit"
+    TOK_FLOOR = 16,                // "floor"
+    TOK_FOR = 17,                  // "for"
+    TOK_IF = 18,                   // "if"
+    TOK_LOG2 = 19,                 // "log2"
+    TOK_LOGE = 20,                 // "loge"
+    TOK_LOG10 = 21,                // "log10"
+    TOK_MAX = 22,                  // "max"
+    TOK_MIN = 23,                  // "min"
+    TOK_NEXT = 24,                 // "next"
+    TOK_NOT = 25,                  // "not"
+    TOK_OR = 26,                   // "or"
+    TOK_POW = 27,                  // "pow"
+    TOK_RESET = 28,                // "reset"
+    TOK_SAMPLE_RATE = 29,          // "sample_rate"
+    TOK_SIGN = 30,                 // "sign"
+    TOK_SIN = 31,                  // "sin"
+    TOK_START = 32,                // "start"
+    TOK_STEP = 33,                 // "step"
+    TOK_THEN = 34,                 // "then"
+    TOK_TIME = 35,                 // "time"
+    TOK_TIME_MILLIS = 36,          // "time_millis"
+    TOK_TO = 37,                   // "to"
+    TOK_TRIGGER = 38,              // "trigger"
+    TOK_WAIT = 39,                 // "wait"
+    TOK_WHEN = 40,                 // "when"
+    TOK_MINUS = 41,                // "-"
+    TOK_PLUS = 42,                 // "+"
+    TOK_STAR = 43,                 // "*"
+    TOK_SLASH = 44,                // "/"
+    TOK_LPAREN = 45,               // "("
+    TOK_RPAREN = 46,               // ")"
+    TOK_LBRACE = 47,               // "{"
+    TOK_RBRACE = 48,               // "}"
+    TOK_LBRACKET = 49,             // "["
+    TOK_RBRACKET = 50,             // "]"
+    TOK_COMMA = 51,                // ","
+    TOK_IDENTIFIER = 52,           // "identifier"
+    TOK_NUMBER = 53,               // "number"
+    TOK_NOTE = 54,                 // "note"
+    TOK_IN_PORT = 55,              // "in_port"
+    TOK_OUT_PORT = 56,             // "out_port"
+    TOK_ZEROARGFUNC = 57,          // "zeroargfunc"
+    TOK_ONEARGFUNC = 58,           // "oneargfunc"
+    TOK_TWOARGFUNC = 59,           // "twoargfunc"
+    TOK_COMPARISON = 60,           // "comparison"
+    TOK_NEG = 61                   // NEG
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -598,74 +630,91 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 52, ///< Number of tokens.
+        YYNTOKENS = 62, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
         S_YYUNDEF = 2,                           // "invalid token"
         S_ABS = 3,                               // "abs"
         S_ALL = 4,                               // "all"
-        S_AND = 5,                               // "and"
-        S_ASSIGN = 6,                            // "="
-        S_CEILING = 7,                           // "ceiling"
-        S_CLAMP = 8,                             // "clamp"
-        S_CONTINUE = 9,                          // "continue"
-        S_ELSE = 10,                             // "else"
-        S_ELSEIF = 11,                           // "elseif"
-        S_END = 12,                              // "end"
-        S_EXIT = 13,                             // "exit"
-        S_FLOOR = 14,                            // "floor"
-        S_FOR = 15,                              // "for"
-        S_IF = 16,                               // "if"
-        S_MAX = 17,                              // "max"
-        S_MIN = 18,                              // "min"
-        S_NEXT = 19,                             // "next"
-        S_NOT = 20,                              // "not"
-        S_OR = 21,                               // "or"
-        S_POW = 22,                              // "pow"
-        S_SAMPLE_RATE = 23,                      // "sample_rate"
-        S_SIGN = 24,                             // "sign"
-        S_SIN = 25,                              // "sin"
-        S_STEP = 26,                             // "step"
-        S_THEN = 27,                             // "then"
-        S_TO = 28,                               // "to"
-        S_WAIT = 29,                             // "wait"
-        S_MINUS = 30,                            // "-"
-        S_PLUS = 31,                             // "+"
-        S_STAR = 32,                             // "*"
-        S_SLASH = 33,                            // "/"
-        S_LPAREN = 34,                           // "("
-        S_RPAREN = 35,                           // ")"
-        S_LBRACE = 36,                           // "{"
-        S_RBRACE = 37,                           // "}"
-        S_LBRACKET = 38,                         // "["
-        S_RBRACKET = 39,                         // "]"
-        S_COMMA = 40,                            // ","
-        S_IDENTIFIER = 41,                       // "identifier"
-        S_NUMBER = 42,                           // "number"
-        S_NOTE = 43,                             // "note"
-        S_IN_PORT = 44,                          // "in_port"
-        S_OUT_PORT = 45,                         // "out_port"
-        S_ZEROARGFUNC = 46,                      // "zeroargfunc"
-        S_ONEARGFUNC = 47,                       // "oneargfunc"
-        S_ONEPORTFUNC = 48,                      // "oneportfunc"
-        S_TWOARGFUNC = 49,                       // "twoargfunc"
-        S_COMPARISON = 50,                       // "comparison"
-        S_NEG = 51,                              // NEG
-        S_YYACCEPT = 52,                         // $accept
-        S_program = 53,                          // program
-        S_statements = 54,                       // statements
-        S_array_assignment = 55,                 // array_assignment
-        S_assignment = 56,                       // assignment
-        S_continue_statement = 57,               // continue_statement
-        S_exit_statement = 58,                   // exit_statement
-        S_for_statement = 59,                    // for_statement
-        S_elseif_group = 60,                     // elseif_group
-        S_elseif_clause = 61,                    // elseif_clause
-        S_if_statement = 62,                     // if_statement
-        S_wait_statement = 63,                   // wait_statement
-        S_expression_list = 64,                  // expression_list
-        S_exp = 65                               // exp
+        S_ALSO = 5,                              // "also"
+        S_AND = 6,                               // "and"
+        S_ASSIGN = 7,                            // "="
+        S_CEILING = 8,                           // "ceiling"
+        S_CLEAR = 9,                             // "clear"
+        S_CONNECTED = 10,                        // "connected"
+        S_CONTINUE = 11,                         // "continue"
+        S_ELSE = 12,                             // "else"
+        S_ELSEIF = 13,                           // "elseif"
+        S_END = 14,                              // "end"
+        S_EXIT = 15,                             // "exit"
+        S_FLOOR = 16,                            // "floor"
+        S_FOR = 17,                              // "for"
+        S_IF = 18,                               // "if"
+        S_LOG2 = 19,                             // "log2"
+        S_LOGE = 20,                             // "loge"
+        S_LOG10 = 21,                            // "log10"
+        S_MAX = 22,                              // "max"
+        S_MIN = 23,                              // "min"
+        S_NEXT = 24,                             // "next"
+        S_NOT = 25,                              // "not"
+        S_OR = 26,                               // "or"
+        S_POW = 27,                              // "pow"
+        S_RESET = 28,                            // "reset"
+        S_SAMPLE_RATE = 29,                      // "sample_rate"
+        S_SIGN = 30,                             // "sign"
+        S_SIN = 31,                              // "sin"
+        S_START = 32,                            // "start"
+        S_STEP = 33,                             // "step"
+        S_THEN = 34,                             // "then"
+        S_TIME = 35,                             // "time"
+        S_TIME_MILLIS = 36,                      // "time_millis"
+        S_TO = 37,                               // "to"
+        S_TRIGGER = 38,                          // "trigger"
+        S_WAIT = 39,                             // "wait"
+        S_WHEN = 40,                             // "when"
+        S_MINUS = 41,                            // "-"
+        S_PLUS = 42,                             // "+"
+        S_STAR = 43,                             // "*"
+        S_SLASH = 44,                            // "/"
+        S_LPAREN = 45,                           // "("
+        S_RPAREN = 46,                           // ")"
+        S_LBRACE = 47,                           // "{"
+        S_RBRACE = 48,                           // "}"
+        S_LBRACKET = 49,                         // "["
+        S_RBRACKET = 50,                         // "]"
+        S_COMMA = 51,                            // ","
+        S_IDENTIFIER = 52,                       // "identifier"
+        S_NUMBER = 53,                           // "number"
+        S_NOTE = 54,                             // "note"
+        S_IN_PORT = 55,                          // "in_port"
+        S_OUT_PORT = 56,                         // "out_port"
+        S_ZEROARGFUNC = 57,                      // "zeroargfunc"
+        S_ONEARGFUNC = 58,                       // "oneargfunc"
+        S_TWOARGFUNC = 59,                       // "twoargfunc"
+        S_COMPARISON = 60,                       // "comparison"
+        S_NEG = 61,                              // NEG
+        S_YYACCEPT = 62,                         // $accept
+        S_program = 63,                          // program
+        S_blocks = 64,                           // blocks
+        S_block = 65,                            // block
+        S_main_block = 66,                       // main_block
+        S_zero_or_more_statements = 67,          // zero_or_more_statements
+        S_one_or_more_statements = 68,           // one_or_more_statements
+        S_statement = 69,                        // statement
+        S_array_assignment = 70,                 // array_assignment
+        S_assignment = 71,                       // assignment
+        S_clear_statement = 72,                  // clear_statement
+        S_continue_statement = 73,               // continue_statement
+        S_exit_statement = 74,                   // exit_statement
+        S_for_statement = 75,                    // for_statement
+        S_elseif_group = 76,                     // elseif_group
+        S_elseif_clause = 77,                    // elseif_clause
+        S_if_statement = 78,                     // if_statement
+        S_reset_statement = 79,                  // reset_statement
+        S_wait_statement = 80,                   // wait_statement
+        S_expression_list = 81,                  // expression_list
+        S_exp = 82                               // exp
       };
     };
 
@@ -702,6 +751,15 @@ namespace yy {
       {
         switch (this->kind ())
     {
+      case symbol_kind::S_block: // block
+      case symbol_kind::S_main_block: // main_block
+        value.move< Block > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_blocks: // blocks
+        value.move< Blocks > (std::move (that.value));
+        break;
+
       case symbol_kind::S_exp: // exp
         value.move< Expression > (std::move (that.value));
         break;
@@ -710,18 +768,22 @@ namespace yy {
         value.move< ExpressionList > (std::move (that.value));
         break;
 
+      case symbol_kind::S_statement: // statement
       case symbol_kind::S_array_assignment: // array_assignment
       case symbol_kind::S_assignment: // assignment
+      case symbol_kind::S_clear_statement: // clear_statement
       case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_exit_statement: // exit_statement
       case symbol_kind::S_for_statement: // for_statement
       case symbol_kind::S_elseif_clause: // elseif_clause
       case symbol_kind::S_if_statement: // if_statement
+      case symbol_kind::S_reset_statement: // reset_statement
       case symbol_kind::S_wait_statement: // wait_statement
         value.move< Line > (std::move (that.value));
         break;
 
-      case symbol_kind::S_statements: // statements
+      case symbol_kind::S_zero_or_more_statements: // zero_or_more_statements
+      case symbol_kind::S_one_or_more_statements: // one_or_more_statements
       case symbol_kind::S_elseif_group: // elseif_group
         value.move< Statements > (std::move (that.value));
         break;
@@ -732,10 +794,12 @@ namespace yy {
 
       case symbol_kind::S_ABS: // "abs"
       case symbol_kind::S_ALL: // "all"
+      case symbol_kind::S_ALSO: // "also"
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CEILING: // "ceiling"
-      case symbol_kind::S_CLAMP: // "clamp"
+      case symbol_kind::S_CLEAR: // "clear"
+      case symbol_kind::S_CONNECTED: // "connected"
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
       case symbol_kind::S_ELSEIF: // "elseif"
@@ -744,19 +808,28 @@ namespace yy {
       case symbol_kind::S_FLOOR: // "floor"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
+      case symbol_kind::S_LOG2: // "log2"
+      case symbol_kind::S_LOGE: // "loge"
+      case symbol_kind::S_LOG10: // "log10"
       case symbol_kind::S_MAX: // "max"
       case symbol_kind::S_MIN: // "min"
       case symbol_kind::S_NEXT: // "next"
       case symbol_kind::S_NOT: // "not"
       case symbol_kind::S_OR: // "or"
       case symbol_kind::S_POW: // "pow"
+      case symbol_kind::S_RESET: // "reset"
       case symbol_kind::S_SAMPLE_RATE: // "sample_rate"
       case symbol_kind::S_SIGN: // "sign"
       case symbol_kind::S_SIN: // "sin"
+      case symbol_kind::S_START: // "start"
       case symbol_kind::S_STEP: // "step"
       case symbol_kind::S_THEN: // "then"
+      case symbol_kind::S_TIME: // "time"
+      case symbol_kind::S_TIME_MILLIS: // "time_millis"
       case symbol_kind::S_TO: // "to"
+      case symbol_kind::S_TRIGGER: // "trigger"
       case symbol_kind::S_WAIT: // "wait"
+      case symbol_kind::S_WHEN: // "when"
       case symbol_kind::S_MINUS: // "-"
       case symbol_kind::S_PLUS: // "+"
       case symbol_kind::S_STAR: // "*"
@@ -774,7 +847,6 @@ namespace yy {
       case symbol_kind::S_OUT_PORT: // "out_port"
       case symbol_kind::S_ZEROARGFUNC: // "zeroargfunc"
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
-      case symbol_kind::S_ONEPORTFUNC: // "oneportfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
       case symbol_kind::S_COMPARISON: // "comparison"
         value.move< std::string > (std::move (that.value));
@@ -799,6 +871,34 @@ namespace yy {
 #else
       basic_symbol (typename Base::kind_type t, const location_type& l)
         : Base (t)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, Block&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const Block& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, Blocks&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const Blocks& v, const location_type& l)
+        : Base (t)
+        , value (v)
         , location (l)
       {}
 #endif
@@ -911,6 +1011,15 @@ namespace yy {
         // Value type destructor.
 switch (yykind)
     {
+      case symbol_kind::S_block: // block
+      case symbol_kind::S_main_block: // main_block
+        value.template destroy< Block > ();
+        break;
+
+      case symbol_kind::S_blocks: // blocks
+        value.template destroy< Blocks > ();
+        break;
+
       case symbol_kind::S_exp: // exp
         value.template destroy< Expression > ();
         break;
@@ -919,18 +1028,22 @@ switch (yykind)
         value.template destroy< ExpressionList > ();
         break;
 
+      case symbol_kind::S_statement: // statement
       case symbol_kind::S_array_assignment: // array_assignment
       case symbol_kind::S_assignment: // assignment
+      case symbol_kind::S_clear_statement: // clear_statement
       case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_exit_statement: // exit_statement
       case symbol_kind::S_for_statement: // for_statement
       case symbol_kind::S_elseif_clause: // elseif_clause
       case symbol_kind::S_if_statement: // if_statement
+      case symbol_kind::S_reset_statement: // reset_statement
       case symbol_kind::S_wait_statement: // wait_statement
         value.template destroy< Line > ();
         break;
 
-      case symbol_kind::S_statements: // statements
+      case symbol_kind::S_zero_or_more_statements: // zero_or_more_statements
+      case symbol_kind::S_one_or_more_statements: // one_or_more_statements
       case symbol_kind::S_elseif_group: // elseif_group
         value.template destroy< Statements > ();
         break;
@@ -941,10 +1054,12 @@ switch (yykind)
 
       case symbol_kind::S_ABS: // "abs"
       case symbol_kind::S_ALL: // "all"
+      case symbol_kind::S_ALSO: // "also"
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CEILING: // "ceiling"
-      case symbol_kind::S_CLAMP: // "clamp"
+      case symbol_kind::S_CLEAR: // "clear"
+      case symbol_kind::S_CONNECTED: // "connected"
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
       case symbol_kind::S_ELSEIF: // "elseif"
@@ -953,19 +1068,28 @@ switch (yykind)
       case symbol_kind::S_FLOOR: // "floor"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
+      case symbol_kind::S_LOG2: // "log2"
+      case symbol_kind::S_LOGE: // "loge"
+      case symbol_kind::S_LOG10: // "log10"
       case symbol_kind::S_MAX: // "max"
       case symbol_kind::S_MIN: // "min"
       case symbol_kind::S_NEXT: // "next"
       case symbol_kind::S_NOT: // "not"
       case symbol_kind::S_OR: // "or"
       case symbol_kind::S_POW: // "pow"
+      case symbol_kind::S_RESET: // "reset"
       case symbol_kind::S_SAMPLE_RATE: // "sample_rate"
       case symbol_kind::S_SIGN: // "sign"
       case symbol_kind::S_SIN: // "sin"
+      case symbol_kind::S_START: // "start"
       case symbol_kind::S_STEP: // "step"
       case symbol_kind::S_THEN: // "then"
+      case symbol_kind::S_TIME: // "time"
+      case symbol_kind::S_TIME_MILLIS: // "time_millis"
       case symbol_kind::S_TO: // "to"
+      case symbol_kind::S_TRIGGER: // "trigger"
       case symbol_kind::S_WAIT: // "wait"
+      case symbol_kind::S_WHEN: // "when"
       case symbol_kind::S_MINUS: // "-"
       case symbol_kind::S_PLUS: // "+"
       case symbol_kind::S_STAR: // "*"
@@ -983,7 +1107,6 @@ switch (yykind)
       case symbol_kind::S_OUT_PORT: // "out_port"
       case symbol_kind::S_ZEROARGFUNC: // "zeroargfunc"
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
-      case symbol_kind::S_ONEPORTFUNC: // "oneportfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
       case symbol_kind::S_COMPARISON: // "comparison"
         value.template destroy< std::string > ();
@@ -999,7 +1122,7 @@ switch (yykind)
       /// The user-facing name of this symbol.
       const char *name () const YY_NOEXCEPT
       {
-        return parser::symbol_name (this->kind ());
+        return Parser::symbol_name (this->kind ());
       }
 
       /// Backward compatibility (Bison 3.6).
@@ -1119,14 +1242,14 @@ switch (yykind)
     };
 
     /// Build a parser object.
-    parser (Driver& drv_yyarg);
-    virtual ~parser ();
+    Parser (Driver& drv_yyarg, void* yyscanner_yyarg, yy::location& loc_yyarg);
+    virtual ~Parser ();
 
 #if 201103L <= YY_CPLUSPLUS
     /// Non copyable.
-    parser (const parser&) = delete;
+    Parser (const Parser&) = delete;
     /// Non copyable.
-    parser& operator= (const parser&) = delete;
+    Parser& operator= (const Parser&) = delete;
 #endif
 
     /// Parse.  An alias for parse ().
@@ -1242,6 +1365,21 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_ALSO (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_ALSO, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_ALSO (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_ALSO, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_AND (std::string v, location_type l)
       {
         return symbol_type (token::TOK_AND, std::move (v), std::move (l));
@@ -1287,16 +1425,31 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_CLAMP (std::string v, location_type l)
+      make_CLEAR (std::string v, location_type l)
       {
-        return symbol_type (token::TOK_CLAMP, std::move (v), std::move (l));
+        return symbol_type (token::TOK_CLEAR, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_CLAMP (const std::string& v, const location_type& l)
+      make_CLEAR (const std::string& v, const location_type& l)
       {
-        return symbol_type (token::TOK_CLAMP, v, l);
+        return symbol_type (token::TOK_CLEAR, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_CONNECTED (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_CONNECTED, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_CONNECTED (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_CONNECTED, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1422,6 +1575,51 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_LOG2 (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_LOG2, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LOG2 (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_LOG2, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LOGE (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_LOGE, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LOGE (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_LOGE, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LOG10 (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_LOG10, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LOG10 (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_LOG10, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_MAX (std::string v, location_type l)
       {
         return symbol_type (token::TOK_MAX, std::move (v), std::move (l));
@@ -1512,6 +1710,21 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_RESET (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_RESET, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_RESET (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_RESET, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_SAMPLE_RATE (std::string v, location_type l)
       {
         return symbol_type (token::TOK_SAMPLE_RATE, std::move (v), std::move (l));
@@ -1557,6 +1770,21 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_START (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_START, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_START (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_START, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_STEP (std::string v, location_type l)
       {
         return symbol_type (token::TOK_STEP, std::move (v), std::move (l));
@@ -1587,6 +1815,36 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_TIME (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_TIME, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_TIME (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_TIME, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_TIME_MILLIS (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_TIME_MILLIS, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_TIME_MILLIS (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_TIME_MILLIS, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_TO (std::string v, location_type l)
       {
         return symbol_type (token::TOK_TO, std::move (v), std::move (l));
@@ -1602,6 +1860,21 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_TRIGGER (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_TRIGGER, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_TRIGGER (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_TRIGGER, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_WAIT (std::string v, location_type l)
       {
         return symbol_type (token::TOK_WAIT, std::move (v), std::move (l));
@@ -1612,6 +1885,21 @@ switch (yykind)
       make_WAIT (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOK_WAIT, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_WHEN (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_WHEN, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_WHEN (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_WHEN, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1887,21 +2175,6 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_ONEPORTFUNC (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_ONEPORTFUNC, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_ONEPORTFUNC (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_ONEPORTFUNC, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
       make_TWOARGFUNC (std::string v, location_type l)
       {
         return symbol_type (token::TOK_TWOARGFUNC, std::move (v), std::move (l));
@@ -1949,7 +2222,7 @@ switch (yykind)
     class context
     {
     public:
-      context (const parser& yyparser, const symbol_type& yyla);
+      context (const Parser& yyparser, const symbol_type& yyla);
       const symbol_type& lookahead () const YY_NOEXCEPT { return yyla_; }
       symbol_kind_type token () const YY_NOEXCEPT { return yyla_.kind (); }
       const location_type& location () const YY_NOEXCEPT { return yyla_.location; }
@@ -1960,16 +2233,16 @@ switch (yykind)
       int expected_tokens (symbol_kind_type yyarg[], int yyargn) const;
 
     private:
-      const parser& yyparser_;
+      const Parser& yyparser_;
       const symbol_type& yyla_;
     };
 
   private:
 #if YY_CPLUSPLUS < 201103L
     /// Non copyable.
-    parser (const parser&);
+    Parser (const Parser&);
     /// Non copyable.
-    parser& operator= (const parser&);
+    Parser& operator= (const Parser&);
 #endif
 
     /// Check the lookahead yytoken.
@@ -1984,7 +2257,7 @@ switch (yykind)
     void yy_lac_discard_ (const char* event);
 
     /// Stored state numbers (used for stacks).
-    typedef signed char state_type;
+    typedef unsigned char state_type;
 
     /// The arguments of the error message.
     int yy_syntax_error_arguments_ (const context& yyctx,
@@ -2027,17 +2300,17 @@ switch (yykind)
     static const signed char yydefact_[];
 
     // YYPGOTO[NTERM-NUM].
-    static const signed char yypgoto_[];
+    static const short yypgoto_[];
 
     // YYDEFGOTO[NTERM-NUM].
-    static const signed char yydefgoto_[];
+    static const unsigned char yydefgoto_[];
 
     // YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
     // positive, shift that token.  If negative, reduce the rule whose
     // number is the opposite.  If YYTABLE_NINF, syntax error.
-    static const signed char yytable_[];
+    static const unsigned char yytable_[];
 
-    static const signed char yycheck_[];
+    static const short yycheck_[];
 
     // YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
     // state STATE-NUM.
@@ -2288,33 +2561,44 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 311,     ///< Last index in yytable_.
-      yynnts_ = 14,  ///< Number of nonterminal symbols.
-      yyfinal_ = 3 ///< Termination state number.
+      yylast_ = 414,     ///< Last index in yytable_.
+      yynnts_ = 21,  ///< Number of nonterminal symbols.
+      yyfinal_ = 56 ///< Termination state number.
     };
 
 
     // User arguments.
     Driver& drv;
+    void* yyscanner;
+    yy::location& loc;
 
   };
 
   inline
-  parser::symbol_kind_type
-  parser::yytranslate_ (int t) YY_NOEXCEPT
+  Parser::symbol_kind_type
+  Parser::yytranslate_ (int t) YY_NOEXCEPT
   {
     return static_cast<symbol_kind_type> (t);
   }
 
   // basic_symbol.
   template <typename Base>
-  parser::basic_symbol<Base>::basic_symbol (const basic_symbol& that)
+  Parser::basic_symbol<Base>::basic_symbol (const basic_symbol& that)
     : Base (that)
     , value ()
     , location (that.location)
   {
     switch (this->kind ())
     {
+      case symbol_kind::S_block: // block
+      case symbol_kind::S_main_block: // main_block
+        value.copy< Block > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_blocks: // blocks
+        value.copy< Blocks > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_exp: // exp
         value.copy< Expression > (YY_MOVE (that.value));
         break;
@@ -2323,18 +2607,22 @@ switch (yykind)
         value.copy< ExpressionList > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_statement: // statement
       case symbol_kind::S_array_assignment: // array_assignment
       case symbol_kind::S_assignment: // assignment
+      case symbol_kind::S_clear_statement: // clear_statement
       case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_exit_statement: // exit_statement
       case symbol_kind::S_for_statement: // for_statement
       case symbol_kind::S_elseif_clause: // elseif_clause
       case symbol_kind::S_if_statement: // if_statement
+      case symbol_kind::S_reset_statement: // reset_statement
       case symbol_kind::S_wait_statement: // wait_statement
         value.copy< Line > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_statements: // statements
+      case symbol_kind::S_zero_or_more_statements: // zero_or_more_statements
+      case symbol_kind::S_one_or_more_statements: // one_or_more_statements
       case symbol_kind::S_elseif_group: // elseif_group
         value.copy< Statements > (YY_MOVE (that.value));
         break;
@@ -2345,10 +2633,12 @@ switch (yykind)
 
       case symbol_kind::S_ABS: // "abs"
       case symbol_kind::S_ALL: // "all"
+      case symbol_kind::S_ALSO: // "also"
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CEILING: // "ceiling"
-      case symbol_kind::S_CLAMP: // "clamp"
+      case symbol_kind::S_CLEAR: // "clear"
+      case symbol_kind::S_CONNECTED: // "connected"
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
       case symbol_kind::S_ELSEIF: // "elseif"
@@ -2357,19 +2647,28 @@ switch (yykind)
       case symbol_kind::S_FLOOR: // "floor"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
+      case symbol_kind::S_LOG2: // "log2"
+      case symbol_kind::S_LOGE: // "loge"
+      case symbol_kind::S_LOG10: // "log10"
       case symbol_kind::S_MAX: // "max"
       case symbol_kind::S_MIN: // "min"
       case symbol_kind::S_NEXT: // "next"
       case symbol_kind::S_NOT: // "not"
       case symbol_kind::S_OR: // "or"
       case symbol_kind::S_POW: // "pow"
+      case symbol_kind::S_RESET: // "reset"
       case symbol_kind::S_SAMPLE_RATE: // "sample_rate"
       case symbol_kind::S_SIGN: // "sign"
       case symbol_kind::S_SIN: // "sin"
+      case symbol_kind::S_START: // "start"
       case symbol_kind::S_STEP: // "step"
       case symbol_kind::S_THEN: // "then"
+      case symbol_kind::S_TIME: // "time"
+      case symbol_kind::S_TIME_MILLIS: // "time_millis"
       case symbol_kind::S_TO: // "to"
+      case symbol_kind::S_TRIGGER: // "trigger"
       case symbol_kind::S_WAIT: // "wait"
+      case symbol_kind::S_WHEN: // "when"
       case symbol_kind::S_MINUS: // "-"
       case symbol_kind::S_PLUS: // "+"
       case symbol_kind::S_STAR: // "*"
@@ -2387,7 +2686,6 @@ switch (yykind)
       case symbol_kind::S_OUT_PORT: // "out_port"
       case symbol_kind::S_ZEROARGFUNC: // "zeroargfunc"
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
-      case symbol_kind::S_ONEPORTFUNC: // "oneportfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
       case symbol_kind::S_COMPARISON: // "comparison"
         value.copy< std::string > (YY_MOVE (that.value));
@@ -2403,8 +2701,8 @@ switch (yykind)
 
 
   template <typename Base>
-  parser::symbol_kind_type
-  parser::basic_symbol<Base>::type_get () const YY_NOEXCEPT
+  Parser::symbol_kind_type
+  Parser::basic_symbol<Base>::type_get () const YY_NOEXCEPT
   {
     return this->kind ();
   }
@@ -2412,18 +2710,27 @@ switch (yykind)
 
   template <typename Base>
   bool
-  parser::basic_symbol<Base>::empty () const YY_NOEXCEPT
+  Parser::basic_symbol<Base>::empty () const YY_NOEXCEPT
   {
     return this->kind () == symbol_kind::S_YYEMPTY;
   }
 
   template <typename Base>
   void
-  parser::basic_symbol<Base>::move (basic_symbol& s)
+  Parser::basic_symbol<Base>::move (basic_symbol& s)
   {
     super_type::move (s);
     switch (this->kind ())
     {
+      case symbol_kind::S_block: // block
+      case symbol_kind::S_main_block: // main_block
+        value.move< Block > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_blocks: // blocks
+        value.move< Blocks > (YY_MOVE (s.value));
+        break;
+
       case symbol_kind::S_exp: // exp
         value.move< Expression > (YY_MOVE (s.value));
         break;
@@ -2432,18 +2739,22 @@ switch (yykind)
         value.move< ExpressionList > (YY_MOVE (s.value));
         break;
 
+      case symbol_kind::S_statement: // statement
       case symbol_kind::S_array_assignment: // array_assignment
       case symbol_kind::S_assignment: // assignment
+      case symbol_kind::S_clear_statement: // clear_statement
       case symbol_kind::S_continue_statement: // continue_statement
       case symbol_kind::S_exit_statement: // exit_statement
       case symbol_kind::S_for_statement: // for_statement
       case symbol_kind::S_elseif_clause: // elseif_clause
       case symbol_kind::S_if_statement: // if_statement
+      case symbol_kind::S_reset_statement: // reset_statement
       case symbol_kind::S_wait_statement: // wait_statement
         value.move< Line > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_statements: // statements
+      case symbol_kind::S_zero_or_more_statements: // zero_or_more_statements
+      case symbol_kind::S_one_or_more_statements: // one_or_more_statements
       case symbol_kind::S_elseif_group: // elseif_group
         value.move< Statements > (YY_MOVE (s.value));
         break;
@@ -2454,10 +2765,12 @@ switch (yykind)
 
       case symbol_kind::S_ABS: // "abs"
       case symbol_kind::S_ALL: // "all"
+      case symbol_kind::S_ALSO: // "also"
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CEILING: // "ceiling"
-      case symbol_kind::S_CLAMP: // "clamp"
+      case symbol_kind::S_CLEAR: // "clear"
+      case symbol_kind::S_CONNECTED: // "connected"
       case symbol_kind::S_CONTINUE: // "continue"
       case symbol_kind::S_ELSE: // "else"
       case symbol_kind::S_ELSEIF: // "elseif"
@@ -2466,19 +2779,28 @@ switch (yykind)
       case symbol_kind::S_FLOOR: // "floor"
       case symbol_kind::S_FOR: // "for"
       case symbol_kind::S_IF: // "if"
+      case symbol_kind::S_LOG2: // "log2"
+      case symbol_kind::S_LOGE: // "loge"
+      case symbol_kind::S_LOG10: // "log10"
       case symbol_kind::S_MAX: // "max"
       case symbol_kind::S_MIN: // "min"
       case symbol_kind::S_NEXT: // "next"
       case symbol_kind::S_NOT: // "not"
       case symbol_kind::S_OR: // "or"
       case symbol_kind::S_POW: // "pow"
+      case symbol_kind::S_RESET: // "reset"
       case symbol_kind::S_SAMPLE_RATE: // "sample_rate"
       case symbol_kind::S_SIGN: // "sign"
       case symbol_kind::S_SIN: // "sin"
+      case symbol_kind::S_START: // "start"
       case symbol_kind::S_STEP: // "step"
       case symbol_kind::S_THEN: // "then"
+      case symbol_kind::S_TIME: // "time"
+      case symbol_kind::S_TIME_MILLIS: // "time_millis"
       case symbol_kind::S_TO: // "to"
+      case symbol_kind::S_TRIGGER: // "trigger"
       case symbol_kind::S_WAIT: // "wait"
+      case symbol_kind::S_WHEN: // "when"
       case symbol_kind::S_MINUS: // "-"
       case symbol_kind::S_PLUS: // "+"
       case symbol_kind::S_STAR: // "*"
@@ -2496,7 +2818,6 @@ switch (yykind)
       case symbol_kind::S_OUT_PORT: // "out_port"
       case symbol_kind::S_ZEROARGFUNC: // "zeroargfunc"
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
-      case symbol_kind::S_ONEPORTFUNC: // "oneportfunc"
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
       case symbol_kind::S_COMPARISON: // "comparison"
         value.move< std::string > (YY_MOVE (s.value));
@@ -2511,13 +2832,13 @@ switch (yykind)
 
   // by_kind.
   inline
-  parser::by_kind::by_kind () YY_NOEXCEPT
+  Parser::by_kind::by_kind () YY_NOEXCEPT
     : kind_ (symbol_kind::S_YYEMPTY)
   {}
 
 #if 201103L <= YY_CPLUSPLUS
   inline
-  parser::by_kind::by_kind (by_kind&& that) YY_NOEXCEPT
+  Parser::by_kind::by_kind (by_kind&& that) YY_NOEXCEPT
     : kind_ (that.kind_)
   {
     that.clear ();
@@ -2525,12 +2846,12 @@ switch (yykind)
 #endif
 
   inline
-  parser::by_kind::by_kind (const by_kind& that) YY_NOEXCEPT
+  Parser::by_kind::by_kind (const by_kind& that) YY_NOEXCEPT
     : kind_ (that.kind_)
   {}
 
   inline
-  parser::by_kind::by_kind (token_kind_type t) YY_NOEXCEPT
+  Parser::by_kind::by_kind (token_kind_type t) YY_NOEXCEPT
     : kind_ (yytranslate_ (t))
   {}
 
@@ -2538,37 +2859,37 @@ switch (yykind)
 
   inline
   void
-  parser::by_kind::clear () YY_NOEXCEPT
+  Parser::by_kind::clear () YY_NOEXCEPT
   {
     kind_ = symbol_kind::S_YYEMPTY;
   }
 
   inline
   void
-  parser::by_kind::move (by_kind& that)
+  Parser::by_kind::move (by_kind& that)
   {
     kind_ = that.kind_;
     that.clear ();
   }
 
   inline
-  parser::symbol_kind_type
-  parser::by_kind::kind () const YY_NOEXCEPT
+  Parser::symbol_kind_type
+  Parser::by_kind::kind () const YY_NOEXCEPT
   {
     return kind_;
   }
 
 
   inline
-  parser::symbol_kind_type
-  parser::by_kind::type_get () const YY_NOEXCEPT
+  Parser::symbol_kind_type
+  Parser::by_kind::type_get () const YY_NOEXCEPT
   {
     return this->kind ();
   }
 
 
 } // yy
-#line 2572 "parser.hh"
+#line 2893 "parser.hh"
 
 
 

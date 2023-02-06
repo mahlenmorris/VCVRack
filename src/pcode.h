@@ -1,9 +1,12 @@
 #ifndef PCODE_H
 #define PCODE_H
 
+#include "parser/environment.h"
+#include "parser/tree.h"
+
 /*
 The structures that make up the pseudocode that gets run during a call
-to process(). Needs to be
+to process(). Needs to be:
 * interruptible and efficient, because process() isn't allowed to run for long
 * always have a position (e.g., line number) that we can pick up execution at.
 The Line's that the Parser created are turned into these instructions.
@@ -25,10 +28,15 @@ struct PCode {
     WAIT,        // wait expr1
     IFNOT,       // ifnot expr1 jump jump_count
     RELATIVE_JUMP,  // add jump_count to line_number.
-    FORLOOP      // On ENTERING_FOR_LOOP, compute limit (expr1) & step (expr2).
+    FORLOOP,      // On ENTERING_FOR_LOOP, compute limit (expr1) & step (expr2).
                  // if beyond limit, jump jump_count.
                  // On NONE, add step to str1 value.
                  // if beyond limit, jump jump_count.
+    CLEAR,       // If this were a function, it would need to return something,
+                 // so making a special command for it was fine.
+                 // And may have a list of variables later.
+                 // TODO: Maybe make a Type for one-off commands?
+    RESET        // Like CLEAR, A command with no return value.
   };
   Type type;
   std::string str1;
@@ -79,29 +87,6 @@ struct Exit {
   // When an Exit is created, we typically do not know the exit_line_number.
   Exit(const std::string type, int loop_pos) : exit_type{type},
       loop_start_Line_number{loop_pos} {}
-};
-
-// Class for turning nested vector of Line objects into a flat vector of
-// PCode objects.
-class PCodeTranslator {
-public:
-  PCodeTranslator() { }
-  // TODO: This should return a vector of Error objects, so that we can
-  // prevent running and report them.
-  void LinesToPCode(const std::vector<Line> &lines, std::vector<PCode> *pcodes);
-  void AddElseifs(std::vector<int>* jump_positions,
-                  const Statements &elseifs, const Exit &innermost_loop,
-                  bool last_falls_through);
-  PCode Assignment(const std::string str1, float* variable_ptr,
-                   const PortPointer &port, const Expression &expr1);
-
-private:
-  void AddLineToPCode(const Line &line, const Exit &innermost_loop);
-  // Just useful for making Number expressions.
-  ExpressionFactory expression_factory;
-  std::vector<PCode> *pcodes;
-  std::vector<Loop> loops;
-  std::vector<Exit> exits;
 };
 
 #endif // PCODE_H
