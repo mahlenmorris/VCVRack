@@ -337,6 +337,12 @@ next
 ' out1 will be: 0, 2, 4, 6, 8, 10 and then leave the loop.
 ```
 
+NB: Remember that all variables, **including the loop variables in FOR-NEXT
+loops**, are in the same variable space. If you are using [blocks](#blocks)
+which might be running at the same time, make sure you use **different loop
+variables in different blocks**. Not doing so leads to VERY confusing behavior
+when running.
+
 ### CONTINUE FOR and EXIT FOR
 While in a FOR loop, there may be circumstances when you want to change
 what statements to run. There are two special ways to do this.
@@ -407,17 +413,17 @@ useful things for you, so feel free to skip this section the first
 time you learn about BASICally. But come back later; this
 may be useful to you soon.**
 
-The code style above (one big loop of code that gets repeated) doesn't allow
+The code style described above (one big loop of code that gets repeated) doesn't allow
 for certain kinds of programs to be easily written, and can be less efficient
-than required. For example:
+than required. For example, when running in just one loop:
 * Any initialization code will get executed every time. One can minimize this
 to an extent by setting and checking an "init" variable being non-zero, but
-this concept could be better integrated into the language.
+this concept should be better integrated into the language.
 * Running two loops with WAITs in them would be diabolically difficult to write.
 * Checking for a trigger at an IN port is difficult, and impossible during a
 WAIT.
 
-To allow BASICally to do these things, version 2.0.6 introduced "multithreading"
+To allow BASICally to do these things, version 2.0.7 introduced "multithreading"
 and "blocks".
 
 ### Blocks
@@ -562,6 +568,30 @@ then it is run for one sample's worth of time.
 * Walk through the ALSO Blocks, in the order they appear in the code.
 * * Each ALSO Block is run for one sample's worth of time.
 
+NB: Remember that all variables, **including the loop variables in FOR-NEXT
+loops**, are in the same variable space. If you are using blocks
+which might be running at the same time, make sure you use **different loop
+variables in different blocks**. Not doing so leads to VERY confusing behavior
+when running.
+
+For example:
+
+```
+WHEN trigger(IN1)
+  FOR i = 1 to 10  ' Uses "i"
+    foo[i] = random(0, 10)
+  NEXT
+END WHEN
+
+WHEN bar > 3
+  FOR i = -5 to 5 STEP 0.1  ' ALSO uses "i"!
+    OUT1 = sin(i)
+  NEXT
+END WHEN
+```
+is going to have **wildly unpredictable results** whenever both WHEN blocks are
+running at the same time. Better for the second block to use "j", or "i2", or
+something meaningful in context that is not used elsewhere in the program.
 
 ### Other Things to Note
 BASICally is intended for the very casual user, with the hope that examples
