@@ -255,6 +255,7 @@ struct Basically : Module {
     }
 
     void SetText(const std::string &new_text) {
+      running = true;  // Tells caller not to use previous result.
       text = new_text;
     }
 
@@ -277,6 +278,7 @@ struct Basically : Module {
       main_blocks = new std::vector<CodeBlock*>();
       expression_blocks = new std::vector<std::pair<Expression, CodeBlock*> >();
       running_expression_blocks = new std::vector<bool>();
+      useful = true;
       for (auto ast_block : driver->blocks) {
         CodeBlock* new_block = new CodeBlock(environment);
         if (translator.BlockToCodeBlock(new_block, ast_block)) {
@@ -289,10 +291,10 @@ struct Basically : Module {
             running_expression_blocks->push_back(false);
           }
         } else {
+          useful = false;
           // TODO: Report errors via some new mechanism.
         }
       }
-      useful = true;
       running = false;
     }
   };
@@ -487,9 +489,6 @@ struct Basically : Module {
         // OK, we'll keep waiting.
       } else {
         compile_in_progress = false;
-        // No longer need thread that was running it.
-        compile_thread->join();  // It should be done by now, right?
-        delete compile_thread;
         if (compiler->useful) {
           // Got something we can use. First, clean upi the old ones.
           if (main_blocks) {
@@ -523,15 +522,18 @@ struct Basically : Module {
         } else {
           compiles = false;
         }
+        // No longer need thread that was running it.
+        compile_thread->join();  // It should be done by now, right?
+        delete compile_thread;
       }
     } else {
       // Do not currently have compile in progress.
       if (module_refresh && !text.empty()) {
+        compile_in_progress = true;
         module_refresh = false;
         // Start a new compile.
         compiler->SetText(text);
         compile_thread = new std::thread(&CompilationThread::Compile, compiler);
-        compile_in_progress = true;
       }
     }
 
@@ -622,12 +624,6 @@ struct Basically : Module {
         }
       }
     }
-
-
-    // !!!!!!!!!!!!!!!
-    // BUG: We do NOT have a good way of being told to stop running; the
-    // new Block thing has broken the existing way.
-
 
     // Lights.
     if (run_light_countdown > 0) {

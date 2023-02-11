@@ -54,6 +54,7 @@ struct CodeBlock {
     wait_info.in_wait = false;
     current_line = 0;
     samples_per_millisecond = env->SampleRate() / 1000.0f;
+    run_status = CONTINUES;
   }
 
   // There are times when the module itself needs to get or set a variable's
