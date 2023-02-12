@@ -1,0 +1,22 @@
+{
+  "plugin": "StochasticTelegraph",
+  "model": "BASICally",
+  "version": "2.0.7",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    }
+  ],
+  "data": {
+    "text": "' Records a sample, chops it into segments, and then plays\n' back the sample, shuffling the segment order each time.\n\n' When IN1 is high, records from IN2. When IN1 goes back to zero,\n' the just-recorded sample will be chopped into 'segment_count' segments\n' which will be played back.\n' Playback head comes out of OUT1.\n' Trigger to IN9 erases the tape.\n\n' You can alter the behavior by changing the values below.\nWHEN start() or trigger(IN9)\n  if trigger(in9) THEN\n    clear all\n  end if\n  ' The number of sections the sample gets chopped into.\n  segment_count = 8\n  ' Directly switching from one segment to another can\n  ' result in clicks. 'ramp_len' is the number of samples used to\n  ' ramp down the volume before the switch and then the number\n  ' of samples to ramp back up to full volume.\n  ramp_len = 20\n  ramp_inc = 1 / ramp_len\nEND WHEN\n\n' The playback loop.\nALSO\n  out1 = scale * loop[segment[curr_segment] + mod(tick, segment_size)]  \n  tick = mod(tick + 1, size)\nEND ALSO\n\n' Recording.\nWHEN trigger(in1)\n  rec_tick = 0\n  for i = 0 to 1 step 0  ' Really just a while loop.\n    if in1 < 1 THEN\n      i = 2\n    END IF\n    loop[rec_tick] = in2\n    rec_tick = rec_tick + 1\n  NEXT\n  size = rec_tick\n  segment_size = floor(size / segment_count)\n  ' Shuffle the segments.\n  for i = 0 to (segment_count - 1)\n    temp[i] = segment_size * i\n  next\n  for i = segment_count to 1 STEP -1\n    pos = floor(random(0, i))\n    segment[segment_count - i] = temp[pos]\n    temp[pos] = temp[i - 1]\n  NEXT\n  tick = 0\nEND WHEN\n\n' Once per sample, calculate the next_seg[] order for the samples.\n' We do this ahead of time so the following WHEN block doesn't need\n' to wait for this computation to complete.\nWHEN tick == 0\n  ' Populate next_seg[].\n  for i2 = 0 to (segment_count - 1)\n    temp[i2] = segment_size * i2\n  next\n  for i2 = segment_count to 1 STEP -1\n    pos = floor(random(0, i2))\n    next_seg[segment_count - i2] = temp[pos]\n    temp[pos] = temp[i2 - 1]\n  NEXT\n  curr_segment = 0\nEND WHEN\n\n' Start scaling down ramp_len samples before next segment starts. \nWHEN mod(tick + ramp_len, segment_size) == 0\n  FOR i3 = 1 to ramp_len\n    scale = 1.0 - i3 * ramp_inc\n  NEXT \n  ' Move the value from next_seg[] to segment[]\n  segment[curr_segment] = next_seg[curr_segment]\n  curr_segment = mod(curr_segment + 1, segment_count)\n  FOR i3 = 1 to ramp_len\n    scale = 0.0 + i3 * ramp_inc\n  NEXT \nEND WHEN\n",
+    "width": 37,
+    "allow_error_highlight": 1,
+    "screen_colors": 1095216660480,
+    "title_text": "Shuffle 2"
+  }
+}
