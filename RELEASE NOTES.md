@@ -1,5 +1,10 @@
 # Release Notes
 
+### 2.0.8
+#### February 12, 2023
+* Bug fixes to compilation.
+* Added new preset.
+
 ### 2.0.7
 #### February 6, 2023
 * Added notion of "ALSO blocks" that [run in parallel](https://github.com/mahlenmorris/VCVRack#also-blocks).
