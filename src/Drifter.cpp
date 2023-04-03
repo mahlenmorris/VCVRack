@@ -68,7 +68,8 @@ struct Drifter : Module {
     // This is really an integer.
     getParamQuantity(SEGMENTS_PARAM)->snapEnabled = true;
 
-    configButton(RESET_PARAM, "Press to reset curve to flat");
+    configButton(RESET_PARAM,
+                 "Press to reset curve to initial shape (see menu)");
     configButton(DRIFT_PARAM, "Press to drift once");
     // TODO: Shouldn't Unipolar reset to all zeroes?
     configSwitch(OFFSET_PARAM, 0, 1, 0, "Offset",
@@ -81,7 +82,8 @@ struct Drifter : Module {
     configSwitch(ENDPOINTS_PARAM, 0, 1, 0, "Endpoints are",
                  {"Fixed", "Drifting"});
 
-    configInput(RESET_INPUT, "Line is reset to flat when a trigger enters");
+    configInput(RESET_INPUT,
+                "Line is reset to initial shape when a trigger enters");
     configInput(DRIFT_INPUT, "The curve drifts when a trigger enters");
     configInput(DOMAIN_INPUT, "The X position on the curve");
     configInput(SCALE_INPUT,
@@ -111,6 +113,8 @@ struct Drifter : Module {
       json_object_set_new(rootJ, "start_y", json_real(start_point.y));
       json_object_set_new(rootJ, "end_y", json_real(end_point.y));
     }
+    json_object_set_new(rootJ, "reset_shape", json_integer(reset_shape));
+    json_object_set_new(rootJ, "reset_type", json_integer(reset_type));
     return rootJ;
   }
 
@@ -149,9 +153,63 @@ struct Drifter : Module {
         loaded_end_y = json_real_value(endJ);
       }
     }
+    json_t* shapeJ = json_object_get(rootJ, "reset_shape");
+    if (shapeJ) {
+      reset_shape = json_integer_value(shapeJ);
+    }
+    json_t* typeJ = json_object_get(rootJ, "reset_type");
+    if (typeJ) {
+      reset_type = json_integer_value(typeJ);
+    }
   }
 
   void reset_points(bool startup) {
+    static std::function<float(float, float, bool)> reset_functions[] = {
+      [](float x, float w, bool uni) { return 0.0 + (uni ? 0.0f : 5.0f);},  // Zero
+      [](float x, float w, bool uni)
+         { return 5.0f + 5.0f * sin(3.1415927f * (x + w) / 5.0f);},  // Sine.
+      [](float x, float w, bool uni)
+        { float xw = x + w;    // Triangle.
+          if (xw <= 2.5f) {
+             return 5.0f + 2.0f * xw;
+          } else if (xw <= 7.5f) {
+            return 5.0f + -2.0f * (xw - 5.0f);
+          } else if (xw <= 12.5) {
+            return 5.0f + 2.0f * (xw - 10.f);
+          } else {
+            return 5.0f + -2.0f * (xw - 15.0f);
+          }
+        },
+      [](float x, float w, bool uni)
+        { float xw = x + w;    // Rising Saw.
+          if (xw <= 10.0f) {
+             return xw;
+          } else {
+            return (xw - 10.0f);
+          }
+        },
+      [](float x, float w, bool uni)
+        { float xw = x + w;    // Falling Saw.
+          if (xw <= 10.0f) {
+             return 10.0f - xw;
+          } else {
+            return 10.0f - (xw - 10.0f);
+          }
+        },
+      [](float x, float w, bool uni)
+        { float xw = x + w;    // Square.
+          if (xw <= 5.0f) {
+            return 10.0f;
+          } else if (xw <= 10.f) {
+            return 0.0f;
+          } else if (xw <= 15.f) {
+            return 10.0f;
+          } else {
+            return 0.0f;
+          }
+        }
+    };
+
     // Empty it.
     while (!points.empty()) {
      points.pop_back();
@@ -161,13 +219,15 @@ struct Drifter : Module {
     float distance = 10.0f / segment_count;
     // The scale of the square is 0,0 -> 10, 10.
     bool unipolar = getOffsetUnipolar();
+    auto reset_func = reset_functions[reset_shape];
+    float w = reset_type * 2.5f;
     if (startup && saveCurveInRack) {
       for (point p : loaded_points) {
         points.push_back(p);
       }
     } else {
       for (int i = 1; i < segment_count; i++) {
-        point p = {i * distance, unipolar ? 0.0f : 5.0f};
+        point p = {i * distance, reset_func(i * distance, w, unipolar)};
         points.push_back(p);
       }
     }
@@ -175,13 +235,8 @@ struct Drifter : Module {
       start_point.y = loaded_start_y;
       end_point.y = loaded_end_y;
     } else {
-      if (getOffsetUnipolar()) {
-        start_point.y = 0.0f;
-        end_point.y = 0.0f;
-      } else {
-        start_point.y = 5.0f;
-        end_point.y = 5.0f;
-      }
+      start_point.y = reset_func(0.0f, w, unipolar);
+      end_point.y = reset_func(10.0f, w, unipolar);
     }
   }
 
@@ -514,6 +569,9 @@ struct Drifter : Module {
 
   // Set by context menu.
   bool saveCurveInRack = false;
+  int reset_shape = 0;
+  int reset_type = 0;
+
   // Loaded from the JSON; placed into points during reset_points.
   std::vector<point> loaded_points;
   float loaded_start_y, loaded_end_y;
@@ -705,6 +763,45 @@ struct DrifterWidget : ModuleWidget {
     menu->addChild(new MenuSeparator);
     menu->addChild(createBoolPtrMenuItem("Save curve in rack", "",
                                           &module->saveCurveInRack));
+    menu->addChild(createMenuLabel("RESET shape:"));
+    std::pair<std::string, int> shapes[] = {
+      {"Horizontal line at zero", 0},
+      {"Sine", 1},
+      {"Triangle", 2},
+      {"Rising Saw", 3},
+      {"Falling Saw", 4},
+      {"Square", 5},
+    };
+    std::pair<std::string, int> common_types[] = {
+      {"A", 0},
+      {"B", 1},
+      {"C", 2},
+      {"D", 3},
+    };
+
+    for (auto shape : shapes) {
+      if (shape.second < 1) {
+        menu->addChild(createCheckMenuItem(shape.first, "",
+            [=]() {return shape.second == module->reset_shape;},
+            [=]() {module->reset_shape = shape.second;}
+        ));
+      } else {
+        int shape_num = shape.second;
+        MenuItem* shape_menu = createSubmenuItem(shape.first, "",
+          [=](Menu* menu) {
+              for (auto common : common_types) {
+                menu->addChild(createCheckMenuItem(common.first, "",
+                  [=]() {return shape_num == module->reset_shape &&
+                                module->reset_type == common.second;},
+                  [=]() {module->reset_shape = shape_num;
+                         module->reset_type = common.second;}
+                ));
+              }
+          }
+        );
+        menu->addChild(shape_menu);
+      }
+    }
   }
 };
 
