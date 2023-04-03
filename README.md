@@ -841,7 +841,8 @@ The number of segments in the steps/line/curve, from 1 (just
 connecting the end points) to 32. **Takes effect at the next RESET.**
 #### RESET Input and Button
 A trigger to the Input or a Button press resets the line to its
-starting position, which is all zeroes. This also applies any change to COUNT.
+starting position (see Menu Options below for choosing a starting position).
+This also applies any change to COUNT.
 #### STYLE Knob
 Selects one of three different line types, Steps/Lines/Curves.
 Changes are applied instantly.
@@ -856,6 +857,23 @@ The vertical position of the line at the position determined by IN.
 * If checked - when the rack is saved, the current position of the line
 will be saved with the rack, and that position will be loaded along with the rack.
 * If **not** checked - when the rack is loaded, the line will always start at all zeros.
+#### RESET Shape
+The default behavior for Drifter is to reset the line to evenly-spaced zero
+values. However, this makes using Drifter for some uses tricky, so there are
+many other shapes you can now RESET to. Each shape has variants called simply
+A, B, C, and D.
+
+##### Sine
+Variants A, B, C, and D
+![Sine](images/Drifter-Sine.png)
+##### Triangle
+![Triangle](images/Drifter-Tri.png)
+##### Rising Saw
+![Rising Saw](images/Drifter-RSaw.png)
+##### Falling Saw
+![Falling Saw](images/Drifter-FSaw.png)
+##### Square
+![Square](images/Drifter-Square.png)
 
 ### Bypass Behavior
 If this module is bypassed, then OUT will equal IN.
