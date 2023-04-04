@@ -1,0 +1,24 @@
+{
+  "plugin": "StochasticTelegraph",
+  "model": "BASICally",
+  "version": "2.0.8",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    }
+  ],
+  "data": {
+    "text": "' Adds first four sine waves to create a square wave, but they drift a lot!\n' Send V/OCT value to IN1.\n' OUT1 is signal.\n' Trigger to IN9 resets to non-drifted state.\n\nif prev_voct != in1 then\n  ' Save the call to pow() for when we need it.\n  per_tick = 261.63 * pow(2, in1)\n  prev_voct = in1\nEND IF\ntick = mod(tick + per_tick, sample_rate())\nrad = tick * 6.2831853 / sample_rate()\nfuzzy = sin(rad) +\n       (sin((value[1] + value_drift[1]) * rad) / (value[1] + value_drift[1])) +\n       (sin((value[2] + value_drift[2]) * rad) / (value[2] + value_drift[2])) +\n       (sin((value[3] + value_drift[3]) * rad) / (value[3] + value_drift[3]))\nout1 = fuzzy * 5\n\nWHEN start() or trigger(in9)\n  value[0] = {1, 3, 5, 7}\n  value_drift[0] = {0, 0, 0, 0}\n  ' 0.0 means drift constantly, 1.0 means never drift\n  drift_speed = 0.90\nend when\n\nWHEN random(0, 1) > drift_speed\n  for i = 1 to 3\n    value_drift[i] = min(2, max(-2,\n                     value_drift[i] + random(-0.01, 0.01)))\n  next\nEND WHEN ",
+    "width": 40,
+    "clamp": {
+      "1": 0
+    },
+    "screen_colors": 1095216660480,
+    "title_text": "Drifting Never-Square"
+  }
+}
