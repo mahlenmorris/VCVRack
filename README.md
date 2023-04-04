@@ -947,6 +947,10 @@ TRIGGER events.
 A trigger to the Input or a Button press adds one to the count of accumulated
 TRIGGER events. If that count now equals LIMIT, then BLOWN will emit a
 short trigger.
+#### UNTRIGGER Input and Button
+If the fuse is not currently blown, then a trigger to the Input or a
+Button press **subtracts** one from the count of
+accumulated TRIGGER events. 
 #### RESET Input and Button
 A trigger to the Input or a Button press resets the count of accumulated
 TRIGGER events to zero.

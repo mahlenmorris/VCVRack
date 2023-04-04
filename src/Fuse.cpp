@@ -7,12 +7,14 @@ struct Fuse : Module {
 		RESET_PARAM,
 		TRIGGER_PARAM,
     SLEW_PARAM,
+    UNTRIGGER_PARAM,
     PARAMS_LEN
   };
   enum InputId {
     RESET_INPUT,
     TRIGGER_INPUT,
     MAIN_INPUT,
+    UNTRIGGER_INPUT,
     INPUTS_LEN
   };
   enum OutputId {
@@ -23,6 +25,7 @@ struct Fuse : Module {
   enum LightId {
     RESET_LIGHT,
     TRIGGER_LIGHT,
+    UNTRIGGER_LIGHT,
     LIGHTS_LEN
   };
 
@@ -50,6 +53,9 @@ struct Fuse : Module {
 
     configInput(TRIGGER_INPUT, "Adds one to the count each time a trigger enters");
     configButton(TRIGGER_PARAM, "Press to add one to the count");
+
+    configInput(UNTRIGGER_INPUT, "Subtracts one from the count each time a trigger enters");
+    configButton(UNTRIGGER_PARAM, "Press to subtract one from the count");
 
     configParam(SLEW_PARAM, 0.0f, 5.0f, 0.0f,
         "Rise/fall time for amplitude changes", " seconds");
@@ -122,6 +128,9 @@ struct Fuse : Module {
     if (trigger_light_countdown > 0) {
       trigger_light_countdown--;
     }
+    if (untrigger_light_countdown > 0) {
+      untrigger_light_countdown--;
+    }
     if (reset_light_countdown > 0) {
       reset_light_countdown--;
     }
@@ -161,12 +170,43 @@ struct Fuse : Module {
       trigger_button_pressed = false;
     }
 
+    // Now test the UNTRIGGER button and input.
+    bool untrigger_was_low = !countdown_trigger.isHigh();
+    countdown_trigger.process(rescale(inputs[UNTRIGGER_INPUT].getVoltage(),
+                                   0.1f, 2.0f, 0.0f, 1.0f));
+    bool untrigger_from_input = untrigger_was_low && countdown_trigger.isHigh();
+
+    // We only want one trigger to register from a button press.
+    bool untrigger_from_button = false;
+    if (params[UNTRIGGER_PARAM].getValue() > 0.1f) {
+      if (!untrigger_button_pressed) {
+        untrigger_from_button = true;
+        untrigger_button_pressed = true;
+      }
+    } else {
+      untrigger_button_pressed = false;
+    }
+
     int limit = params[COUNT_PARAM].getValue();
 
     // Determine whether or not the Fuse has blown, as certain behaviors
     // change with that fact. Note that Blown-ness can be changed by adding
     // a TRIGGER event or by lowering the LIMIT.
     bool blown = (count >= limit);
+    // Process the untrigger first.
+    // Note that we, for semantic reasons, don't lower the count I've we've
+    // blown the fuse.
+    // TODO: make this possible to allow in the menu?
+    if (!blown && (untrigger_from_input || untrigger_from_button)) {
+	    count = std::max(0, count - 1);
+      // Flash the UNTRIGGER light for a tenth of second.
+      // Compute how many samples to show the light.
+      // Note that, in contrast to RESET, we do set a timer on the UNTRIGGER
+      // light; because we want to convey that UNTRIGGER does ONE UNTRIGGER per
+      // press, but RESET is just as reset no matter how long you hold it.
+      untrigger_light_countdown = std::floor(args.sampleRate / 10.0f);
+    }
+    // Now process an incoming trigger.
     if (!blown && (trigger_from_input || trigger_from_button)) {
 	    count += 1;
       // Flash the TRIGGER light for a tenth of second.
@@ -234,6 +274,8 @@ struct Fuse : Module {
       reset || reset_light_countdown > 0 ? 1.0f: 0.0f);
     lights[TRIGGER_LIGHT].setBrightness(
       trigger_light_countdown > 0 ? 1.0f: 0.0f);
+    lights[UNTRIGGER_LIGHT].setBrightness(
+      untrigger_light_countdown > 0 ? 1.0f: 0.0f);
   }
 
   // Set by context menu.
@@ -241,7 +283,7 @@ struct Fuse : Module {
   float default_in_voltage = 0.0f;
 
   // Detects input triggers.
-  dsp::SchmittTrigger counter_trigger, reset_trigger;
+  dsp::SchmittTrigger counter_trigger, countdown_trigger, reset_trigger;
 
   // Tracks the current position of the "amplitude envelope" that STYLE
   // helps determine. Needed to make SLEW control meaningful.
@@ -258,10 +300,12 @@ struct Fuse : Module {
 
   // Make sure we only trigger once when TRIGGER button is pressed.
   bool trigger_button_pressed = false;
+  bool untrigger_button_pressed = false;
 
   // Keeps lights on buttons lit long enough to see.
   int reset_light_countdown = 0;
   int trigger_light_countdown = 0;
+  int untrigger_light_countdown = 0;
 };
 
 struct FuseDisplay : Widget {
@@ -434,31 +478,41 @@ struct FuseWidget : ModuleWidget {
 
     // Screen at the top.
     FuseDisplay* display = createWidget<FuseDisplay>(
-      mm2px(Vec(1.240, 30.5)));
+      mm2px(Vec(1.240, 17.5)));
     display->box.size = mm2px(Vec(28.0, 4.0));
     display->module = module;
     addChild(display);
 
     // Style.
     RoundBlackSnapKnob* style_knob = createParamCentered<RoundBlackSnapKnob>(
-        mm2px(Vec(8.024, 48.0)), module, Fuse::STYLE_PARAM);
+        mm2px(Vec(8.024, 32.0)), module, Fuse::STYLE_PARAM);
     style_knob->minAngle = -0.28f * M_PI;
     style_knob->maxAngle = 0.28f * M_PI;
     addParam(style_knob);
 
     // Count.
     addParam(createParamCentered<RoundBlackKnob>(
-        mm2px(Vec(20.971, 48.0)), module, Fuse::COUNT_PARAM));
+        mm2px(Vec(20.971, 32.0)), module, Fuse::COUNT_PARAM));
 
     // Trigger
     addInput(createInputCentered<PJ301MPort>(
-	      mm2px(Vec(8.024, 64.0)), module, Fuse::TRIGGER_INPUT));
+	      mm2px(Vec(8.024, 48.0)), module, Fuse::TRIGGER_INPUT));
+        // Making this a Button and not a Latch means that it pops back up
+        // when you let go.
+        addParam(createLightParamCentered<VCVLightButton<
+                 MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 48.0)),
+                                                 module, Fuse::TRIGGER_PARAM,
+                                                 Fuse::TRIGGER_LIGHT));
+
+    // Untrigger
+    addInput(createInputCentered<PJ301MPort>(
+	      mm2px(Vec(8.024, 64.0)), module, Fuse::UNTRIGGER_INPUT));
         // Making this a Button and not a Latch means that it pops back up
         // when you let go.
         addParam(createLightParamCentered<VCVLightButton<
                  MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 64.0)),
-                                                 module, Fuse::TRIGGER_PARAM,
-                                                 Fuse::TRIGGER_LIGHT));
+                                                 module, Fuse::UNTRIGGER_PARAM,
+                                                 Fuse::UNTRIGGER_LIGHT));
 
     // Reset
     addInput(createInputCentered<PJ301MPort>(
