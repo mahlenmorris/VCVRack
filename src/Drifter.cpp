@@ -52,7 +52,6 @@ struct Drifter : Module {
     OFFSET_LIGHT,
     RESET_LIGHT,
     DRIFT_LIGHT,
-    ENDPOINTS_LIGHT,
     LIGHTS_LEN
   };
 
@@ -71,7 +70,7 @@ struct Drifter : Module {
     configButton(RESET_PARAM,
                  "Press to reset curve to initial shape (see menu)");
     configButton(DRIFT_PARAM, "Press to drift once");
-    // TODO: Shouldn't Unipolar reset to all zeroes?
+
     configSwitch(OFFSET_PARAM, 0, 1, 0, "Offset",
                  {"Bipolar (-5V - +5V)", "Unipolar (0V - 10V)"});
     configSwitch(LINETYPE_PARAM, 0, 2, 1, "Line Type",
@@ -79,8 +78,9 @@ struct Drifter : Module {
     // This has distinct values.
     getParamQuantity(LINETYPE_PARAM)->snapEnabled = true;
 
-    configSwitch(ENDPOINTS_PARAM, 0, 1, 0, "Endpoints are",
-                 {"Fixed", "Drifting"});
+    configSwitch(ENDPOINTS_PARAM, 0, 2, 0, "Endpoints are",
+                 {"Fixed", "Drifting independently", "Drifting together"});
+    getParamQuantity(ENDPOINTS_PARAM)->snapEnabled = true;
 
     configInput(RESET_INPUT,
                 "Line is reset to initial shape when a trigger enters");
@@ -165,7 +165,8 @@ struct Drifter : Module {
 
   void reset_points(bool startup) {
     static std::function<float(float, float, bool)> reset_functions[] = {
-      [](float x, float w, bool uni) { return 0.0 + (uni ? 0.0f : 5.0f);},  // Zero
+      [](float x, float w, bool uni)
+         { return 0.0 + (uni ? 0.0f : 5.0f);},  // Zeros.
       [](float x, float w, bool uni)
          { return 5.0f + 5.0f * sin(3.1415927f * (x + w) / 5.0f);},  // Sine.
       [](float x, float w, bool uni)
@@ -198,7 +199,7 @@ struct Drifter : Module {
         },
       [](float x, float w, bool uni)
         { float xw = x + w;    // Square.
-          if (xw <= 5.0f) {
+          if (xw < 5.0f) {  // Because w is 5.0 for C, <= 5.0 leads to suprious initial peak.
             return 10.0f;
           } else if (xw <= 10.f) {
             return 0.0f;
@@ -405,7 +406,7 @@ struct Drifter : Module {
     // are definitely set.
     if (!initialized) {
       reset_points(true);
-      need_to_update_graph = true;  // Yes, all y's will be zero.
+      need_to_update_graph = true;
       initialized = true;
     }
 
@@ -432,6 +433,7 @@ struct Drifter : Module {
     }
 
     bool endpoints_drift = params[ENDPOINTS_PARAM].getValue() > 0;
+    bool endpoints_drift_together = params[ENDPOINTS_PARAM].getValue() == 2;
     // Test the Reset button and signal.
     bool reset_was_low = !resetTrigger.isHigh();
     resetTrigger.process(rescale(
@@ -450,7 +452,7 @@ struct Drifter : Module {
     if (reset) {
       reset_points(false);
       // Now that new function has been computed, update the display curve.
-      need_to_update_graph = true;  // Yes, all y's will be zero.
+      need_to_update_graph = true;
     }
 
     // Determine if we have a DRIFT event from button or input.
@@ -510,14 +512,18 @@ struct Drifter : Module {
         point result = uniform_region_value(total_drift, 0.0f, start_point, min, max);
         start_point.y = result.y;
 
-        min = {10.0f, 0.0f};
-        max = {10.0f, 10.0f};
-        result = uniform_region_value(total_drift, 0.0f, end_point, min, max);
-        end_point.y = result.y;
+        if (!endpoints_drift_together) {
+          min = {10.0f, 0.0f};
+          max = {10.0f, 10.0f};
+          result = uniform_region_value(total_drift, 0.0f, end_point, min, max);
+          end_point.y = result.y;
+        } else {
+          end_point.y = start_point.y;
+        }
       }
 
       // Now that new function has been computed, update the display curve.
-      need_to_update_graph = true;  // Yes, all y's will be zero.
+      need_to_update_graph = true;
     }
 
     if (inputs[DOMAIN_INPUT].isConnected() &&
@@ -540,7 +546,6 @@ struct Drifter : Module {
     lights[OFFSET_LIGHT].setBrightness(offset_unipolar);
     lights[RESET_LIGHT].setBrightness(
         reset || reset_light_countdown > 0 ? 1.0f : 0.0f);
-    lights[ENDPOINTS_LIGHT].setBrightness(endpoints_drift);
     lights[DRIFT_LIGHT].setBrightness(
         drifting_light_countdown > 0 ? 1.0f : 0.0f);
   }
@@ -699,10 +704,11 @@ struct DrifterWidget : ModuleWidget {
                                              module, Drifter::OFFSET_PARAM,
                                              Drifter::OFFSET_LIGHT));
     // ENDS
-    addParam(createLightParamCentered<VCVLightLatch<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(37.224, 64.0)),
-                                             module, Drifter::ENDPOINTS_PARAM,
-                                             Drifter::ENDPOINTS_LIGHT));
+    RoundBlackSnapKnob* ends_knob = createParamCentered<RoundBlackSnapKnob>(
+         mm2px(Vec(37.224, 64.0)), module, Drifter::ENDPOINTS_PARAM);
+    ends_knob->minAngle = -0.28f * M_PI;
+    ends_knob->maxAngle = 0.28f * M_PI;
+    addParam(ends_knob);
 
     // Line Count.
     addParam(createParamCentered<RoundBlackKnob>(

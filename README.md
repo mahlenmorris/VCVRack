@@ -830,8 +830,12 @@ move in the 2-dimensional space in one DRIFT event. Setting it to zero
 locks the points in place. Higher values allow larger changes each
 time. Hint: start small.
 #### ENDS Button
-Selects one of two options: Left and right end points stay locked
-at value zero OR end points drift up and down when DRIFT events occur.
+Selects one of three options:
+* Left and right end points stay locked
+at their current value OR end points drift up and down when DRIFT events occur.
+* Left and right end points drift independently.
+* The right-side end point stays at the same value as the left one.
+
 #### DRIFT Input and Button
 A trigger to the Input or a Button press will
 cause all of the points defining the output curve to move once, within the
@@ -873,6 +877,9 @@ Variants A, B, C, and D
 ##### Falling Saw
 ![Falling Saw](images/Drifter-FSaw.png)
 ##### Square
+Note that the transients in these "squares" aren't perfectly vertical,
+because there is always initially some horizontal distance between the
+points that define the shape.
 ![Square](images/Drifter-Square.png)
 
 ### Bypass Behavior
