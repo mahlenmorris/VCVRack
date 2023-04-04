@@ -1,0 +1,22 @@
+{
+  "plugin": "StochasticTelegraph",
+  "model": "BASICally",
+  "version": "2.0.8",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    }
+  ],
+  "data": {
+    "text": "' Trigger to IN9 reinitializes the sequencer.\n' Trigger to IN1 resets to pos1.\n' Trigger to IN2 resets to pos2.\n' Trigger to IN3 resets to random position.\n' Trigger to IN4 moves to next step in sequence.\n' OUT1 is the output.\n\nWHEN start() or trigger(in9)\n  CLEAR ALL\n  ' Could be notes or numbers or combination.\n  values[0] = { c3, d#3, g3, a#3,\n                d4, a3, g3, e3 }\n  length = 8 ' Can be longer!\n  current = 0\n  pos1 = 0\n  pos2 = 5\n  out1 = values[current]\nEND WHEN\n\nWHEN trigger(in1)\n  current = pos1\n  out1 = values[current]\nEND WHEN\n\nWHEN trigger(in2)\n  current = pos2\n  out1 = values[current]\nEND WHEN\n\nWHEN trigger(in3)\n  current = floor(random(0, length))\n  out1 = values[current]\nEND WHEN\n\nWHEN trigger(in4)\n  current = mod(current + 1, length)\n  out1 = values[current]\nEND WHEN\n",
+    "width": 28,
+    "allow_error_highlight": 1,
+    "screen_colors": 1095216660480,
+    "title_text": "Multi-reset Sequencer"
+  }
+}
