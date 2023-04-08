@@ -401,6 +401,10 @@ struct Basically : Module {
       json_object_set_new(rootJ, "title_text",
                           json_stringn(title_text.c_str(), title_text.size()));
     }
+    if (font_choice.length() > 0) {
+      json_object_set_new(rootJ, "font_choice",
+                          json_stringn(font_choice.c_str(), font_choice.size()));
+    }
     return rootJ;
   }
 
@@ -415,6 +419,10 @@ struct Basically : Module {
     json_t* title_textJ = json_object_get(rootJ, "title_text");
 		if (title_textJ) {
 			title_text = json_string_value(title_textJ);
+    }
+    json_t* font_choiceJ = json_object_get(rootJ, "font_choice");
+		if (font_choiceJ) {
+			font_choice = json_string_value(font_choiceJ);
     }
     json_t* widthJ = json_object_get(rootJ, "width");
 		if (widthJ)
@@ -453,7 +461,15 @@ struct Basically : Module {
     environment->Reset();
     // Note that we do not clear the variable/array state.
     // Keeping previously defined variables makes live-coding work.
-    // TODO: add CLEAR command for just this.
+  }
+
+  std::string getFontPath() {
+    // font_choice changes very rarely; cache this value?
+    if (font_choice.substr(0, 4) == "res/") {
+      return asset::system(font_choice);
+    } else {
+      return asset::plugin(pluginInstance, font_choice);
+    }
   }
 
   void processBypass(const ProcessArgs& args) override {
@@ -682,6 +698,8 @@ struct Basically : Module {
   // But we don't actully have a good pointer to the text field.
   // drawLayer() uses this if it's > -1;
   int cursor_override = -1;
+  // Can be overriden by saved menu choice.
+  std::string font_choice = "fonts/RobotoMono-Regular.ttf";
 };
 
 // Adds support for undo/redo in the text field where people type programs.
@@ -809,11 +827,8 @@ struct ModuleResizeHandle : OpaqueWidget {
 
 struct TitleTextField : widget::OpaqueWidget {
   Basically* module;
-  std::string fontPath;
 
   TitleTextField() {
-    // TODO: Pick better font.
-    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
   }
 
   void drawLayer(const DrawArgs& args, int layer) override {
@@ -823,46 +838,48 @@ struct TitleTextField : widget::OpaqueWidget {
       Vec bounding_box = r.getBottomRight();
       // No background color!
 
-      std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
-      if (font && module) {
-        std::string text = module->title_text;
-        nvgFillColor(args.vg, color::BLACK);
-        // The longer the text, the smaller the font. 20 is our largest size,
-        // and it handles 10 chars of this font. 10 is smallest size, it can
-        // handle 25 chars.
-        int font_size = 24;
-        std::vector<std::string> lines;
-        if ((int) text.length() > 8) {
-          font_size = 15;
-          int nearest_to_mid = -1;
-          int text_length = (int) text.length();
-          // Look for a space we can break on.
-          for (int i = 0; i < text_length; i++) {
-            if (text.at(i) == ' ') {
-              if (abs(i - (text_length / 2)) <
-                abs(nearest_to_mid - (text_length / 2))) {
-                  nearest_to_mid = i;
+      if (module) {
+        std::shared_ptr<Font> font = APP->window->loadFont(module->getFontPath());
+        if (font) {
+          std::string text = module->title_text;
+          nvgFillColor(args.vg, color::BLACK);
+          // The longer the text, the smaller the font. 20 is our largest size,
+          // and it handles 10 chars of this font. 10 is smallest size, it can
+          // handle 25 chars.
+          int font_size = 24;
+          std::vector<std::string> lines;
+          if ((int) text.length() > 8) {
+            font_size = 15;
+            int nearest_to_mid = -1;
+            int text_length = (int) text.length();
+            // Look for a space we can break on.
+            for (int i = 0; i < text_length; i++) {
+              if (text.at(i) == ' ') {
+                if (abs(i - (text_length / 2)) <
+                  abs(nearest_to_mid - (text_length / 2))) {
+                    nearest_to_mid = i;
+                }
               }
             }
-          }
-          if (nearest_to_mid == -1) {
-            // Just split it for them.
-            lines.push_back(text.substr(0, text_length / 2));
-            lines.push_back(text.substr(text_length / 2));
+            if (nearest_to_mid == -1) {
+              // Just split it for them.
+              lines.push_back(text.substr(0, text_length / 2));
+              lines.push_back(text.substr(text_length / 2));
+            } else {
+              lines.push_back(text.substr(0, nearest_to_mid));
+              lines.push_back(text.substr(nearest_to_mid + 1));
+            }
           } else {
-            lines.push_back(text.substr(0, nearest_to_mid));
-            lines.push_back(text.substr(nearest_to_mid + 1));
+            lines.push_back(text);
           }
-        } else {
-          lines.push_back(text);
-        }
-        nvgFontSize(args.vg, font_size);
-        nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
-        nvgFontFaceId(args.vg, font->handle);
-        nvgTextLetterSpacing(args.vg, -2);
-        // Place on the line just off the left edge.
-        for (int i = 0; i < (int) lines.size(); i++) {
-          nvgText(args.vg, bounding_box.x / 2, i * 12, lines[i].c_str(), NULL);
+          nvgFontSize(args.vg, font_size);
+          nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
+          nvgFontFaceId(args.vg, font->handle);
+          nvgTextLetterSpacing(args.vg, -1);
+          // Place on the line just off the left edge.
+          for (int i = 0; i < (int) lines.size(); i++) {
+            nvgText(args.vg, bounding_box.x / 2, i * 12, lines[i].c_str(), NULL);
+          }
         }
       }
     }
@@ -997,6 +1014,13 @@ struct BasicallyDisplay : LedDisplay {
   void insertText(const std::string &fragment) {
     textField->insertText(fragment);
   }
+
+  // Setting the font.
+  void setFontPath() {
+    if (textField && textField->module) {
+      textField->fontPath = textField->module->getFontPath();
+    }
+  }
 };
 
 struct ErrorWidget;
@@ -1011,12 +1035,9 @@ struct ErrorTooltip : ui::Tooltip {
 
 struct ErrorWidget : widget::OpaqueWidget {
   Basically* module;
-  std::string fontPath;
   ErrorTooltip* tooltip;
 
   ErrorWidget() {
-    // TODO: Pick better font.
-    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
     tooltip = NULL;
   }
 
@@ -1083,7 +1104,12 @@ struct ErrorWidget : widget::OpaqueWidget {
               bounding_box.x - 1.0f, bounding_box.y - 1.0f);
       nvgFillColor(args.vg, main_color);
       nvgFill(args.vg);
-
+      std::string fontPath;
+      if (module) {
+        fontPath = module->getFontPath();
+      } else {
+        fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+      }
       std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
       if (font) {
         nvgFillColor(args.vg,  blue_orange ?
@@ -1092,7 +1118,7 @@ struct ErrorWidget : widget::OpaqueWidget {
         nvgFontSize(args.vg, 13);
         nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
         nvgFontFaceId(args.vg, font->handle);
-        nvgTextLetterSpacing(args.vg, -2);
+        nvgTextLetterSpacing(args.vg, -1);
 
         std::string text = (good ? "Good" : "Fix");
         // Place on the line just off the left edge.
@@ -1254,6 +1280,9 @@ struct BasicallyWidget : ModuleWidget {
     // Make sure the handle is correctly placed if drawing for the module
     // browser.
     rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
+
+    // Update the font in the code window to be the one chosen in the menu.
+    codeDisplay->setFontPath();
 		addChild(rightHandle);
   }
 
@@ -1287,36 +1316,57 @@ struct BasicallyWidget : ModuleWidget {
     menu->addChild(createMenuLabel("Title above IN1-3"));
     menu->addChild(new ProgramNameMenuItem(module));
     menu->addChild(new MenuSeparator);
-    menu->addChild(createMenuLabel("Screen colors"));
-    long long int default_colors[] = {0x00ff00000000,
-                                      0xffffff000000,
-                                      0xffd714000000,
-                                      0xffc000000000,
-                                      0x29b2ef000000,
-                                      0x000000ffffff,
-                                      0x29b2efffffff
-                                    };
-    std::string color_names[] = {"Green on Black",
-                                 "White on Black",
-                                 "Yellow on Black (like Notes)",
-                                 "Amber on Black",
-                                 "Blue on Black",
-                                 "Black on White",
-                                 "Blue on White"};
-    for (int i = 0; i < std::end(default_colors) - std::begin(default_colors);
-         i++) {
-      long long int scheme = default_colors[i];
-      menu->addChild(createCheckMenuItem(color_names[i], "",
-          [=]() {return scheme == module->screen_colors;},
-          [=]() {module->screen_colors = scheme;}
-      ));
-    }
+    std::pair<std::string, long long int> colors[] = {
+      {"Green on Black", 0x00ff00000000},
+      {"White on Black", 0xffffff000000},
+      {"Yellow on Black (like Notes)", 0xffd714000000},
+      {"Amber on Black", 0xffc000000000},
+      {"Blue on Black", 0x29b2ef000000},
+      {"Black on White", 0x000000ffffff},
+      {"Blue on White", 0x29b2efffffff}
+    };
+    MenuItem* color_menu = createSubmenuItem("Screen Colors", "",
+     [=](Menu* menu) {
+         for (auto line : colors) {
+           menu->addChild(createCheckMenuItem(line.first, "",
+           [=]() {return line.second == module->screen_colors;},
+           [=]() {module->screen_colors = line.second;}
+           ));
+         }
+     }
+    );
+    menu->addChild(color_menu);
+
+    std::pair<std::string, std::string> fonts[] = {
+      {"VCV font (like Notes)", "res/fonts/ShareTechMono-Regular.ttf"},
+      {"RobotoMono Bold", "fonts/RobotoMono-Bold.ttf"},
+      {"RobotoMono Light", "fonts/RobotoMono-Light.ttf"},
+      {"RobotoMono Medium", "fonts/RobotoMono-Medium.ttf"},
+      {"RobotoMono Regular", "fonts/RobotoMono-Regular.ttf"},
+      {"RobotoSlab Bold", "fonts/RobotoSlab-Bold.ttf"},
+      {"RobotoSlab Light", "fonts/RobotoSlab-Light.ttf"},
+      {"RobotoSlab Regular", "fonts/RobotoSlab-Regular.ttf"}
+  };
+
+    MenuItem* font_menu = createSubmenuItem("Font", "",
+      [=](Menu* menu) {
+          for (auto line : fonts) {
+            menu->addChild(createCheckMenuItem(line.first, "",
+                [=]() {return line.second == module->font_choice;},
+                [=]() {module->font_choice = line.second;
+                       codeDisplay->setFontPath();}
+            ));
+          }
+      }
+    );
+    menu->addChild(font_menu);
+
     // Options
-    menu->addChild(new MenuSeparator);
     menu->addChild(createBoolPtrMenuItem("Highlight error line", "",
                                           &module->allow_error_highlight));
     menu->addChild(createBoolPtrMenuItem("Colorblind-friendly status light", "",
                                           &module->blue_orange_light));
+    menu->addChild(new MenuSeparator);
     // Clamping
     MenuItem* clamp_menu = createSubmenuItem("Clamp OUTn values to (-10V, 10V)", "",
       [=](Menu* menu) {
