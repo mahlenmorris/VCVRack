@@ -715,13 +715,13 @@ struct TextEditAction : history::ModuleAction {
          new_text{newText}, old_cursor{old_cursor_pos},
          new_cursor{new_cursor_pos} {
     moduleId = id;
-    name = "edit code";
+    name = "code edit";
     old_width = new_width = -1;
   }
   TextEditAction(int64_t id, int old_width, int new_width) :
       old_width{old_width}, new_width{new_width} {
     moduleId = id;
-    name = "change module width";
+    name = "module width change";
   }
   void undo() override {
     Basically *module = dynamic_cast<Basically*>(APP->engine->getModule(moduleId));
@@ -1274,16 +1274,16 @@ struct BasicallyWidget : ModuleWidget {
       module, Basically::OUT6_OUTPUT));
 
     // Resize bar on right.
-    ModuleResizeHandle* rightHandle = new ModuleResizeHandle;
-		this->rightHandle = rightHandle;
-		rightHandle->module = module;
+    ModuleResizeHandle* new_rightHandle = new ModuleResizeHandle;
+		this->rightHandle = new_rightHandle;
+		new_rightHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module
     // browser.
-    rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
+    new_rightHandle->box.pos.x = box.size.x - new_rightHandle->box.size.x;
+    addChild(new_rightHandle);
 
     // Update the font in the code window to be the one chosen in the menu.
     codeDisplay->setFontPath();
-		addChild(rightHandle);
   }
 
   void step() override {

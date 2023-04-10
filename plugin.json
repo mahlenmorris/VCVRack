@@ -37,6 +37,16 @@
       ]
     },
     {
+      "slug": "Fermata",
+      "name": "Fermata",
+      "description": "Write much longer text notes. Resizable, scrolls, font choices, and more.",
+      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/README.md#fermata",
+      "tags": [
+        "Blank",
+        "Utility"
+      ]
+    },
+    {
       "slug": "Fuse",
       "name": "Fuse",
       "description": "Counts triggers and blocks/allows a signal after hitting a limit. Useful for timed composition changes, simulating components that break with overuse, or scaling a value based on the number of triggers.",
