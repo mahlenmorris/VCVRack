@@ -825,7 +825,7 @@ struct ModuleResizeHandle : OpaqueWidget {
 	}
 };
 
-struct TitleTextField : widget::OpaqueWidget {
+struct TitleTextField : LightWidget {
   Basically* module;
 
   TitleTextField() {
@@ -998,9 +998,9 @@ struct BasicallyDisplay : LedDisplay {
     textField->textUpdated();
 		addChild(textField);
 	}
-  // The BasicallyWidget changes size, so we have to reflaect that.
+  // The BasicallyWidget changes size, so we have to reflect that.
   void step() override {
-    // At smallest szie, hide the screen.
+    // At smallest size, hide the screen.
     if (textField->module && textField->module->width <= 7) {
       hide();
     } else {

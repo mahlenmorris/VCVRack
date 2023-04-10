@@ -25,6 +25,10 @@ struct Fermata : Module {
       json_object_set_new(rootJ, "font_choice",
                           json_stringn(font_choice.c_str(), font_choice.size()));
     }
+    if (title_text.length() > 0) {
+      json_object_set_new(rootJ, "title_text",
+                          json_stringn(title_text.c_str(), title_text.size()));
+    }
     return rootJ;
   }
 
@@ -35,17 +39,20 @@ struct Fermata : Module {
       previous_text = text;
   		editor_refresh = true;
     }
+    json_t* widthJ = json_object_get(rootJ, "width");
+		if (widthJ)
+			width = json_integer_value(widthJ);
+      json_t* screenJ = json_object_get(rootJ, "screen_colors");
+  		if (screenJ)
+  			screen_colors = json_integer_value(screenJ);
     json_t* font_choiceJ = json_object_get(rootJ, "font_choice");
 		if (font_choiceJ) {
 			font_choice = json_string_value(font_choiceJ);
     }
-    json_t* widthJ = json_object_get(rootJ, "width");
-		if (widthJ)
-			width = json_integer_value(widthJ);
-
-    json_t* screenJ = json_object_get(rootJ, "screen_colors");
-		if (screenJ)
-			screen_colors = json_integer_value(screenJ);
+    json_t* title_textJ = json_object_get(rootJ, "title_text");
+		if (title_textJ) {
+			title_text = json_string_value(title_textJ);
+    }
   }
 
   std::string getFontPath() {
@@ -77,6 +84,8 @@ struct Fermata : Module {
   // right (within limits), and informs the size of the display and text field.
   // Saved in the json for the module.
   int width = Fermata::DEFAULT_WIDTH;
+  // Visible title for the text, set in the menu.
+  std::string title_text;
   // The undo/redo sometimes needs to reset the cursor position.
   // But we don't actully have a good pointer to the text field.
   // drawLayer() uses this if it's > -1;
@@ -207,6 +216,68 @@ struct FermataModuleResizeHandle : OpaqueWidget {
 	}
 };
 
+struct FermataTitleTextField : LightWidget {
+  Fermata* module;
+
+  FermataTitleTextField() {
+  }
+
+  void drawLayer(const DrawArgs& args, int layer) override {
+    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+    if (layer == 1) {
+      // No background color!
+
+      std::shared_ptr<Font> font;
+      std::string text;
+      if (module) {
+        font = APP->window->loadFont(module->getFontPath());
+        text = module->title_text;
+      } else {
+        font = APP->window->loadFont(
+          asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
+        text = "A Longer Note";
+      }
+      if (font) {
+        nvgFillColor(args.vg, color::BLACK);
+        // The longer the text, the smaller the font. 20 is our largest size,
+        // and it handles 10 chars of this font. 10 is smallest size, it can
+        // handle 25 chars.
+        int font_size = 18;
+        nvgFontSize(args.vg, font_size);
+        nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_LEFT);
+        nvgFontFaceId(args.vg, font->handle);
+        nvgText(args.vg, 0, 0, text.c_str(), NULL);
+      }
+    }
+    Widget::drawLayer(args, layer);
+    nvgResetScissor(args.vg);
+  }
+};
+
+struct FermataTextFieldMenuItem : TextField {
+	FermataTextFieldMenuItem() {
+    box.size = Vec(120, 20);
+    multiline = false;
+  }
+};
+
+struct FermataProgramNameMenuItem : FermataTextFieldMenuItem {
+	Fermata* module;
+
+	FermataProgramNameMenuItem(Fermata* fermata_module) {
+    module = fermata_module;
+    if (module) {
+      text = module->title_text;
+    }
+  }
+	void onChange(const event::Change& e) override {
+    FermataTextFieldMenuItem::onChange(e);
+    if (module) {
+      module->title_text = text;
+    }
+  }
+};
+
 // Class for the editor.
 struct FermataTextField : STTextField {
 	Fermata* module;
@@ -282,9 +353,12 @@ struct FermataTextField : STTextField {
 };
 
 static std::string module_browser_text =
-  "' Write your text here. For example:\n* Instructions for playing this piece.\n"
+  "' Write your text here! For example:\n* Instructions for playing this piece.\n"
   "* Notes/reminders on how this part of the patch works.\n* TODO's or ideas.\n"
-  "* A short story you're writing while listening to this patch.";
+  "* A short story you're writing while listening to your patch.\n\n"
+  "You can set the title in the module menu, as well as a pick a font "
+  "and screen colors. And you can resize the module by dragging the right edge "
+  "(over there -->)";
 
 struct FermataDisplay : LedDisplay {
   FermataTextField* textField;
@@ -303,9 +377,10 @@ struct FermataDisplay : LedDisplay {
     textField->textUpdated();
 		addChild(textField);
 	}
-  // The FermataWidget changes size, so we have to reflaect that.
+
+  // The FermataWidget changes size, so we have to reflect that.
   void step() override {
-    // At smallest szie, hide the screen.
+    // At smallest size, hide the screen.
     if (textField->module && textField->module->width <= 8) {
       hide();
     } else {
@@ -329,12 +404,14 @@ struct FermataDisplay : LedDisplay {
 };
 
 const float NON_SCREEN_WIDTH = 1.6f;
+const float NON_TITLE_WIDTH = 4.6f;
 
 struct FermataWidget : ModuleWidget {
   Widget* topRightScrew;
 	Widget* bottomRightScrew;
 	Widget* rightHandle;
 	FermataDisplay* textDisplay;
+  FermataTitleTextField* title;
 
   FermataWidget(Fermata* module) {
     setModule(module);
@@ -361,6 +438,12 @@ struct FermataWidget : ModuleWidget {
         Vec(box.size.x - 2 * RACK_GRID_WIDTH,
             RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
     addChild(bottomRightScrew);
+
+    // User created title.
+    title = createWidget<FermataTitleTextField>(mm2px(Vec(12.029, 0.0)));
+    title->box.size = mm2px(Vec(200.0, 10.0));
+    title->module = module;
+    addChild(title);
 
     textDisplay = createWidget<FermataDisplay>(
       mm2px(Vec(3.0, 5.9)));
@@ -396,8 +479,9 @@ struct FermataWidget : ModuleWidget {
     }
 
     // Adjust size of area we display text in.
-    // "2.1" here is ~1 on the left side plus ~1.1 on the right.
 		textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
+    // Adjust size of area we display title in.
+		title->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_TITLE_WIDTH;
     // Move the right side screws to follow.
 		topRightScrew->box.pos.x = box.size.x - 30;
 		bottomRightScrew->box.pos.x = box.size.x - 30;
@@ -409,6 +493,9 @@ struct FermataWidget : ModuleWidget {
   void appendContextMenu(Menu* menu) override {
     Fermata* module = dynamic_cast<Fermata*>(this->module);
     // Add color choices.
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createMenuLabel("Set Title"));
+    menu->addChild(new FermataProgramNameMenuItem(module));
     menu->addChild(new MenuSeparator);
     std::pair<std::string, long long int> colors[] = {
       {"Green on Black", 0x00ff00000000},
