@@ -32,9 +32,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="3.959798"
-     inkscape:cx="40.65864"
-     inkscape:cy="479.31738"
+     inkscape:zoom="0.9899495"
+     inkscape:cx="42.931483"
+     inkscape:cy="177.78685"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -44,9 +44,9 @@
      inkscape:bbox-nodes="false"
      inkscape:snap-bbox-edge-midpoints="false"
      inkscape:window-width="1269"
-     inkscape:window-height="481"
-     inkscape:window-x="130"
-     inkscape:window-y="130"
+     inkscape:window-height="825"
+     inkscape:window-x="232"
+     inkscape:window-y="142"
      inkscape:window-maximized="0"
      inkscape:snap-bbox-midpoints="true"
      inkscape:snap-nodes="false"
@@ -172,7 +172,7 @@
        aria-label="Fermata"
        id="text389"
        style="font-size:4.23333px;line-height:1.25;word-spacing:0px;stroke-width:0.264583"
-       transform="translate(1.0583333,122.76687)">
+       transform="translate(1.0583333,-0.03257)">
       <path
          d="m 12.936328,170.39635 h -1.556493 v 0.86817 h 1.337385 v 0.3638 h -1.337385 v 1.48208 h -0.409277 v -3.07785 h 1.96577 z"
          id="path441" />

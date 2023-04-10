@@ -353,12 +353,14 @@ struct FermataTextField : STTextField {
 };
 
 static std::string module_browser_text =
-  "' Write your text here! For example:\n* Instructions for playing this piece.\n"
-  "* Notes/reminders on how this part of the patch works.\n* TODO's or ideas.\n"
+  "Write your text here! For example:\n"
+  "* Instructions for playing the patch.\n"
+  "* Notes/reminders on how this part of the patch works.\n"
+  "* TODO's or ideas.\n"
   "* A short story you're writing while listening to your patch.\n\n"
-  "You can set the title in the module menu, as well as a pick a font "
-  "and screen colors. And you can resize the module by dragging the right edge "
-  "(over there -->)";
+  "You can also set the title (below) in the module menu, as well as a pick "
+  "a font and screen colors. And you can resize the module by dragging the "
+  "right edge (over there -->)";
 
 struct FermataDisplay : LedDisplay {
   FermataTextField* textField;
@@ -440,7 +442,7 @@ struct FermataWidget : ModuleWidget {
     addChild(bottomRightScrew);
 
     // User created title.
-    title = createWidget<FermataTitleTextField>(mm2px(Vec(12.029, 0.0)));
+    title = createWidget<FermataTitleTextField>(mm2px(Vec(12.029, 122.3)));
     title->box.size = mm2px(Vec(200.0, 10.0));
     title->module = module;
     addChild(title);
