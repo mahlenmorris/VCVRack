@@ -1,5 +1,14 @@
 # Release Notes
 
+### 2.0.9
+#### ???
+* Additional preset scripts for BASICally.
+* Drifter can now RESET to shapes other than a straight line at zero.
+* Drifter can drift the left and right end points in sync. This prevents
+sudden changes/transients when driving IN with a saw wave.
+* Fuse now has an UNTRIGGER input and button, which lowers the accumulated
+count of triggers.
+
 ### 2.0.8
 #### February 12, 2023
 * Bug fixes to compilation.
