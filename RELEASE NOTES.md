@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.9
-#### ???
+#### April 10, 2023
 * Additional preset scripts for BASICally.
 * Drifter can now RESET to shapes other than a straight line at zero.
 * Drifter can drift the left and right end points in sync. This prevents
