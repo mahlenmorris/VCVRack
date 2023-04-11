@@ -297,14 +297,15 @@ struct ClosedTitleTextField : LightWidget {
           std::string last = text.substr(start);
           lines.push_back(last);
           longest = std::max(longest, (int) last.size());
-          int font_size = longest < 8 ? 26 : 26 - ((longest - 7) * 2);
+          int font_size = longest < 8 ? 26 : floor(26 * 7 / longest);
+          float spacing = longest < 8 ? 21.0 : 21 * 7 / longest;
 
           nvgFontSize(args.vg, font_size);
           nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
           nvgFontFaceId(args.vg, font->handle);
           // Place on the line just off the left edge.
           for (int i = 0; i < (int) lines.size(); i++) {
-            nvgText(args.vg, bounding_box.x / 2, i * 20, lines[i].c_str(), NULL);
+            nvgText(args.vg, bounding_box.x / 2, i * spacing, lines[i].c_str(), NULL);
           }
         }
       }
@@ -414,7 +415,8 @@ static std::string module_browser_text =
   "* A short story you're writing while listening to your patch.\n\n"
   "You can also set the title (below) in the module menu, as well as a pick "
   "a font and screen colors. And you can resize the module by dragging the "
-  "right edge (over there -->)";
+  "right edge (over there -->).\n"
+  "If you shrink the module enough, it becomes a large label.";
 
 struct FermataDisplay : LedDisplay {
   FermataTextField* textField;

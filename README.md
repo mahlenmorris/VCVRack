@@ -6,6 +6,8 @@ self-regulating structure. Exploring the region between random and static.
 
 * [BASICally](#basically): A simple, likely familiar procedural programming language within the context of VCV Rack.
 * [Drifter](#drifter): Creates sequences of values that can slowly (or quickly) vary, like a series of points doing random walks connected into a series.
+* [Fermata](#fermata): A text editor and labeling module. Write much longer text notes. Resizable, scrolls, font choices, and more. Or just add some visual emphasis,
+Stochastic Telegraph-style.
 * [Fuse](#fuse): Block, allow, or attenuate a signal passing through, based on the number of triggers observed in a different signal.
 
 ![Line Break image](images/Separator.png)
@@ -887,6 +889,62 @@ If this module is bypassed, then OUT will equal IN.
 
 ![Line Break image](images/Separator.png)
 
+# Fermata
+Write longer notes! And wider or narrower notes.
+
+Here is Fermata:
+* as a label
+* expanded a bit turning it into text
+* further expanded, and with different font and screen color choices.
+
+![Fermata Variety](images/Fermata-variety.png)
+
+### Uses
+* Instructions for playing the patch.
+* Notes/reminders on how this part of the patch works.
+* TODO's or ideas.
+* A short story you're writing while listening to your patch.
+
+### Features
+* Up and down arrow keys work mostly like you expect.
+* Text scrolls as you move up and down.
+* Resize the module by dragging the right edge. Size can range from 8-64 HP.
+* Pick from a (small) variety of fonts.
+* Pick from a (small) variety of foreground/background colors.
+* Set the title in the module menu.
+
+Also useful for making a label:
+* Set the title in the menu.
+* Resize the module narrow enough (8 HP) and the title becomes a large label.
+
+### Menu Options
+#### Set Title
+Type in the title you'd like to use here.
+#### Screen Colors
+Pick from a small number of color choices for the editor window.
+#### Font
+Pick from a small number of fonts. The "Mono" fonts are monospaced fonts.
+
+### Known Bugs
+* If text lines are wider than the module, the lower parts of the text can sometimes become
+impossible to reach. For now, the workaround is to resize the module so no lines are wrapped around, and then it should scroll better.
+* Up and down keys move between what are effectively paragraphs. It should
+really move between visual lines, not physical lines.
+* Wouldn't it be better if you could resize from the left side as well? Yes, it would be.
+
+### Bypass Behavior
+If this module is bypassed, then it will be darker. But otherwise, no different.
+
+### Related Modules
+
+* VCV's [Notes](https://library.vcvrack.com/Core/Notes).
+* cf's [LABEL](https://library.vcvrack.com/cf/LABEL).
+* NYSTHI's [Label](https://library.vcvrack.com/NYSTHI/Label) and
+[LabelSlim](https://library.vcvrack.com/NYSTHI/LabelSlim)
+
+
+![Line Break image](images/Separator.png)
+
 # Fuse
 Block, allow, or attenuate a signal passing through, based on the number of triggers
 observed in a different signal.
@@ -950,7 +1008,7 @@ short trigger.
 #### UNTRIGGER Input and Button
 If the fuse is not currently blown, then a trigger to the Input or a
 Button press **subtracts** one from the count of
-accumulated TRIGGER events. 
+accumulated TRIGGER events.
 #### RESET Input and Button
 A trigger to the Input or a Button press resets the count of accumulated
 TRIGGER events to zero.

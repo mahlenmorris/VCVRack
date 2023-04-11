@@ -1,7 +1,13 @@
 # Release Notes
 
-### 2.0.9
+### 2.0.10
 #### ???
+* Added a new text and labeling module called Fermata, for annotating and
+documenting a patch, or for writing a story while listening to one.
+A more capable version of VCV's Notes.
+
+### 2.0.9
+#### April 10, 2023
 * Additional preset scripts for BASICally.
 * Drifter can now RESET to shapes other than a straight line at zero.
 * Drifter can drift the left and right end points in sync. This prevents
