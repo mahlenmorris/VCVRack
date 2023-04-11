@@ -256,9 +256,63 @@ struct FermataTitleTextField : LightWidget {
 
 struct FermataTextFieldMenuItem : TextField {
 	FermataTextFieldMenuItem() {
-    box.size = Vec(120, 20);
+    box.size = Vec(120, 50);
     multiline = false;
   }
+};
+
+struct ClosedTitleTextField : LightWidget {
+  Fermata* module;
+
+	ClosedTitleTextField() {
+    box.size = mm2px(Vec(33, 110));
+  }
+
+  void drawLayer(const DrawArgs& args, int layer) override {
+    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+    if (layer == 1) {
+      Rect r = box.zeroPos();
+      Vec bounding_box = r.getBottomRight();
+      // No background color!
+
+      if (module) {
+        std::shared_ptr<Font> font = APP->window->loadFont(module->getFontPath());
+        if (font) {
+          std::string text = module->title_text;
+          nvgFillColor(args.vg, color::BLACK);
+          std::vector<std::string> lines;
+          // Break this into words. Since I don't know the font,
+          // too much effort to predict length, and don't want to use a
+          // TextField.
+          // TODO: cache this computation by moving this elsewhere?
+          auto start = 0U;
+          auto end = text.find(' ');
+          int longest = 0;
+          while (end != std::string::npos) {
+            lines.push_back(text.substr(start, end - start));
+            longest = std::max(longest, (int) (end - start));
+            start = end + 1;
+            end = text.find(' ', start);
+          }
+          std::string last = text.substr(start);
+          lines.push_back(last);
+          longest = std::max(longest, (int) last.size());
+          int font_size = longest < 8 ? 26 : 26 - ((longest - 7) * 2);
+
+          nvgFontSize(args.vg, font_size);
+          nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
+          nvgFontFaceId(args.vg, font->handle);
+          // Place on the line just off the left edge.
+          for (int i = 0; i < (int) lines.size(); i++) {
+            nvgText(args.vg, bounding_box.x / 2, i * 20, lines[i].c_str(), NULL);
+          }
+        }
+      }
+    }
+    Widget::drawLayer(args, layer);
+    nvgResetScissor(args.vg);
+  }
+
 };
 
 struct FermataProgramNameMenuItem : FermataTextFieldMenuItem {
@@ -414,6 +468,7 @@ struct FermataWidget : ModuleWidget {
 	Widget* rightHandle;
 	FermataDisplay* textDisplay;
   FermataTitleTextField* title;
+  ClosedTitleTextField* closed_title;
 
   FermataWidget(Fermata* module) {
     setModule(module);
@@ -447,6 +502,12 @@ struct FermataWidget : ModuleWidget {
     title->module = module;
     addChild(title);
 
+    // User created title when closed.
+    closed_title = createWidget<ClosedTitleTextField>(mm2px(Vec(4.0, 15.0)));
+    closed_title->module = module;
+    closed_title->hide();  // Only shown when at smallest size.
+    addChild(closed_title);
+
     textDisplay = createWidget<FermataDisplay>(
       mm2px(Vec(3.0, 5.9)));
 		textDisplay->box.size = mm2px(Vec(60.0, 117.0));
@@ -475,6 +536,13 @@ struct FermataWidget : ModuleWidget {
     // And maybe the *first* time step() is called.
 		if (module) {
 			box.size.x = module->width * RACK_GRID_WIDTH;
+      if (module->width == 8) {
+        closed_title->show();
+        title->hide();
+      } else {
+        closed_title->hide();
+        title->show();
+      }
 		} else {
       // Like when showing the module in the module browser.
       box.size.x = Fermata::DEFAULT_WIDTH * RACK_GRID_WIDTH;
