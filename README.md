@@ -890,11 +890,11 @@ If this module is bypassed, then OUT will equal IN.
 ![Line Break image](images/Separator.png)
 
 # Fermata
-Write longer notes! And wider or narrower notes.
+Write longer notes! And wider or narrower text notes.
 
 Here is Fermata:
 * as a label
-* expanded a bit turning it into text
+* expanded a bit, turning it into a text editor
 * further expanded, and with different font and screen color choices.
 
 ![Fermata Variety](images/Fermata-variety.png)
@@ -904,11 +904,14 @@ Here is Fermata:
 * Notes/reminders on how this part of the patch works.
 * TODO's or ideas.
 * A short story you're writing while listening to your patch.
+* As a label, the title names a chunk of the patch, allowing the person seeing
+it to pull it open and, say, read more detail on how it works. An example of this can be found in [this patch](examples/AnnotatedSunlightOnSeaAnemones.vcv).
 
 ### Features
 * Up and down arrow keys work mostly like you expect.
 * Text scrolls as you move up and down.
-* Resize the module by dragging the right edge. Size can range from 8-64 HP.
+* Resize the module by dragging the left or right edges. Size can range
+from 8-64 HP.
 * Pick from a (small) variety of fonts.
 * Pick from a (small) variety of foreground/background colors.
 * Set the title in the module menu.
@@ -930,7 +933,6 @@ Pick from a small number of fonts. The "Mono" fonts are monospaced fonts.
 impossible to reach. For now, the workaround is to resize the module so no lines are wrapped around, and then it should scroll better.
 * Up and down keys move between what are effectively paragraphs. It should
 really move between visual lines, not physical lines.
-* Wouldn't it be better if you could resize from the left side as well? Yes, it would be.
 
 ### Bypass Behavior
 If this module is bypassed, then it will be darker. But otherwise, no different.
