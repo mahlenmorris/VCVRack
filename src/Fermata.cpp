@@ -88,21 +88,27 @@ struct Fermata : Module {
   std::string title_text;
   // The undo/redo sometimes needs to reset the cursor position.
   // But we don't actully have a good pointer to the text field.
-  // drawLayer() uses this if it's > -1;
+  // drawLayer() uses this if it's > -1.
   int cursor_override = -1;
+  // The undo/redo sometimes needs to reset the module position.
+  // But we don't actully have a good pointer to the FermataWidget.
+  // FermataWidget::step() uses this if update_pos is set.
+  float box_pos_x;
+  bool update_pos = false;
   // Can be overriden by saved menu choice.
   std::string font_choice = "fonts/RobotoSlab-Regular.ttf";
 };
 
 // Adds support for undo/redo in the text field where people type programs.
-struct FermataTextEditAction : history::ModuleAction {
+struct FermataUndoRedoAction : history::ModuleAction {
   std::string old_text;
   std::string new_text;
   int old_cursor, new_cursor;
-  int old_width;
-  int new_width;
+  int old_width, new_width;
+  // Having left-side resize means the 'box' for the module can move.
+  float old_posx, new_posx;
 
-  FermataTextEditAction(int64_t id, std::string oldText, std::string newText,
+  FermataUndoRedoAction(int64_t id, std::string oldText, std::string newText,
      int old_cursor_pos, int new_cursor_pos) : old_text{oldText},
          new_text{newText}, old_cursor{old_cursor_pos},
          new_cursor{new_cursor_pos} {
@@ -110,8 +116,10 @@ struct FermataTextEditAction : history::ModuleAction {
     name = "text edit";
     old_width = new_width = -1;
   }
-  FermataTextEditAction(int64_t id, int old_width, int new_width) :
-      old_width{old_width}, new_width{new_width} {
+  FermataUndoRedoAction(int64_t id, int old_width, int new_width,
+                        float old_posx, float new_posx) :
+      old_width{old_width}, new_width{new_width}, old_posx{old_posx},
+      new_posx{new_posx} {
     moduleId = id;
     name = "module width change";
   }
@@ -125,6 +133,8 @@ struct FermataTextEditAction : history::ModuleAction {
         module->cursor_override = old_cursor;
       } else {
         module->width = this->old_width;
+        module->box_pos_x = this->old_posx;  // Used by FermataWidget::step.
+        module->update_pos = true;
       }
     }
   }
@@ -139,6 +149,8 @@ struct FermataTextEditAction : history::ModuleAction {
         module->cursor_override = new_cursor;
       } else {
         module->width = this->new_width;
+        module->box_pos_x = this->new_posx;
+        module->update_pos = true;
       }
     }
   }
@@ -151,6 +163,7 @@ struct FermataModuleResizeHandle : OpaqueWidget {
 	Vec dragPos;
 	Rect originalBox;
 	Fermata* module;
+  bool right = false;  // True for one on the right side.
 
 	FermataModuleResizeHandle() {
     // One hole wide and full length tall.
@@ -180,11 +193,18 @@ struct FermataModuleResizeHandle : OpaqueWidget {
     // Minimum and maximum number of holes we allow the module to be.
 		const float minWidth = 8 * RACK_GRID_WIDTH;
     const float maxWidth = 64 * RACK_GRID_WIDTH;
-		newBox.size.x += deltaX;
-		newBox.size.x = std::fmax(newBox.size.x, minWidth);
-    newBox.size.x = std::fmin(newBox.size.x, maxWidth);
-		newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
-
+    if (right) {
+  		newBox.size.x += deltaX;
+  		newBox.size.x = std::fmax(newBox.size.x, minWidth);
+      newBox.size.x = std::fmin(newBox.size.x, maxWidth);
+  		newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
+    } else {
+      newBox.size.x -= deltaX;
+  		newBox.size.x = std::fmax(newBox.size.x, minWidth);
+      newBox.size.x = std::fmin(newBox.size.x, maxWidth);
+  		newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
+      newBox.pos.x = originalBox.pos.x + originalBox.size.x - newBox.size.x;
+    }
 		// Set box and test whether it's valid.
 		mw->box = newBox;
 		if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
@@ -192,10 +212,12 @@ struct FermataModuleResizeHandle : OpaqueWidget {
 		}
 		module->width = std::round(mw->box.size.x / RACK_GRID_WIDTH);
     if (original_width != module->width) {
-      // Make this an undo action. If I don't do this, undoing a different
-      // module's move will cause them to overlap.
+      // Make resizing an undo/redo action. If I don't do this, undoing a
+      // different module's move will cause them to overlap (aka, a
+      // transporter malfunction).
       APP->history->push(
-        new FermataTextEditAction(module->id, original_width, module->width));
+        new FermataUndoRedoAction(module->id, original_width, module->width,
+                                  oldBox.pos.x, mw->box.pos.x));
     }
 	}
 
@@ -265,7 +287,7 @@ struct ClosedTitleTextField : LightWidget {
   Fermata* module;
 
 	ClosedTitleTextField() {
-    box.size = mm2px(Vec(33, 110));
+    box.size = mm2px(Vec(6 * 5.08, 110));
   }
 
   void drawLayer(const DrawArgs& args, int layer) override {
@@ -398,7 +420,7 @@ struct FermataTextField : STTextField {
       // TODO: do I need this check anymore?
       if (module->text != module->previous_text) {
         APP->history->push(
-          new FermataTextEditAction(module->id, module->previous_text,
+          new FermataUndoRedoAction(module->id, module->previous_text,
                              module->text, module->previous_cursor, cursor));
         module->previous_text = module->text;
       }
@@ -461,13 +483,13 @@ struct FermataDisplay : LedDisplay {
   }
 };
 
-const float NON_SCREEN_WIDTH = 1.6f;
+const float NON_SCREEN_WIDTH = 2.0f;
 const float NON_TITLE_WIDTH = 4.6f;
 
 struct FermataWidget : ModuleWidget {
   Widget* topRightScrew;
 	Widget* bottomRightScrew;
-	Widget* rightHandle;
+	FermataModuleResizeHandle* rightHandle;
 	FermataDisplay* textDisplay;
   FermataTitleTextField* title;
   ClosedTitleTextField* closed_title;
@@ -505,27 +527,36 @@ struct FermataWidget : ModuleWidget {
     addChild(title);
 
     // User created title when closed.
-    closed_title = createWidget<ClosedTitleTextField>(mm2px(Vec(4.0, 15.0)));
+    closed_title = createWidget<ClosedTitleTextField>(mm2px(Vec(5.08, 15.0)));
     closed_title->module = module;
     closed_title->hide();  // Only shown when at smallest size.
     addChild(closed_title);
 
     textDisplay = createWidget<FermataDisplay>(
-      mm2px(Vec(3.0, 5.9)));
+      mm2px(Vec(5.08, 5.9)));  // 5.08 == RACK_GRID_WIDTH in mm.
 		textDisplay->box.size = mm2px(Vec(60.0, 117.0));
     textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
 		textDisplay->setModule(module);
 
 		addChild(textDisplay);
 
-    // Resize bar on right.
-    FermataModuleResizeHandle* new_rightHandle = new FermataModuleResizeHandle;
-		this->rightHandle = new_rightHandle;
-		new_rightHandle->module = module;
+    // Resize bar on left.
+    FermataModuleResizeHandle* leftHandle = new FermataModuleResizeHandle;
+		leftHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module
     // browser.
-    new_rightHandle->box.pos.x = box.size.x - new_rightHandle->box.size.x;
-    addChild(new_rightHandle);
+    // new_rightHandle->box.pos.x = box.size.x - new_rightHandle->box.size.x;
+    addChild(leftHandle);
+
+
+    // Resize bar on right.
+    rightHandle = new FermataModuleResizeHandle;
+    rightHandle->right = true;
+		rightHandle->module = module;
+    // Make sure the handle is correctly placed if drawing for the module
+    // browser.
+    rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
+    addChild(rightHandle);
 
     // Update the font in the code window to be the one chosen in the menu.
     textDisplay->setFontPath();
@@ -544,6 +575,10 @@ struct FermataWidget : ModuleWidget {
       } else {
         closed_title->hide();
         title->show();
+      }
+      if (module->update_pos) {
+        module->update_pos = false;
+        box.pos.x = module->box_pos_x;
       }
 		} else {
       // Like when showing the module in the module browser.
