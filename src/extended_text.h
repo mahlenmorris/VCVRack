@@ -100,6 +100,7 @@ struct ExtendedText {
 
     // The "-2*BND_TEXT_RADIUS" I am just copying from original TextField.
     width -= 2 * BND_TEXT_RADIUS;
+    WARN("font_path = '%s'", font_path.c_str());
     std::shared_ptr<window::Font> font = APP->window->loadFont(font_path);
     if (font && font->handle >= 0) {
       nvgFontFaceId(latest_nvg_context, font->handle);
@@ -113,10 +114,19 @@ struct ExtendedText {
 
       // Let's see what this actually gets.
       for (int row = 0; row < total_physical_row_count; row++) {
-        WARN("* line_number = %d, start_position = %llu, line_length = %llu",
-          row, rows[row].start - text.c_str(), rows[row].end - rows[row].start);
-      }
+        TextLine tl(row, rows[row].start - text.c_str(),
+          rows[row].end - rows[row].start);
+        line_map.push_back(tl);
+      }  // TODO: need to add a final line sometimes (like else case below?)?
     }
+
+    for (auto tl : line_map) {
+      WARN("*** line_number = %d, start_position = %d, line_length = %d",
+        tl.line_number, tl.start_position, tl.line_length);
+
+    }
+
+    /*
     // Now walk through 'rows' and turn it into the data structure we want.
     int line_number = 0;
     // 'pos <= text.size()' is correct; the last line might be an empty line
@@ -139,6 +149,7 @@ struct ExtendedText {
         break;
       }
     }
+    */
   }
 
   LineColumn GetCurrentLineColumn(int position) {

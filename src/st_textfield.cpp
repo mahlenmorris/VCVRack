@@ -104,14 +104,23 @@ void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
 		// guessing about font and font_size?!
 		// TODO: But at the least, it seems like this could take less CPU in the UI
 		// thread if we only recompute this when these arguments have changed; it
-		// seems insane to reompute every call to drawLayer()!
+		// seems insane to recompute these on every call to drawLayer()!
+		//
+		// One bug in the previous impl was that we only break lines up to
+		// just past cend, causing us to not know that there might be
+		// text-wrapping for several characters. Thus, the cursur ends up floating
+		// past the end of the line, and the cursor cannot ever get to the first
+		// few characters of the following line.
+		// Look forward a goodly amount, but not past the end of the string.
+		const char * break_end = label + cend + std::min(strlen(label + cend), 50llu);
     int nrows = nvgTextBreakLines(
-      ctx, label, label + cend + 1, w, rows, BND_MAX_ROWS);
-    nvgTextMetrics(ctx, NULL, &desc, &lh);
+			ctx, label, break_end, w, rows, BND_MAX_ROWS);
+     nvgTextMetrics(ctx, NULL, &desc, &lh);
 
     // Determines where to draw the highlight if any area is highlighted.
     bndCaretPosition(ctx, x, y, desc, lh, label + cbegin,
       rows, nrows, &c0r, &c0x, &c0y);
+	  // TODO: Waste of CPU to call this when cbegin == cend, which is often.
     bndCaretPosition(ctx, x, y, desc, lh, label + cend,
      	rows, nrows, &c1r, &c1x, &c1y);
 
