@@ -33,9 +33,18 @@ struct LineColumn {
   }
 };
 
+// Maximum physical rows we can usefully have in the document. At narrow widths,
+// the number of physical rows can be quite large.
+// TODO: artificially lower this and ensure this doesn't crash Rack or break
+// too badly.
+#define ST_MAX_ROWS 1000
+
 struct ExtendedText {
   // Sorted searchable map from position -> line+column.
   std::vector<TextLine> line_map;
+  // Related data structure used to draw the actual lines.
+  int total_physical_row_count;
+  NVGtextRow rows[ST_MAX_ROWS];
   // Number of lines in the visible area.
   int window_length;
   // Number of lines away from the edge before we start scrolling.
@@ -45,10 +54,16 @@ struct ExtendedText {
   // -1 signals that we are ready to completely reassign the window.
   // For example, at startup.
   int lines_above = -1;
+  // Needed (from call to drawLayer()) to call nvgTextBreakLines().
+  NVGcontext* latest_nvg_context = nullptr;
 
   void Initialize(int length, int buffer) {
     window_length = length;
     buffer_length = buffer;
+  }
+
+  void setNvgContext(NVGcontext* context) {
+    latest_nvg_context = context;
   }
 
   // The position that the window shows is always relative to the text *in
@@ -67,9 +82,42 @@ struct ExtendedText {
     }
   }
 
-  void ProcessUpdatedText(const std::string &text) {
+  // With the addition of 'rows' and us maintaining knowledge of the physical
+  // lines, this should be called whenever:
+  // * the text is updated
+  // * The window width is changed
+  // * The font is changed
+  // * when started, and before we display anything.
+  void ProcessUpdatedText(const std::string &text, const std::string &font_path,
+     float width) {
+    if (latest_nvg_context == nullptr) {
+      return;
+      // TODO: This is NOT correct. Should really set a dirty bit indicating
+      // that we should recompute this once we get context.
+    }
     // Clear and repopulate line_map.
     line_map.clear();
+
+    // The "-2*BND_TEXT_RADIUS" I am just copying from original TextField.
+    width -= 2 * BND_TEXT_RADIUS;
+    std::shared_ptr<window::Font> font = APP->window->loadFont(font_path);
+    if (font && font->handle >= 0) {
+      nvgFontFaceId(latest_nvg_context, font->handle);
+      nvgFontSize(latest_nvg_context, 12);  // Font size we currently use, not adjustable (yet)
+      nvgTextAlign(latest_nvg_context, NVG_ALIGN_LEFT|NVG_ALIGN_BASELINE);
+
+      total_physical_row_count = nvgTextBreakLines(
+        latest_nvg_context, text.c_str(), NULL, width,
+        rows, ST_MAX_ROWS);
+        WARN("Breaking lines, width = %f", width);
+
+      // Let's see what this actually gets.
+      for (int row = 0; row < total_physical_row_count; row++) {
+        WARN("* line_number = %d, start_position = %llu, line_length = %llu",
+          row, rows[row].start - text.c_str(), rows[row].end - rows[row].start);
+      }
+    }
+    // Now walk through 'rows' and turn it into the data structure we want.
     int line_number = 0;
     // 'pos <= text.size()' is correct; the last line might be an empty line
     // directly after a \n.
@@ -77,12 +125,16 @@ struct ExtendedText {
       size_t found = text.find('\n', pos);
       if (found != std::string::npos) {
         TextLine tl(line_number, pos, found - pos);
+        WARN("*** line_number = %d, start_position = %llu, line_length = %llu",
+          line_number, pos, found - pos);
         line_map.push_back(tl);
         pos = found + 1;
         line_number++;
       } else {
         // Add the last line.
         TextLine tl(line_number, pos, text.size() - pos);
+        WARN("*** line_number = %d, start_position = %llu, line_length = %llu",
+          line_number, pos, text.size() - pos);
         line_map.push_back(tl);
         break;
       }

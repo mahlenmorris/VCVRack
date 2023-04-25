@@ -73,15 +73,11 @@ static void bndCaretPosition(NVGcontext *ctx, float x, float y,
 }
 
 void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
-	  float x, float y, float w, float h,
-    int iconid, NVGcolor color, float fontsize, int font_handle,
+	  float x, float y, float w,
+    NVGcolor color, float fontsize, int font_handle,
 		const char *label, NVGcolor caretcolor, int cbegin, int cend) {
   float pleft = BND_TEXT_RADIUS;
   if (!label) return;
-  if (iconid >= 0) {
-      bndIcon(ctx, x + 4, y + 2, iconid);
-      pleft += BND_ICON_SHEET_RES;
-  }
 
   if (font_handle < 0) return;
 
@@ -100,14 +96,24 @@ void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
     float c0x, c0y, c1x, c1y;
     float desc, lh;
     static NVGtextRow rows[BND_MAX_ROWS];
+		// TODO: It certainly SEEMS like I should be able to replace rows with the
+		// result of nvgTextBreakLines that I compute in extended_text, but in my
+		// initial try, the caret did very odd things, possibly because what is
+		// label+cend+1 here is the end of the text? So unlikely to be easy.
+		// NOTE: may have been due the the fact that ProcessUpdatedText() was
+		// guessing about font and font_size?!
+		// TODO: But at the least, it seems like this could take less CPU in the UI
+		// thread if we only recompute this when these arguments have changed; it
+		// seems insane to reompute every call to drawLayer()!
     int nrows = nvgTextBreakLines(
       ctx, label, label + cend + 1, w, rows, BND_MAX_ROWS);
     nvgTextMetrics(ctx, NULL, &desc, &lh);
 
+    // Determines where to draw the highlight if any area is highlighted.
     bndCaretPosition(ctx, x, y, desc, lh, label + cbegin,
       rows, nrows, &c0r, &c0x, &c0y);
     bndCaretPosition(ctx, x, y, desc, lh, label + cend,
-      rows, nrows, &c1r, &c1x, &c1y);
+     	rows, nrows, &c1r, &c1x, &c1y);
 
     nvgBeginPath(ctx);
     if (cbegin == cend) {
@@ -138,8 +144,17 @@ void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
 }
 
 void STTextField::drawLayer(const DrawArgs& args, int layer) {
+	if (args.vg != extended.latest_nvg_context) {
+		extended.setNvgContext(args.vg);
+	}
 	nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 	if (layer == 1) {
+    // If the width of the box changed, we need to reindex the line structure.
+		if (box.size.x != previous_box_size_x) {
+			textUpdated();
+			previous_box_size_x = box.size.x;
+		}
+
 		// Text
 		std::shared_ptr<window::Font> font = APP->window->loadFont(fontPath);
 
@@ -154,9 +169,8 @@ void STTextField::drawLayer(const DrawArgs& args, int layer) {
 
       if (text != nullptr) {
   			myBndIconLabelCaret(args.vg,
-  				textOffset.x, textOffset.y,
-  				box.size.x - 2 * textOffset.x, box.size.y - 2 * textOffset.y,
-  				-1, color, 12, font->handle, text->c_str() + extended.CharsAbove(),
+  				textOffset.x, textOffset.y, box.size.x - 2 * textOffset.x,
+  				color, 12, font->handle, text->c_str() + extended.CharsAbove(),
 				  highlightColor, begin, end);
       }
 
@@ -368,7 +382,7 @@ int STTextField::getTextPosition(math::Vec mousePos) {
 }
 
 void STTextField::textUpdated() {
-  extended.ProcessUpdatedText(*text);
+  extended.ProcessUpdatedText(*text, fontPath, box.size.x - 2 * textOffset.x);
   // TODO: this is not _exactly_ what we want. Maybe save cursor+selection
   // in undo/redo?
   cursor = std::min(cursor, (int) text->size());
@@ -416,7 +430,7 @@ void STTextField::insertText(std::string new_text) {
 	}
 	if (changed) {
 		// Update the line map.
-		extended.ProcessUpdatedText(*text);
+		extended.ProcessUpdatedText(*text, fontPath, box.size.x - 2 * textOffset.x);
 		extended.RepositionWindow(cursor);
 		ChangeEvent eChange;
 		onChange(eChange);

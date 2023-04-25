@@ -584,8 +584,8 @@ struct FermataWidget : ModuleWidget {
       // Like when showing the module in the module browser.
       box.size.x = Fermata::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
-
-    // Adjust size of area we display text in.
+    // Adjust size of area we display text in; it's a function of the size
+    // of the module minus some set width.
 		textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
     // Adjust size of area we display title in.
 		title->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_TITLE_WIDTH;
