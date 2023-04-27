@@ -100,7 +100,6 @@ struct ExtendedText {
 
     // The "-2*BND_TEXT_RADIUS" I am just copying from original TextField.
     width -= 2 * BND_TEXT_RADIUS;
-    WARN("font_path = '%s'", font_path.c_str());
     std::shared_ptr<window::Font> font = APP->window->loadFont(font_path);
     if (font && font->handle >= 0) {
       nvgFontFaceId(latest_nvg_context, font->handle);
@@ -110,48 +109,16 @@ struct ExtendedText {
       total_physical_row_count = nvgTextBreakLines(
         latest_nvg_context, text.c_str(), NULL, width,
         rows, ST_MAX_ROWS);
-        WARN("Breaking lines, width = %f", width);
 
-      // Let's see what this actually gets.
+      // Convert to our line map.
       for (int row = 0; row < total_physical_row_count; row++) {
         TextLine tl(row, rows[row].start - text.c_str(),
           rows[row].end - rows[row].start);
         line_map.push_back(tl);
-      }  // TODO: need to add a final line sometimes (like else case below?)?
-    }
-
-    for (auto tl : line_map) {
-      WARN("*** line_number = %d, start_position = %d, line_length = %d",
-        tl.line_number, tl.start_position, tl.line_length);
-
-    }
-
-    /*
-    // Now walk through 'rows' and turn it into the data structure we want.
-    int line_number = 0;
-    // 'pos <= text.size()' is correct; the last line might be an empty line
-    // directly after a \n.
-    for (size_t pos = 0;  pos <= text.size(); ) {
-      size_t found = text.find('\n', pos);
-      if (found != std::string::npos) {
-        TextLine tl(line_number, pos, found - pos);
-        WARN("*** line_number = %d, start_position = %llu, line_length = %llu",
-          line_number, pos, found - pos);
-        line_map.push_back(tl);
-        pos = found + 1;
-        line_number++;
-      } else {
-        // Add the last line.
-        TextLine tl(line_number, pos, text.size() - pos);
-        WARN("*** line_number = %d, start_position = %llu, line_length = %llu",
-          line_number, pos, text.size() - pos);
-        line_map.push_back(tl);
-        break;
       }
     }
-    */
-  }
 
+  // Given a cursor position, where are we?
   LineColumn GetCurrentLineColumn(int position) {
     int line_number;
     auto next_line = std::find_if(line_map.begin(), line_map.end(),

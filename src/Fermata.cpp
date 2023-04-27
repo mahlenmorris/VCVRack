@@ -438,7 +438,8 @@ static std::string module_browser_text =
   "You can also set the title (below) in the module menu, as well as a pick "
   "a font and screen colors. And you can resize the module by dragging the "
   "right edge (over there -->).\n"
-  "If you shrink the module enough, it becomes a large label.";
+  "If you shrink the module enough, the title becomes a large label on "
+  "the front.";
 
 struct FermataDisplay : LedDisplay {
   FermataTextField* textField;

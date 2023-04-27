@@ -159,9 +159,13 @@ void STTextField::drawLayer(const DrawArgs& args, int layer) {
 	nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 	if (layer == 1) {
     // If the width of the box changed, we need to reindex the line structure.
-		if (box.size.x != previous_box_size_x) {
+		if ((box.size.x != previous_box_size_x) ||
+			(previous_font_path.compare(fontPath) != 0) ||
+		  (previous_text.compare(*text) != 0)) {
 			textUpdated();
 			previous_box_size_x = box.size.x;
+			previous_font_path = fontPath;
+			previous_text = *text;
 		}
 
 		// Text
@@ -392,8 +396,6 @@ int STTextField::getTextPosition(math::Vec mousePos) {
 
 void STTextField::textUpdated() {
   extended.ProcessUpdatedText(*text, fontPath, box.size.x - 2 * textOffset.x);
-  // TODO: this is not _exactly_ what we want. Maybe save cursor+selection
-  // in undo/redo?
   cursor = std::min(cursor, (int) text->size());
 	selection = cursor;  // Nothing should be selected now.
 }
@@ -438,9 +440,16 @@ void STTextField::insertText(std::string new_text) {
 		changed = true;
 	}
 	if (changed) {
-		// Update the line map.
-		extended.ProcessUpdatedText(*text, fontPath, box.size.x - 2 * textOffset.x);
+		// Since we know the text has changed, you might think we could call
+		// ProcessUpdatedText() now, but doing so causes the line lengths to be
+		// wrong.
+		// I _think_ this might be due to unseen changes in the NVGcontext, but
+		// that structure is hard to examine that I can't be sure.
+		// In any case, now we let drawLayer() see if something significant (like
+		// the text) has changed, and do the ProcessUpdatedText() call then.
 		extended.RepositionWindow(cursor);
+		// So that module can know that text has changed, and add an Undo action,
+		// or compile the text, or whatever it wants.
 		ChangeEvent eChange;
 		onChange(eChange);
 	}

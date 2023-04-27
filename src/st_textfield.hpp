@@ -37,6 +37,10 @@ struct STTextField : OpaqueWidget {
 
   // Tracking if width of window has changed.
 	float previous_box_size_x = 0.0f;
+	// Tracking if font of window has changed.
+	std::string previous_font_path;
+	// TODO: get rid of this?
+	std::string previous_text;
 
 	STTextField();
 
