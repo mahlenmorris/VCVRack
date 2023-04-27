@@ -5,6 +5,8 @@
 * Added a new text and labeling module called Fermata, for annotating and
 documenting a patch, or for writing a story while listening to one.
 A more capable version of VCV's Notes.
+* Also improved the BASICally editor (it's the same as the one Fermata uses).
+You can choose from different fonts, and fixed some bugs in scrolling.
 
 ### 2.0.9
 #### April 10, 2023
