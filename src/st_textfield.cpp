@@ -112,7 +112,8 @@ void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
 		// past the end of the line, and the cursor cannot ever get to the first
 		// few characters of the following line.
 		// Look forward a goodly amount, but not past the end of the string.
-		const char * break_end = label + cend + std::min(strlen(label + cend), 50llu);
+		const char * break_end = label + cend +
+		    std::min(strlen(label + cend), (size_t) 50);
     int nrows = nvgTextBreakLines(
 			ctx, label, break_end, w, rows, BND_MAX_ROWS);
      nvgTextMetrics(ctx, NULL, &desc, &lh);
