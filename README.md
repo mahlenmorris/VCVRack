@@ -907,7 +907,7 @@ Here is Fermata:
 
 ### Uses
 * Instructions for playing the patch.
-* Notes/reminders on how this part of the patch works.
+* Notes/reminders on how this part of the patch works. Take a look at [this patch](examples/AnnotatedSunlightOnSeaAnemones.vcv) for one example of what this might look like.
 * TODO's or ideas.
 * A short story you're writing while listening to your patch.
 * As a label, the title names a chunk of the patch, allowing the person seeing
