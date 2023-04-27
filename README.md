@@ -767,6 +767,12 @@ Just in case you're in the middle of coding and you don't want to look up
 this documentation, there's some hints about the syntax of BASICally. You can
 click on a particular statement and it will be inserted into your code.
 
+### Known Limitations
+* If the text is taking over 1000 physical lines (like if the window is
+really narrow, and there is a LOT of text), then you can only show the first
+1000 lines. I'll gently suggest you make the module wider, and then more of
+the text will be reachable.
+
 ### Bypass Behavior
 When the module is bypassed, all OUTn ports are set to zero volts.
 
@@ -928,11 +934,11 @@ Pick from a small number of color choices for the editor window.
 #### Font
 Pick from a small number of fonts. The "Mono" fonts are monospaced fonts.
 
-### Known Bugs
-* If text lines are wider than the module, the lower parts of the text can sometimes become
-impossible to reach. For now, the workaround is to resize the module so no lines are wrapped around, and then it should scroll better.
-* Up and down keys move between what are effectively paragraphs. It should
-really move between visual lines, not physical lines.
+### Known Limitations
+* If the text is taking over 1000 physical lines (like if the window is
+really narrow, and there is a LOT of text), then you can only show the first
+1000 lines. I'll gently suggest you make the module wider, and then more of
+the text will be reachable.
 
 ### Bypass Behavior
 If this module is bypassed, then it will be darker. But otherwise, no different.
