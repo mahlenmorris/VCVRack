@@ -117,6 +117,7 @@ struct ExtendedText {
         line_map.push_back(tl);
       }
     }
+  }
 
   // Given a cursor position, where are we?
   LineColumn GetCurrentLineColumn(int position) {
