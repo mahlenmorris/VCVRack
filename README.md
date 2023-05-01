@@ -767,6 +767,14 @@ Just in case you're in the middle of coding and you don't want to look up
 this documentation, there's some hints about the syntax of BASICally. You can
 click on a particular statement and it will be inserted into your code.
 
+### Known Bugs
+* After the 2.0.10 release, I noticed that a newline/Enter at the very end of the text
+doesn't actually
+appear to move the cursor to the next line until you actually type something
+after it. If you are running into this, put some text after where you are typing
+and it'll work better, but I'll try to fix this
+in the next release.
+
 ### Known Limitations
 * If the text is taking over 1000 physical lines (like if the window is
 really narrow, and there is a LOT of text), then you can only show the first
@@ -933,6 +941,14 @@ Type in the title you'd like to use here.
 Pick from a small number of color choices for the editor window.
 #### Font
 Pick from a small number of fonts. The "Mono" fonts are monospaced fonts.
+
+### Known Bugs
+* After the 2.0.10 release, I noticed that a newline/Enter at the very end of the text
+doesn't actually
+appear to move the cursor to the next line until you actually type something
+after it. If you are running into this, put some text after where you are typing
+and it'll work better, but I'll try to fix this
+in the next release.
 
 ### Known Limitations
 * If the text is taking over 1000 physical lines (like if the window is
