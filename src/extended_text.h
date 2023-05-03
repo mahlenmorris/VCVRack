@@ -116,6 +116,13 @@ struct ExtendedText {
           rows[row].end - rows[row].start);
         line_map.push_back(tl);
       }
+      // If the last character of the text is a newline, there's another line
+      // to add.
+      // And selection can crash Rack if there are no lines.
+      if ((text.size() == 0) || (text.back() == '\n')) {
+        TextLine tl(line_map.size(), text.size(), 0);
+        line_map.push_back(tl);
+      }
     }
   }
 

@@ -53,6 +53,8 @@ STTextField::STTextField() {
 	extended.Initialize(28, 1);
 }
 
+// I think I need this (copied from blendish.h) because it's a static function
+// and not part of the API.
 static void bndCaretPosition(NVGcontext *ctx, float x, float y,
     float desc, float lineHeight, const char *caret, NVGtextRow *rows,int nrows,
     int *cr, float *cx, float *cy) {
@@ -112,8 +114,12 @@ void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
 		// past the end of the line, and the cursor cannot ever get to the first
 		// few characters of the following line.
 		// Look forward a goodly amount, but not past the end of the string.
+		// However, if we want to cursor to show up on the next line when the
+		// last character is a newline, we need to go at least one char past the
+		// end.
 		const char * break_end = label + cend +
-		    std::min(strlen(label + cend), (size_t) 50);
+		    std::max(1, (int) std::min(strlen(label + cend), (size_t) 50));
+
     int nrows = nvgTextBreakLines(
 			ctx, label, break_end, w, rows, BND_MAX_ROWS);
      nvgTextMetrics(ctx, NULL, &desc, &lh);
@@ -178,6 +184,8 @@ void STTextField::drawLayer(const DrawArgs& args, int layer) {
 			NVGcolor highlightColor = color;
 			highlightColor.a = 0.5;
 			int begin = std::min(cursor, selection) - extended.CharsAbove();
+			// If this is NOT the selected widget, don't show the cursor (by setting
+		  // 'end' to -1).
 			int end = (this == APP->event->selectedWidget) ?
 			          std::max(cursor, selection) - extended.CharsAbove(): -1;
 
