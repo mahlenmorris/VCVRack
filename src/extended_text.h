@@ -82,6 +82,18 @@ struct ExtendedText {
     }
   }
 
+  int VisibleTextLength() {
+    // Find first line not visible on screen, or end of text.
+    int line = lines_above + window_length;
+    if (line >= total_physical_row_count) {
+      return line_map.back().start_position + line_map.back().line_length - 
+        CharsAbove();
+    } else {
+      return line_map[line].start_position + line_map[line].line_length -
+        CharsAbove();
+    }
+  }
+
   // With the addition of 'rows' and us maintaining knowledge of the physical
   // lines, this should be called whenever:
   // * the text is updated

@@ -160,10 +160,20 @@ void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
 
   nvgBeginPath(ctx);
   nvgFillColor(ctx, color);
-  nvgTextBox(ctx, x, y, w, label, NULL);
+	// The original implementation left the last argument as NULL. This means
+	// that any text below the bottom margin is still computed, even though it
+	// is never seen, meaning that being at the top of a long text would take
+	// far longer than being at the bottom.
+  nvgTextBox(ctx, x, y, w, label, label + extended.VisibleTextLength());
 }
 
 void STTextField::drawLayer(const DrawArgs& args, int layer) {
+	// Code for measuring UI thread performance.
+	/*
+	static int count = 0;
+	static long long int micros = 0;
+	auto start = std::chrono::high_resolution_clock::now();
+	*/
 	if (args.vg != extended.latest_nvg_context) {
 		extended.setNvgContext(args.vg);
 	}
@@ -208,6 +218,20 @@ void STTextField::drawLayer(const DrawArgs& args, int layer) {
 
 	Widget::drawLayer(args, layer);
 	nvgResetScissor(args.vg);
+
+	// Code for measuring UI thread performance.
+	/*
+	auto elapsed = std::chrono::high_resolution_clock::now() - start;
+	micros += std::chrono::duration_cast<std::chrono::microseconds>(
+	        elapsed).count();
+	++count;
+	if (count >= 100) {
+		WARN("** micros/call = %lld", micros / count);
+		WARN("*** VisibleTextLength = %d", extended.VisibleTextLength());
+		micros = 0;
+		count = 0;
+	}
+	*/
 }
 
 void STTextField::onDragHover(const DragHoverEvent& e) {
