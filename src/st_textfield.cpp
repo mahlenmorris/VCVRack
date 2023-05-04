@@ -94,8 +94,8 @@ void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
 
   // Draws the selection box/caret.
   if (cend >= cbegin) {
-    int c0r, c1r;  // TODO: fix thes ghastly variable names.
-    float c0x, c0y, c1x, c1y;
+    int box_row_begin;
+    float box_x_begin, box_y_begin;
     float desc, lh;
     static NVGtextRow rows[BND_MAX_ROWS];
 		// TODO: It certainly SEEMS like I should be able to replace rows with the
@@ -122,33 +122,37 @@ void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
 
     int nrows = nvgTextBreakLines(
 			ctx, label, break_end, w, rows, BND_MAX_ROWS);
-     nvgTextMetrics(ctx, NULL, &desc, &lh);
+    nvgTextMetrics(ctx, NULL, &desc, &lh);
 
     // Determines where to draw the highlight if any area is highlighted.
     bndCaretPosition(ctx, x, y, desc, lh, label + cbegin,
-      rows, nrows, &c0r, &c0x, &c0y);
-	  // TODO: Waste of CPU to call this when cbegin == cend, which is often.
-    bndCaretPosition(ctx, x, y, desc, lh, label + cend,
-     	rows, nrows, &c1r, &c1x, &c1y);
+      rows, nrows, &box_row_begin, &box_x_begin, &box_y_begin);
 
     nvgBeginPath(ctx);
     if (cbegin == cend) {
 		  // Just draw a caret.
 			// TODO: What color is this?
       nvgFillColor(ctx, nvgRGBf(0.337, 0.502, 0.761));
-      nvgRect(ctx, c0x-1, c0y, 2, lh+1);
+      nvgRect(ctx, box_x_begin-1, box_y_begin, 2, lh+1);
     } else {
+			int box_row_end;
+	    float box_x_end, box_y_end;
+			// Compute where the end of the highlighted region is.
+			bndCaretPosition(ctx, x, y, desc, lh, label + cend,
+	     	rows, nrows, &box_row_end, &box_x_end, &box_y_end);
 			// Draw the region.
       nvgFillColor(ctx, caretcolor);
-      if (c0r == c1r) {
-        nvgRect(ctx, c0x - 1, c0y, c1x - c0x + 1, lh + 1);
+      if (box_row_begin == box_row_end) {
+        nvgRect(ctx, box_x_begin - 1, box_y_begin,
+					      box_x_end - box_x_begin + 1, lh + 1);
       } else {
-        int blk = c1r - c0r - 1;
-        nvgRect(ctx, c0x - 1, c0y, x + w - c0x + 1, lh + 1);
-        nvgRect(ctx, x, c1y, c1x - x + 1, lh + 1);
+        int blk = box_row_end - box_row_begin - 1;
+        nvgRect(ctx, box_x_begin - 1, box_y_begin,
+					      x + w - box_x_begin + 1, lh + 1);
+        nvgRect(ctx, x, box_y_end, box_x_end - x + 1, lh + 1);
 
         if (blk)
-          nvgRect(ctx, x, c0y + lh, w, blk * lh + 1);
+          nvgRect(ctx, x, box_y_begin + lh, w, blk * lh + 1);
       }
     }
     nvgFill(ctx);
@@ -169,6 +173,8 @@ void STTextField::drawLayer(const DrawArgs& args, int layer) {
 		if ((box.size.x != previous_box_size_x) ||
 			(previous_font_path.compare(fontPath) != 0) ||
 		  (previous_text.compare(*text) != 0)) {
+			// textUpdated() can take an unbounded amount of time, so better to call
+			// it in the UI thread than in the process() thread.
 			textUpdated();
 			previous_box_size_x = box.size.x;
 			previous_font_path = fontPath;
@@ -295,6 +301,11 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
 			}
 			e.consume(this);
 		}
+
+		// TODO: Option to handle PageUp and PageDown? It's possible the widget
+		// never sees them...
+		// But would be very handy for long text.
+
 		// Up
 		if (e.key == GLFW_KEY_UP) {
 			// Move to same column, in previous line.
@@ -407,6 +418,7 @@ void STTextField::textUpdated() {
   extended.ProcessUpdatedText(*text, fontPath, box.size.x - 2 * textOffset.x);
   cursor = std::min(cursor, (int) text->size());
 	selection = cursor;  // Nothing should be selected now.
+	extended.RepositionWindow(cursor);
 }
 
 void STTextField::selectAll() {
@@ -455,10 +467,12 @@ void STTextField::insertText(std::string new_text) {
 		// I _think_ this might be due to unseen changes in the NVGcontext, but
 		// that structure is hard to examine that I can't be sure.
 		// In any case, now we let drawLayer() see if something significant (like
-		// the text) has changed, and do the ProcessUpdatedText() call then.
-		extended.RepositionWindow(cursor);
-		// So that module can know that text has changed, and add an Undo action,
-		// or compile the text, or whatever it wants.
+		// the text) has changed, and do the ProcessUpdatedText() and
+		// RepositionWindow() call then.
+		//
+		// Create this event so that the module using this widget can know that
+		// text has changed, and add an Undo action, or compile the text,
+		// or whatever it wants.
 		ChangeEvent eChange;
 		onChange(eChange);
 	}
@@ -482,6 +496,7 @@ void STTextField::pasteClipboard() {
 	insertText(newText);
 }
 
+// TODO: these should be also find words around a newline!
 void STTextField::cursorToPrevWord() {
 	size_t pos = text->rfind(' ', std::max(cursor - 2, 0));
 	if (pos == std::string::npos)
@@ -490,6 +505,7 @@ void STTextField::cursorToPrevWord() {
 		cursor = std::min((int) pos + 1, (int) text->size());
 }
 
+// TODO: these should be also find words around a newline!
 void STTextField::cursorToNextWord() {
 	size_t pos = text->find(' ', std::min(cursor + 1, (int) text->size()));
 	if (pos == std::string::npos)
