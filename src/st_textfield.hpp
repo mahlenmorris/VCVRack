@@ -1,5 +1,4 @@
 #pragma once
-#include "plugin.hpp"
 #include "extended_text.h"
 
 // An expansion of the VCV TextField class, but allowing for features I wish
