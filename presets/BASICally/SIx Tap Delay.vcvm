@@ -1,0 +1,23 @@
+{
+  "plugin": "StochasticTelegraph",
+  "model": "BASICally",
+  "version": "2.0.10",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    }
+  ],
+  "data": {
+    "text": "' A circular tape loop with six movable playback heads.\n' \n' Input signal goes into IN7.\n' If IN8 is zero (or not connected), then IN7 will be recorded\n' to the loop. If IN8 is non-zero, playback continues, but the record\n' head is disengaged.\n' A trigger to IN9 instantly erases the entire tape.\n' \n' IN1 - IN6 are the relative positions of the six playback heads.\n' Playback heads comes out of OUT1 - OUT6.\n' \n' Length of loop is 10 seconds. You can change that in the line\n' near the bottom of the program that starts with \"size = ...\".\n\ntick = mod(tick + 1, size)  ' Position in loop.\nIF in8 == 0 THEN\n  loop[tick] = in7  ' Record what we get back.\nEND IF\n\nif connected(IN1) THEN\n  pos = mod(tick + size - IN1 / 10 * size, size)\n  out1 = loop[pos] * (1 - mod(pos, 1)) + loop[pos + 1] * mod(pos, 1)\nEND IF\n\nif connected(IN2) THEN\n  pos = mod(tick + size - IN2 / 10 * size, size)\n  out2 = loop[pos] * (1 - mod(pos, 1)) + loop[pos + 1] * mod(pos, 1)\nEND IF\n\nif connected(IN3) THEN\n  pos = mod(tick + size - IN3 / 10 * size, size)\n  out3 = loop[pos] * (1 - mod(pos, 1)) + loop[pos + 1] * mod(pos, 1)\nEND IF\n\nif connected(IN4) THEN\n  pos = mod(tick + size - IN4 / 10 * size, size)\n  out4 = loop[pos] * (1 - mod(pos, 1)) + loop[pos + 1] * mod(pos, 1)\nEND IF\n\nif connected(IN5) THEN\n  pos = mod(tick + size - IN5 / 10 * size, size)\n  out5 = loop[pos] * (1 - mod(pos, 1)) + loop[pos + 1] * mod(pos, 1)\nEND IF\n\nif connected(IN6) THEN\n  pos = mod(tick + size - IN6 / 10 * size, size)\n  out6 = loop[pos] * (1 - mod(pos, 1)) + loop[pos + 1] * mod(pos, 1)\nEND IF\n\nWHEN start() or trigger(IN9)\n  if trigger(in9) THEN\n    clear all\n  end if\n  ' Change the \"10\" to however many seconds you want the loop to be.\n  size = 10 * sample_rate() ' Ten second loop.\nEND WHEN\n\n",
+    "width": 35,
+    "allow_error_highlight": 1,
+    "screen_colors": 1095216660480,
+    "title_text": "6 Tap Delay Tape Loop",
+    "font_choice": "fonts/RobotoMono-Regular.ttf"
+  }
+}
