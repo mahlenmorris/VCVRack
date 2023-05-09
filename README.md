@@ -948,7 +948,10 @@ If this module is bypassed, then it will be darker. But otherwise, no different.
 * VCV's [Notes](https://library.vcvrack.com/Core/Notes).
 * cf's [LABEL](https://library.vcvrack.com/cf/LABEL).
 * NYSTHI's [Label](https://library.vcvrack.com/NYSTHI/Label) and
-[LabelSlim](https://library.vcvrack.com/NYSTHI/LabelSlim)
+[LabelSlim](https://library.vcvrack.com/NYSTHI/LabelSlim).
+* Submarine's [TD-510](https://library.vcvrack.com/SubmarineFree/TD-510),
+[TD-410](https://library.vcvrack.com/SubmarineFree/TD-410), and
+[TD-316](https://library.vcvrack.com/SubmarineFree/TD-316).
 
 
 ![Line Break image](images/Separator.png)
