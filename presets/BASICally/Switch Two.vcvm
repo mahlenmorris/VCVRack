@@ -1,0 +1,23 @@
+{
+  "plugin": "StochasticTelegraph",
+  "model": "BASICally",
+  "version": "2.0.10",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    }
+  ],
+  "data": {
+    "text": "' When started or IN8 gets a trigger, IN1-IN6 get\n' randomly assigned to OUT1-OUT6, like:\n' IN1 -> OUT3\n' IN2 -> OUT6\n' IN3 -> OUT2\n' IN4 -> OUT4\n' IN5 -> OUT1\n' IN6 -> OUT5\n' When IN9 gets a trigger, two of the assignments\n' will randomly trade.\n\nWHEN start() or trigger(IN8)\n  for pos = 1 to 6\n    grab[pos] = pos\n  next\n  ' Initialize the mapping.\n  for pos = 1 to 6\n    pull_pos = floor(random(1, 7 - pos))\n    out_map[pos] = grab[pull_pos]\n    ' Put last value from grab[] into the location\n    ' we just selected from.\n    grab[pull_pos] = grab[7 - pos]\n  next\nEND WHEN\n\nWHEN trigger(IN9)\n  switch1 = floor(random(1, 7))\n  for dummy = 1 to 2 STEP 0\n    switch2 = floor(random(1, 7))\n    if switch1 != switch2 THEN\n      EXIT FOR\n    END IF\n  NEXT\n  temp = out_map[switch1]\n  out_map[switch1] = out_map[switch2]\n  out_map[switch2] = temp\nEND WHEN\n\nALSO\n  out_num = out_map[1]\n  if out_num == 1 THEN\n    out1 = in1\n  elseif out_num == 2 THEN\n    out2 = in1\n  elseif out_num == 3 THEN\n    out3 = in1\n  elseif out_num == 4 THEN\n    out4 = in1\n  elseif out_num == 5 THEN\n    out5 = in1\n  elseif out_num == 6 THEN\n    out6 = in1\n  END IF\n\n  out_num = out_map[2]\n  if out_num == 1 THEN\n    out1 = in2\n  elseif out_num == 2 THEN\n    out2 = in2\n  elseif out_num == 3 THEN\n    out3 = in2\n  elseif out_num == 4 THEN\n    out4 = in2\n  elseif out_num == 5 THEN\n    out5 = in2\n  elseif out_num == 6 THEN\n    out6 = in2\n  END IF\n\n  out_num = out_map[3]\n  if out_num == 1 THEN\n    out1 = in3\n  elseif out_num == 2 THEN\n    out2 = in3\n  elseif out_num == 3 THEN\n    out3 = in3\n  elseif out_num == 4 THEN\n    out4 = in3\n  elseif out_num == 5 THEN\n    out5 = in3\n  elseif out_num == 6 THEN\n    out6 = in3\n  END IF\n\n  out_num = out_map[4]\n  if out_num == 1 THEN\n    out1 = in4\n  elseif out_num == 2 THEN\n    out2 = in4\n  elseif out_num == 3 THEN\n    out3 = in4\n  elseif out_num == 4 THEN\n    out4 = in4\n  elseif out_num == 5 THEN\n    out5 = in4\n  elseif out_num == 6 THEN\n    out6 = in4\n  END IF\n\n  out_num = out_map[5]\n  if out_num == 1 THEN\n    out1 = in5\n  elseif out_num == 2 THEN\n    out2 = in5\n  elseif out_num == 3 THEN\n    out3 = in5\n  elseif out_num == 4 THEN\n    out4 = in5\n  elseif out_num == 5 THEN\n    out5 = in5\n  elseif out_num == 6 THEN\n    out6 = in5\n  END IF\n\n  out_num = out_map[6]\n  if out_num == 1 THEN\n    out1 = in6\n  elseif out_num == 2 THEN\n    out2 = in6\n  elseif out_num == 3 THEN\n    out3 = in6\n  elseif out_num == 4 THEN\n    out4 = in6\n  elseif out_num == 5 THEN\n    out5 = in6\n  elseif out_num == 6 THEN\n    out6 = in6\n  END IF\nEND ALSO",
+    "width": 28,
+    "allow_error_highlight": 1,
+    "screen_colors": 1095216660480,
+    "title_text": "Rearrange, Switch Two",
+    "font_choice": "fonts/RobotoMono-Regular.ttf"
+  }
+}

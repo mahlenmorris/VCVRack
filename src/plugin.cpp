@@ -8,6 +8,7 @@ void init(Plugin* p) {
 	// Add modules here
 	p->addModel(modelBasically);
 	p->addModel(modelDrifter);
+	p->addModel(modelFermata);
 	p->addModel(modelFuse);
 
 	// Any other plugin initialization may go here.

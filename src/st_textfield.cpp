@@ -53,9 +53,144 @@ STTextField::STTextField() {
 	extended.Initialize(28, 1);
 }
 
+// I think I need this (copied from blendish.h) because it's a static function
+// and not part of the API.
+static void bndCaretPosition(NVGcontext *ctx, float x, float y,
+    float desc, float lineHeight, const char *caret, NVGtextRow *rows,int nrows,
+    int *cr, float *cx, float *cy) {
+    static NVGglyphPosition glyphs[BND_MAX_GLYPHS];
+    int r,nglyphs;
+    for (r=0; r < nrows-1 && rows[r].end < caret; ++r);
+    *cr = r;
+    *cx = x;
+    *cy = y-lineHeight-desc + r*lineHeight;
+    if (nrows == 0) return;
+    *cx = rows[r].minx;
+    nglyphs = nvgTextGlyphPositions(
+        ctx, x, y, rows[r].start, rows[r].end+1, glyphs, BND_MAX_GLYPHS);
+    for (int i=0; i < nglyphs; ++i) {
+        *cx=glyphs[i].x;
+        if (glyphs[i].str == caret) break;
+    }
+}
+
+void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
+	  float x, float y, float w,
+    NVGcolor color, float fontsize, int font_handle,
+		const char *label, NVGcolor caretcolor, int cbegin, int cend) {
+  float pleft = BND_TEXT_RADIUS;
+  if (!label) return;
+
+  if (font_handle < 0) return;
+
+  x += pleft;
+  y += BND_WIDGET_HEIGHT-BND_TEXT_PAD_DOWN;
+
+  nvgFontFaceId(ctx, font_handle);
+  nvgFontSize(ctx, fontsize);
+  nvgTextAlign(ctx, NVG_ALIGN_LEFT|NVG_ALIGN_BASELINE);
+
+  w -= BND_TEXT_RADIUS + pleft;
+
+  // Draws the selection box/caret.
+  if (cend >= cbegin) {
+    int box_row_begin;
+    float box_x_begin, box_y_begin;
+    float desc, lh;
+    static NVGtextRow rows[BND_MAX_ROWS];
+		// TODO: It certainly SEEMS like I should be able to replace rows with the
+		// result of nvgTextBreakLines that I compute in extended_text, but in my
+		// initial try, the caret did very odd things, possibly because what is
+		// label+cend+1 here is the end of the text? So unlikely to be easy.
+		// NOTE: may have been due the the fact that ProcessUpdatedText() was
+		// guessing about font and font_size?!
+		// TODO: But at the least, it seems like this could take less CPU in the UI
+		// thread if we only recompute this when these arguments have changed; it
+		// seems insane to recompute these on every call to drawLayer()!
+		//
+		// One bug in the previous impl was that we only break lines up to
+		// just past cend, causing us to not know that there might be
+		// text-wrapping for several characters. Thus, the cursur ends up floating
+		// past the end of the line, and the cursor cannot ever get to the first
+		// few characters of the following line.
+		// Look forward a goodly amount, but not past the end of the string.
+		// However, if we want to cursor to show up on the next line when the
+		// last character is a newline, we need to go at least one char past the
+		// end.
+		const char * break_end = label + cend +
+		    std::max(1, (int) std::min(strlen(label + cend), (size_t) 50));
+
+    int nrows = nvgTextBreakLines(
+			ctx, label, break_end, w, rows, BND_MAX_ROWS);
+    nvgTextMetrics(ctx, NULL, &desc, &lh);
+
+    // Determines where to draw the highlight if any area is highlighted.
+    bndCaretPosition(ctx, x, y, desc, lh, label + cbegin,
+      rows, nrows, &box_row_begin, &box_x_begin, &box_y_begin);
+
+    nvgBeginPath(ctx);
+    if (cbegin == cend) {
+		  // Just draw a caret.
+			// TODO: What color is this?
+      nvgFillColor(ctx, nvgRGBf(0.337, 0.502, 0.761));
+      nvgRect(ctx, box_x_begin-1, box_y_begin, 2, lh+1);
+    } else {
+			int box_row_end;
+	    float box_x_end, box_y_end;
+			// Compute where the end of the highlighted region is.
+			bndCaretPosition(ctx, x, y, desc, lh, label + cend,
+	     	rows, nrows, &box_row_end, &box_x_end, &box_y_end);
+			// Draw the region.
+      nvgFillColor(ctx, caretcolor);
+      if (box_row_begin == box_row_end) {
+        nvgRect(ctx, box_x_begin - 1, box_y_begin,
+					      box_x_end - box_x_begin + 1, lh + 1);
+      } else {
+        int blk = box_row_end - box_row_begin - 1;
+        nvgRect(ctx, box_x_begin - 1, box_y_begin,
+					      x + w - box_x_begin + 1, lh + 1);
+        nvgRect(ctx, x, box_y_end, box_x_end - x + 1, lh + 1);
+
+        if (blk)
+          nvgRect(ctx, x, box_y_begin + lh, w, blk * lh + 1);
+      }
+    }
+    nvgFill(ctx);
+  }
+
+  nvgBeginPath(ctx);
+  nvgFillColor(ctx, color);
+	// The original implementation left the last argument as NULL. This means
+	// that any text below the bottom margin is still computed, even though it
+	// is never seen, meaning that being at the top of a long text would take
+	// far longer than being at the bottom.
+  nvgTextBox(ctx, x, y, w, label, label + extended.VisibleTextLength());
+}
+
 void STTextField::drawLayer(const DrawArgs& args, int layer) {
+	// Code for measuring UI thread performance.
+	/*
+	static int count = 0;
+	static long long int micros = 0;
+	auto start = std::chrono::high_resolution_clock::now();
+	*/
+	if (args.vg != extended.latest_nvg_context) {
+		extended.setNvgContext(args.vg);
+	}
 	nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 	if (layer == 1) {
+    // If the width of the box changed, we need to reindex the line structure.
+		if ((box.size.x != previous_box_size_x) ||
+			(previous_font_path.compare(fontPath) != 0) ||
+		  (previous_text.compare(*text) != 0)) {
+			// textUpdated() can take an unbounded amount of time, so better to call
+			// it in the UI thread than in the process() thread.
+			textUpdated();
+			previous_box_size_x = box.size.x;
+			previous_font_path = fontPath;
+			previous_text = *text;
+		}
+
 		// Text
 		std::shared_ptr<window::Font> font = APP->window->loadFont(fontPath);
 
@@ -65,14 +200,15 @@ void STTextField::drawLayer(const DrawArgs& args, int layer) {
 			NVGcolor highlightColor = color;
 			highlightColor.a = 0.5;
 			int begin = std::min(cursor, selection) - extended.CharsAbove();
+			// If this is NOT the selected widget, don't show the cursor (by setting
+		  // 'end' to -1).
 			int end = (this == APP->event->selectedWidget) ?
 			          std::max(cursor, selection) - extended.CharsAbove(): -1;
 
       if (text != nullptr) {
-  			bndIconLabelCaret(args.vg,
-  				textOffset.x, textOffset.y,
-  				box.size.x - 2 * textOffset.x, box.size.y - 2 * textOffset.y,
-  				-1, color, 12, text->c_str() + extended.CharsAbove(),
+  			myBndIconLabelCaret(args.vg,
+  				textOffset.x, textOffset.y, box.size.x - 2 * textOffset.x,
+  				color, 12, font->handle, text->c_str() + extended.CharsAbove(),
 				  highlightColor, begin, end);
       }
 
@@ -82,6 +218,20 @@ void STTextField::drawLayer(const DrawArgs& args, int layer) {
 
 	Widget::drawLayer(args, layer);
 	nvgResetScissor(args.vg);
+
+	// Code for measuring UI thread performance.
+	/*
+	auto elapsed = std::chrono::high_resolution_clock::now() - start;
+	micros += std::chrono::duration_cast<std::chrono::microseconds>(
+	        elapsed).count();
+	++count;
+	if (count >= 100) {
+		WARN("** micros/call = %lld", micros / count);
+		WARN("*** VisibleTextLength = %d", extended.VisibleTextLength());
+		micros = 0;
+		count = 0;
+	}
+	*/
 }
 
 void STTextField::onDragHover(const DragHoverEvent& e) {
@@ -175,6 +325,11 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
 			}
 			e.consume(this);
 		}
+
+		// TODO: Option to handle PageUp and PageDown? It's possible the widget
+		// never sees them...
+		// But would be very handy for long text.
+
 		// Up
 		if (e.key == GLFW_KEY_UP) {
 			// Move to same column, in previous line.
@@ -284,11 +439,10 @@ int STTextField::getTextPosition(math::Vec mousePos) {
 }
 
 void STTextField::textUpdated() {
-  extended.ProcessUpdatedText(*text);
-  // TODO: this is not _exactly_ what we want. Maybe save cursor+selection
-  // in undo/redo?
+  extended.ProcessUpdatedText(*text, fontPath, box.size.x - 2 * textOffset.x);
   cursor = std::min(cursor, (int) text->size());
 	selection = cursor;  // Nothing should be selected now.
+	extended.RepositionWindow(cursor);
 }
 
 void STTextField::selectAll() {
@@ -331,9 +485,18 @@ void STTextField::insertText(std::string new_text) {
 		changed = true;
 	}
 	if (changed) {
-		// Update the line map.
-		extended.ProcessUpdatedText(*text);
-		extended.RepositionWindow(cursor);
+		// Since we know the text has changed, you might think we could call
+		// ProcessUpdatedText() now, but doing so causes the line lengths to be
+		// wrong.
+		// I _think_ this might be due to unseen changes in the NVGcontext, but
+		// that structure is hard to examine that I can't be sure.
+		// In any case, now we let drawLayer() see if something significant (like
+		// the text) has changed, and do the ProcessUpdatedText() and
+		// RepositionWindow() call then.
+		//
+		// Create this event so that the module using this widget can know that
+		// text has changed, and add an Undo action, or compile the text,
+		// or whatever it wants.
 		ChangeEvent eChange;
 		onChange(eChange);
 	}
@@ -357,6 +520,7 @@ void STTextField::pasteClipboard() {
 	insertText(newText);
 }
 
+// TODO: these should be also find words around a newline!
 void STTextField::cursorToPrevWord() {
 	size_t pos = text->rfind(' ', std::max(cursor - 2, 0));
 	if (pos == std::string::npos)
@@ -365,6 +529,7 @@ void STTextField::cursorToPrevWord() {
 		cursor = std::min((int) pos + 1, (int) text->size());
 }
 
+// TODO: these should be also find words around a newline!
 void STTextField::cursorToNextWord() {
 	size_t pos = text->find(' ', std::min(cursor + 1, (int) text->size()));
 	if (pos == std::string::npos)

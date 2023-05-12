@@ -1,5 +1,4 @@
 #pragma once
-#include "plugin.hpp"
 #include "extended_text.h"
 
 // An expansion of the VCV TextField class, but allowing for features I wish
@@ -35,7 +34,21 @@ struct STTextField : OpaqueWidget {
 	Widget* prevField = NULL;
 	Widget* nextField = NULL;
 
+  // Tracking if width of window has changed.
+	float previous_box_size_x = 0.0f;
+	// Tracking if font of window has changed.
+	std::string previous_font_path;
+	// TODO: get rid of this?
+	std::string previous_text;
+
 	STTextField();
+
+  // Pulled in from oui-blendish code.
+	// TODO: this argument list is stupid long.
+	void myBndIconLabelCaret(NVGcontext *ctx, float x, float y, float w,
+	    NVGcolor color, float fontsize, int font_handle, const char *label,
+	    NVGcolor caretcolor, int cbegin, int cend);
+
 	void drawLayer(const DrawArgs& args, int layer) override;
 
 	void onDragHover(const DragHoverEvent& e) override;
