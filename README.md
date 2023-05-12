@@ -767,14 +767,6 @@ Just in case you're in the middle of coding and you don't want to look up
 this documentation, there's some hints about the syntax of BASICally. You can
 click on a particular statement and it will be inserted into your code.
 
-### Known Bugs
-* After the 2.0.10 release, I noticed that a newline/Enter at the very end of the text
-doesn't actually
-appear to move the cursor to the next line until you actually type something
-after it. If you are running into this, put some text after where you are typing
-and it'll work better, but I'll try to fix this
-in the next release.
-
 ### Known Limitations
 * If the text is taking over 1000 physical lines (like if the window is
 really narrow, and there is a LOT of text), then you can only show the first
@@ -942,14 +934,6 @@ Pick from a small number of color choices for the editor window.
 #### Font
 Pick from a small number of fonts. The "Mono" fonts are monospaced fonts.
 
-### Known Bugs
-* After the 2.0.10 release, I noticed that a newline/Enter at the very end of the text
-doesn't actually
-appear to move the cursor to the next line until you actually type something
-after it. If you are running into this, put some text after where you are typing
-and it'll work better, but I'll try to fix this
-in the next release.
-
 ### Known Limitations
 * If the text is taking over 1000 physical lines (like if the window is
 really narrow, and there is a LOT of text), then you can only show the first
@@ -964,7 +948,10 @@ If this module is bypassed, then it will be darker. But otherwise, no different.
 * VCV's [Notes](https://library.vcvrack.com/Core/Notes).
 * cf's [LABEL](https://library.vcvrack.com/cf/LABEL).
 * NYSTHI's [Label](https://library.vcvrack.com/NYSTHI/Label) and
-[LabelSlim](https://library.vcvrack.com/NYSTHI/LabelSlim)
+[LabelSlim](https://library.vcvrack.com/NYSTHI/LabelSlim).
+* Submarine's [TD-510](https://library.vcvrack.com/SubmarineFree/TD-510),
+[TD-410](https://library.vcvrack.com/SubmarineFree/TD-410), and
+[TD-316](https://library.vcvrack.com/SubmarineFree/TD-316).
 
 
 ![Line Break image](images/Separator.png)
