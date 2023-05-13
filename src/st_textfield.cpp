@@ -416,18 +416,6 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
   		insertText("\n");
 			e.consume(this);
 		}
-		// Tab
-		if (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == 0) {
-			if (nextField)
-				APP->event->setSelectedWidget(nextField);
-			e.consume(this);
-		}
-		// Shift+Tab
-		if (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT) {
-			if (prevField)
-				APP->event->setSelectedWidget(prevField);
-			e.consume(this);
-		}
 		// Consume all printable keys unless Ctrl is held
 		if ((e.mods & RACK_MOD_CTRL) == 0 && e.keyName != "") {
 			e.consume(this);
