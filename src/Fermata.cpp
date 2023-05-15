@@ -303,7 +303,12 @@ struct ClosedTitleTextField : LightWidget {
           Rect r = box.zeroPos();
           Vec bounding_box = r.getBottomRight();
           std::string text = module->title_text;
-          if (text_holes >= 4) {
+          if (text_holes >= 6) {
+            // This is when we show the title horizontally, broken into words.
+            // We only do this for one size, because titles are usually short
+            // [citation needed], and so look pretty good sideways at smaller
+            // sizes. But leaving in the code that worked for smaller widths,
+            // just in case I want it later.
             // 26 is a good font size for 6 holes of text.
             int max_font_size = floor(26 * text_holes / 6);
             // 21.0 is a good spacing for font size 26.
@@ -355,12 +360,6 @@ struct ClosedTitleTextField : LightWidget {
             nvgTextMetrics(args.vg, NULL, &desc, &lh);
             nvgRotate(args.vg, -M_PI / 2.0f);
             // Because of the rotation, we need to express X, Y as -Y, ???
-            // The following almost works, except in the Notes font.
-            // TODO: I still find it annoying to read sideways.
-            // Try a letter at a time, but vertical. The code for the previous
-            // section already can do that!
-            // TODO: not horizontally centered very well. Use lh?
-            // TODO: should 5 holes be more like 4 and 3?
             nvgText(args.vg, 6 - bounding_box.y, bounding_box.x + desc,
                 text.c_str(), NULL);
           }
