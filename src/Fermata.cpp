@@ -191,7 +191,7 @@ struct FermataModuleResizeHandle : OpaqueWidget {
 		Rect newBox = originalBox;
 		Rect oldBox = mw->box;
     // Minimum and maximum number of holes we allow the module to be.
-		const float minWidth = 5 * RACK_GRID_WIDTH;
+		const float minWidth = 3 * RACK_GRID_WIDTH;
     const float maxWidth = 64 * RACK_GRID_WIDTH;
     if (right) {
   		newBox.size.x += deltaX;
@@ -292,50 +292,77 @@ struct ClosedTitleTextField : LightWidget {
   void drawLayer(const DrawArgs& args, int layer) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
     if (layer == 1) {
-      Rect r = box.zeroPos();
-      Vec bounding_box = r.getBottomRight();
       // No background color!
 
       if (module) {
-        // Width of box needs to respond to width of module.
-        int text_holes = module->width - 2;
-        box.size = mm2px(Vec(text_holes * 5.08, 110));
         std::shared_ptr<Font> font = APP->window->loadFont(module->getFontPath());
         if (font) {
-          // 26 is a good font size for 6 holes of text.
-          int max_font_size = floor(26 * text_holes / 6);
-          // 21.0 is a good spacing for font size 26.
-          float max_spacing = 21.0 * text_holes / 6;
-
+          // Width of box needs to respond to width of module.
+          int text_holes = module->width - 2;
+          box.size = mm2px(Vec(text_holes * 5.08, 110));
+          Rect r = box.zeroPos();
+          Vec bounding_box = r.getBottomRight();
           std::string text = module->title_text;
-          nvgFillColor(args.vg, color::BLACK);
-          std::vector<std::string> lines;
-          // Break this into words. Since I don't know the font,
-          // too much effort to predict length, and don't want to use a
-          // TextField.
-          // TODO: cache this computation by moving this elsewhere? This
-          // section only takes about 5 usec to run.
-          auto start = 0U;
-          auto end = text.find(' ');
-          int longest = 0;
-          while (end != std::string::npos) {
-            lines.push_back(text.substr(start, end - start));
-            longest = std::max(longest, (int) (end - start));
-            start = end + 1;
-            end = text.find(' ', start);
-          }
-          std::string last = text.substr(start);
-          lines.push_back(last);
-          longest = std::max(longest, (int) last.size());
-          int font_size = longest < 8 ? max_font_size : floor(max_font_size * 7 / longest);
-          float spacing = longest < 8 ? max_spacing : max_spacing * 7 / longest;
+          if (text_holes >= 4) {
+            // 26 is a good font size for 6 holes of text.
+            int max_font_size = floor(26 * text_holes / 6);
+            // 21.0 is a good spacing for font size 26.
+            float max_spacing = 21.0 * text_holes / 6;
 
-          nvgFontSize(args.vg, font_size);
-          nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
-          nvgFontFaceId(args.vg, font->handle);
-          // Place on the line just off the left edge.
-          for (int i = 0; i < (int) lines.size(); i++) {
-            nvgText(args.vg, bounding_box.x / 2, i * spacing, lines[i].c_str(), NULL);
+            std::vector<std::string> lines;
+            // Break this into words. Since I don't know the font,
+            // too much effort to predict length, and don't want to use a
+            // TextField.
+            // TODO: cache this computation by moving this elsewhere? This
+            // section only takes about 5 usec to run.
+            auto start = 0U;
+            auto end = text.find(' ');
+            int longest = 0;
+            while (end != std::string::npos) {
+              lines.push_back(text.substr(start, end - start));
+              longest = std::max(longest, (int) (end - start));
+              start = end + 1;
+              end = text.find(' ', start);
+            }
+            std::string last = text.substr(start);
+            lines.push_back(last);
+            longest = std::max(longest, (int) last.size());
+            int font_size = longest < 8 ? max_font_size : floor(max_font_size * 7 / longest);
+            float spacing = longest < 8 ? max_spacing : max_spacing * 7 / longest;
+
+            nvgFillColor(args.vg, color::BLACK);
+            nvgFontSize(args.vg, font_size);
+            nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
+            nvgFontFaceId(args.vg, font->handle);
+            // Place on the line just off the left edge.
+            for (int i = 0; i < (int) lines.size(); i++) {
+              nvgText(args.vg, bounding_box.x / 2, i * spacing, lines[i].c_str(), NULL);
+            }
+          } else {
+            // Show it sideways!
+            // This is tricky because the font may be taller than the box we're
+            // showing the text in, if we just rely on number of holes.
+            // So we resize the font to make sure we center and don't clip the
+            // top or bottom of the text.
+            // One hole appears to be 15mm (i think mm is the units that sizes
+            // are given in).
+            nvgFontSize(args.vg, 15 * text_holes);
+            nvgFontFaceId(args.vg, font->handle);
+            nvgTextAlign(args.vg, NVG_ALIGN_LEFT|NVG_ALIGN_BASELINE);
+            nvgTextLetterSpacing(args.vg, 0);
+            nvgFillColor(args.vg, color::BLACK);
+            float desc, lh;
+            nvgTextMetrics(args.vg, NULL, &desc, &lh);
+            nvgRotate(args.vg, -M_PI / 2.0f);
+            // Because of the rotation, we need to express X, Y as -Y, ???
+            // The following almost works, except in the Notes font.
+            // TODO: I still find it annoying to read sideways.
+            // Try a letter at a time, but vertical. The code for the previous
+            // section already can do that!
+            // TODO: not horizontally centered very well. Use lh?
+            // TODO: should 5 holes be more like 4 and 3?
+            nvgText(args.vg, 6 - bounding_box.y, bounding_box.x + desc,
+                text.c_str(), NULL);
           }
         }
       }
@@ -343,7 +370,6 @@ struct ClosedTitleTextField : LightWidget {
     Widget::drawLayer(args, layer);
     nvgResetScissor(args.vg);
   }
-
 };
 
 struct FermataProgramNameMenuItem : FermataTextFieldMenuItem {
@@ -585,7 +611,7 @@ struct FermataWidget : ModuleWidget {
         closed_title->hide();
         title->show();
       }
-      // The right=hand screws have slightly differnt logic.
+      // The right-hand screws have slightly different logic.
       if (module->width < 8) {
         topRightScrew->hide();
       	bottomRightScrew->hide();
