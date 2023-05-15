@@ -191,7 +191,7 @@ struct FermataModuleResizeHandle : OpaqueWidget {
 		Rect newBox = originalBox;
 		Rect oldBox = mw->box;
     // Minimum and maximum number of holes we allow the module to be.
-		const float minWidth = 8 * RACK_GRID_WIDTH;
+		const float minWidth = 5 * RACK_GRID_WIDTH;
     const float maxWidth = 64 * RACK_GRID_WIDTH;
     if (right) {
   		newBox.size.x += deltaX;
@@ -238,6 +238,7 @@ struct FermataModuleResizeHandle : OpaqueWidget {
 	}
 };
 
+// The title when shown below the text.
 struct FermataTitleTextField : LightWidget {
   Fermata* module;
 
@@ -261,9 +262,6 @@ struct FermataTitleTextField : LightWidget {
       }
       if (font) {
         nvgFillColor(args.vg, color::BLACK);
-        // The longer the text, the smaller the font. 20 is our largest size,
-        // and it handles 10 chars of this font. 10 is smallest size, it can
-        // handle 25 chars.
         int font_size = 18;
         nvgFontSize(args.vg, font_size);
         nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_LEFT);
@@ -283,6 +281,7 @@ struct FermataTextFieldMenuItem : TextField {
   }
 };
 
+// The title when the text field is not visible, more prominently on the module.
 struct ClosedTitleTextField : LightWidget {
   Fermata* module;
 
@@ -298,15 +297,24 @@ struct ClosedTitleTextField : LightWidget {
       // No background color!
 
       if (module) {
+        // Width of box needs to respond to width of module.
+        int text_holes = module->width - 2;
+        box.size = mm2px(Vec(text_holes * 5.08, 110));
         std::shared_ptr<Font> font = APP->window->loadFont(module->getFontPath());
         if (font) {
+          // 26 is a good font size for 6 holes of text.
+          int max_font_size = floor(26 * text_holes / 6);
+          // 21.0 is a good spacing for font size 26.
+          float max_spacing = 21.0 * text_holes / 6;
+
           std::string text = module->title_text;
           nvgFillColor(args.vg, color::BLACK);
           std::vector<std::string> lines;
           // Break this into words. Since I don't know the font,
           // too much effort to predict length, and don't want to use a
           // TextField.
-          // TODO: cache this computation by moving this elsewhere?
+          // TODO: cache this computation by moving this elsewhere? This
+          // section only takes about 5 usec to run.
           auto start = 0U;
           auto end = text.find(' ');
           int longest = 0;
@@ -319,8 +327,8 @@ struct ClosedTitleTextField : LightWidget {
           std::string last = text.substr(start);
           lines.push_back(last);
           longest = std::max(longest, (int) last.size());
-          int font_size = longest < 8 ? 26 : floor(26 * 7 / longest);
-          float spacing = longest < 8 ? 21.0 : 21 * 7 / longest;
+          int font_size = longest < 8 ? max_font_size : floor(max_font_size * 7 / longest);
+          float spacing = longest < 8 ? max_spacing : max_spacing * 7 / longest;
 
           nvgFontSize(args.vg, font_size);
           nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
@@ -461,7 +469,7 @@ struct FermataDisplay : LedDisplay {
 
   // The FermataWidget changes size, so we have to reflect that.
   void step() override {
-    // At smallest size, hide the screen.
+    // At smaller sizes, hide the screen.
     if (textField->module && textField->module->width <= 8) {
       hide();
     } else {
@@ -570,12 +578,20 @@ struct FermataWidget : ModuleWidget {
     // And maybe the *first* time step() is called.
 		if (module) {
 			box.size.x = module->width * RACK_GRID_WIDTH;
-      if (module->width == 8) {
+      if (module->width <= 8) {
         closed_title->show();
         title->hide();
       } else {
         closed_title->hide();
         title->show();
+      }
+      // The right=hand screws have slightly differnt logic.
+      if (module->width < 8) {
+        topRightScrew->hide();
+      	bottomRightScrew->hide();
+      } else {
+        topRightScrew->show();
+        bottomRightScrew->show();
       }
       if (module->update_pos) {
         module->update_pos = false;
