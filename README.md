@@ -899,7 +899,7 @@ If this module is bypassed, then OUT will equal IN.
 Write longer notes! And wider or narrower text notes.
 
 Here is Fermata:
-* as a label
+* as a label, in three of the six available sizes
 * expanded a bit, turning it into a text editor
 * further expanded, and with different font and screen color choices.
 
@@ -914,17 +914,18 @@ Here is Fermata:
 it to pull it open and, say, read more detail on how it works. An example of this can be found in [this patch](examples/AnnotatedSunlightOnSeaAnemones.vcv).
 
 ### Features
-* Up and down arrow keys work mostly like you expect.
+* Up and down arrow keys work mostly like you expect. Home and End go to the
+top and bottom of the text, PgUp and PgDown go up and down a screen length.
 * Text scrolls as you move up and down.
 * Resize the module by dragging the left or right edges. Size can range
-from 8-64 HP.
+from 3-64 HP.
 * Pick from a (small) variety of fonts.
 * Pick from a (small) variety of foreground/background colors.
 * Set the title in the module menu.
 
 Also useful for making a label:
 * Set the title in the menu.
-* Resize the module narrow enough (8 HP) and the title becomes a large label.
+* Resize the module narrow enough (3-8 HP) and the title becomes a large label.
 
 ### Menu Options
 #### Set Title
