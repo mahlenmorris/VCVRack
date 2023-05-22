@@ -326,10 +326,31 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
 			e.consume(this);
 		}
 
-		// TODO: Option to handle PageUp and PageDown? It's possible the widget
-		// never sees them...
-		// But would be very handy for long text.
-
+    // Page Up
+		if (e.key == GLFW_KEY_PAGE_UP) {
+			// Move up a full page length, minus one line.
+			LineColumn lc = extended.GetCurrentLineColumn(cursor);
+			cursor = extended.GetCursorForLineColumn(
+				lc.line - extended.window_length + 1, lc.column);
+			if (!(e.mods & GLFW_MOD_SHIFT)) {
+				selection = cursor;  // Otherwise we select the line.
+			}
+			e.consume(this);
+		}
+		// Page Down
+		if (e.key == GLFW_KEY_PAGE_DOWN) {
+			// Move down a full page length, minus one line.
+			// We do one line less that the full length so that, in the case of
+			// someone just reading the whole text, the last line previously
+			// visible on the screen is still visible, for continuity.
+			LineColumn lc = extended.GetCurrentLineColumn(cursor);
+			cursor = extended.GetCursorForLineColumn(
+				lc.line + extended.window_length - 1, lc.column);
+			if (!(e.mods & GLFW_MOD_SHIFT)) {
+				selection = cursor;  // Otherwise we select the line.
+			}
+			e.consume(this);
+		}
 		// Up
 		if (e.key == GLFW_KEY_UP) {
 			// Move to same column, in previous line.
@@ -393,18 +414,6 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
 		// Enter
 		if ((e.key == GLFW_KEY_ENTER || e.key == GLFW_KEY_KP_ENTER) && (e.mods & RACK_MOD_MASK) == 0) {
   		insertText("\n");
-			e.consume(this);
-		}
-		// Tab
-		if (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == 0) {
-			if (nextField)
-				APP->event->setSelectedWidget(nextField);
-			e.consume(this);
-		}
-		// Shift+Tab
-		if (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT) {
-			if (prevField)
-				APP->event->setSelectedWidget(prevField);
 			e.consume(this);
 		}
 		// Consume all printable keys unless Ctrl is held

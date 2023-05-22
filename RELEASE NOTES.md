@@ -1,5 +1,10 @@
 # Release Notes
 
+### 2.0.11
+#### ???
+* Added support for PgUp and PgDown keys in BASICally and Fermata.
+* Fermata now has a six different label-only font sizes, five of them sideways.
+
 ### 2.0.10
 #### May 11, 2023
 * Added a new text and labeling module called Fermata, for annotating and

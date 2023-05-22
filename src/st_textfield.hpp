@@ -29,11 +29,6 @@ struct STTextField : OpaqueWidget {
 	// Tracks lines positions and lengths.
 	ExtendedText extended;
 
-	/** For Tab and Shift-Tab focusing.
-	*/
-	Widget* prevField = NULL;
-	Widget* nextField = NULL;
-
   // Tracking if width of window has changed.
 	float previous_box_size_x = 0.0f;
 	// Tracking if font of window has changed.
