@@ -1,0 +1,23 @@
+{
+  "plugin": "StochasticTelegraph",
+  "model": "BASICally",
+  "version": "2.0.11",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    }
+  ],
+  "data": {
+    "text": "' Quantizes input with difference and distance output.\n' Does NOT have any knowledge of octaves; only quantizes to\n' the exact values in notes[].\n\n' Picks the note the smallest distance away.\n' IN1 is the input value.\n' OUT1 is the quantized value.\n' OUT2 is IN1 - OUT1 (the \"difference\").\n' OUT3 is the absolute value of OUT2 (the \"distance\").\n\n' Pick which notes to allow in the line that starts \"notes[0] = ...\"\n' Be SURE to update notes_len with the number of entries in notes[]!\n\n' NB: There is a very short (sub-millisecond) delay between when\n' IN1 gets a new value and when OUT1/2/3 are updated.\n\nWHEN start()\n  notes[0] = { c1, c2, e2, c3, g3, c4, f4, g4, c6 }\n  notes_len = 9\n\n  ' Setup lookup table.\n  ' We sort notes[] first. Sort notes[] using Insertion Sort.\n  FOR i = 1 TO notes_len - 1\n    x = notes[i]\n    j = i - 1\n    IF notes[j] > x THEN ' Makes already sorted array bit faster.\n      ' A WHILE loop for a language that doesn't have one.\n      FOR while = 0 TO 1 STEP 0\n        IF j < 0 OR notes[j] <= x THEN\n          EXIT FOR\n        END IF\n        notes[j + 1] = notes[j]   \n        j = j - 1\n      NEXT\n      notes[j + 1] = x\n    END IF\n  NEXT\n\n  range_start = -10\n  range[0] = range_start\n  FOR i = 1 TO notes_len - 1\n    range[i] = (notes[i - 1] + notes[i]) / 2\n    value[i - 1] = notes[i - 1]\n  NEXT\n  range[notes_len] = 10\n  value[notes_len - 1] = notes[notes_len - 1]\n  prev_in = -111\nEND WHEN\n\nALSO\n  IF prev_in != IN1 THEN ' Must recompute.\n    ' Need to preserve IN1, since it might change while we run\n    ' this FOR loop.\n    new_in = IN1\n    FOR k = 0 TO notes_len\n      IF range[k] <= new_in AND range[k+1] > new_in THEN\n        prev_in = new_in\n        OUT1 = value[k]\n        OUT2 = new_in - OUT1\n        OUT3 = abs(OUT2)\n        EXIT FOR\n      END IF\n    NEXT\n  END IF\nEND ALSO\n",
+    "width": 34,
+    "allow_error_highlight": 1,
+    "screen_colors": 1095216660480,
+    "title_text": "Non-Octave Quantizer",
+    "font_choice": "fonts/RobotoMono-Regular.ttf"
+  }
+}

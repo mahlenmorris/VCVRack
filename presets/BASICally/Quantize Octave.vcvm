@@ -1,0 +1,23 @@
+{
+  "plugin": "StochasticTelegraph",
+  "model": "BASICally",
+  "version": "2.0.11",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    }
+  ],
+  "data": {
+    "text": "' Octave-based quantizer with difference and distance output.\n' Picks the note the smallest distance away.\n' IN1 is the input value.\n' OUT1 is the quantized value.\n' OUT2 is IN1 - OUT1 (the \"difference\").\n' OUT3 is the absolute value of OUT2 (the \"distance\").\n\n' Pick which notes to allow in the line that starts \"notes[0] = ...\"\n' Be SURE to update notes_len with the number of entries in notes[]!\n\n' NB: There is a very short (sub-millisecond) delay between when\n' IN1 gets a new value and when OUT1/2/3 are updated.\n\n' See the bottom of the program for more ideas about how to use\n' this.\n\nWHEN start()\n  ' notes[] should only have values from 0 to 1.\n  ' That's the c4-b4 octave.\n  notes[0] = { c4, c#4, d4, d#4, e4, f4, f#4, g4, g#4, a4, a#4, b4 }\n  ' You MUST SET THIS to the number of values in notes[]!\n  notes_len = 12\n\n  ' Normalize all values to 0 <= x < 1.\n  FOR i = 0 TO notes_len - 1\n    notes[i] = mod(notes[i], 1)\n  NEXT\n\n  ' Setup lookup table.\n  ' We sort notes[] first. Sort notes[] using Insertion Sort.\n  for i = 1 to notes_len - 1\n    x = notes[i]\n    j = i - 1\n    IF notes[j] > x THEN ' Makes already sorted array bit faster.\n      ' A WHILE loop for a language that doesn't have one.\n      FOR while = 0 TO 1 STEP 0\n        IF j < 0 OR notes[j] <= x THEN\n          EXIT FOR\n        END IF\n        notes[j + 1] = notes[j]   \n        j = j - 1\n      NEXT\n      notes[j + 1] = x\n    END IF\n  NEXT\n\n  ' Now create an array of range end points.\n  ' One wrinkle is that the input value will always be 0 <= x < 1.\n  end_range = 0\n  range_start = (notes[notes_len - 1] - 1 + notes[0]) / 2\n  if range_start < 0 THEN  ' Need to add this to the end.\n    end_range = range_start + 1\n    end_value = notes[0] + 1\n  END IF\n  range[0] = 0\n  FOR i = 1 TO notes_len - 1\n    range[i] = (notes[i - 1] + notes[i]) / 2\n    value[i - 1] = notes[i - 1]\n  NEXT\n  range[notes_len] = (notes[0] + 1 + notes[notes_len - 1]) / 2\n  value[notes_len - 1] = notes[notes_len - 1]\n  IF end_range THEN\n    range[notes_len + 1] = 1\n    value[notes_len] = end_value\n    range_len = notes_len + 1\n  ELSE\n    range_len = notes_len\n  END IF\n  prev_in = -111 ' A value IN1 will likely not be on start.\nEND WHEN\n\nALSO\n  IF prev_in != IN1 THEN ' Must recompute.\n    ' Need to preserve IN1, since might change while in FOR loop.\n    new_in = IN1\n    octave = floor(new_in)\n    part = new_in - octave\n    FOR k = 0 TO notes_len\n      if range[k] <= part AND range[k+1] > part THEN\n        ' Found it!\n        prev_in = new_in\n        OUT1 = value[k] + octave\n        OUT2 = new_in - OUT1\n        OUT3 = abs(OUT2)\n        EXIT FOR\n      END IF\n    NEXT\n  END IF\nEND ALSO\n\n' A minor chord with a slightly sharp minor third.\n' notes[0] = { c4, eb4 + 0.03, g4 } \n' notes_len = 3\n\n' Don't have to be notes; can just be values you like for a\n' CV input.\n' notes[0] = { 0.1, 0.23, 0.4567, 0.89 } \n' notes_len = 4\n",
+    "width": 34,
+    "allow_error_highlight": 1,
+    "screen_colors": 1095216660480,
+    "title_text": "Octave-based Quantizer",
+    "font_choice": "fonts/RobotoMono-Regular.ttf"
+  }
+}
