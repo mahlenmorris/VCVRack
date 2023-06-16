@@ -48,12 +48,14 @@ The examples above are all in [this patch](examples/BASICallyExamples1.vcv).
 A patch with some simple/strange/silly ideas for other things BASICally can do
 are in [this patch](examples/BASICallyExperiments.vcv).
 
-#### A tape loop with five playback heads
-![ten second tape loop image](images/BASICallyTapeLoop.png)
-Send audio to IN 2-4 of the VCA MIX and then try listening to the various
-playback heads in OUT1-OUT5 of BASICally. Look in the Presets for this code.
+#### Presets
+There are over a dozen presets demonstrating how BASICally can be used,
+including unusual sequencers, oscillators, tape and delay effects,
+a sample and hold, a signal router, and four different quantizers. Since the
+workings of these are controlled solely by the BASICally code, it's easy to
+change how they behave.
 
-<!-- TODO: video of different examples and their output -->
+<!-- TODO: video of different Presets and their output -->
 
 ## Unique Features
 While there are
