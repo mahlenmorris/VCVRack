@@ -112,6 +112,22 @@ float Expression::Compute() {
   }
 }
 
+std::string Expression::ComputeString() {
+  if (type == STRING) {
+    return string_value;
+  } else {
+    float value = Compute();
+    std::string str_value;
+    // If this is effectively an integer, render it as one.
+    if (is_zero(value - floor(value))) {
+      str_value = std::to_string((int) value);
+    } else {
+      str_value = std::to_string(value);
+    }
+    return str_value;
+  }
+}
+
 bool Expression::Volatile() {
   switch (type) {
     case NUMBER: return false;
@@ -276,6 +292,21 @@ Expression ExpressionFactory::Number(float the_value) {
   Expression ex;
   ex.type = Expression::NUMBER;
   ex.float_value = the_value;
+  return ex;
+}
+
+Expression ExpressionFactory::Quoted(const std::string &the_value) {
+  Expression ex;
+  ex.type = Expression::STRING;
+  // Need to remove the '"' at both ends, since the parse includes them.
+  std::string value = the_value.substr(1, the_value.size() - 2);
+
+  std::size_t pos = 0;
+  while ((pos = value.find("\\n", pos)) != std::string::npos) {
+      value.replace(pos, 2, "\n");
+      pos += 1;
+  }
+  ex.string_value = value;
   return ex;
 }
 
@@ -482,6 +513,17 @@ Line Line::IfThenElse(const Expression &bool_expr,
   line.statements.push_back(then_state);
   line.statements.push_back(else_state);
   line.statements.push_back(elseifs);
+  return line;
+}
+
+Line Line::Print(const std::string &port1, const ExpressionList &args,
+                 Driver* driver) {
+  Line line;
+  line.type = PRINT;
+  line.assign_port = driver->GetPortFromName(port1);
+  for (Expression exp : args.expressions) {
+    line.expr_list.add(exp);
+  }
   return line;
 }
 

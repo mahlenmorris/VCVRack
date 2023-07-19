@@ -359,5 +359,14 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
         }
       }
     }
+    break;
+    case Line::PRINT: {
+      PCode print;
+      print.type = PCode::PRINT;
+      print.assign_port = line.assign_port;  // Port we are sending text out of.
+      print.expr_list = line.expr_list;
+      pcodes->push_back(print);
+    }
+    break;
   }
 }

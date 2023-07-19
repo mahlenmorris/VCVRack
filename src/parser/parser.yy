@@ -64,6 +64,7 @@
   NOT     "not"
   OR      "or"
   POW     "pow"
+  PRINT   "print"
   RESET   "reset"
   SAMPLE_RATE "sample_rate"
   SIGN    "sign"
@@ -91,6 +92,7 @@
 ;
 
 %token <std::string> IDENTIFIER "identifier"
+%token <std::string> QUOTED_STRING "quoted_string"
 %token <float> NUMBER "number"
 %token <std::string> NOTE "note"
 %token <std::string> IN_PORT "in_port"
@@ -101,6 +103,8 @@
 %token <std::string> COMPARISON "comparison"
 %nterm <Expression> exp
 %nterm <ExpressionList> expression_list
+%nterm <Expression> string_exp
+%nterm <ExpressionList> string_list
 %nterm <Blocks> blocks
 %nterm <Block> block
 %nterm <Block> main_block
@@ -116,6 +120,7 @@
 %nterm <Line> exit_statement
 %nterm <Line> for_statement
 %nterm <Line> if_statement
+%nterm <Line> print_statement
 %nterm <Line> reset_statement
 %nterm <Line> wait_statement
 
@@ -155,6 +160,7 @@ statement:
 | exit_statement       { $$ = $1; }
 | for_statement        { $$ = $1; }
 | if_statement         { $$ = $1; }
+| print_statement      { $$ = $1; }
 | reset_statement      { $$ = $1; }
 | wait_statement       { $$ = $1; }
 
@@ -192,6 +198,9 @@ elseif_clause:
 if_statement:
   "if" exp "then" zero_or_more_statements elseif_group "end" "if"       { $$ = Line::IfThen($2, $4, $5); }
 | "if" exp "then" zero_or_more_statements elseif_group "else" zero_or_more_statements "end" "if"  { $$ = Line::IfThenElse($2, $4, $7, $5); }
+
+print_statement:
+  "print" "(" "out_port" "," string_list ")"  {$$ = Line::Print($3, $5, &drv);}
 
 reset_statement:
   "reset"               { $$ = Line::Reset(); }
@@ -233,6 +242,18 @@ exp:
 | "oneargfunc" "(" exp ")" { $$ = drv.factory.OneArgFunc($1, $3); }
 | "twoargfunc" "(" exp "," exp ")" { $$ = drv.factory.TwoArgFunc($1, $3, $5); }
 | "(" exp ")"   { $$ = $2; }
+
+/* Similar (ambiguous?) to expression_list, but seems to work! */
+string_list:
+  string_exp                 { ExpressionList foo = ExpressionList::StringList();
+                               $$ = foo.add($1); }
+| exp                        { ExpressionList foo = ExpressionList::StringList();
+                               $$ = foo.add($1); }
+| string_list "," string_exp { $$ = $1.add($3); }
+| string_list "," exp        { $$ = $1.add($3); }
+
+string_exp:
+  "quoted_string"            { $$ = drv.factory.Quoted($1); }
 %%
 
 void

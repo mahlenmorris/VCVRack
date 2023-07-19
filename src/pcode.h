@@ -36,7 +36,8 @@ struct PCode {
                  // so making a special command for it was fine.
                  // And may have a list of variables later.
                  // TODO: Maybe make a Type for one-off commands?
-    RESET        // Like CLEAR, A command with no return value.
+    RESET,       // Like CLEAR, A command with no return value.
+    PRINT        // Sends strings to be sent out via a port.
   };
   Type type;
   std::string str1;

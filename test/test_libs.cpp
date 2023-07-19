@@ -12,6 +12,8 @@ struct TestEnvironment : Environment {
   std::unordered_map<int, float> inputs;
   bool clear_called = false;
   bool starting = false;
+  // List of strings sent via Send().
+  std::vector<std::string> text_sent;
 
   void SetIns(float a, float b, float c, float d) {
     inputs[0] = a;
@@ -60,6 +62,11 @@ struct TestEnvironment : Environment {
 
   bool Trigger(const PortPointer &port) override {
     return (port.port_type == PortPointer::INPUT);
+  }
+
+  void Send(const PortPointer &port, const std::string &str) override {
+    (void) port;  // To skip unused parameter warning during compilation.
+    text_sent.push_back(str);
   }
 };
 
@@ -593,6 +600,19 @@ TEST(ParserTest, BlocksTest)
     ASSERT_EQ(1, drv.blocks.size());
 }
 
+TEST(ParserTest, ParseStringTest)
+{
+  Driver drv;
+
+  EXPECT_EQ(0, drv.parse("print(out1, \"foo\")"));
+  ASSERT_EQ(1, drv.blocks.size());
+
+  EXPECT_EQ(0, drv.parse("print(out1, 7, sin(bar), \"foo\")"));
+  ASSERT_EQ(1, drv.blocks.size());
+
+  EXPECT_EQ(1, drv.parse("print(in1, \"foo\")"));
+}
+
 TEST(RunTest, RunsAtAll) {
   Driver drv;
   PCodeTranslator translator;
@@ -619,6 +639,38 @@ TEST(RunTest, RunsClear) {
   EXPECT_EQ(false, test_env.clear_called);
   EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
   EXPECT_EQ(true, test_env.clear_called);
+}
+
+TEST(RunTest, RunsPrint) {
+  Driver drv;
+  PCodeTranslator translator;
+  TestEnvironment test_env;
+  drv.SetEnvironment(&test_env);
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse("print(out1, 7, \" \", sin(6), \" hello, world \")"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  ASSERT_EQ(0, test_env.text_sent.size());
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  ASSERT_EQ(1, test_env.text_sent.size());
+  EXPECT_EQ("7 -0.279415 hello, world ", test_env.text_sent[0]);
+}
+
+TEST(RunTest, RunsPrintNewline1) {
+  Driver drv;
+  PCodeTranslator translator;
+  TestEnvironment test_env;
+  drv.SetEnvironment(&test_env);
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse("print(out1, \"first line\nsecond line\")"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  ASSERT_EQ(0, test_env.text_sent.size());
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  ASSERT_EQ(1, test_env.text_sent.size());
+  EXPECT_EQ("first line\nsecond line", test_env.text_sent[0]);
 }
 
 TEST(RunTest, StartTest) {

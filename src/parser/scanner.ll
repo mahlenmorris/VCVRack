@@ -121,6 +121,7 @@ blank [ \t\r]
 {blank}+   loc.step ();
 \n+        loc.lines (yyleng); loc.step ();
 "' ".*     // Comments, skip over. Hint: '.' will not match \n. But location might need fixing.
+\"[^"]*\"  return yy::Parser::make_QUOTED_STRING  (yytext, loc);  // Will this grab newlines?
 "-"        return yy::Parser::make_MINUS  (yytext, loc);
 "+"        return yy::Parser::make_PLUS   (yytext, loc);
 "*"        return yy::Parser::make_STAR   (yytext, loc);
@@ -136,7 +137,7 @@ blank [ \t\r]
 "all"      return yy::Parser::make_ALL    (yytext, loc);
 "also"     return yy::Parser::make_ALSO   (yytext, loc);
 "and"      return yy::Parser::make_AND    (yytext, loc);
-"clear"    return yy::Parser::make_CLEAR (yytext, loc);
+"clear"    return yy::Parser::make_CLEAR  (yytext, loc);
 "connected" return yy::Parser::make_CONNECTED (yytext, loc);
 "continue" return yy::Parser::make_CONTINUE (yytext, loc);
 "else"     return yy::Parser::make_ELSE   (yytext, loc);
@@ -148,7 +149,8 @@ blank [ \t\r]
 "next"     return yy::Parser::make_NEXT   (yytext, loc);
 "not"      return yy::Parser::make_NOT    (yytext, loc);
 "or"       return yy::Parser::make_OR     (yytext, loc);
-"reset"    return yy::Parser::make_RESET   (yytext, loc);
+"print"    return yy::Parser::make_PRINT  (yytext, loc);
+"reset"    return yy::Parser::make_RESET  (yytext, loc);
 "step"     return yy::Parser::make_STEP   (yytext, loc);
 "then"     return yy::Parser::make_THEN   (yytext, loc);
 "to"       return yy::Parser::make_TO     (yytext, loc);

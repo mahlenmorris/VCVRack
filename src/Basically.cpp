@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <queue>
 #include <thread>
 #include <unordered_map>
 #include <utility>  // pair
@@ -12,6 +13,7 @@
 #include "parser/driver.hh"
 #include "pcode_trans.h"
 #include "st_textfield.hpp"
+#include "tipsy/tipsy.h"  // Library for sending text.
 
 enum Style {
   ALWAYS_STYLE,
@@ -80,6 +82,38 @@ struct Basically : Module {
     bool current_value;
   };
 
+  struct TextSender {
+    std::queue<std::string> unsent_queue;
+    tipsy::ProtocolEncoder encoder;
+    std::string sending_message;
+
+    void AddToQueue(const std::string &text) {
+      // If there's enough of a backlog, we shed incoming load.
+      if (unsent_queue.size() < 6) {
+        unsent_queue.push(text);
+      }
+    }
+
+    void ProcessEncoder(int port_index, std::vector<Output>* outputs) {
+      // Do we need to do anything?
+      if (!unsent_queue.empty() && encoder.isDormant()) {
+        // Have message waiting, but not currently sending anything.
+        sending_message = unsent_queue.front();
+        unsent_queue.pop();
+        // size() + 1 because the decoder needs the NUL at the end, I suspect.
+        encoder.initiateMessage("text/plain", sending_message.size() + 1,
+                                (unsigned char *)sending_message.c_str());
+      }
+      if (!encoder.isDormant()) {
+        float f = 0.0f;  // Compiler complains otherwise.
+        auto result = encoder.getNextMessageFloat(f);
+        if (!encoder.isError(result)) {
+            outputs->at(port_index).setVoltage(f);
+        }
+      }
+    }
+  };
+
   class ProductionEnvironment : public Environment {
     std::vector<Input>* inputs;
     std::vector<Output>* outputs;
@@ -93,6 +127,9 @@ struct Basically : Module {
     std::chrono::high_resolution_clock::time_point time_start;
     // Map output index to whether or not we should clamp values for it.
     std::unordered_map<int, bool>* out_index_to_clamp;
+    // Map output index to encoder that sends text out of that port and
+    // also the queue for that port.
+    std::unordered_map<int, TextSender*> text_encoders;
 
    public:
     ProductionEnvironment(std::vector<Input>* the_inputs,
@@ -127,6 +164,10 @@ struct Basically : Module {
         trig->current_value = false;
         triggers[index] = trig;
       }
+
+      // TODO: reset the TextEncoders? Or are they not really considered
+      // running code? As far as user is concerned, the text is already sent,
+      // right?
     }
 
     void UpdateTriggers() {
@@ -229,6 +270,29 @@ struct Basically : Module {
         return false;
       }
     }
+
+    void Send(const PortPointer &port, const std::string &str) override {
+      TextSender* sender;
+      auto found = text_encoders.find(port.index);
+      if (found == text_encoders.end()) {
+        sender = new TextSender();
+        text_encoders[port.index] = sender;
+      } else {
+        sender = found->second;
+      }
+      sender->AddToQueue(str);
+    }
+
+    // If anything is sending out encoded messages, further them along.
+    void ProcessAllSenders() {
+      // Most programs do no text processing, so optimize for that case.
+      if (!text_encoders.empty()) {
+        for (auto entry : text_encoders) {
+          entry.second->ProcessEncoder(entry.first, outputs);
+        }
+      }
+    }
+
   };
 
   // Class devoted to handling the lengthy (compared to single sample)
@@ -640,6 +704,9 @@ struct Basically : Module {
         }
       }
     }
+
+    // Move forward all Tipsy messages we sending, if any.
+    environment->ProcessAllSenders();
 
     // Lights.
     if (run_light_countdown > 0) {
