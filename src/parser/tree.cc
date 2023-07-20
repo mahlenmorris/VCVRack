@@ -1,6 +1,7 @@
 // Code for methods related to parsing data structures.
 #include "tree.h"
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -62,6 +63,12 @@ std::unordered_map<std::string, float> note_to_volt_same_octave = {
   {"bb", 0.8333333},
   {"b", 0.91666663}
 };
+
+void ToLower(const std::string &mixed, std::string *lower) {
+  lower->resize(mixed.size());
+  std::transform(mixed.begin(), mixed.end(),
+                 lower->begin(), ::tolower);
+}
 
 float Expression::Compute() {
   switch (type) {
@@ -264,17 +271,19 @@ Expression ExpressionFactory::Not(const Expression &expr) {
 Expression ExpressionFactory::Note(const std::string &note_name) {
   Expression ex;
   ex.type = Expression::NUMBER;
+  std::string lower;
+  ToLower(note_name, &lower);
   // split into name and octave
   int octave;
   std::string name;
   // Number at end might be two chars long, in the case of -1 or 10.
-  if (note_name.size() == 4 || (note_name.size() == 3 && (
-      note_name[1] != '#' && note_name[1] != 'b'))) {
-    name = note_name.substr(0, note_name.size() - 2);
-    octave = strtol(note_name.c_str() + note_name.size() - 2, NULL, 10);
+  if (lower.size() == 4 || (lower.size() == 3 && (
+      lower[1] != '#' && lower[1] != 'b'))) {
+    name = lower.substr(0, lower.size() - 2);
+    octave = strtol(lower.c_str() + lower.size() - 2, NULL, 10);
   } else {
-    name = note_name.substr(0, note_name.size() - 1);
-    octave = strtol(note_name.c_str() + note_name.size() - 1, NULL, 10);
+    name = lower.substr(0, lower.size() - 1);
+    octave = strtol(lower.c_str() + lower.size() - 1, NULL, 10);
   }
   auto found = note_to_volt_same_octave.find(name);
   // This can happen. Current regex can accept invalid values like b#.
@@ -313,7 +322,9 @@ Expression ExpressionFactory::Quoted(const std::string &the_value) {
 Expression ExpressionFactory::ZeroArgFunc(const std::string &func_name) {
   Expression ex;
   ex.type = Expression::ZEROARGFUNC;
-  ex.operation = string_to_operation.at(func_name);
+  std::string lower;
+  ToLower(func_name, &lower);
+  ex.operation = string_to_operation.at(lower);
   ex.env = env;  // We know sample_rate() requires this.
   return ex;
 }
@@ -322,7 +333,9 @@ Expression ExpressionFactory::OneArgFunc(const std::string &func_name,
                                          const Expression &arg1) {
   Expression ex;
   ex.type = Expression::ONEARGFUNC;
-  ex.operation = string_to_operation.at(func_name);
+  std::string lower;
+  ToLower(func_name, &lower);
+  ex.operation = string_to_operation.at(lower);
   ex.subexpressions.push_back(arg1);
   return ex;
 }
@@ -332,7 +345,9 @@ Expression ExpressionFactory::OnePortFunc(const std::string &func_name,
                                           Driver* driver) {
   Expression ex;
   ex.type = Expression::ONEPORTFUNC;
-  ex.operation = string_to_operation.at(func_name);
+  std::string lower;
+  ToLower(func_name, &lower);
+  ex.operation = string_to_operation.at(lower);
   ex.port = driver->GetPortFromName(port1);  // TODO: Make parser do this?
   if (ex.operation == Expression::TRIGGER) {
     // So that Environment can know to inspect these ports every sample.
@@ -347,7 +362,9 @@ Expression ExpressionFactory::TwoArgFunc(const std::string &func_name,
                                          const Expression &arg2) {
   Expression ex;
   ex.type = Expression::TWOARGFUNC;
-  ex.operation = string_to_operation.at(func_name);
+  std::string lower;
+  ToLower(func_name, &lower);
+  ex.operation = string_to_operation.at(lower);
   ex.env = env;  // Sometimes we need this.
   ex.subexpressions.push_back(arg1);
   ex.subexpressions.push_back(arg2);
@@ -370,7 +387,9 @@ Expression ExpressionFactory::ArrayVariable(const std::string &array_name,
                                             Driver* driver) {
   Expression ex;
   ex.type = Expression::ARRAY_VARIABLE;
-  ex.array_ptr = driver->GetArrayFromName(array_name);
+  std::string lower;
+  ToLower(array_name, &lower);
+  ex.array_ptr = driver->GetArrayFromName(lower);
   ex.subexpressions.push_back(arg1);
   return ex;
 }
@@ -381,8 +400,9 @@ Expression ExpressionFactory::Variable(const char *var_name, Driver* driver) {
   Expression ex;
   ex.type = Expression::VARIABLE;
   // Intentionally copying the name.
-  ex.name = std::string(var_name);
-  if (driver->VarHasPort(var_name)) {
+  std::string copied(var_name);
+  ToLower(copied, &(ex.name));
+  if (driver->VarHasPort(ex.name)) {
     ex.port = driver->GetPortFromName(ex.name);
     ex.env = env;
   } else {
@@ -418,8 +438,10 @@ Line Line::ArrayAssignment(const std::string &variable_name,
                      const ExpressionList &values, Driver* driver) {
   Line line;
   line.type = ARRAY_ASSIGNMENT;
-  line.str1 = variable_name;  // Not required, but handy for troubleshooting.
-  line.array_ptr = driver->GetArrayFromName(variable_name);
+  std::string lower;
+  ToLower(variable_name, &lower);
+  line.str1 = lower;  // Not required, but handy for troubleshooting.
+  line.array_ptr = driver->GetArrayFromName(lower);
   line.expr1 = index;
   line.expr_list = values;
   return line;
@@ -429,12 +451,14 @@ Line Line::Assignment(const std::string &variable_name, const Expression &expr,
                       Driver* driver) {
   Line line;
   line.type = ASSIGNMENT;
-  line.str1 = variable_name;
-  if (driver->VarHasPort(variable_name)) {
-    line.assign_port = driver->GetPortFromName(variable_name);
+  std::string lower;
+  ToLower(variable_name, &lower);
+  line.str1 = lower;
+  if (driver->VarHasPort(lower)) {
+    line.assign_port = driver->GetPortFromName(lower);
     line.variable_ptr = nullptr;
   } else {
-    line.variable_ptr = driver->GetVarFromName(variable_name);
+    line.variable_ptr = driver->GetVarFromName(lower);
   }
   line.expr1 = expr;
   return line;
@@ -520,7 +544,9 @@ Line Line::Print(const std::string &port1, const ExpressionList &args,
                  Driver* driver) {
   Line line;
   line.type = PRINT;
-  line.assign_port = driver->GetPortFromName(port1);
+  std::string lower;
+  ToLower(port1, &lower);
+  line.assign_port = driver->GetPortFromName(lower);
   for (Expression exp : args.expressions) {
     line.expr_list.add(exp);
   }

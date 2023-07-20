@@ -174,9 +174,9 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
         for (Expression expr : pcode->expr_list.expressions) {
           result.append(expr.ComputeString());
         }
-        if (result.size() > 0) {
-          environment->Send(pcode->assign_port, result);
-        }
+        // Note: once tested that result was not empty, but sending empty string
+        // could be intended behavior, I realize.
+        environment->Send(pcode->assign_port, result);
         current_line++;
       }
       break;

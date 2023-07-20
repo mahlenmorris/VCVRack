@@ -328,12 +328,10 @@ struct Basically : Module {
     void Compile() {
       running = true;
       useful = false;
-      // We are deliberately case-insensitive.
-      std::string lowercase;
-      lowercase.resize(text.size());
-      std::transform(text.begin(), text.end(),
-                     lowercase.begin(), ::tolower);
-      bool compiles = !driver->parse(lowercase);
+      // 'text' might get changed during compilation which would be bad.
+      // Let's copy it and send that.
+      std::string stable_text(text);
+      bool compiles = !driver->parse(stable_text);
       if (!compiles) {  // Nothing more to do.
         running = false;
         return;

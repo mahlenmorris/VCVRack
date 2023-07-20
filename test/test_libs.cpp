@@ -175,7 +175,7 @@ TEST(ParserTest, FunctionTest)
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(2.3f, lines->at(0).expr1.Compute());
 
-    EXPECT_EQ(0, drv.parse("f = abs(-1.0 * 2.3)"));
+    EXPECT_EQ(0, drv.parse("f = ABS(-1.0 * 2.3)"));
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(2.3f, lines->at(0).expr1.Compute());
 
@@ -183,7 +183,7 @@ TEST(ParserTest, FunctionTest)
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(3.0f, lines->at(0).expr1.Compute());
 
-    EXPECT_EQ(0, drv.parse("f = ceiling(-2.3)"));
+    EXPECT_EQ(0, drv.parse("f = ceILIng(-2.3)"));
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(-2.0f, lines->at(0).expr1.Compute());
 
@@ -191,7 +191,7 @@ TEST(ParserTest, FunctionTest)
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(2.0f, lines->at(0).expr1.Compute());
 
-    EXPECT_EQ(0, drv.parse("f = floor(-2.3)"));
+    EXPECT_EQ(0, drv.parse("f = Floor(-2.3)"));
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(-3.0f, lines->at(0).expr1.Compute());
 
@@ -203,7 +203,7 @@ TEST(ParserTest, FunctionTest)
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(-1.0f, lines->at(0).expr1.Compute());
 
-    EXPECT_EQ(0, drv.parse("f = sign(0)"));
+    EXPECT_EQ(0, drv.parse("f = SiGn(0)"));
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(0, lines->at(0).expr1.Compute());
 
@@ -216,7 +216,7 @@ TEST(ParserTest, FunctionTest)
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(4.0f, lines->at(0).expr1.Compute());
 
-    EXPECT_EQ(0, drv.parse("f = min(1.0, max(-0.5, 0.0))"));
+    EXPECT_EQ(0, drv.parse("f = MIN(1.0, max(-0.5, 0.0))"));
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(0.0f, lines->at(0).expr1.Compute());
 
@@ -236,7 +236,7 @@ TEST(ParserTest, FunctionTest)
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(0.0f, lines->at(0).expr1.Compute());
 
-    EXPECT_EQ(0, drv.parse("f = log2(-3)"));
+    EXPECT_EQ(0, drv.parse("f = LOG2(-3)"));
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(0.0f, lines->at(0).expr1.Compute());
 
@@ -502,17 +502,17 @@ TEST(ParserTest, NoteTest)
     EXPECT_EQ("out1", lines->at(0).str1);
     EXPECT_EQ(-1.0f, lines->at(0).expr1.Compute());
 
-    EXPECT_EQ(0, drv.parse("out1 = c#0"));
+    EXPECT_EQ(0, drv.parse("OUT1 = c#0"));
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ("out1", lines->at(0).str1);
     EXPECT_FLOAT_EQ(-4.0f + 0.0833333, lines->at(0).expr1.Compute());
 
-    EXPECT_EQ(0, drv.parse("out1 = c-1"));
+    EXPECT_EQ(0, drv.parse("Out1 = c-1"));
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ("out1", lines->at(0).str1);
     EXPECT_FLOAT_EQ(-5.0f, lines->at(0).expr1.Compute());
 
-    EXPECT_EQ(0, drv.parse("out1 = c#-1"));
+    EXPECT_EQ(0, drv.parse("out1 = C#-1"));
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ("out1", lines->at(0).str1);
     EXPECT_FLOAT_EQ(-5.0f + 0.0833333, lines->at(0).expr1.Compute());
@@ -522,7 +522,7 @@ TEST(ParserTest, NoteTest)
     EXPECT_EQ("out1", lines->at(0).str1);
     EXPECT_FLOAT_EQ(6.0f, lines->at(0).expr1.Compute());
 
-    EXPECT_EQ(0, drv.parse("out1 = db10"));
+    EXPECT_EQ(0, drv.parse("out1 = Db10"));
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ("out1", lines->at(0).str1);
     EXPECT_FLOAT_EQ(6.0f + 0.0833333, lines->at(0).expr1.Compute());
@@ -552,7 +552,7 @@ TEST(ParserTest, EnvironmentTest)
   ASSERT_EQ(1, lines->size());
   EXPECT_EQ(5, lines->at(0).expr1.Compute());
 
-  EXPECT_EQ(0, drv.parse("out1 = time()"));
+  EXPECT_EQ(0, drv.parse("out1 = Time()"));
   ASSERT_EQ(1, lines->size());
   EXPECT_EQ(1, lines->at(0).expr1.Compute());
 
@@ -560,7 +560,7 @@ TEST(ParserTest, EnvironmentTest)
   ASSERT_EQ(1, lines->size());
   EXPECT_EQ(1000, lines->at(0).expr1.Compute());
 
-  EXPECT_EQ(0, drv.parse("out1 = 10 * connected(in1)"));
+  EXPECT_EQ(0, drv.parse("out1 = 10 * CONNECTED(in1)"));
   ASSERT_EQ(1, lines->size());
   EXPECT_EQ(0, lines->at(0).expr1.Compute());
   test_env.setConnected(7, true);
@@ -657,7 +657,7 @@ TEST(RunTest, RunsPrint) {
   EXPECT_EQ("7 -0.279415 hello, world ", test_env.text_sent[0]);
 }
 
-TEST(RunTest, RunsPrintNewline1) {
+TEST(RunTest, RunsPrintNewline) {
   Driver drv;
   PCodeTranslator translator;
   TestEnvironment test_env;
@@ -671,6 +671,22 @@ TEST(RunTest, RunsPrintNewline1) {
   EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
   ASSERT_EQ(1, test_env.text_sent.size());
   EXPECT_EQ("first line\nsecond line", test_env.text_sent[0]);
+}
+
+TEST(RunTest, RunsPrintCase) {
+  Driver drv;
+  PCodeTranslator translator;
+  TestEnvironment test_env;
+  drv.SetEnvironment(&test_env);
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse("print(out1, \"UPPER lower\")"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  ASSERT_EQ(0, test_env.text_sent.size());
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  ASSERT_EQ(1, test_env.text_sent.size());
+  EXPECT_EQ("UPPER lower", test_env.text_sent[0]);
 }
 
 TEST(RunTest, StartTest) {
@@ -697,7 +713,7 @@ TEST(RunTest, RunsForLoop) {
   TestEnvironment test_env;
   CodeBlock block(&test_env);
 
-  EXPECT_EQ(0, drv.parse("for i = 0 to 1 step 0.1 next"));
+  EXPECT_EQ(0, drv.parse("for I = 0 To 1 STEP 0.1 nExT"));
   ASSERT_EQ(1, drv.blocks.size());
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
   ASSERT_EQ(4, block.pcodes.size());
