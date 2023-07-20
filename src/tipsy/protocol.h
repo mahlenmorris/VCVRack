@@ -40,11 +40,30 @@ static constexpr uint16_t kVersion{0x01};
 static constexpr size_t kMaxMimeTypeSize{256};
 static constexpr size_t kMaxMessageLength{1 << 23};
 
+inline bool isValidSentinel(float f) noexcept
+{
+    return (f == kMessageBeginSentinel) || (f == kVersionSentinel) || (f == kSizeSentinel) ||
+           (f == kMimeTypeSentinel) || (f == kBodySentinel) || (f == kEndMessageSentinel);
+}
 inline bool isValidProtocolEncoding(float f) noexcept
 {
-    return isValidDataEncoding(f) || (f == kMessageBeginSentinel) || (f == kVersionSentinel) ||
-           (f == kSizeSentinel) || (f == kMimeTypeSentinel) || (f == kBodySentinel) ||
-           (f == kEndMessageSentinel);
+    return isValidDataEncoding(f) || isValidSentinel(f);
+}
+inline std::string sentinelDisplayName(float f) noexcept
+{
+    if (!isValidSentinel(f))
+        return "NOT_A_SENTINEL";
+#define CK(s)                                                                                      \
+    if (f == s)                                                                                    \
+        return #s;
+    CK(kMessageBeginSentinel);
+    CK(kVersionSentinel);
+    CK(kSizeSentinel);
+    CK(kMimeTypeSentinel);
+    CK(kBodySentinel);
+    CK(kEndMessageSentinel);
+
+    return "ERROR";
 }
 
 struct ProtocolEncoder
@@ -216,11 +235,11 @@ struct ProtocolEncoder
                 f = kBodySentinel;
                 pos++;
             }
-            else if (pos - 1 == dataBytes)
+            else if (pos == dataBytes + 1)
             {
                 setState(EncoderState::END_MESSAGE);
             }
-            else if (pos - 1 < dataBytes - 3)
+            else if (pos + 2 < dataBytes)
             {
                 auto d = data + pos - 1;
                 f = FloatBytes(d[0], d[1], d[2]);
@@ -323,7 +342,8 @@ struct ProtocolDecoder
         return true;
     }
 
-    const char *getMimeType() { return mimetype; }
+    const char *getMimeType() const { return mimetype; }
+    uint32_t getDataSize() const { return dataSize; }
 
     TIPSY_NODISCARD
     DecoderResult readFloat(float f)
@@ -396,6 +416,8 @@ struct ProtocolDecoder
             if (pos == 0)
             {
                 dataSize = uint32_FromFloat(f);
+                if (dataSize >= dataStoreSize)
+                    return DecoderResult::ERROR_DATA_TOO_LARGE;
                 pos++;
                 return DecoderResult::PARSING_HEADER;
             }
@@ -436,13 +458,31 @@ struct ProtocolDecoder
             break;
         }
         case DecoderState::START_BODY:
-            if (pos < dataStoreSize - 3)
+            if (pos < dataSize - 3)
             {
                 auto float_bytes = FloatBytes(f);
                 dataStore[pos++] = float_bytes.first();
                 dataStore[pos++] = float_bytes.second();
                 dataStore[pos++] = float_bytes.third();
                 return DecoderResult::PARSING_BODY;
+            }
+            else if (pos < dataSize && pos < dataStoreSize)
+            {
+                auto float_bytes = FloatBytes(f);
+                int i = 0;
+                while (pos < dataSize && pos < dataStoreSize)
+                {
+                    if (i == 0)
+                        dataStore[pos++] = float_bytes.first();
+                    else if (i == 1)
+                        dataStore[pos++] = float_bytes.second();
+                    else
+                        dataStore[pos++] = float_bytes.third();
+                    i++;
+                }
+                if (pos == dataSize)
+                    return DecoderResult::PARSING_BODY;
+                return DecoderResult::ERROR_DATA_TOO_LARGE;
             }
             else
             {
