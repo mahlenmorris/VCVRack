@@ -57,6 +57,16 @@
         "Utility",
         "Voltage-controlled amplifier"
       ]
+    },
+    {
+      "slug": "TTY",
+      "name": "TTY",
+      "description": "Logs values from cables or text messages from Tipsy text sources. Makes monitoring of values or logging far easier. TTY is resizable, scrolls, has font and color choices, and more.",
+      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/README.md#tty",
+      "tags": [
+        "Utility",
+        "Visual"
+      ]
     }
   ]
 }
