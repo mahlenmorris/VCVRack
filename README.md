@@ -783,13 +783,16 @@ When the module is bypassed, all OUTn ports are set to zero volts.
 [Formula](https://library.vcvrack.com/FrankBuss/Formula).
 * docB's
 [Formula One](https://library.vcvrack.com/dbRackFormulaOne), which, compared
-to Formula and BASICally, seems to be **very** CPU efficient.
-* docB's [dbRackCsound](https://github.com/docb/dbRackCsound) ([download](https://github.com/docb/dbRackCsound/releases/tag/v2.0.1)),
-which uses the very powerful [CSound](https://csound.com/) engine. Not in the Library as I write this (January 2023).
-* [Monome Teletype](https://community.vcvrack.com/t/monome-teletype/12815),
-which isn't in the Library, but can be acquired via that link. If I understand
-it correctly, it mostly responds to triggers with scripts in a very terse language,
-likely an artifact of [the hardware it is based on](https://market.monome.org/products/teletype).
+to BASICally, seems to be slightly more CPU efficient for doing raw math.
+* [Monome Teletype](https://library.vcvrack.com/monome/teletype),
+If I understand it correctly, it mostly responds to triggers with scripts in
+a very terse language, likely an artifact of
+[the hardware it is based on](https://market.monome.org/products/teletype).
+Looks pretty deep and interesting.
+* docB's [dbRackCsound](https://github.com/docb/dbRackCsound)
+([download](https://github.com/docb/dbRackCsound/releases/tag/v2.0.1)),
+which uses the very powerful [CSound](https://csound.com/) engine.
+ Not in the Library as I write this (January 2023).
 * [VCV Prototype](https://vcvrack.com/Prototype#manual), which I _think_ is only available for
 VCV Rack version 1. But you can write code in Lua or Javascript (in an external editor).
 
