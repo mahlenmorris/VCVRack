@@ -11,8 +11,26 @@
 
 struct TTY : Module {
   static const int DEFAULT_WIDTH = 18;
+  enum ParamId {
+		CLEAR_PARAM,
+		PARAMS_LEN
+	};
+	enum InputId {
+		V1_INPUT,
+		INPUTS_LEN
+	};
+	enum OutputId {
+		OUTPUTS_LEN
+	};
+	enum LightId {
+    CLEAR_LIGHT,
+		LIGHTS_LEN
+	};
 
   TTY() {
+    config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
+		configParam(CLEAR_PARAM, 0.f, 1.f, 0.f, "Clears all output");
+		configInput(V1_INPUT, "New values will be shown on screen");
   }
 
   json_t* dataToJson() override {
@@ -349,6 +367,7 @@ struct TTYDisplay : LedDisplay {
 };
 
 const float NON_SCREEN_WIDTH = 2.0f;
+const float CONTROL_WIDTH = 13.0f;
 
 struct TTYWidget : ModuleWidget {
   Widget* topRightScrew;
@@ -382,22 +401,18 @@ struct TTYWidget : ModuleWidget {
             RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
     addChild(bottomRightScrew);
 
-    textDisplay = createWidget<TTYDisplay>(
-      mm2px(Vec(5.08, 5.9)));  // 5.08 == RACK_GRID_WIDTH in mm.
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 59.922)), module, TTY::V1_INPUT));
+    addParam(createLightParamCentered<VCVLightButton<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 81.303)),
+                                             module, TTY::CLEAR_PARAM,
+                                             TTY::CLEAR_LIGHT));
+
+    textDisplay = createWidget<TTYDisplay>(mm2px(Vec(18.08, 5.9)));
 		textDisplay->box.size = mm2px(Vec(60.0, 117.0));
-    textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
+    textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH - mm2px(CONTROL_WIDTH);
 		textDisplay->setModule(module);
 
 		addChild(textDisplay);
-
-    // Resize bar on left.
-    TTYModuleResizeHandle* leftHandle = new TTYModuleResizeHandle;
-		leftHandle->module = module;
-    // Make sure the handle is correctly placed if drawing for the module
-    // browser.
-    // new_rightHandle->box.pos.x = box.size.x - new_rightHandle->box.size.x;
-    addChild(leftHandle);
-
 
     // Resize bar on right.
     rightHandle = new TTYModuleResizeHandle;
@@ -437,7 +452,7 @@ struct TTYWidget : ModuleWidget {
     }
     // Adjust size of area we display text in; it's a function of the size
     // of the module minus some set width.
-		textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
+		textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH - mm2px(CONTROL_WIDTH);
     // Move the right side screws to follow.
 		topRightScrew->box.pos.x = box.size.x - 30;
 		bottomRightScrew->box.pos.x = box.size.x - 30;
