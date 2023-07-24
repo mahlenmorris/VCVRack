@@ -35,7 +35,6 @@ struct TTY : Module {
 
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
-    json_object_set_new(rootJ, "text", json_stringn(text.c_str(), text.size()));
     json_object_set_new(rootJ, "width", json_integer(width));
 
     json_object_set_new(rootJ, "screen_colors", json_integer(screen_colors));
@@ -47,12 +46,6 @@ struct TTY : Module {
   }
 
   void dataFromJson(json_t* rootJ) override {
-    json_t* textJ = json_object_get(rootJ, "text");
-		if (textJ) {
-			text = json_string_value(textJ);
-      previous_text = text;
-  		editor_refresh = true;
-    }
     json_t* widthJ = json_object_get(rootJ, "width");
 		if (widthJ)
 			width = json_integer_value(widthJ);
@@ -75,19 +68,38 @@ struct TTY : Module {
   }
 
   void process(const ProcessArgs& args) override {
+    tick_count = (tick_count + 1) % 20;
+    if ((tick_count == 0) && inputs[V1_INPUT].isConnected()) {
+      float v1 = inputs[V1_INPUT].getVoltage();
+      if (v1 != previous_v1) {  // TODO: use instead the minimum distance calculation.
+        previous_v1 = v1;
+        std::string str_value = std::to_string(v1);
+        // Hmmmm; should I be comparing the string values instead? It would be
+        // odd to see the same string twice on a tighly changing value....
+
+        // Add to buffer.
+        std::string next("> ");
+        next.append(str_value);
+        next.append("\n");
+        text_additions.push(next);
+      }
+    }
+
   }
+
+  // Don't update every single tick. It spews out too many rows too quickly.
+  int tick_count = 0;
+  // Will want to rationalize this when there are more inputs.
+  float previous_v1 = -1000.29349;  // Some value it won't be.
 
   bool editor_refresh = false;
   ///////
   // UI related
-  // Full text of program.  Also used by TTYTextField for editing.
+  // Full text of output. Also used by TTYTextField for viewing.
   std::string text;
-  // We need to the immediately previous version of the text around to
-  // make undo and redo work; otherwise, we don't know what the change was.
-  std::string previous_text;
-  // We want to track the previous placement of the cursor, so that an
-  // undo can take us back there.
-  int previous_cursor = 0;
+  // Text to be added to the bottom of the screen.
+  std::queue<std::string> text_additions;
+
   // Amber on Black is the default; it matches the !!!! decor perfectly.
   long long int screen_colors = 0xffc000000000;
   // width (in "holes") of the whole module. Changed by the resize bar on the
@@ -109,21 +121,10 @@ struct TTY : Module {
 
 // Adds support for undo/redo in the text field where people type programs.
 struct TTYUndoRedoAction : history::ModuleAction {
-  std::string old_text;
-  std::string new_text;
-  int old_cursor, new_cursor;
   int old_width, new_width;
   // Having left-side resize means the 'box' for the module can move.
   float old_posx, new_posx;
 
-  TTYUndoRedoAction(int64_t id, std::string oldText, std::string newText,
-     int old_cursor_pos, int new_cursor_pos) : old_text{oldText},
-         new_text{newText}, old_cursor{old_cursor_pos},
-         new_cursor{new_cursor_pos} {
-    moduleId = id;
-    name = "text edit";
-    old_width = new_width = -1;
-  }
   TTYUndoRedoAction(int64_t id, int old_width, int new_width,
                         float old_posx, float new_posx) :
       old_width{old_width}, new_width{new_width}, old_posx{old_posx},
@@ -134,32 +135,18 @@ struct TTYUndoRedoAction : history::ModuleAction {
   void undo() override {
     TTY *module = dynamic_cast<TTY*>(APP->engine->getModule(moduleId));
     if (module) {
-      if (old_width < 0) {
-        module->text = this->old_text;
-        // Tell UI it needs to refresh because 'text' has changed.
-        module->editor_refresh = true;
-        module->cursor_override = old_cursor;
-      } else {
-        module->width = this->old_width;
-        module->box_pos_x = this->old_posx;  // Used by TTYWidget::step.
-        module->update_pos = true;
-      }
+      module->width = this->old_width;
+      module->box_pos_x = this->old_posx;  // Used by TTYWidget::step.
+      module->update_pos = true;
     }
   }
 
   void redo() override {
     TTY *module = dynamic_cast<TTY*>(APP->engine->getModule(moduleId));
     if (module) {
-      if (old_width < 0) {
-        module->text = this->new_text;
-        // Tell UI it needs to refresh because 'text' has changed.
-        module->editor_refresh = true;
-        module->cursor_override = new_cursor;
-      } else {
-        module->width = this->new_width;
-        module->box_pos_x = this->new_posx;
-        module->update_pos = true;
-      }
+      module->width = this->new_width;
+      module->box_pos_x = this->new_posx;
+      module->update_pos = true;
     }
   }
 };
@@ -301,8 +288,12 @@ struct TTYTextField : STTextField {
 			textUpdated();
 			module->editor_refresh = false;
 		}
+    if (module && module->text_additions.size() > 0) {
+      make_additions(&(module->text_additions));
+    }
 	}
 
+/* I think this is irrevelevant now?
   // User has updated the text.
 	void onChange(const ChangeEvent& e) override {
 		if (module) {
@@ -318,6 +309,8 @@ struct TTYTextField : STTextField {
       module->previous_cursor = cursor;
     }
 	}
+*/
+
 };
 
 static std::string module_browser_text =
@@ -328,6 +321,7 @@ struct TTYDisplay : LedDisplay {
 
 	void setModule(TTY* module) {
 		textField = createWidget<TTYTextField>(Vec(0, 0));
+    textField->allow_text_entry = false;  // Don't let user type text here.
 		textField->box.size = box.size;
 		textField->module = module;
     // If this is the module browser, 'module' will be null!

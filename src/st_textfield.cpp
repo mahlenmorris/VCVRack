@@ -44,6 +44,7 @@ struct STTextFieldSelectAllItem : ui::MenuItem {
 };
 
 STTextField::STTextField() {
+	allow_text_entry = true;
   fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
   textOffset = math::Vec(3, 3);
   color = nvgRGB(0xff, 0xd7, 0x14);
@@ -259,7 +260,9 @@ void STTextField::onButton(const ButtonEvent& e) {
 void STTextField::onSelectText(const SelectTextEvent& e) {
 	if (e.codepoint < 128) {
 		std::string newText(1, (char) e.codepoint);
-		insertText(newText);
+		if (allow_text_entry) {
+			insertText(newText);
+		}
 	}
 	e.consume(this);
 }
@@ -413,7 +416,9 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
 		}
 		// Enter
 		if ((e.key == GLFW_KEY_ENTER || e.key == GLFW_KEY_KP_ENTER) && (e.mods & RACK_MOD_MASK) == 0) {
-  		insertText("\n");
+      if (allow_text_entry) {
+  			insertText("\n");
+			}
 			e.consume(this);
 		}
 		// Consume all printable keys unless Ctrl is held
@@ -498,7 +503,7 @@ void STTextField::insertText(std::string new_text) {
 		// ProcessUpdatedText() now, but doing so causes the line lengths to be
 		// wrong.
 		// I _think_ this might be due to unseen changes in the NVGcontext, but
-		// that structure is hard to examine that I can't be sure.
+		// that structure is so hard to examine that I can't be sure.
 		// In any case, now we let drawLayer() see if something significant (like
 		// the text) has changed, and do the ProcessUpdatedText() and
 		// RepositionWindow() call then.
@@ -526,7 +531,9 @@ void STTextField::pasteClipboard() {
 	const char* newText = glfwGetClipboardString(APP->window->win);
 	if (!newText)
 		return;
-	insertText(newText);
+  if (allow_text_entry) {
+		insertText(newText);
+	}
 }
 
 // TODO: these should be also find words around a newline!
@@ -549,11 +556,13 @@ void STTextField::cursorToNextWord() {
 void STTextField::createContextMenu() {
 	ui::Menu* menu = createMenu();
 
-	STTextFieldCutItem* cutItem = new STTextFieldCutItem;
-	cutItem->text = "Cut";
-	cutItem->rightText = RACK_MOD_CTRL_NAME "+X";
-	cutItem->textField = this;
-	menu->addChild(cutItem);
+  if (allow_text_entry) {
+		STTextFieldCutItem* cutItem = new STTextFieldCutItem;
+		cutItem->text = "Cut";
+		cutItem->rightText = RACK_MOD_CTRL_NAME "+X";
+		cutItem->textField = this;
+		menu->addChild(cutItem);
+  }
 
 	STTextFieldCopyItem* copyItem = new STTextFieldCopyItem;
 	copyItem->text = "Copy";
@@ -561,15 +570,32 @@ void STTextField::createContextMenu() {
 	copyItem->textField = this;
 	menu->addChild(copyItem);
 
-	STTextFieldPasteItem* pasteItem = new STTextFieldPasteItem;
-	pasteItem->text = "Paste";
-	pasteItem->rightText = RACK_MOD_CTRL_NAME "+V";
-	pasteItem->textField = this;
-	menu->addChild(pasteItem);
+	if (allow_text_entry) {
+		STTextFieldPasteItem* pasteItem = new STTextFieldPasteItem;
+		pasteItem->text = "Paste";
+		pasteItem->rightText = RACK_MOD_CTRL_NAME "+V";
+		pasteItem->textField = this;
+		menu->addChild(pasteItem);
+  }
 
 	STTextFieldSelectAllItem* selectAllItem = new STTextFieldSelectAllItem;
 	selectAllItem->text = "Select all";
 	selectAllItem->rightText = RACK_MOD_CTRL_NAME "+A";
 	selectAllItem->textField = this;
 	menu->addChild(selectAllItem);
+}
+
+void STTextField::make_additions(std::queue<std::string> *additions) {
+	bool cursor_at_end = (cursor >= (int) text->size());
+	while (additions->size() > 0) {
+		text->append(additions->front());
+		additions->pop();
+	}
+	// TODO: Shave off top lines if we're hitting the limit.
+	if (cursor_at_end) {
+		cursor = (int) text->size();
+		// TODO: scroll?
+	}
+	ChangeEvent eChange;
+	onChange(eChange);
 }
