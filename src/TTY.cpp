@@ -1,22 +1,25 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
-#include <thread>
 #include <unordered_map>
 #include <utility>  // pair
 #include <vector>
 
 #include "plugin.hpp"
 #include "st_textfield.hpp"
+#include "tipsy/tipsy.h"
 
 struct TTY : Module {
   static const int DEFAULT_WIDTH = 18;
   enum ParamId {
 		CLEAR_PARAM,
+    SAMPLE_PARAM,
+    PAUSE_PARAM,
 		PARAMS_LEN
 	};
 	enum InputId {
 		V1_INPUT,
+    TEXT1_INPUT,
 		INPUTS_LEN
 	};
 	enum OutputId {
@@ -24,13 +27,20 @@ struct TTY : Module {
 	};
 	enum LightId {
     CLEAR_LIGHT,
+    PAUSE_LIGHT,
 		LIGHTS_LEN
 	};
 
   TTY() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
+    configSwitch(PAUSE_PARAM, 0, 1, 0, "Stops changing the screen contents",
+                 {"Writing", "Paused"});
 		configParam(CLEAR_PARAM, 0.f, 1.f, 0.f, "Clears all output");
+    configParam(SAMPLE_PARAM, 1000, 0, 50, "Number of samples skipped between logging attempts");
+    getParamQuantity(SAMPLE_PARAM)->snapEnabled = true;
 		configInput(V1_INPUT, "New values will be shown on screen");
+    configInput(TEXT1_INPUT, "Input for Tipsy text info");
+    decoder1.provideDataBuffer(recvBuffer1, recvBufferSize);
   }
 
   json_t* dataToJson() override {
@@ -67,30 +77,103 @@ struct TTY : Module {
     }
   }
 
-  void process(const ProcessArgs& args) override {
-    tick_count = (tick_count + 1) % 20;
-    if ((tick_count == 0) && inputs[V1_INPUT].isConnected()) {
-      float v1 = inputs[V1_INPUT].getVoltage();
-      if (v1 != previous_v1) {  // TODO: use instead the minimum distance calculation.
-        previous_v1 = v1;
-        std::string str_value = std::to_string(v1);
-        // Hmmmm; should I be comparing the string values instead? It would be
-        // odd to see the same string twice on a tighly changing value....
+  void add_string(const std::string next_string) {
+    // We add to the vector, but we limit how large the pending queue
+    // can get.
+    if (additions.text_additions.size() < 50) {
+      additions.text_additions.push(next_string);
+    }
+  }
 
-        // Add to buffer.
-        std::string next("> ");
-        next.append(str_value);
-        next.append("\n");
-        text_additions.push(next);
+  void process(const ProcessArgs& args) override {
+    bool paused = params[PAUSE_PARAM].getValue() > 0;
+    tick_count += 1;
+    if (tick_count > params[SAMPLE_PARAM].getValue()) {
+      tick_count = 0;
+      // Unpausing puts the cursor at the end of the text.
+      // If we don't then text gets added but scrolls off the screen.
+      if (!paused && was_paused) {
+        cursor_override = text.size();
+      }
+
+      if ((tick_count == 0) && inputs[V1_INPUT].isConnected()) {
+        float v1 = inputs[V1_INPUT].getVoltage();
+        if (v1 != previous_v1) {  // TODO: use instead the minimum distance calculation.
+          previous_v1 = v1;
+          if (!paused) {
+            std::string str_value = std::to_string(v1);
+            // Hmmmm; should I be comparing the string values instead? It would be
+            // odd to see the same string twice on a tighly changing value....
+
+            // Add to buffer.
+            std::string next(str_value);
+            next.append("\n");
+            add_string(next);
+          }
+        }
+      }
+      // TODO: do other value inputs.
+    }
+    bool clear_command_received = false;
+
+    if (inputs[TEXT1_INPUT].isConnected()) {
+      auto decoder_status = decoder1.readFloat(inputs[TEXT1_INPUT].getVoltage());
+      if (!decoder1.isError(decoder_status)) {
+        if (decoder_status == tipsy::DecoderResult::BODY_READY) {
+          // TODO: Obviously check more things like that it's a string type.
+          std::string next(std::string((const char *) recvBuffer1));
+          if (next.compare("!!CLEAR!!") == 0) {
+            clear_command_received = true;
+            clear_light_countdown = std::floor(args.sampleRate / 10.0f);
+          } else if (!paused) {
+            next.append("\n");
+            add_string(next);
+          }
+        }
       }
     }
 
+    // Buttons.
+    // Note that we don't bother to set clear_light_countdown when the user
+    // presses the button; we just light up the button while it's
+    // being pressed.
+    // We only STOP clearing when the button is released.
+    bool clear = clear_command_received || params[CLEAR_PARAM].getValue() > 0.1f;
+
+    if (clear) {
+      text.clear();
+    }
+
+    was_paused = paused;
+
+    // Lights.
+    if (clear_light_countdown > 0) {
+      clear_light_countdown--;
+    }
+    lights[CLEAR_LIGHT].setBrightness(
+      clear_light_countdown > 0 || clear ? 1.0f : 0.0f);
+    lights[PAUSE_LIGHT].setBrightness(paused);
   }
 
+  static constexpr size_t recvBufferSize{1024 * 64};
+  unsigned char recvBuffer1[recvBufferSize];
+  tipsy::ProtocolDecoder decoder1;
+
+  int clear_light_countdown = 0;
+
+  // If we transition from paused -> flowing, move the cursor to the bottom
+  // of the text.
+  bool was_paused = false;
+
   // Don't update every single tick. It spews out too many rows too quickly.
+  // TODO: let user control this. Small values let you see the Tipsy protocol
+  // and find odd transients, larger values let you see the movement in
+  // fewer lines.
   int tick_count = 0;
   // Will want to rationalize this when there are more inputs.
   float previous_v1 = -1000.29349;  // Some value it won't be.
+
+  // Controls.
 
   bool editor_refresh = false;
   ///////
@@ -98,7 +181,7 @@ struct TTY : Module {
   // Full text of output. Also used by TTYTextField for viewing.
   std::string text;
   // Text to be added to the bottom of the screen.
-  std::queue<std::string> text_additions;
+  TTYQueue additions;
 
   // Amber on Black is the default; it matches the !!!! decor perfectly.
   long long int screen_colors = 0xffc000000000;
@@ -186,7 +269,7 @@ struct TTYModuleResizeHandle : OpaqueWidget {
 		Rect newBox = originalBox;
 		Rect oldBox = mw->box;
     // Minimum and maximum number of holes we allow the module to be.
-		const float minWidth = 3 * RACK_GRID_WIDTH;
+		const float minWidth = 4 * RACK_GRID_WIDTH;
     const float maxWidth = 64 * RACK_GRID_WIDTH;
     if (right) {
   		newBox.size.x += deltaX;
@@ -288,8 +371,8 @@ struct TTYTextField : STTextField {
 			textUpdated();
 			module->editor_refresh = false;
 		}
-    if (module && module->text_additions.size() > 0) {
-      make_additions(&(module->text_additions));
+    if (module && module->additions.text_additions.size() > 0) {
+      make_additions(&(module->additions));
     }
 	}
 
@@ -338,7 +421,7 @@ struct TTYDisplay : LedDisplay {
   // The TTYWidget changes size, so we have to reflect that.
   void step() override {
     // At smaller sizes, hide the screen.
-    if (textField->module && textField->module->width <= 8) {
+    if (textField->module && textField->module->width <= 4) {
       hide();
     } else {
       show();
@@ -395,11 +478,20 @@ struct TTYWidget : ModuleWidget {
             RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
     addChild(bottomRightScrew);
 
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 59.922)), module, TTY::V1_INPUT));
+    addParam(createParamCentered<RoundBlackKnob>(
+         mm2px(Vec(8.882, 46.0)), module, TTY::SAMPLE_PARAM));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 18.0)), module,
+        TTY::V1_INPUT));
+    addParam(createLightParamCentered<VCVLightLatch<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 63.0)),
+                                             module, TTY::PAUSE_PARAM,
+                                             TTY::PAUSE_LIGHT));
     addParam(createLightParamCentered<VCVLightButton<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 81.303)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 80.0)),
                                              module, TTY::CLEAR_PARAM,
                                              TTY::CLEAR_LIGHT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 100.0)), module,
+        TTY::TEXT1_INPUT));
 
     textDisplay = createWidget<TTYDisplay>(mm2px(Vec(18.08, 5.9)));
 		textDisplay->box.size = mm2px(Vec(60.0, 117.0));

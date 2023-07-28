@@ -96,6 +96,10 @@ struct Basically : Module {
 
     void ProcessEncoder(int port_index, std::vector<Output>* outputs) {
       // Do we need to do anything?
+      if (unsent_queue.empty() && encoder.isDormant()) {
+        outputs->at(port_index).setVoltage(0.0f);
+        return;        
+      }
       if (!unsent_queue.empty() && encoder.isDormant()) {
         // Have message waiting, but not currently sending anything.
         sending_message = unsent_queue.front();

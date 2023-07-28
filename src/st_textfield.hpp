@@ -2,6 +2,12 @@
 #include "extended_text.h"
 
 #include <queue>
+
+struct TTYQueue {
+  std::queue<std::string> text_additions;
+	bool write_ok;
+};
+
 // An expansion of the VCV TextField class, but allowing for features I wish
 // to add, including:
 // * support for up/down keys.
@@ -75,6 +81,6 @@ struct STTextField : OpaqueWidget {
 
 	// For TTY. Adds the following lines to text, removes top lines if too long,
 	// moves cursor if already at end.
-	void make_additions(std::queue<std::string> *additions);
+	void make_additions(TTYQueue *additions);
 
 };

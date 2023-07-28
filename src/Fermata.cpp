@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
-#include <thread>
 #include <unordered_map>
 #include <utility>  // pair
 #include <vector>

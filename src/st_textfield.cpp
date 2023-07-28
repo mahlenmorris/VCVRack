@@ -585,17 +585,30 @@ void STTextField::createContextMenu() {
 	menu->addChild(selectAllItem);
 }
 
-void STTextField::make_additions(std::queue<std::string> *additions) {
-	bool cursor_at_end = (cursor >= (int) text->size());
-	while (additions->size() > 0) {
-		text->append(additions->front());
-		additions->pop();
+void STTextField::make_additions(TTYQueue *additions) {
+	int likely_ending_length = extended.line_map.size() +
+	                           additions->text_additions.size();
+	bool cursor_at_end = (cursor >= (int) text->size());  // TODO: incorrect!
+	// TODO: Let's tell the module not to add any strings while I'm doing this.
+	// Note: this isn't really as good a mutex, but getting a mutex in the
+	// process() thread is very problematic.
+	while (additions->text_additions.size() > 0) {
+		text->append(additions->text_additions.front());
+		additions->text_additions.pop();
 	}
 	// TODO: Shave off top lines if we're hitting the limit.
+	if (likely_ending_length >= ST_MAX_ROWS) {
+		int diff = extended.line_map[(int) (ST_MAX_ROWS / 10)].start_position;
+		text->erase(0, extended.line_map[(int) (ST_MAX_ROWS / 10)].start_position);
+		cursor = std::max(0, cursor - diff);
+		selection = std::max(0, selection - diff);
+	}
 	if (cursor_at_end) {
 		cursor = (int) text->size();
 		// TODO: scroll?
 	}
+	// Reindex text.
+	// TODO: maybe do this more directly?
 	ChangeEvent eChange;
 	onChange(eChange);
 }
