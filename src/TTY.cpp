@@ -41,6 +41,7 @@ struct TTY : Module {
 		configInput(V1_INPUT, "New values will be shown on screen");
     configInput(TEXT1_INPUT, "Input for Tipsy text info");
     decoder1.provideDataBuffer(recvBuffer1, recvBufferSize);
+    additions.write_ok = true;
   }
 
   json_t* dataToJson() override {
@@ -81,7 +82,9 @@ struct TTY : Module {
     // We add to the vector, but we limit how large the pending queue
     // can get.
     if (additions.text_additions.size() < 50) {
-      additions.text_additions.push(next_string);
+      if (additions.write_ok) {
+        additions.text_additions.push(next_string);
+      }
     }
   }
 

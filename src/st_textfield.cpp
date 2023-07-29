@@ -594,7 +594,9 @@ void STTextField::make_additions(TTYQueue *additions) {
 	// process() thread is very problematic.
 	while (additions->text_additions.size() > 0) {
 		text->append(additions->text_additions.front());
+		additions->write_ok = false;
 		additions->text_additions.pop();
+		additions->write_ok = true;
 	}
 	// TODO: Shave off top lines if we're hitting the limit.
 	if (likely_ending_length >= ST_MAX_ROWS) {
