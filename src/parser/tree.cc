@@ -348,7 +348,9 @@ Expression ExpressionFactory::OnePortFunc(const std::string &func_name,
   std::string lower;
   ToLower(func_name, &lower);
   ex.operation = string_to_operation.at(lower);
-  ex.port = driver->GetPortFromName(port1);  // TODO: Make parser do this?
+  std::string lower_port;
+  ToLower(port1, &lower_port);
+  ex.port = driver->GetPortFromName(lower_port);  // TODO: Make parser do this?
   if (ex.operation == Expression::TRIGGER) {
     // So that Environment can know to inspect these ports every sample.
     driver->trigger_port_indexes.insert(ex.port.index);
@@ -378,7 +380,9 @@ Expression ExpressionFactory::CreateBinOp(const Expression &lhs,
   ex.type = Expression::BINOP;
   ex.subexpressions.push_back(lhs);
   ex.subexpressions.push_back(rhs);
-  ex.operation = string_to_operation.at(op_string);
+  std::string lower;
+  ToLower(op_string, &lower);
+  ex.operation = string_to_operation.at(lower);
   return ex;
 }
 
@@ -426,8 +430,10 @@ Line Line::ArrayAssignment(const std::string &variable_name,
                      const Expression &value, Driver* driver) {
   Line line;
   line.type = ARRAY_ASSIGNMENT;
-  line.str1 = variable_name;  // Not required, but handy for troubleshooting.
-  line.array_ptr = driver->GetArrayFromName(variable_name);
+  std::string lower;
+  ToLower(variable_name, &lower);
+  line.str1 = lower;  // Not required, but handy for troubleshooting.
+  line.array_ptr = driver->GetArrayFromName(lower);
   line.expr1 = index;
   line.expr2 = value;
   return line;
