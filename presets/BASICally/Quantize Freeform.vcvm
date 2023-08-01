@@ -1,0 +1,23 @@
+{
+  "plugin": "StochasticTelegraph",
+  "model": "BASICally",
+  "version": "2.0.11",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    }
+  ],
+  "data": {
+    "text": "' Quantizes input with difference and distance output.\n\n' Range of input values and resulting output value are independent\n' of each other, giving you complete freedom albeit at the cost of\n' more typing to set up.\n' IN1 is the input value.\n' OUT1 is the quantized value.\n' OUT2 is IN1 - OUT1 (the \"difference\").\n' OUT3 is the absolute value of OUT2 (the \"distance\").\n\n' NB: There is a very short (sub-millisecond) delay between when\n' IN1 gets a new value and when OUT1/2/3 are updated.\n\n' Set range[], value[], and range_len accordingly.\n' range[0] and range[range_len - 1] define the complete range of \n' useful inputs. Typically, range[0] = -10 and range[range_len - 1] =\n' 10.\n\nWHEN start()\n  range[0] = {-10, -5, 0, 5, 10}  ' These must be in ascending order.\n  value[0] = {5,    4, 3, 2}\n  range_len = 5\n  prev_in = -111\nEND WHEN\n\nALSO\n  IF prev_in != IN1 THEN ' Must recompute.\n    ' Need to preserve IN1, since it might change while we run\n    ' this FOR loop.\n    new_in = IN1\n    FOR k = 0 TO range_len - 2\n      IF range[k] <= new_in AND range[k+1] > new_in THEN\n        prev_in = new_in\n        OUT1 = value[k]\n        OUT2 = new_in - OUT1\n        OUT3 = abs(OUT2)\n        EXIT FOR\n      END IF\n    NEXT\n  END IF\nEND ALSO\n",
+    "width": 34,
+    "allow_error_highlight": 1,
+    "screen_colors": 1095216660480,
+    "title_text": "Freeform Quantizer",
+    "font_choice": "fonts/RobotoMono-Regular.ttf"
+  }
+}
