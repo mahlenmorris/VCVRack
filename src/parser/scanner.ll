@@ -140,6 +140,7 @@ blank [ \t\r]
 "clear"    return yy::Parser::make_CLEAR  (yytext, loc);
 "connected" return yy::Parser::make_CONNECTED (yytext, loc);
 "continue" return yy::Parser::make_CONTINUE (yytext, loc);
+"debug"    return yy::Parser::make_DEBUG   (yytext, loc);
 "else"     return yy::Parser::make_ELSE   (yytext, loc);
 "elseif"   return yy::Parser::make_ELSEIF (yytext, loc);
 "end"      return yy::Parser::make_END    (yytext, loc);

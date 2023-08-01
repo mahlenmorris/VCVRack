@@ -115,6 +115,10 @@ float Expression::Compute() {
                              subexpressions[1].Compute());
     }
     break;
+    case STRINGFUNC: {
+      // This should never happen, compiler should prevent this.
+      return -987.654;
+    }
     default: return 1.2345;
   }
 }
@@ -122,6 +126,15 @@ float Expression::Compute() {
 std::string Expression::ComputeString() {
   if (type == STRING) {
     return string_value;
+  } else if (type == STRINGFUNC) {
+    if (operation == DEBUG) {
+      std::string str_value(name);
+      str_value.append(" = ");
+      str_value.append(subexpressions[0].ComputeString());
+      return str_value;
+    } else {
+      return "invalid string function call?";
+    }
   } else {
     float value = Compute();
     std::string str_value;
@@ -417,8 +430,18 @@ Expression ExpressionFactory::Variable(const std::string &expr, Driver* driver) 
 }
 
 Expression ExpressionFactory::Variable(char* var_name, Driver* driver) {
-  // Intentionally copying the name.
+  // Intentionally copying the name, since I'm not confident the char* is
+  // valid for long.
   return Variable(std::string(var_name).c_str(), driver);
+}
+
+Expression ExpressionFactory::DebugId(const std::string &var_name, Driver* driver) {
+  Expression ex;
+  ex.type = Expression::STRINGFUNC;
+  ex.operation = Expression::DEBUG;
+  ex.name = var_name;
+  ex.subexpressions.push_back(Variable(var_name, driver));
+  return ex;
 }
 
 Line Line::ArrayAssignment(const std::string &variable_name,

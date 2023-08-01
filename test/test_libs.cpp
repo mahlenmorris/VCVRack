@@ -689,6 +689,22 @@ TEST(RunTest, RunsPrintCase) {
   EXPECT_EQ("UPPER lower", test_env.text_sent[0]);
 }
 
+TEST(RunTest, RunsStringFunctions) {
+  Driver drv;
+  PCodeTranslator translator;
+  TestEnvironment test_env;
+  drv.SetEnvironment(&test_env);
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse("foo = 3.7\n  print(out1, debug(foo))"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  ASSERT_EQ(0, test_env.text_sent.size());
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  ASSERT_EQ(1, test_env.text_sent.size());
+  EXPECT_EQ("foo = 3.700000", test_env.text_sent[0]);
+}
+
 TEST(RunTest, StartTest) {
   Driver drv;
   PCodeTranslator translator;
