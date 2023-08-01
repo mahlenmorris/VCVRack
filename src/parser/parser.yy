@@ -256,6 +256,7 @@ string_list:
 string_exp:
   "quoted_string"              { $$ = drv.factory.Quoted($1); }
 | "debug" "(" "identifier" ")" { $$ = drv.factory.DebugId($3, &drv); }
+| "debug" "(" "identifier" "[" "]" "," exp "," exp ")" { $$ = drv.factory.DebugId($3, $7, $9, &drv); }
 
 %%
 

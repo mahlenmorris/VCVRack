@@ -131,6 +131,8 @@ class ExpressionFactory {
   Expression Variable(const std::string &expr, Driver* driver);
   Expression Variable(char * var_name, Driver* driver);
   Expression DebugId(const std::string &var_name, Driver* driver);
+  Expression DebugId(const std::string &var_name, const Expression &start,
+                     const Expression &end, Driver* driver);
  private:
   static std::unordered_map<std::string, Expression::Operation> string_to_operation;
 };

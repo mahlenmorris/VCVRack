@@ -123,28 +123,51 @@ float Expression::Compute() {
   }
 }
 
+// If this is effectively an integer, render it as one.
+std::string ShortPrint(float value) {
+  if (Expression::is_zero(value - floor(value))) {
+    return std::to_string((int) value);
+  } else {
+    return std::to_string(value);
+  }
+}
+
 std::string Expression::ComputeString() {
   if (type == STRING) {
     return string_value;
   } else if (type == STRINGFUNC) {
     if (operation == DEBUG) {
-      std::string str_value(name);
-      str_value.append(" = ");
-      str_value.append(subexpressions[0].ComputeString());
-      return str_value;
-    } else {
+      if (subexpressions.size() == 2) {  // An array.
+        int start = std::max((int) floor(subexpressions[0].Compute()), 0);
+        int end = std::max((int) floor(subexpressions[1].Compute()), 0);
+        if (end < start) {
+          int temp = start;
+          start = end;
+          end = temp;
+        }
+        std::string str_value(name);
+        str_value.append("[");
+        str_value.append(std::to_string(start));
+        str_value.append("] = {");
+        for (int index = start; index <= end; ++index) {
+          if (index > start) {
+            str_value.append(", ");
+          }
+          str_value.append(ShortPrint(array_ptr->at(index)));
+        }
+        str_value.append("}");
+        return str_value;
+      } else {
+        std::string str_value(name);
+        str_value.append(" = ");
+        str_value.append(subexpressions[0].ComputeString());
+        return str_value;
+      }
+    } else {  // Compiler shouldn't allow this.
       return "invalid string function call?";
     }
   } else {
-    float value = Compute();
-    std::string str_value;
-    // If this is effectively an integer, render it as one.
-    if (is_zero(value - floor(value))) {
-      str_value = std::to_string((int) value);
-    } else {
-      str_value = std::to_string(value);
-    }
-    return str_value;
+    return ShortPrint(Compute());
   }
 }
 
@@ -440,9 +463,27 @@ Expression ExpressionFactory::DebugId(const std::string &var_name, Driver* drive
   ex.type = Expression::STRINGFUNC;
   ex.operation = Expression::DEBUG;
   ex.name = var_name;
+  // TODO: maybe set variable_ptr instead? Except that string variables are
+  // coming.
   ex.subexpressions.push_back(Variable(var_name, driver));
   return ex;
 }
+
+// For arrays.
+Expression ExpressionFactory::DebugId(const std::string &var_name,
+   const Expression &start, const Expression &end, Driver* driver) {
+  Expression ex;
+  ex.type = Expression::STRINGFUNC;
+  ex.operation = Expression::DEBUG;
+  ex.name = var_name;
+  std::string lower;
+  ToLower(var_name, &lower);
+  ex.array_ptr = driver->GetArrayFromName(lower);
+  ex.subexpressions.push_back(start);
+  ex.subexpressions.push_back(end);
+  return ex;
+}
+
 
 Line Line::ArrayAssignment(const std::string &variable_name,
                      const Expression &index,
