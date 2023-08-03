@@ -7,16 +7,53 @@
 
 #include "plugin.hpp"
 #include "st_textfield.hpp"
+#include "tipsy/tipsy.h"
 
-struct Fermata : Module {
+struct TTY : Module {
   static const int DEFAULT_WIDTH = 18;
+  enum ParamId {
+		CLEAR_PARAM,
+    SAMPLE_PARAM,
+    PAUSE_PARAM,
+		PARAMS_LEN
+	};
+	enum InputId {
+		V1_INPUT,
+    TEXT1_INPUT,
+    V2_INPUT,
+    TEXT2_INPUT,
+		TEXT3_INPUT,
+		INPUTS_LEN
+	};
+	enum OutputId {
+		OUTPUTS_LEN
+	};
+	enum LightId {
+    CLEAR_LIGHT,
+    PAUSE_LIGHT,
+		LIGHTS_LEN
+	};
 
-  Fermata() {
+  TTY() {
+    config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
+    configSwitch(PAUSE_PARAM, 0, 1, 0, "Stops changing the screen contents",
+                 {"Writing", "Paused"});
+		configParam(CLEAR_PARAM, 0.f, 1.f, 0.f, "Clears all output");
+    configParam(SAMPLE_PARAM, 1000, 0, 50, "Number of samples skipped between logging attempts");
+    getParamQuantity(SAMPLE_PARAM)->snapEnabled = true;
+		configInput(V1_INPUT, "New values will be shown on screen");
+    configInput(V2_INPUT, "New values will be shown on screen");
+    configInput(TEXT1_INPUT, "Input for Tipsy text info");
+    configInput(TEXT2_INPUT, "Input for Tipsy text info");
+    configInput(TEXT3_INPUT, "Input for Tipsy text info");
+    decoder1.provideDataBuffer(recvBuffer1, recvBufferSize);
+    decoder2.provideDataBuffer(recvBuffer2, recvBufferSize);
+    decoder3.provideDataBuffer(recvBuffer3, recvBufferSize);
+    additions.write_ok = true;
   }
 
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
-    json_object_set_new(rootJ, "text", json_stringn(text.c_str(), text.size()));
     json_object_set_new(rootJ, "width", json_integer(width));
 
     json_object_set_new(rootJ, "screen_colors", json_integer(screen_colors));
@@ -24,20 +61,10 @@ struct Fermata : Module {
       json_object_set_new(rootJ, "font_choice",
                           json_stringn(font_choice.c_str(), font_choice.size()));
     }
-    if (title_text.length() > 0) {
-      json_object_set_new(rootJ, "title_text",
-                          json_stringn(title_text.c_str(), title_text.size()));
-    }
     return rootJ;
   }
 
   void dataFromJson(json_t* rootJ) override {
-    json_t* textJ = json_object_get(rootJ, "text");
-		if (textJ) {
-			text = json_string_value(textJ);
-      previous_text = text;
-  		editor_refresh = true;
-    }
     json_t* widthJ = json_object_get(rootJ, "width");
 		if (widthJ)
 			width = json_integer_value(widthJ);
@@ -47,10 +74,6 @@ struct Fermata : Module {
     json_t* font_choiceJ = json_object_get(rootJ, "font_choice");
 		if (font_choiceJ) {
 			font_choice = json_string_value(font_choiceJ);
-    }
-    json_t* title_textJ = json_object_get(rootJ, "title_text");
-		if (title_textJ) {
-			title_text = json_string_value(title_textJ);
     }
   }
 
@@ -63,35 +86,182 @@ struct Fermata : Module {
     }
   }
 
-  void process(const ProcessArgs& args) override {
+  void add_string(const std::string next_string) {
+    // We add to the vector, but we limit how large the pending queue
+    // can get.
+    if (additions.text_additions.size() < 50) {
+      if (additions.write_ok) {
+        additions.text_additions.push(next_string);
+      }
+    }
   }
+
+  void process(const ProcessArgs& args) override {
+    bool paused = params[PAUSE_PARAM].getValue() > 0;
+
+    bool clear_command_received = false;
+    // Unpausing puts the cursor at the end of the text.
+    // If we don't then text gets added but scrolls off the screen.
+    if (!paused && was_paused) {
+      // Setting to outlandishly high value; will be changed to "end-of-file"
+      // by TTYTextField.
+      cursor_override = 2000000;
+    }
+
+    if (!paused) {
+      tick_count += 1;
+      // ">" is correct here. The SAMPLE_PARAM is really the number of samples
+      // to skip, and can go to zero.
+      if (tick_count > params[SAMPLE_PARAM].getValue()) {
+        tick_count = 0;
+        if (inputs[V1_INPUT].isConnected()) {
+          float v1 = inputs[V1_INPUT].getVoltage();
+          if (v1 != previous_v1) {  // TODO: use instead the minimum distance calculation.
+            previous_v1 = v1;
+            std::string str_value = std::to_string(v1);
+            // Hmmmm; should I be comparing the string values instead? It would be
+            // odd to see the same string twice on a tighly changing value....
+
+            // Add to buffer.
+            std::string next(str_value);
+            next.append("\n");
+            add_string(next);
+          }
+        }
+        if (inputs[V2_INPUT].isConnected()) {
+          float v2 = inputs[V2_INPUT].getVoltage();
+          if (v2 != previous_v2) {  // TODO: use instead the minimum distance calculation.
+            previous_v2 = v2;
+            std::string str_value = std::to_string(v2);
+            // Hmmmm; should I be comparing the string values instead? It would be
+            // odd to see the same string twice on a tighly changing value....
+
+            // Add to buffer.
+            std::string next(str_value);
+            next.append("\n");
+            add_string(next);
+          }
+        }
+      }
+    }
+
+    if (!paused) {
+      if (inputs[TEXT1_INPUT].isConnected()) {
+        auto decoder_status = decoder1.readFloat(inputs[TEXT1_INPUT].getVoltage());
+        if (!decoder1.isError(decoder_status)) {
+          if (decoder_status == tipsy::DecoderResult::BODY_READY) {
+            // TODO: Obviously check more things like that it's a string type.
+            std::string next(std::string((const char *) recvBuffer1));
+            if (next.compare("!!CLEAR!!") == 0) {
+              clear_command_received = true;
+              clear_light_countdown = std::floor(args.sampleRate / 10.0f);
+            } else {
+              next.append("\n");
+              add_string(next);
+            }
+          }
+        }
+      }
+      if (inputs[TEXT2_INPUT].isConnected()) {
+        auto decoder_status = decoder2.readFloat(inputs[TEXT2_INPUT].getVoltage());
+        if (!decoder2.isError(decoder_status)) {
+          if (decoder_status == tipsy::DecoderResult::BODY_READY) {
+            // TODO: Obviously check more things like that it's a string type.
+            std::string next(std::string((const char *) recvBuffer2));
+            if (next.compare("!!CLEAR!!") == 0) {
+              clear_command_received = true;
+              clear_light_countdown = std::floor(args.sampleRate / 10.0f);
+            } else {
+              next.append("\n");
+              add_string(next);
+            }
+          }
+        }
+      }
+      if (inputs[TEXT3_INPUT].isConnected()) {
+        auto decoder_status = decoder3.readFloat(inputs[TEXT3_INPUT].getVoltage());
+        if (!decoder3.isError(decoder_status)) {
+          if (decoder_status == tipsy::DecoderResult::BODY_READY) {
+            // TODO: Obviously check more things like that it's a string type.
+            std::string next(std::string((const char *) recvBuffer3));
+            if (next.compare("!!CLEAR!!") == 0) {
+              clear_command_received = true;
+              clear_light_countdown = std::floor(args.sampleRate / 10.0f);
+            } else {
+              next.append("\n");
+              add_string(next);
+            }
+          }
+        }
+      }
+    }
+    was_paused = paused;
+    // Buttons.
+    // Note that we don't bother to set clear_light_countdown when the user
+    // presses the button; we just light up the button while it's
+    // being pressed.
+    // We only STOP clearing when the button is released.
+    bool clear = clear_command_received || params[CLEAR_PARAM].getValue() > 0.1f;
+
+    if (clear) {
+      text.clear();
+    }
+
+    // Lights.
+    if (clear_light_countdown > 0) {
+      clear_light_countdown--;
+    }
+    lights[CLEAR_LIGHT].setBrightness(
+      clear_light_countdown > 0 || clear ? 1.0f : 0.0f);
+    lights[PAUSE_LIGHT].setBrightness(paused);
+  }
+
+  static constexpr size_t recvBufferSize{1024 * 64};
+  unsigned char recvBuffer1[recvBufferSize];
+  tipsy::ProtocolDecoder decoder1;
+  unsigned char recvBuffer2[recvBufferSize];
+  tipsy::ProtocolDecoder decoder2;
+  unsigned char recvBuffer3[recvBufferSize];
+  tipsy::ProtocolDecoder decoder3;
+
+  int clear_light_countdown = 0;
+
+  // If we transition from paused -> flowing, move the cursor to the bottom
+  // of the text.
+  bool was_paused = false;
+
+  // Don't only update every single tick. It spews out too many rows too quickly.
+  // We let user control frequency. Small values let you see the Tipsy protocol
+  // and find odd transients, larger values let you see the movement in
+  // fewer lines.
+  int tick_count = 0;
+
+  float previous_v1 = -1000.29349;  // Some value it won't be.
+  float previous_v2 = -1000.29349;  // Some value it won't be.
+
+  // Controls.
 
   bool editor_refresh = false;
   ///////
   // UI related
-  // Full text of program.  Also used by FermataTextField for editing.
+  // Full text of output. Also used by TTYTextField for viewing.
   std::string text;
-  // We need to the immediately previous version of the text around to
-  // make undo and redo work; otherwise, we don't know what the change was.
-  std::string previous_text;
-  // We want to track the previous placement of the cursor, so that an
-  // undo can take us back there.
-  int previous_cursor = 0;
+  // Text to be added to the bottom of the screen.
+  TTYQueue additions;
+
   // Amber on Black is the default; it matches the !!!! decor perfectly.
   long long int screen_colors = 0xffc000000000;
   // width (in "holes") of the whole module. Changed by the resize bar on the
   // right (within limits), and informs the size of the display and text field.
   // Saved in the json for the module.
-  int width = Fermata::DEFAULT_WIDTH;
-  // Visible title for the text, set in the menu.
-  std::string title_text;
+  int width = TTY::DEFAULT_WIDTH;
   // The undo/redo sometimes needs to reset the cursor position.
   // But we don't actully have a good pointer to the text field.
   // drawLayer() uses this if it's > -1.
   int cursor_override = -1;
   // The undo/redo sometimes needs to reset the module position.
-  // But we don't actully have a good pointer to the FermataWidget.
-  // FermataWidget::step() uses this if update_pos is set.
+  // But we don't actully have a good pointer to the TTYWidget.
+  // TTYWidget::step() uses this if update_pos is set.
   float box_pos_x;
   bool update_pos = false;
   // Can be overriden by saved menu choice.
@@ -99,23 +269,12 @@ struct Fermata : Module {
 };
 
 // Adds support for undo/redo in the text field where people type programs.
-struct FermataUndoRedoAction : history::ModuleAction {
-  std::string old_text;
-  std::string new_text;
-  int old_cursor, new_cursor;
+struct TTYUndoRedoAction : history::ModuleAction {
   int old_width, new_width;
   // Having left-side resize means the 'box' for the module can move.
   float old_posx, new_posx;
 
-  FermataUndoRedoAction(int64_t id, std::string oldText, std::string newText,
-     int old_cursor_pos, int new_cursor_pos) : old_text{oldText},
-         new_text{newText}, old_cursor{old_cursor_pos},
-         new_cursor{new_cursor_pos} {
-    moduleId = id;
-    name = "text edit";
-    old_width = new_width = -1;
-  }
-  FermataUndoRedoAction(int64_t id, int old_width, int new_width,
+  TTYUndoRedoAction(int64_t id, int old_width, int new_width,
                         float old_posx, float new_posx) :
       old_width{old_width}, new_width{new_width}, old_posx{old_posx},
       new_posx{new_posx} {
@@ -123,34 +282,20 @@ struct FermataUndoRedoAction : history::ModuleAction {
     name = "module width change";
   }
   void undo() override {
-    Fermata *module = dynamic_cast<Fermata*>(APP->engine->getModule(moduleId));
+    TTY *module = dynamic_cast<TTY*>(APP->engine->getModule(moduleId));
     if (module) {
-      if (old_width < 0) {
-        module->text = this->old_text;
-        // Tell UI it needs to refresh because 'text' has changed.
-        module->editor_refresh = true;
-        module->cursor_override = old_cursor;
-      } else {
-        module->width = this->old_width;
-        module->box_pos_x = this->old_posx;  // Used by FermataWidget::step.
-        module->update_pos = true;
-      }
+      module->width = this->old_width;
+      module->box_pos_x = this->old_posx;  // Used by TTYWidget::step.
+      module->update_pos = true;
     }
   }
 
   void redo() override {
-    Fermata *module = dynamic_cast<Fermata*>(APP->engine->getModule(moduleId));
+    TTY *module = dynamic_cast<TTY*>(APP->engine->getModule(moduleId));
     if (module) {
-      if (old_width < 0) {
-        module->text = this->new_text;
-        // Tell UI it needs to refresh because 'text' has changed.
-        module->editor_refresh = true;
-        module->cursor_override = new_cursor;
-      } else {
-        module->width = this->new_width;
-        module->box_pos_x = this->new_posx;
-        module->update_pos = true;
-      }
+      module->width = this->new_width;
+      module->box_pos_x = this->new_posx;
+      module->update_pos = true;
     }
   }
 };
@@ -158,13 +303,13 @@ struct FermataUndoRedoAction : history::ModuleAction {
 // Needs to have a different name than the one in BASICally, or it
 // compiles but just won't work.
 // TODO: Possible to make this a reusable class between the two? Unlikely.
-struct FermataModuleResizeHandle : OpaqueWidget {
+struct TTYModuleResizeHandle : OpaqueWidget {
 	Vec dragPos;
 	Rect originalBox;
-	Fermata* module;
+	TTY* module;
   bool right = false;  // True for one on the right side.
 
-	FermataModuleResizeHandle() {
+	TTYModuleResizeHandle() {
     // One hole wide and full length tall.
 		box.size = Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
 	}
@@ -190,7 +335,7 @@ struct FermataModuleResizeHandle : OpaqueWidget {
 		Rect newBox = originalBox;
 		Rect oldBox = mw->box;
     // Minimum and maximum number of holes we allow the module to be.
-		const float minWidth = 3 * RACK_GRID_WIDTH;
+		const float minWidth = 4 * RACK_GRID_WIDTH;
     const float maxWidth = 64 * RACK_GRID_WIDTH;
     if (right) {
   		newBox.size.x += deltaX;
@@ -215,7 +360,7 @@ struct FermataModuleResizeHandle : OpaqueWidget {
       // different module's move will cause them to overlap (aka, a
       // transporter malfunction).
       APP->history->push(
-        new FermataUndoRedoAction(module->id, original_width, module->width,
+        new TTYUndoRedoAction(module->id, original_width, module->width,
                                   oldBox.pos.x, mw->box.pos.x));
     }
 	}
@@ -237,159 +382,9 @@ struct FermataModuleResizeHandle : OpaqueWidget {
 	}
 };
 
-// The title when shown below the text.
-struct FermataTitleTextField : LightWidget {
-  Fermata* module;
-
-  FermataTitleTextField() {
-  }
-
-  void drawLayer(const DrawArgs& args, int layer) override {
-    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-    if (layer == 1) {
-      // No background color!
-
-      std::shared_ptr<Font> font;
-      std::string text;
-      if (module) {
-        font = APP->window->loadFont(module->getFontPath());
-        text = module->title_text;
-      } else {
-        font = APP->window->loadFont(
-          asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
-        text = "A Longer Note";
-      }
-      if (font) {
-        nvgFillColor(args.vg, color::BLACK);
-        int font_size = 18;
-        nvgFontSize(args.vg, font_size);
-        nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_LEFT);
-        nvgFontFaceId(args.vg, font->handle);
-        nvgText(args.vg, 0, 0, text.c_str(), NULL);
-      }
-    }
-    Widget::drawLayer(args, layer);
-    nvgResetScissor(args.vg);
-  }
-};
-
-struct FermataTextFieldMenuItem : TextField {
-	FermataTextFieldMenuItem() {
-    box.size = Vec(120, 50);
-    multiline = false;
-  }
-};
-
-// The title when the text field is not visible, more prominently on the module.
-struct ClosedTitleTextField : LightWidget {
-  Fermata* module;
-
-	ClosedTitleTextField() {
-    box.size = mm2px(Vec(6 * 5.08, 110));
-  }
-
-  void drawLayer(const DrawArgs& args, int layer) override {
-    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-    if (layer == 1) {
-      // No background color!
-
-      if (module) {
-        std::shared_ptr<Font> font = APP->window->loadFont(module->getFontPath());
-        if (font) {
-          // Width of box needs to respond to width of module.
-          int text_holes = module->width - 2;
-          box.size = mm2px(Vec(text_holes * 5.08, 110));
-          Rect r = box.zeroPos();
-          Vec bounding_box = r.getBottomRight();
-          std::string text = module->title_text;
-          if (text_holes >= 6) {
-            // This is when we show the title horizontally, broken into words.
-            // We only do this for one size, because titles are usually short
-            // [citation needed], and so look pretty good sideways at smaller
-            // sizes. But leaving in the code that worked for smaller widths,
-            // just in case I want it later.
-            // 26 is a good font size for 6 holes of text.
-            int max_font_size = floor(26 * text_holes / 6);
-            // 21.0 is a good spacing for font size 26.
-            float max_spacing = 21.0 * text_holes / 6;
-
-            std::vector<std::string> lines;
-            // Break this into words. Since I don't know the font,
-            // too much effort to predict length, and don't want to use a
-            // TextField.
-            // TODO: cache this computation by moving this elsewhere? This
-            // section only takes about 5 usec to run.
-            auto start = 0U;
-            auto end = text.find(' ');
-            int longest = 0;
-            while (end != std::string::npos) {
-              lines.push_back(text.substr(start, end - start));
-              longest = std::max(longest, (int) (end - start));
-              start = end + 1;
-              end = text.find(' ', start);
-            }
-            std::string last = text.substr(start);
-            lines.push_back(last);
-            longest = std::max(longest, (int) last.size());
-            int font_size = longest < 8 ? max_font_size : floor(max_font_size * 7 / longest);
-            float spacing = longest < 8 ? max_spacing : max_spacing * 7 / longest;
-
-            nvgFillColor(args.vg, color::BLACK);
-            nvgFontSize(args.vg, font_size);
-            nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
-            nvgFontFaceId(args.vg, font->handle);
-            // Place on the line just off the left edge.
-            for (int i = 0; i < (int) lines.size(); i++) {
-              nvgText(args.vg, bounding_box.x / 2, i * spacing, lines[i].c_str(), NULL);
-            }
-          } else {
-            // Show it sideways!
-            // This is tricky because the font may be taller than the box we're
-            // showing the text in, if we just rely on number of holes.
-            // So we resize the font to make sure we center and don't clip the
-            // top or bottom of the text.
-            // One hole appears to be 15mm (i think mm is the units that sizes
-            // are given in).
-            nvgFontSize(args.vg, 15 * text_holes);
-            nvgFontFaceId(args.vg, font->handle);
-            nvgTextAlign(args.vg, NVG_ALIGN_LEFT|NVG_ALIGN_BASELINE);
-            nvgTextLetterSpacing(args.vg, 0);
-            nvgFillColor(args.vg, color::BLACK);
-            float desc, lh;
-            nvgTextMetrics(args.vg, NULL, &desc, &lh);
-            nvgRotate(args.vg, -M_PI / 2.0f);
-            // Because of the rotation, we need to express X, Y as -Y, ???
-            nvgText(args.vg, 6 - bounding_box.y, bounding_box.x + desc,
-                text.c_str(), NULL);
-          }
-        }
-      }
-    }
-    Widget::drawLayer(args, layer);
-    nvgResetScissor(args.vg);
-  }
-};
-
-struct FermataProgramNameMenuItem : FermataTextFieldMenuItem {
-	Fermata* module;
-
-	FermataProgramNameMenuItem(Fermata* fermata_module) {
-    module = fermata_module;
-    if (module) {
-      text = module->title_text;
-    }
-  }
-	void onChange(const event::Change& e) override {
-    FermataTextFieldMenuItem::onChange(e);
-    if (module) {
-      module->title_text = text;
-    }
-  }
-};
-
 // Class for the editor.
-struct FermataTextField : STTextField {
-	Fermata* module;
+struct TTYTextField : STTextField {
+	TTY* module;
   long long int color_scheme;
 
   NVGcolor int_to_color(int color) {
@@ -409,10 +404,7 @@ struct FermataTextField : STTextField {
       nvgFill(args.vg);
 
       if (module && module->cursor_override >= 0) {
-        // Undo/redo must have just happened.
-        // Move cursor (with no selection) to where the cursor was when we
-        // did edit.
-        cursor = module->cursor_override;
+        cursor = std::min(module->cursor_override, (int) module->text.size());
         selection = module->cursor_override;
         module->cursor_override = -1;
         // Since we just forcibly moved the cursor, need to reposition window
@@ -442,42 +434,21 @@ struct FermataTextField : STTextField {
 			textUpdated();
 			module->editor_refresh = false;
 		}
-	}
-
-  // User has updated the text.
-	void onChange(const ChangeEvent& e) override {
-		if (module) {
-      // Sometimes the text isn't actually different. If I don't check
-      // this, I might get spurious history events.
-      // TODO: do I need this check anymore?
-      if (module->text != module->previous_text) {
-        APP->history->push(
-          new FermataUndoRedoAction(module->id, module->previous_text,
-                             module->text, module->previous_cursor, cursor));
-        module->previous_text = module->text;
-      }
-      module->previous_cursor = cursor;
+    if (module && module->additions.text_additions.size() > 0) {
+      make_additions(&(module->additions));
     }
 	}
 };
 
 static std::string module_browser_text =
-  "Write your text here! For example:\n"
-  "* Instructions for playing the patch.\n"
-  "* Notes/reminders on how this part of the patch works.\n"
-  "* TODO's or ideas.\n"
-  "* A short story you're writing while listening to your patch.\n\n"
-  "You can also set the title (below) in the module menu, as well as a pick "
-  "a font and screen colors. And you can resize the module by dragging the "
-  "right edge (over there -->).\n"
-  "If you shrink the module enough, the title becomes a large label on "
-  "the front.";
+  "TODO: write this text\n";
 
-struct FermataDisplay : LedDisplay {
-  FermataTextField* textField;
+struct TTYDisplay : LedDisplay {
+  TTYTextField* textField;
 
-	void setModule(Fermata* module) {
-		textField = createWidget<FermataTextField>(Vec(0, 0));
+	void setModule(TTY* module) {
+		textField = createWidget<TTYTextField>(Vec(0, 0));
+    textField->allow_text_entry = false;  // Don't let user type text here.
 		textField->box.size = box.size;
 		textField->module = module;
     // If this is the module browser, 'module' will be null!
@@ -491,10 +462,10 @@ struct FermataDisplay : LedDisplay {
 		addChild(textField);
 	}
 
-  // The FermataWidget changes size, so we have to reflect that.
+  // The TTYWidget changes size, so we have to reflect that.
   void step() override {
     // At smaller sizes, hide the screen.
-    if (textField->module && textField->module->width <= 8) {
+    if (textField->module && textField->module->width <= 4) {
       hide();
     } else {
       show();
@@ -517,28 +488,26 @@ struct FermataDisplay : LedDisplay {
 };
 
 const float NON_SCREEN_WIDTH = 2.0f;
-const float NON_TITLE_WIDTH = 4.6f;
+const float CONTROL_WIDTH = 13.0f;
 
-struct FermataWidget : ModuleWidget {
+struct TTYWidget : ModuleWidget {
   Widget* topRightScrew;
 	Widget* bottomRightScrew;
-	FermataModuleResizeHandle* rightHandle;
-	FermataDisplay* textDisplay;
-  FermataTitleTextField* title;
-  ClosedTitleTextField* closed_title;
+	TTYModuleResizeHandle* rightHandle;
+	TTYDisplay* textDisplay;
 
-  FermataWidget(Fermata* module) {
+  TTYWidget(TTY* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/Fermata.svg")));
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/TTY.svg")));
 
     // Set reasonable initial size of module. Will likely get updated below.
-    box.size = Vec(RACK_GRID_WIDTH * Fermata::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
+    box.size = Vec(RACK_GRID_WIDTH * TTY::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
 		if (module) {
       // Set box width from loaded Module when available.
 			box.size.x = module->width * RACK_GRID_WIDTH;
     } else {
       // Like when showing the module in the module browser.
-      box.size.x = Fermata::DEFAULT_WIDTH * RACK_GRID_WIDTH;
+      box.size.x = TTY::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
 
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
@@ -553,37 +522,37 @@ struct FermataWidget : ModuleWidget {
             RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
     addChild(bottomRightScrew);
 
-    // User created title.
-    title = createWidget<FermataTitleTextField>(mm2px(Vec(12.029, 122.3)));
-    title->box.size = mm2px(Vec(200.0, 10.0));
-    title->module = module;
-    addChild(title);
+    addParam(createParamCentered<RoundBlackKnob>(
+         mm2px(Vec(8.938, 46.0)), module, TTY::SAMPLE_PARAM));
+    addParam(createLightParamCentered<VCVLightLatch<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 59.0)),
+                                             module, TTY::PAUSE_PARAM,
+                                             TTY::PAUSE_LIGHT));
+    addParam(createLightParamCentered<VCVLightButton<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 71.0)),
+                                             module, TTY::CLEAR_PARAM,
+                                             TTY::CLEAR_LIGHT));
 
-    // User created title when closed.
-    closed_title = createWidget<ClosedTitleTextField>(mm2px(Vec(5.08, 15.0)));
-    closed_title->module = module;
-    closed_title->hide();  // Only shown when at smallest size.
-    addChild(closed_title);
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 16.0)), module,
+        TTY::V1_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 29.0)), module,
+        TTY::V2_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 86.0)), module,
+        TTY::TEXT1_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 101.872)), module,
+        TTY::TEXT2_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 118.579)), module,
+        TTY::TEXT3_INPUT));
 
-    textDisplay = createWidget<FermataDisplay>(
-      mm2px(Vec(5.08, 5.9)));  // 5.08 == RACK_GRID_WIDTH in mm.
+    textDisplay = createWidget<TTYDisplay>(mm2px(Vec(18.08, 5.9)));
 		textDisplay->box.size = mm2px(Vec(60.0, 117.0));
-    textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
+    textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH - mm2px(CONTROL_WIDTH);
 		textDisplay->setModule(module);
 
 		addChild(textDisplay);
 
-    // Resize bar on left.
-    FermataModuleResizeHandle* leftHandle = new FermataModuleResizeHandle;
-		leftHandle->module = module;
-    // Make sure the handle is correctly placed if drawing for the module
-    // browser.
-    // new_rightHandle->box.pos.x = box.size.x - new_rightHandle->box.size.x;
-    addChild(leftHandle);
-
-
     // Resize bar on right.
-    rightHandle = new FermataModuleResizeHandle;
+    rightHandle = new TTYModuleResizeHandle;
     rightHandle->right = true;
 		rightHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module
@@ -596,19 +565,12 @@ struct FermataWidget : ModuleWidget {
   }
 
   void step() override {
-		Fermata* module = dynamic_cast<Fermata*>(this->module);
+		TTY* module = dynamic_cast<TTY*>(this->module);
     // While this is really only useful to call when the width changes,
     // I don't think it's currently worth the effort to ONLY call it then.
     // And maybe the *first* time step() is called.
 		if (module) {
 			box.size.x = module->width * RACK_GRID_WIDTH;
-      if (module->width <= 8) {
-        closed_title->show();
-        title->hide();
-      } else {
-        closed_title->hide();
-        title->show();
-      }
       // The right-hand screws have slightly different logic.
       if (module->width < 8) {
         topRightScrew->hide();
@@ -623,13 +585,11 @@ struct FermataWidget : ModuleWidget {
       }
 		} else {
       // Like when showing the module in the module browser.
-      box.size.x = Fermata::DEFAULT_WIDTH * RACK_GRID_WIDTH;
+      box.size.x = TTY::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
     // Adjust size of area we display text in; it's a function of the size
     // of the module minus some set width.
-		textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
-    // Adjust size of area we display title in.
-		title->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_TITLE_WIDTH;
+		textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH - mm2px(CONTROL_WIDTH);
     // Move the right side screws to follow.
 		topRightScrew->box.pos.x = box.size.x - 30;
 		bottomRightScrew->box.pos.x = box.size.x - 30;
@@ -639,11 +599,8 @@ struct FermataWidget : ModuleWidget {
 	}
 
   void appendContextMenu(Menu* menu) override {
-    Fermata* module = dynamic_cast<Fermata*>(this->module);
+    TTY* module = dynamic_cast<TTY*>(this->module);
     // Add color choices.
-    menu->addChild(new MenuSeparator);
-    menu->addChild(createMenuLabel("Set Title"));
-    menu->addChild(new FermataProgramNameMenuItem(module));
     menu->addChild(new MenuSeparator);
     std::pair<std::string, long long int> colors[] = {
       {"Green on Black", 0x00ff00000000},
@@ -693,4 +650,4 @@ struct FermataWidget : ModuleWidget {
   }
 };
 
-Model* modelFermata = createModel<Fermata, FermataWidget>("Fermata");
+Model* modelTTY = createModel<TTY, TTYWidget>("TTY");

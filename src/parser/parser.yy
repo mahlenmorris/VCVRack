@@ -48,6 +48,7 @@
   CLEAR   "clear"
   CONNECTED "connected"
   CONTINUE "continue"
+  DEBUG   "debug"
   ELSE    "else"
   ELSEIF  "elseif"
   END     "end"
@@ -253,7 +254,10 @@ string_list:
 | string_list "," exp        { $$ = $1.add($3); }
 
 string_exp:
-  "quoted_string"            { $$ = drv.factory.Quoted($1); }
+  "quoted_string"              { $$ = drv.factory.Quoted($1); }
+| "debug" "(" "identifier" ")" { $$ = drv.factory.DebugId($3, &drv); }
+| "debug" "(" "identifier" "[" "]" "," exp "," exp ")" { $$ = drv.factory.DebugId($3, $7, $9, &drv); }
+
 %%
 
 void

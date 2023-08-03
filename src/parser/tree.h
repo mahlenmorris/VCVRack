@@ -26,7 +26,8 @@ class Expression {
     ZEROARGFUNC, // operation
     ONEARGFUNC, // operation (subexpressions[0])
     ONEPORTFUNC, // operation (port)
-    TWOARGFUNC // func2(subexpressions[0], subexpressions[1])
+    TWOARGFUNC, // func2(subexpressions[0], subexpressions[1])
+    STRINGFUNC  // Depends on function.
   };
   Type type;
   // Which method/operation is this?
@@ -46,6 +47,7 @@ class Expression {
     ABS,
     CEILING,
     CONNECTED,
+    DEBUG,
     FLOOR,
     LOG2,
     LOGE,
@@ -128,6 +130,9 @@ class ExpressionFactory {
   // The parser seems to need many variants of Variable.
   Expression Variable(const std::string &expr, Driver* driver);
   Expression Variable(char * var_name, Driver* driver);
+  Expression DebugId(const std::string &var_name, Driver* driver);
+  Expression DebugId(const std::string &var_name, const Expression &start,
+                     const Expression &end, Driver* driver);
  private:
   static std::unordered_map<std::string, Expression::Operation> string_to_operation;
 };

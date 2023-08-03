@@ -549,6 +549,30 @@
           <symbol>&quot;quoted_string&quot;</symbol>
         </rhs>
       </rule>
+      <rule number="71" usefulness="useful">
+        <lhs>string_exp</lhs>
+        <rhs>
+          <symbol>&quot;debug&quot;</symbol>
+          <symbol>&quot;(&quot;</symbol>
+          <symbol>&quot;identifier&quot;</symbol>
+          <symbol>&quot;)&quot;</symbol>
+        </rhs>
+      </rule>
+      <rule number="72" usefulness="useful">
+        <lhs>string_exp</lhs>
+        <rhs>
+          <symbol>&quot;debug&quot;</symbol>
+          <symbol>&quot;(&quot;</symbol>
+          <symbol>&quot;identifier&quot;</symbol>
+          <symbol>&quot;[&quot;</symbol>
+          <symbol>&quot;]&quot;</symbol>
+          <symbol>&quot;,&quot;</symbol>
+          <symbol>exp</symbol>
+          <symbol>&quot;,&quot;</symbol>
+          <symbol>exp</symbol>
+          <symbol>&quot;)&quot;</symbol>
+        </rhs>
+      </rule>
     </rules>
     <terminals>
       <terminal symbol-number="0" token-number="0" name="$end" type="" usefulness="useful"/>
@@ -562,84 +586,85 @@
       <terminal symbol-number="9" token-number="264" name="&quot;clear&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="10" token-number="265" name="&quot;connected&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="11" token-number="266" name="&quot;continue&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="12" token-number="267" name="&quot;else&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="13" token-number="268" name="&quot;elseif&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="14" token-number="269" name="&quot;end&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="15" token-number="270" name="&quot;exit&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="16" token-number="271" name="&quot;floor&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="17" token-number="272" name="&quot;for&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="18" token-number="273" name="&quot;if&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="19" token-number="274" name="&quot;log2&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="20" token-number="275" name="&quot;loge&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="21" token-number="276" name="&quot;log10&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="22" token-number="277" name="&quot;max&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="23" token-number="278" name="&quot;min&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="24" token-number="279" name="&quot;next&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="25" token-number="280" name="&quot;not&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="26" token-number="281" name="&quot;or&quot;" type="std::string" usefulness="useful" prec="1" assoc="left"/>
-      <terminal symbol-number="27" token-number="282" name="&quot;pow&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="28" token-number="283" name="&quot;print&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="29" token-number="284" name="&quot;reset&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="30" token-number="285" name="&quot;sample_rate&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="31" token-number="286" name="&quot;sign&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="32" token-number="287" name="&quot;sin&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="33" token-number="288" name="&quot;start&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="34" token-number="289" name="&quot;step&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="35" token-number="290" name="&quot;then&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="36" token-number="291" name="&quot;time&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="37" token-number="292" name="&quot;time_millis&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="38" token-number="293" name="&quot;to&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="39" token-number="294" name="&quot;trigger&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="40" token-number="295" name="&quot;wait&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="41" token-number="296" name="&quot;when&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="42" token-number="297" name="&quot;-&quot;" type="std::string" usefulness="useful" prec="4" assoc="left"/>
-      <terminal symbol-number="43" token-number="298" name="&quot;+&quot;" type="std::string" usefulness="useful" prec="4" assoc="left"/>
-      <terminal symbol-number="44" token-number="299" name="&quot;*&quot;" type="std::string" usefulness="useful" prec="5" assoc="left"/>
-      <terminal symbol-number="45" token-number="300" name="&quot;/&quot;" type="std::string" usefulness="useful" prec="5" assoc="left"/>
-      <terminal symbol-number="46" token-number="301" name="&quot;(&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="47" token-number="302" name="&quot;)&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="48" token-number="303" name="&quot;{&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="49" token-number="304" name="&quot;}&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="50" token-number="305" name="&quot;[&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="51" token-number="306" name="&quot;]&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="52" token-number="307" name="&quot;,&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="53" token-number="308" name="&quot;identifier&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="54" token-number="309" name="&quot;quoted_string&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="55" token-number="310" name="&quot;number&quot;" type="float" usefulness="useful"/>
-      <terminal symbol-number="56" token-number="311" name="&quot;note&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="57" token-number="312" name="&quot;in_port&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="58" token-number="313" name="&quot;out_port&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="59" token-number="314" name="&quot;zeroargfunc&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="60" token-number="315" name="&quot;oneargfunc&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="61" token-number="316" name="&quot;twoargfunc&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="62" token-number="317" name="&quot;comparison&quot;" type="std::string" usefulness="useful" prec="3" assoc="left"/>
-      <terminal symbol-number="63" token-number="318" name="NEG" type="" usefulness="useful" prec="6" assoc="precedence"/>
+      <terminal symbol-number="12" token-number="267" name="&quot;debug&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="13" token-number="268" name="&quot;else&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="14" token-number="269" name="&quot;elseif&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="15" token-number="270" name="&quot;end&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="16" token-number="271" name="&quot;exit&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="17" token-number="272" name="&quot;floor&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="18" token-number="273" name="&quot;for&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="19" token-number="274" name="&quot;if&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="20" token-number="275" name="&quot;log2&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="21" token-number="276" name="&quot;loge&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="22" token-number="277" name="&quot;log10&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="23" token-number="278" name="&quot;max&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="24" token-number="279" name="&quot;min&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="25" token-number="280" name="&quot;next&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="26" token-number="281" name="&quot;not&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="27" token-number="282" name="&quot;or&quot;" type="std::string" usefulness="useful" prec="1" assoc="left"/>
+      <terminal symbol-number="28" token-number="283" name="&quot;pow&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="29" token-number="284" name="&quot;print&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="30" token-number="285" name="&quot;reset&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="31" token-number="286" name="&quot;sample_rate&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="32" token-number="287" name="&quot;sign&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="33" token-number="288" name="&quot;sin&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="34" token-number="289" name="&quot;start&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="35" token-number="290" name="&quot;step&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="36" token-number="291" name="&quot;then&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="37" token-number="292" name="&quot;time&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="38" token-number="293" name="&quot;time_millis&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="39" token-number="294" name="&quot;to&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="40" token-number="295" name="&quot;trigger&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="41" token-number="296" name="&quot;wait&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="42" token-number="297" name="&quot;when&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="43" token-number="298" name="&quot;-&quot;" type="std::string" usefulness="useful" prec="4" assoc="left"/>
+      <terminal symbol-number="44" token-number="299" name="&quot;+&quot;" type="std::string" usefulness="useful" prec="4" assoc="left"/>
+      <terminal symbol-number="45" token-number="300" name="&quot;*&quot;" type="std::string" usefulness="useful" prec="5" assoc="left"/>
+      <terminal symbol-number="46" token-number="301" name="&quot;/&quot;" type="std::string" usefulness="useful" prec="5" assoc="left"/>
+      <terminal symbol-number="47" token-number="302" name="&quot;(&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="48" token-number="303" name="&quot;)&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="49" token-number="304" name="&quot;{&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="50" token-number="305" name="&quot;}&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="51" token-number="306" name="&quot;[&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="52" token-number="307" name="&quot;]&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="53" token-number="308" name="&quot;,&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="54" token-number="309" name="&quot;identifier&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="55" token-number="310" name="&quot;quoted_string&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="56" token-number="311" name="&quot;number&quot;" type="float" usefulness="useful"/>
+      <terminal symbol-number="57" token-number="312" name="&quot;note&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="58" token-number="313" name="&quot;in_port&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="59" token-number="314" name="&quot;out_port&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="60" token-number="315" name="&quot;zeroargfunc&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="61" token-number="316" name="&quot;oneargfunc&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="62" token-number="317" name="&quot;twoargfunc&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="63" token-number="318" name="&quot;comparison&quot;" type="std::string" usefulness="useful" prec="3" assoc="left"/>
+      <terminal symbol-number="64" token-number="319" name="NEG" type="" usefulness="useful" prec="6" assoc="precedence"/>
     </terminals>
     <nonterminals>
-      <nonterminal symbol-number="64" name="$accept" type="" usefulness="useful"/>
-      <nonterminal symbol-number="65" name="program" type="" usefulness="useful"/>
-      <nonterminal symbol-number="66" name="blocks" type="Blocks" usefulness="useful"/>
-      <nonterminal symbol-number="67" name="block" type="Block" usefulness="useful"/>
-      <nonterminal symbol-number="68" name="main_block" type="Block" usefulness="useful"/>
-      <nonterminal symbol-number="69" name="zero_or_more_statements" type="Statements" usefulness="useful"/>
-      <nonterminal symbol-number="70" name="one_or_more_statements" type="Statements" usefulness="useful"/>
-      <nonterminal symbol-number="71" name="statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="72" name="array_assignment" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="73" name="assignment" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="74" name="clear_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="75" name="continue_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="76" name="exit_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="77" name="for_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="78" name="elseif_group" type="Statements" usefulness="useful"/>
-      <nonterminal symbol-number="79" name="elseif_clause" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="80" name="if_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="81" name="print_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="82" name="reset_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="83" name="wait_statement" type="Line" usefulness="useful"/>
-      <nonterminal symbol-number="84" name="expression_list" type="ExpressionList" usefulness="useful"/>
-      <nonterminal symbol-number="85" name="exp" type="Expression" usefulness="useful"/>
-      <nonterminal symbol-number="86" name="string_list" type="ExpressionList" usefulness="useful"/>
-      <nonterminal symbol-number="87" name="string_exp" type="Expression" usefulness="useful"/>
+      <nonterminal symbol-number="65" name="$accept" type="" usefulness="useful"/>
+      <nonterminal symbol-number="66" name="program" type="" usefulness="useful"/>
+      <nonterminal symbol-number="67" name="blocks" type="Blocks" usefulness="useful"/>
+      <nonterminal symbol-number="68" name="block" type="Block" usefulness="useful"/>
+      <nonterminal symbol-number="69" name="main_block" type="Block" usefulness="useful"/>
+      <nonterminal symbol-number="70" name="zero_or_more_statements" type="Statements" usefulness="useful"/>
+      <nonterminal symbol-number="71" name="one_or_more_statements" type="Statements" usefulness="useful"/>
+      <nonterminal symbol-number="72" name="statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="73" name="array_assignment" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="74" name="assignment" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="75" name="clear_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="76" name="continue_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="77" name="exit_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="78" name="for_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="79" name="elseif_group" type="Statements" usefulness="useful"/>
+      <nonterminal symbol-number="80" name="elseif_clause" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="81" name="if_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="82" name="print_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="83" name="reset_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="84" name="wait_statement" type="Line" usefulness="useful"/>
+      <nonterminal symbol-number="85" name="expression_list" type="ExpressionList" usefulness="useful"/>
+      <nonterminal symbol-number="86" name="exp" type="Expression" usefulness="useful"/>
+      <nonterminal symbol-number="87" name="string_list" type="ExpressionList" usefulness="useful"/>
+      <nonterminal symbol-number="88" name="string_exp" type="Expression" usefulness="useful"/>
     </nonterminals>
   </grammar>
 
@@ -4000,16 +4025,19 @@
         <item rule-number="68" dot="0"/>
         <item rule-number="69" dot="0"/>
         <item rule-number="70" dot="0"/>
+        <item rule-number="71" dot="0"/>
+        <item rule-number="72" dot="0"/>
       </itemset>
       <actions>
         <transitions>
           <transition type="shift" symbol="&quot;connected&quot;" state="38"/>
+          <transition type="shift" symbol="&quot;debug&quot;" state="119"/>
           <transition type="shift" symbol="&quot;not&quot;" state="39"/>
           <transition type="shift" symbol="&quot;trigger&quot;" state="40"/>
           <transition type="shift" symbol="&quot;-&quot;" state="41"/>
           <transition type="shift" symbol="&quot;(&quot;" state="42"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;quoted_string&quot;" state="119"/>
+          <transition type="shift" symbol="&quot;quoted_string&quot;" state="120"/>
           <transition type="shift" symbol="&quot;number&quot;" state="44"/>
           <transition type="shift" symbol="&quot;note&quot;" state="45"/>
           <transition type="shift" symbol="&quot;in_port&quot;" state="46"/>
@@ -4017,9 +4045,9 @@
           <transition type="shift" symbol="&quot;zeroargfunc&quot;" state="48"/>
           <transition type="shift" symbol="&quot;oneargfunc&quot;" state="49"/>
           <transition type="shift" symbol="&quot;twoargfunc&quot;" state="50"/>
-          <transition type="goto" symbol="exp" state="120"/>
-          <transition type="goto" symbol="string_list" state="121"/>
-          <transition type="goto" symbol="string_exp" state="122"/>
+          <transition type="goto" symbol="exp" state="121"/>
+          <transition type="goto" symbol="string_list" state="122"/>
+          <transition type="goto" symbol="string_exp" state="123"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -4033,7 +4061,7 @@
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;when&quot;" state="123"/>
+          <transition type="shift" symbol="&quot;when&quot;" state="124"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -4048,7 +4076,7 @@
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;=&quot;" state="124"/>
+          <transition type="shift" symbol="&quot;=&quot;" state="125"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -4097,7 +4125,7 @@
           <transition type="shift" symbol="&quot;zeroargfunc&quot;" state="48"/>
           <transition type="shift" symbol="&quot;oneargfunc&quot;" state="49"/>
           <transition type="shift" symbol="&quot;twoargfunc&quot;" state="50"/>
-          <transition type="goto" symbol="exp" state="125"/>
+          <transition type="goto" symbol="exp" state="126"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -4144,7 +4172,7 @@
           <transition type="shift" symbol="&quot;exit&quot;" state="4"/>
           <transition type="shift" symbol="&quot;for&quot;" state="5"/>
           <transition type="shift" symbol="&quot;if&quot;" state="6"/>
-          <transition type="shift" symbol="&quot;next&quot;" state="126"/>
+          <transition type="shift" symbol="&quot;next&quot;" state="127"/>
           <transition type="shift" symbol="&quot;print&quot;" state="7"/>
           <transition type="shift" symbol="&quot;reset&quot;" state="8"/>
           <transition type="shift" symbol="&quot;wait&quot;" state="9"/>
@@ -4280,7 +4308,7 @@
           <transition type="shift" symbol="&quot;zeroargfunc&quot;" state="48"/>
           <transition type="shift" symbol="&quot;oneargfunc&quot;" state="49"/>
           <transition type="shift" symbol="&quot;twoargfunc&quot;" state="50"/>
-          <transition type="goto" symbol="exp" state="127"/>
+          <transition type="goto" symbol="exp" state="128"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -4311,10 +4339,10 @@
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;else&quot;" state="128"/>
-          <transition type="shift" symbol="&quot;elseif&quot;" state="129"/>
-          <transition type="shift" symbol="&quot;end&quot;" state="130"/>
-          <transition type="goto" symbol="elseif_clause" state="131"/>
+          <transition type="shift" symbol="&quot;else&quot;" state="129"/>
+          <transition type="shift" symbol="&quot;elseif&quot;" state="130"/>
+          <transition type="shift" symbol="&quot;end&quot;" state="131"/>
+          <transition type="goto" symbol="elseif_clause" state="132"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -4323,6 +4351,21 @@
     </state>
 
     <state number="119">
+      <itemset>
+        <item rule-number="71" dot="1"/>
+        <item rule-number="72" dot="1"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;(&quot;" state="133"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="120">
       <itemset>
         <item rule-number="70" dot="1"/>
       </itemset>
@@ -4336,7 +4379,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="120">
+    <state number="121">
       <itemset>
         <item rule-number="52" dot="1"/>
         <item rule-number="53" dot="1"/>
@@ -4370,7 +4413,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="121">
+    <state number="122">
       <itemset>
         <item rule-number="39" dot="5"/>
         <item rule-number="68" dot="1"/>
@@ -4378,8 +4421,8 @@
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;)&quot;" state="132"/>
-          <transition type="shift" symbol="&quot;,&quot;" state="133"/>
+          <transition type="shift" symbol="&quot;)&quot;" state="134"/>
+          <transition type="shift" symbol="&quot;,&quot;" state="135"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -4387,7 +4430,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="122">
+    <state number="123">
       <itemset>
         <item rule-number="66" dot="1"/>
       </itemset>
@@ -4401,7 +4444,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="123">
+    <state number="124">
       <itemset>
         <item rule-number="6" dot="5"/>
       </itemset>
@@ -4415,7 +4458,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="124">
+    <state number="125">
       <itemset>
         <item rule-number="22" dot="5"/>
         <item rule-number="23" dot="5"/>
@@ -4449,7 +4492,7 @@
           <transition type="shift" symbol="&quot;trigger&quot;" state="40"/>
           <transition type="shift" symbol="&quot;-&quot;" state="41"/>
           <transition type="shift" symbol="&quot;(&quot;" state="42"/>
-          <transition type="shift" symbol="&quot;{&quot;" state="134"/>
+          <transition type="shift" symbol="&quot;{&quot;" state="136"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="43"/>
           <transition type="shift" symbol="&quot;number&quot;" state="44"/>
           <transition type="shift" symbol="&quot;note&quot;" state="45"/>
@@ -4458,7 +4501,7 @@
           <transition type="shift" symbol="&quot;zeroargfunc&quot;" state="48"/>
           <transition type="shift" symbol="&quot;oneargfunc&quot;" state="49"/>
           <transition type="shift" symbol="&quot;twoargfunc&quot;" state="50"/>
-          <transition type="goto" symbol="exp" state="135"/>
+          <transition type="goto" symbol="exp" state="137"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -4466,7 +4509,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="125">
+    <state number="126">
       <itemset>
         <item rule-number="8" dot="0">
           <lookaheads>
@@ -4503,7 +4546,7 @@
           <transition type="shift" symbol="&quot;*&quot;" state="79"/>
           <transition type="shift" symbol="&quot;/&quot;" state="80"/>
           <transition type="shift" symbol="&quot;comparison&quot;" state="81"/>
-          <transition type="goto" symbol="zero_or_more_statements" state="136"/>
+          <transition type="goto" symbol="zero_or_more_statements" state="138"/>
         </transitions>
         <errors/>
         <reductions>
@@ -4513,7 +4556,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="126">
+    <state number="127">
       <itemset>
         <item rule-number="32" dot="6"/>
       </itemset>
@@ -4527,7 +4570,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="127">
+    <state number="128">
       <itemset>
         <item rule-number="52" dot="1"/>
         <item rule-number="53" dot="1"/>
@@ -4546,7 +4589,7 @@
           <transition type="shift" symbol="&quot;+&quot;" state="78"/>
           <transition type="shift" symbol="&quot;*&quot;" state="79"/>
           <transition type="shift" symbol="&quot;/&quot;" state="80"/>
-          <transition type="shift" symbol="&quot;)&quot;" state="137"/>
+          <transition type="shift" symbol="&quot;)&quot;" state="139"/>
           <transition type="shift" symbol="&quot;comparison&quot;" state="81"/>
         </transitions>
         <errors/>
@@ -4555,7 +4598,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="128">
+    <state number="129">
       <itemset>
         <item rule-number="8" dot="0"/>
         <item rule-number="9" dot="0"/>
@@ -4563,7 +4606,7 @@
       </itemset>
       <actions>
         <transitions>
-          <transition type="goto" symbol="zero_or_more_statements" state="138"/>
+          <transition type="goto" symbol="zero_or_more_statements" state="140"/>
         </transitions>
         <errors/>
         <reductions>
@@ -4573,7 +4616,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="129">
+    <state number="130">
       <itemset>
         <item rule-number="36" dot="1"/>
         <item rule-number="44" dot="0"/>
@@ -4614,21 +4657,7 @@
           <transition type="shift" symbol="&quot;zeroargfunc&quot;" state="48"/>
           <transition type="shift" symbol="&quot;oneargfunc&quot;" state="49"/>
           <transition type="shift" symbol="&quot;twoargfunc&quot;" state="50"/>
-          <transition type="goto" symbol="exp" state="139"/>
-        </transitions>
-        <errors/>
-        <reductions/>
-      </actions>
-      <solved-conflicts/>
-    </state>
-
-    <state number="130">
-      <itemset>
-        <item rule-number="37" dot="6"/>
-      </itemset>
-      <actions>
-        <transitions>
-          <transition type="shift" symbol="&quot;if&quot;" state="140"/>
+          <transition type="goto" symbol="exp" state="141"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -4637,6 +4666,20 @@
     </state>
 
     <state number="131">
+      <itemset>
+        <item rule-number="37" dot="6"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;if&quot;" state="142"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="132">
       <itemset>
         <item rule-number="35" dot="2"/>
       </itemset>
@@ -4650,7 +4693,22 @@
       <solved-conflicts/>
     </state>
 
-    <state number="132">
+    <state number="133">
+      <itemset>
+        <item rule-number="71" dot="2"/>
+        <item rule-number="72" dot="2"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;identifier&quot;" state="143"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="134">
       <itemset>
         <item rule-number="39" dot="6"/>
       </itemset>
@@ -4664,7 +4722,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="133">
+    <state number="135">
       <itemset>
         <item rule-number="44" dot="0"/>
         <item rule-number="45" dot="0"/>
@@ -4691,16 +4749,19 @@
         <item rule-number="68" dot="2"/>
         <item rule-number="69" dot="2"/>
         <item rule-number="70" dot="0"/>
+        <item rule-number="71" dot="0"/>
+        <item rule-number="72" dot="0"/>
       </itemset>
       <actions>
         <transitions>
           <transition type="shift" symbol="&quot;connected&quot;" state="38"/>
+          <transition type="shift" symbol="&quot;debug&quot;" state="119"/>
           <transition type="shift" symbol="&quot;not&quot;" state="39"/>
           <transition type="shift" symbol="&quot;trigger&quot;" state="40"/>
           <transition type="shift" symbol="&quot;-&quot;" state="41"/>
           <transition type="shift" symbol="&quot;(&quot;" state="42"/>
           <transition type="shift" symbol="&quot;identifier&quot;" state="43"/>
-          <transition type="shift" symbol="&quot;quoted_string&quot;" state="119"/>
+          <transition type="shift" symbol="&quot;quoted_string&quot;" state="120"/>
           <transition type="shift" symbol="&quot;number&quot;" state="44"/>
           <transition type="shift" symbol="&quot;note&quot;" state="45"/>
           <transition type="shift" symbol="&quot;in_port&quot;" state="46"/>
@@ -4708,8 +4769,8 @@
           <transition type="shift" symbol="&quot;zeroargfunc&quot;" state="48"/>
           <transition type="shift" symbol="&quot;oneargfunc&quot;" state="49"/>
           <transition type="shift" symbol="&quot;twoargfunc&quot;" state="50"/>
-          <transition type="goto" symbol="exp" state="141"/>
-          <transition type="goto" symbol="string_exp" state="142"/>
+          <transition type="goto" symbol="exp" state="144"/>
+          <transition type="goto" symbol="string_exp" state="145"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -4717,7 +4778,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="134">
+    <state number="136">
       <itemset>
         <item rule-number="23" dot="6"/>
         <item rule-number="42" dot="0"/>
@@ -4760,8 +4821,8 @@
           <transition type="shift" symbol="&quot;zeroargfunc&quot;" state="48"/>
           <transition type="shift" symbol="&quot;oneargfunc&quot;" state="49"/>
           <transition type="shift" symbol="&quot;twoargfunc&quot;" state="50"/>
-          <transition type="goto" symbol="expression_list" state="143"/>
-          <transition type="goto" symbol="exp" state="144"/>
+          <transition type="goto" symbol="expression_list" state="146"/>
+          <transition type="goto" symbol="exp" state="147"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -4769,7 +4830,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="135">
+    <state number="137">
       <itemset>
         <item rule-number="22" dot="6">
           <lookaheads>
@@ -4819,7 +4880,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="136">
+    <state number="138">
       <itemset>
         <item rule-number="9" dot="1"/>
         <item rule-number="12" dot="0"/>
@@ -4858,7 +4919,7 @@
           <transition type="shift" symbol="&quot;exit&quot;" state="4"/>
           <transition type="shift" symbol="&quot;for&quot;" state="5"/>
           <transition type="shift" symbol="&quot;if&quot;" state="6"/>
-          <transition type="shift" symbol="&quot;next&quot;" state="145"/>
+          <transition type="shift" symbol="&quot;next&quot;" state="148"/>
           <transition type="shift" symbol="&quot;print&quot;" state="7"/>
           <transition type="shift" symbol="&quot;reset&quot;" state="8"/>
           <transition type="shift" symbol="&quot;wait&quot;" state="9"/>
@@ -4883,7 +4944,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="137">
+    <state number="139">
       <itemset>
         <item rule-number="64" dot="6"/>
       </itemset>
@@ -4897,7 +4958,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="138">
+    <state number="140">
       <itemset>
         <item rule-number="9" dot="1"/>
         <item rule-number="12" dot="0"/>
@@ -4933,7 +4994,7 @@
         <transitions>
           <transition type="shift" symbol="&quot;clear&quot;" state="2"/>
           <transition type="shift" symbol="&quot;continue&quot;" state="3"/>
-          <transition type="shift" symbol="&quot;end&quot;" state="146"/>
+          <transition type="shift" symbol="&quot;end&quot;" state="149"/>
           <transition type="shift" symbol="&quot;exit&quot;" state="4"/>
           <transition type="shift" symbol="&quot;for&quot;" state="5"/>
           <transition type="shift" symbol="&quot;if&quot;" state="6"/>
@@ -4961,7 +5022,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="139">
+    <state number="141">
       <itemset>
         <item rule-number="36" dot="2"/>
         <item rule-number="52" dot="1"/>
@@ -4976,7 +5037,7 @@
         <transitions>
           <transition type="shift" symbol="&quot;and&quot;" state="74"/>
           <transition type="shift" symbol="&quot;or&quot;" state="75"/>
-          <transition type="shift" symbol="&quot;then&quot;" state="147"/>
+          <transition type="shift" symbol="&quot;then&quot;" state="150"/>
           <transition type="shift" symbol="&quot;-&quot;" state="77"/>
           <transition type="shift" symbol="&quot;+&quot;" state="78"/>
           <transition type="shift" symbol="&quot;*&quot;" state="79"/>
@@ -4989,7 +5050,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="140">
+    <state number="142">
       <itemset>
         <item rule-number="37" dot="7"/>
       </itemset>
@@ -5003,7 +5064,23 @@
       <solved-conflicts/>
     </state>
 
-    <state number="141">
+    <state number="143">
+      <itemset>
+        <item rule-number="71" dot="3"/>
+        <item rule-number="72" dot="3"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;)&quot;" state="151"/>
+          <transition type="shift" symbol="&quot;[&quot;" state="152"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="144">
       <itemset>
         <item rule-number="52" dot="1"/>
         <item rule-number="53" dot="1"/>
@@ -5037,7 +5114,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="142">
+    <state number="145">
       <itemset>
         <item rule-number="68" dot="3"/>
       </itemset>
@@ -5051,15 +5128,15 @@
       <solved-conflicts/>
     </state>
 
-    <state number="143">
+    <state number="146">
       <itemset>
         <item rule-number="23" dot="7"/>
         <item rule-number="43" dot="1"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;}&quot;" state="148"/>
-          <transition type="shift" symbol="&quot;,&quot;" state="149"/>
+          <transition type="shift" symbol="&quot;}&quot;" state="153"/>
+          <transition type="shift" symbol="&quot;,&quot;" state="154"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -5067,7 +5144,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="144">
+    <state number="147">
       <itemset>
         <item rule-number="42" dot="1">
           <lookaheads>
@@ -5101,7 +5178,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="145">
+    <state number="148">
       <itemset>
         <item rule-number="33" dot="8"/>
       </itemset>
@@ -5115,13 +5192,13 @@
       <solved-conflicts/>
     </state>
 
-    <state number="146">
+    <state number="149">
       <itemset>
         <item rule-number="38" dot="8"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;if&quot;" state="150"/>
+          <transition type="shift" symbol="&quot;if&quot;" state="155"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -5129,7 +5206,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="147">
+    <state number="150">
       <itemset>
         <item rule-number="8" dot="0"/>
         <item rule-number="9" dot="0"/>
@@ -5137,7 +5214,7 @@
       </itemset>
       <actions>
         <transitions>
-          <transition type="goto" symbol="zero_or_more_statements" state="151"/>
+          <transition type="goto" symbol="zero_or_more_statements" state="156"/>
         </transitions>
         <errors/>
         <reductions>
@@ -5147,7 +5224,35 @@
       <solved-conflicts/>
     </state>
 
-    <state number="148">
+    <state number="151">
+      <itemset>
+        <item rule-number="71" dot="4"/>
+      </itemset>
+      <actions>
+        <transitions/>
+        <errors/>
+        <reductions>
+          <reduction symbol="$default" rule="71" enabled="true"/>
+        </reductions>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="152">
+      <itemset>
+        <item rule-number="72" dot="4"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;]&quot;" state="157"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="153">
       <itemset>
         <item rule-number="23" dot="8"/>
       </itemset>
@@ -5161,7 +5266,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="149">
+    <state number="154">
       <itemset>
         <item rule-number="43" dot="2"/>
         <item rule-number="44" dot="0"/>
@@ -5202,7 +5307,7 @@
           <transition type="shift" symbol="&quot;zeroargfunc&quot;" state="48"/>
           <transition type="shift" symbol="&quot;oneargfunc&quot;" state="49"/>
           <transition type="shift" symbol="&quot;twoargfunc&quot;" state="50"/>
-          <transition type="goto" symbol="exp" state="152"/>
+          <transition type="goto" symbol="exp" state="158"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -5210,7 +5315,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="150">
+    <state number="155">
       <itemset>
         <item rule-number="38" dot="9"/>
       </itemset>
@@ -5224,7 +5329,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="151">
+    <state number="156">
       <itemset>
         <item rule-number="9" dot="1"/>
         <item rule-number="12" dot="0"/>
@@ -5295,7 +5400,21 @@
       <solved-conflicts/>
     </state>
 
-    <state number="152">
+    <state number="157">
+      <itemset>
+        <item rule-number="72" dot="5"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;,&quot;" state="159"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="158">
       <itemset>
         <item rule-number="43" dot="3">
           <lookaheads>
@@ -5324,6 +5443,174 @@
         <errors/>
         <reductions>
           <reduction symbol="$default" rule="43" enabled="true"/>
+        </reductions>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="159">
+      <itemset>
+        <item rule-number="44" dot="0"/>
+        <item rule-number="45" dot="0"/>
+        <item rule-number="46" dot="0"/>
+        <item rule-number="47" dot="0"/>
+        <item rule-number="48" dot="0"/>
+        <item rule-number="49" dot="0"/>
+        <item rule-number="50" dot="0"/>
+        <item rule-number="51" dot="0"/>
+        <item rule-number="52" dot="0"/>
+        <item rule-number="53" dot="0"/>
+        <item rule-number="54" dot="0"/>
+        <item rule-number="55" dot="0"/>
+        <item rule-number="56" dot="0"/>
+        <item rule-number="57" dot="0"/>
+        <item rule-number="58" dot="0"/>
+        <item rule-number="59" dot="0"/>
+        <item rule-number="60" dot="0"/>
+        <item rule-number="61" dot="0"/>
+        <item rule-number="62" dot="0"/>
+        <item rule-number="63" dot="0"/>
+        <item rule-number="64" dot="0"/>
+        <item rule-number="65" dot="0"/>
+        <item rule-number="72" dot="6"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;connected&quot;" state="38"/>
+          <transition type="shift" symbol="&quot;not&quot;" state="39"/>
+          <transition type="shift" symbol="&quot;trigger&quot;" state="40"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="41"/>
+          <transition type="shift" symbol="&quot;(&quot;" state="42"/>
+          <transition type="shift" symbol="&quot;identifier&quot;" state="43"/>
+          <transition type="shift" symbol="&quot;number&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;in_port&quot;" state="46"/>
+          <transition type="shift" symbol="&quot;out_port&quot;" state="47"/>
+          <transition type="shift" symbol="&quot;zeroargfunc&quot;" state="48"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="49"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="50"/>
+          <transition type="goto" symbol="exp" state="160"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="160">
+      <itemset>
+        <item rule-number="52" dot="1"/>
+        <item rule-number="53" dot="1"/>
+        <item rule-number="54" dot="1"/>
+        <item rule-number="55" dot="1"/>
+        <item rule-number="56" dot="1"/>
+        <item rule-number="57" dot="1"/>
+        <item rule-number="58" dot="1"/>
+        <item rule-number="72" dot="7"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;and&quot;" state="74"/>
+          <transition type="shift" symbol="&quot;or&quot;" state="75"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="77"/>
+          <transition type="shift" symbol="&quot;+&quot;" state="78"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="79"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="80"/>
+          <transition type="shift" symbol="&quot;,&quot;" state="161"/>
+          <transition type="shift" symbol="&quot;comparison&quot;" state="81"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="161">
+      <itemset>
+        <item rule-number="44" dot="0"/>
+        <item rule-number="45" dot="0"/>
+        <item rule-number="46" dot="0"/>
+        <item rule-number="47" dot="0"/>
+        <item rule-number="48" dot="0"/>
+        <item rule-number="49" dot="0"/>
+        <item rule-number="50" dot="0"/>
+        <item rule-number="51" dot="0"/>
+        <item rule-number="52" dot="0"/>
+        <item rule-number="53" dot="0"/>
+        <item rule-number="54" dot="0"/>
+        <item rule-number="55" dot="0"/>
+        <item rule-number="56" dot="0"/>
+        <item rule-number="57" dot="0"/>
+        <item rule-number="58" dot="0"/>
+        <item rule-number="59" dot="0"/>
+        <item rule-number="60" dot="0"/>
+        <item rule-number="61" dot="0"/>
+        <item rule-number="62" dot="0"/>
+        <item rule-number="63" dot="0"/>
+        <item rule-number="64" dot="0"/>
+        <item rule-number="65" dot="0"/>
+        <item rule-number="72" dot="8"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;connected&quot;" state="38"/>
+          <transition type="shift" symbol="&quot;not&quot;" state="39"/>
+          <transition type="shift" symbol="&quot;trigger&quot;" state="40"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="41"/>
+          <transition type="shift" symbol="&quot;(&quot;" state="42"/>
+          <transition type="shift" symbol="&quot;identifier&quot;" state="43"/>
+          <transition type="shift" symbol="&quot;number&quot;" state="44"/>
+          <transition type="shift" symbol="&quot;note&quot;" state="45"/>
+          <transition type="shift" symbol="&quot;in_port&quot;" state="46"/>
+          <transition type="shift" symbol="&quot;out_port&quot;" state="47"/>
+          <transition type="shift" symbol="&quot;zeroargfunc&quot;" state="48"/>
+          <transition type="shift" symbol="&quot;oneargfunc&quot;" state="49"/>
+          <transition type="shift" symbol="&quot;twoargfunc&quot;" state="50"/>
+          <transition type="goto" symbol="exp" state="162"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="162">
+      <itemset>
+        <item rule-number="52" dot="1"/>
+        <item rule-number="53" dot="1"/>
+        <item rule-number="54" dot="1"/>
+        <item rule-number="55" dot="1"/>
+        <item rule-number="56" dot="1"/>
+        <item rule-number="57" dot="1"/>
+        <item rule-number="58" dot="1"/>
+        <item rule-number="72" dot="9"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;and&quot;" state="74"/>
+          <transition type="shift" symbol="&quot;or&quot;" state="75"/>
+          <transition type="shift" symbol="&quot;-&quot;" state="77"/>
+          <transition type="shift" symbol="&quot;+&quot;" state="78"/>
+          <transition type="shift" symbol="&quot;*&quot;" state="79"/>
+          <transition type="shift" symbol="&quot;/&quot;" state="80"/>
+          <transition type="shift" symbol="&quot;)&quot;" state="163"/>
+          <transition type="shift" symbol="&quot;comparison&quot;" state="81"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="163">
+      <itemset>
+        <item rule-number="72" dot="10"/>
+      </itemset>
+      <actions>
+        <transitions/>
+        <errors/>
+        <reductions>
+          <reduction symbol="$default" rule="72" enabled="true"/>
         </reductions>
       </actions>
       <solved-conflicts/>
