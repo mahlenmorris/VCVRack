@@ -20,6 +20,9 @@ struct TTY : Module {
 	enum InputId {
 		V1_INPUT,
     TEXT1_INPUT,
+    V2_INPUT,
+    TEXT2_INPUT,
+		TEXT3_INPUT,
 		INPUTS_LEN
 	};
 	enum OutputId {
@@ -39,8 +42,13 @@ struct TTY : Module {
     configParam(SAMPLE_PARAM, 1000, 0, 50, "Number of samples skipped between logging attempts");
     getParamQuantity(SAMPLE_PARAM)->snapEnabled = true;
 		configInput(V1_INPUT, "New values will be shown on screen");
+    configInput(V2_INPUT, "New values will be shown on screen");
     configInput(TEXT1_INPUT, "Input for Tipsy text info");
+    configInput(TEXT2_INPUT, "Input for Tipsy text info");
+    configInput(TEXT3_INPUT, "Input for Tipsy text info");
     decoder1.provideDataBuffer(recvBuffer1, recvBufferSize);
+    decoder2.provideDataBuffer(recvBuffer2, recvBufferSize);
+    decoder3.provideDataBuffer(recvBuffer3, recvBufferSize);
     additions.write_ok = true;
   }
 
@@ -90,20 +98,26 @@ struct TTY : Module {
 
   void process(const ProcessArgs& args) override {
     bool paused = params[PAUSE_PARAM].getValue() > 0;
-    tick_count += 1;
-    if (tick_count > params[SAMPLE_PARAM].getValue()) {
-      tick_count = 0;
-      // Unpausing puts the cursor at the end of the text.
-      // If we don't then text gets added but scrolls off the screen.
-      if (!paused && was_paused) {
-        cursor_override = text.size();
-      }
 
-      if ((tick_count == 0) && inputs[V1_INPUT].isConnected()) {
-        float v1 = inputs[V1_INPUT].getVoltage();
-        if (v1 != previous_v1) {  // TODO: use instead the minimum distance calculation.
-          previous_v1 = v1;
-          if (!paused) {
+    bool clear_command_received = false;
+    // Unpausing puts the cursor at the end of the text.
+    // If we don't then text gets added but scrolls off the screen.
+    if (!paused && was_paused) {
+      // Setting to outlandishly high value; will be changed to "end-of-file"
+      // by TTYTextField.
+      cursor_override = 2000000;
+    }
+
+    if (!paused) {
+      tick_count += 1;
+      // ">" is correct here. The SAMPLE_PARAM is really the number of samples
+      // to skip, and can go to zero.
+      if (tick_count > params[SAMPLE_PARAM].getValue()) {
+        tick_count = 0;
+        if (inputs[V1_INPUT].isConnected()) {
+          float v1 = inputs[V1_INPUT].getVoltage();
+          if (v1 != previous_v1) {  // TODO: use instead the minimum distance calculation.
+            previous_v1 = v1;
             std::string str_value = std::to_string(v1);
             // Hmmmm; should I be comparing the string values instead? It would be
             // odd to see the same string twice on a tighly changing value....
@@ -114,21 +128,16 @@ struct TTY : Module {
             add_string(next);
           }
         }
-      }
-      // TODO: do other value inputs.
-    }
-    bool clear_command_received = false;
+        if (inputs[V2_INPUT].isConnected()) {
+          float v2 = inputs[V2_INPUT].getVoltage();
+          if (v2 != previous_v2) {  // TODO: use instead the minimum distance calculation.
+            previous_v2 = v2;
+            std::string str_value = std::to_string(v2);
+            // Hmmmm; should I be comparing the string values instead? It would be
+            // odd to see the same string twice on a tighly changing value....
 
-    if (inputs[TEXT1_INPUT].isConnected()) {
-      auto decoder_status = decoder1.readFloat(inputs[TEXT1_INPUT].getVoltage());
-      if (!decoder1.isError(decoder_status)) {
-        if (decoder_status == tipsy::DecoderResult::BODY_READY) {
-          // TODO: Obviously check more things like that it's a string type.
-          std::string next(std::string((const char *) recvBuffer1));
-          if (next.compare("!!CLEAR!!") == 0) {
-            clear_command_received = true;
-            clear_light_countdown = std::floor(args.sampleRate / 10.0f);
-          } else if (!paused) {
+            // Add to buffer.
+            std::string next(str_value);
             next.append("\n");
             add_string(next);
           }
@@ -136,6 +145,57 @@ struct TTY : Module {
       }
     }
 
+    if (!paused) {
+      if (inputs[TEXT1_INPUT].isConnected()) {
+        auto decoder_status = decoder1.readFloat(inputs[TEXT1_INPUT].getVoltage());
+        if (!decoder1.isError(decoder_status)) {
+          if (decoder_status == tipsy::DecoderResult::BODY_READY) {
+            // TODO: Obviously check more things like that it's a string type.
+            std::string next(std::string((const char *) recvBuffer1));
+            if (next.compare("!!CLEAR!!") == 0) {
+              clear_command_received = true;
+              clear_light_countdown = std::floor(args.sampleRate / 10.0f);
+            } else {
+              next.append("\n");
+              add_string(next);
+            }
+          }
+        }
+      }
+      if (inputs[TEXT2_INPUT].isConnected()) {
+        auto decoder_status = decoder2.readFloat(inputs[TEXT2_INPUT].getVoltage());
+        if (!decoder2.isError(decoder_status)) {
+          if (decoder_status == tipsy::DecoderResult::BODY_READY) {
+            // TODO: Obviously check more things like that it's a string type.
+            std::string next(std::string((const char *) recvBuffer2));
+            if (next.compare("!!CLEAR!!") == 0) {
+              clear_command_received = true;
+              clear_light_countdown = std::floor(args.sampleRate / 10.0f);
+            } else {
+              next.append("\n");
+              add_string(next);
+            }
+          }
+        }
+      }
+      if (inputs[TEXT3_INPUT].isConnected()) {
+        auto decoder_status = decoder3.readFloat(inputs[TEXT3_INPUT].getVoltage());
+        if (!decoder3.isError(decoder_status)) {
+          if (decoder_status == tipsy::DecoderResult::BODY_READY) {
+            // TODO: Obviously check more things like that it's a string type.
+            std::string next(std::string((const char *) recvBuffer3));
+            if (next.compare("!!CLEAR!!") == 0) {
+              clear_command_received = true;
+              clear_light_countdown = std::floor(args.sampleRate / 10.0f);
+            } else {
+              next.append("\n");
+              add_string(next);
+            }
+          }
+        }
+      }
+    }
+    was_paused = paused;
     // Buttons.
     // Note that we don't bother to set clear_light_countdown when the user
     // presses the button; we just light up the button while it's
@@ -146,8 +206,6 @@ struct TTY : Module {
     if (clear) {
       text.clear();
     }
-
-    was_paused = paused;
 
     // Lights.
     if (clear_light_countdown > 0) {
@@ -161,6 +219,10 @@ struct TTY : Module {
   static constexpr size_t recvBufferSize{1024 * 64};
   unsigned char recvBuffer1[recvBufferSize];
   tipsy::ProtocolDecoder decoder1;
+  unsigned char recvBuffer2[recvBufferSize];
+  tipsy::ProtocolDecoder decoder2;
+  unsigned char recvBuffer3[recvBufferSize];
+  tipsy::ProtocolDecoder decoder3;
 
   int clear_light_countdown = 0;
 
@@ -168,13 +230,14 @@ struct TTY : Module {
   // of the text.
   bool was_paused = false;
 
-  // Don't update every single tick. It spews out too many rows too quickly.
-  // TODO: let user control this. Small values let you see the Tipsy protocol
+  // Don't only update every single tick. It spews out too many rows too quickly.
+  // We let user control frequency. Small values let you see the Tipsy protocol
   // and find odd transients, larger values let you see the movement in
   // fewer lines.
   int tick_count = 0;
-  // Will want to rationalize this when there are more inputs.
+
   float previous_v1 = -1000.29349;  // Some value it won't be.
+  float previous_v2 = -1000.29349;  // Some value it won't be.
 
   // Controls.
 
@@ -341,10 +404,7 @@ struct TTYTextField : STTextField {
       nvgFill(args.vg);
 
       if (module && module->cursor_override >= 0) {
-        // Undo/redo must have just happened.
-        // Move cursor (with no selection) to where the cursor was when we
-        // did edit.
-        cursor = module->cursor_override;
+        cursor = std::min(module->cursor_override, (int) module->text.size());
         selection = module->cursor_override;
         module->cursor_override = -1;
         // Since we just forcibly moved the cursor, need to reposition window
@@ -378,25 +438,6 @@ struct TTYTextField : STTextField {
       make_additions(&(module->additions));
     }
 	}
-
-/* I think this is irrevelevant now?
-  // User has updated the text.
-	void onChange(const ChangeEvent& e) override {
-		if (module) {
-      // Sometimes the text isn't actually different. If I don't check
-      // this, I might get spurious history events.
-      // TODO: do I need this check anymore?
-      if (module->text != module->previous_text) {
-        APP->history->push(
-          new TTYUndoRedoAction(module->id, module->previous_text,
-                             module->text, module->previous_cursor, cursor));
-        module->previous_text = module->text;
-      }
-      module->previous_cursor = cursor;
-    }
-	}
-*/
-
 };
 
 static std::string module_browser_text =
@@ -482,19 +523,26 @@ struct TTYWidget : ModuleWidget {
     addChild(bottomRightScrew);
 
     addParam(createParamCentered<RoundBlackKnob>(
-         mm2px(Vec(8.882, 46.0)), module, TTY::SAMPLE_PARAM));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 18.0)), module,
-        TTY::V1_INPUT));
+         mm2px(Vec(8.938, 46.0)), module, TTY::SAMPLE_PARAM));
     addParam(createLightParamCentered<VCVLightLatch<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 63.0)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 59.0)),
                                              module, TTY::PAUSE_PARAM,
                                              TTY::PAUSE_LIGHT));
     addParam(createLightParamCentered<VCVLightButton<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 80.0)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 71.0)),
                                              module, TTY::CLEAR_PARAM,
                                              TTY::CLEAR_LIGHT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 100.0)), module,
+
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 16.0)), module,
+        TTY::V1_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 29.0)), module,
+        TTY::V2_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 86.0)), module,
         TTY::TEXT1_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 101.872)), module,
+        TTY::TEXT2_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 118.579)), module,
+        TTY::TEXT3_INPUT));
 
     textDisplay = createWidget<TTYDisplay>(mm2px(Vec(18.08, 5.9)));
 		textDisplay->box.size = mm2px(Vec(60.0, 117.0));
