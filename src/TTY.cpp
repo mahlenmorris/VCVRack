@@ -49,7 +49,6 @@ struct TTY : Module {
     decoder1.provideDataBuffer(recvBuffer1, recvBufferSize);
     decoder2.provideDataBuffer(recvBuffer2, recvBufferSize);
     decoder3.provideDataBuffer(recvBuffer3, recvBufferSize);
-    additions.write_ok = true;
   }
 
   json_t* dataToJson() override {
@@ -86,13 +85,11 @@ struct TTY : Module {
     }
   }
 
-  void add_string(const std::string next_string) {
-    // We add to the vector, but we limit how large the pending queue
+  void add_string(const std::string &next_string) {
+    // We add to the queue, but we limit how large the pending queue
     // can get.
-    if (additions.text_additions.size() < 50) {
-      if (additions.write_ok) {
-        additions.text_additions.push(next_string);
-      }
+    if (additions.text_additions.size() < additions.text_additions.max_size()) {
+      additions.text_additions.push(next_string);
     }
   }
 
@@ -145,9 +142,10 @@ struct TTY : Module {
       }
     }
 
-    if (!paused) {
-      if (inputs[TEXT1_INPUT].isConnected()) {
-        auto decoder_status = decoder1.readFloat(inputs[TEXT1_INPUT].getVoltage());
+    if (inputs[TEXT1_INPUT].isConnected()) {
+      auto decoder_status = decoder1.readFloat(inputs[TEXT1_INPUT].getVoltage());
+      // Condense all of this into a class.
+      if (!paused) {
         if (!decoder1.isError(decoder_status)) {
           if (decoder_status == tipsy::DecoderResult::BODY_READY) {
             // TODO: Obviously check more things like that it's a string type.
@@ -162,8 +160,10 @@ struct TTY : Module {
           }
         }
       }
-      if (inputs[TEXT2_INPUT].isConnected()) {
-        auto decoder_status = decoder2.readFloat(inputs[TEXT2_INPUT].getVoltage());
+    }
+    if (inputs[TEXT2_INPUT].isConnected()) {
+      auto decoder_status = decoder2.readFloat(inputs[TEXT2_INPUT].getVoltage());
+      if (!paused) {
         if (!decoder2.isError(decoder_status)) {
           if (decoder_status == tipsy::DecoderResult::BODY_READY) {
             // TODO: Obviously check more things like that it's a string type.
@@ -178,8 +178,10 @@ struct TTY : Module {
           }
         }
       }
-      if (inputs[TEXT3_INPUT].isConnected()) {
-        auto decoder_status = decoder3.readFloat(inputs[TEXT3_INPUT].getVoltage());
+    }
+    if (inputs[TEXT3_INPUT].isConnected()) {
+      auto decoder_status = decoder3.readFloat(inputs[TEXT3_INPUT].getVoltage());
+      if (!paused) {
         if (!decoder3.isError(decoder_status)) {
           if (decoder_status == tipsy::DecoderResult::BODY_READY) {
             // TODO: Obviously check more things like that it's a string type.
@@ -418,24 +420,26 @@ struct TTYTextField : STTextField {
 
 	void step() override {
 		STTextField::step();
-    if (module && (color_scheme != module->screen_colors ||
-                   module->editor_refresh)) {
-      // Note: this doesn't actully care about editor_refresh. But this cleared
-      // up a bug about duplicated windows not keeping the same color.
-      color_scheme = module->screen_colors;
-      color = int_to_color(color_scheme >> 24);
-      bgColor = int_to_color(color_scheme & 0xffffff);
-    }
-		if (module && module->editor_refresh) {
-      // TODO: is this checked often enough? I don't know when step()
-      // is called.
-      // Text has been changed, editor needs to update itself.
-      // This happens when the module loads, and on undo/redo.
-			textUpdated();
-			module->editor_refresh = false;
-		}
-    if (module && module->additions.text_additions.size() > 0) {
-      make_additions(&(module->additions));
+    if (module) {
+      if (module->additions.text_additions.size() > 0) {
+        make_additions(&(module->additions));
+        module->editor_refresh = true;
+      }
+      if (color_scheme != module->screen_colors || module->editor_refresh) {
+        // Note: this doesn't actully care about editor_refresh. But this cleared
+        // up a bug about duplicated windows not keeping the same color.
+        color_scheme = module->screen_colors;
+        color = int_to_color(color_scheme >> 24);
+        bgColor = int_to_color(color_scheme & 0xffffff);
+      }
+  		if (module->editor_refresh) {
+        // TODO: is this checked often enough? I don't know when step()
+        // is called.
+        // Text has been changed, editor needs to update itself.
+        // This happens when the module loads, and on undo/redo.
+  			textUpdated();
+  			module->editor_refresh = false;
+  		}
     }
 	}
 };

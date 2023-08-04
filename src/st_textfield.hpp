@@ -1,11 +1,10 @@
 #pragma once
 #include "extended_text.h"
-
-#include <queue>
+#include "NoLockQueue.h"
 
 struct TTYQueue {
-  std::queue<std::string> text_additions;
-	bool write_ok;
+  // TODO: instead of string, string pointers, that the consumer deletes?
+  SpScLockFreeQueue<std::string, 50> text_additions;
 };
 
 // An expansion of the VCV TextField class, but allowing for features I wish

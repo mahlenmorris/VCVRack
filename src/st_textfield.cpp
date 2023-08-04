@@ -589,14 +589,9 @@ void STTextField::make_additions(TTYQueue *additions) {
 	int likely_ending_length = extended.line_map.size() +
 	                           additions->text_additions.size();
 	bool cursor_at_end = (cursor >= (int) text->size());  // TODO: incorrect!
-	// TODO: Let's tell the module not to add any strings while I'm doing this.
-	// Note: this isn't really as good a mutex, but getting a mutex in the
-	// process() thread is very problematic.
-	while (additions->text_additions.size() > 0) {
-		text->append(additions->text_additions.front());
-		additions->write_ok = false;
-		additions->text_additions.pop();
-		additions->write_ok = true;
+	std::string item;
+	while (additions->text_additions.pop(item)) {
+	  text->append(item);
 	}
 	// TODO: Shave off top lines if we're hitting the limit.
 	if (likely_ending_length >= ST_MAX_ROWS) {
