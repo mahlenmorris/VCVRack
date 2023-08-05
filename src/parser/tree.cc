@@ -138,6 +138,7 @@ std::string Expression::ComputeString() {
   } else if (type == STRINGFUNC) {
     if (operation == DEBUG) {
       if (subexpressions.size() == 2) {  // An array.
+        // Negative array indecies are ignored in BASICally.
         int start = std::max((int) floor(subexpressions[0].Compute()), 0);
         int end = std::max((int) floor(subexpressions[1].Compute()), 0);
         if (end < start) {
@@ -153,7 +154,12 @@ std::string Expression::ComputeString() {
           if (index > start) {
             str_value.append(", ");
           }
-          str_value.append(ShortPrint(array_ptr->at(index)));
+          // Array may not be as long as the end index thinks it is.
+          if (index >= (int) array_ptr->size()) {
+            str_value.append("0");
+          } else {
+            str_value.append(ShortPrint(array_ptr->at(index)));
+          }
         }
         str_value.append("}");
         return str_value;

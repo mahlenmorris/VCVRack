@@ -721,6 +721,41 @@ TEST(RunTest, RunsStringFunctions2) {
   EXPECT_EQ("a[0] = {5, 4, 8.800000, 2, 1, 0}", test_env.text_sent[0]);
 }
 
+TEST(RunTest, RunsStringFunctions3) {
+  Driver drv;
+  PCodeTranslator translator;
+  TestEnvironment test_env;
+  drv.SetEnvironment(&test_env);
+  CodeBlock block(&test_env);
+
+  // Make sure works even when debug() is first mention of the variable.
+  EXPECT_EQ(0, drv.parse("print(out1, debug(a[], 0, 5))"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  ASSERT_EQ(0, test_env.text_sent.size());
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  ASSERT_EQ(1, test_env.text_sent.size());
+  EXPECT_EQ("a[0] = {0, 0, 0, 0, 0, 0}", test_env.text_sent[0]);
+}
+
+TEST(RunTest, RunsStringFunctions4) {
+  Driver drv;
+  PCodeTranslator translator;
+  TestEnvironment test_env;
+  drv.SetEnvironment(&test_env);
+  CodeBlock block(&test_env);
+
+  // Make sure works even when debug() is first mention of the variable.
+  EXPECT_EQ(0, drv.parse("print(OUT3, debug(foo))\nfoo = 4\nprint(OUT3, debug(foo))"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  ASSERT_EQ(0, test_env.text_sent.size());
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  ASSERT_EQ(2, test_env.text_sent.size());
+  EXPECT_EQ("foo = 0", test_env.text_sent[0]);
+  EXPECT_EQ("foo = 4", test_env.text_sent[1]);
+}
+
 TEST(RunTest, StartTest) {
   Driver drv;
   PCodeTranslator translator;
