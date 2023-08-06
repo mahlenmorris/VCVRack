@@ -7,7 +7,23 @@
 
 #include "plugin.hpp"
 #include "st_textfield.hpp"
-#include "tipsy/tipsy.h"
+#include <tipsy/tipsy.h>
+
+/*
+  TODO's:
+  Change Rate from samples to ms of skipped observations.
+  Add menu option to save/load text.
+  Try to get the scroll position to not reset to the top when text is deleted.
+  Add menu option to preface sources.
+  Add new type and color to BASICally and Fermata?
+  Make sure the Text inputs are evenly spaced.
+  Move the RATE knob to the top, to suggest it only deals with V1 and V2.
+  Maybe put a box around RATE, V1, and V2, to suggest their interation.
+  Add Fermata docs to TTY Examples.
+  Write docs for TTY.
+  Chat with paul+paul about documenting Tipsy.
+
+*/
 
 static constexpr size_t recvBufferSize{1024 * 64};
 

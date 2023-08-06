@@ -13,7 +13,7 @@
 #include "parser/driver.hh"
 #include "pcode_trans.h"
 #include "st_textfield.hpp"
-#include "tipsy/tipsy.h"  // Library for sending text.
+#include <tipsy/tipsy.h>  // Library for sending text.
 
 enum Style {
   ALWAYS_STYLE,
@@ -98,7 +98,7 @@ struct Basically : Module {
       // Do we need to do anything?
       if (unsent_queue.empty() && encoder.isDormant()) {
         outputs->at(port_index).setVoltage(0.0f);
-        return;        
+        return;
       }
       if (!unsent_queue.empty() && encoder.isDormant()) {
         // Have message waiting, but not currently sending anything.
