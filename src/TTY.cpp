@@ -9,6 +9,22 @@
 #include "st_textfield.hpp"
 #include "tipsy/tipsy.h"
 
+static constexpr size_t recvBufferSize{1024 * 64};
+
+struct TextInput {
+  int id;
+  unsigned char recvBuffer[recvBufferSize];
+  tipsy::ProtocolDecoder decoder;
+
+  TextInput() {
+    decoder.provideDataBuffer(recvBuffer, recvBufferSize);
+  }
+
+  void init(int the_id) {
+    id = the_id;
+  }
+};
+
 struct TTY : Module {
   static const int DEFAULT_WIDTH = 18;
   enum ParamId {
@@ -39,16 +55,16 @@ struct TTY : Module {
     configSwitch(PAUSE_PARAM, 0, 1, 0, "Stops changing the screen contents",
                  {"Writing", "Paused"});
 		configParam(CLEAR_PARAM, 0.f, 1.f, 0.f, "Clears all output");
-    configParam(SAMPLE_PARAM, 1000, 0, 50, "Number of samples skipped between logging attempts");
+    configParam(SAMPLE_PARAM, 1000, 0, 500, "Number of samples skipped between logging attempts");
     getParamQuantity(SAMPLE_PARAM)->snapEnabled = true;
 		configInput(V1_INPUT, "New values will be shown on screen");
     configInput(V2_INPUT, "New values will be shown on screen");
     configInput(TEXT1_INPUT, "Input for Tipsy text info");
     configInput(TEXT2_INPUT, "Input for Tipsy text info");
     configInput(TEXT3_INPUT, "Input for Tipsy text info");
-    decoder1.provideDataBuffer(recvBuffer1, recvBufferSize);
-    decoder2.provideDataBuffer(recvBuffer2, recvBufferSize);
-    decoder3.provideDataBuffer(recvBuffer3, recvBufferSize);
+    ti1.init(TEXT1_INPUT);
+    ti2.init(TEXT2_INPUT);
+    ti3.init(TEXT3_INPUT);
   }
 
   json_t* dataToJson() override {
@@ -93,10 +109,27 @@ struct TTY : Module {
     }
   }
 
+  void processTextInput(bool paused, TextInput *text_input) {
+    if (inputs[text_input->id].isConnected()) {
+      auto decoder_status = text_input->decoder.readFloat(
+          inputs[text_input->id].getVoltage());
+      if (!paused && !text_input->decoder.isError(decoder_status) &&
+          decoder_status == tipsy::DecoderResult::BODY_READY &&
+          std::strcmp(text_input->decoder.getMimeType(), "text/plain") == 0) {
+        std::string next(std::string((const char *) text_input->recvBuffer));
+        if (next.compare("!!CLEAR!!") == 0) {
+          clear_command_received = true;
+        } else {
+          next.append("\n");
+          add_string(next);
+        }
+      }
+    }
+  }
+
   void process(const ProcessArgs& args) override {
     bool paused = params[PAUSE_PARAM].getValue() > 0;
 
-    bool clear_command_received = false;
     // Unpausing puts the cursor at the end of the text.
     // If we don't then text gets added but scrolls off the screen.
     if (!paused && was_paused) {
@@ -142,61 +175,15 @@ struct TTY : Module {
       }
     }
 
-    if (inputs[TEXT1_INPUT].isConnected()) {
-      auto decoder_status = decoder1.readFloat(inputs[TEXT1_INPUT].getVoltage());
-      // Condense all of this into a class.
-      if (!paused) {
-        if (!decoder1.isError(decoder_status)) {
-          if (decoder_status == tipsy::DecoderResult::BODY_READY) {
-            // TODO: Obviously check more things like that it's a string type.
-            std::string next(std::string((const char *) recvBuffer1));
-            if (next.compare("!!CLEAR!!") == 0) {
-              clear_command_received = true;
-              clear_light_countdown = std::floor(args.sampleRate / 10.0f);
-            } else {
-              next.append("\n");
-              add_string(next);
-            }
-          }
-        }
-      }
+    // Processing text can set this to true.
+    clear_command_received = false;
+    processTextInput(paused, &ti1);
+    processTextInput(paused, &ti2);
+    processTextInput(paused, &ti3);
+    if (clear_command_received) {
+      clear_light_countdown = std::floor(args.sampleRate / 10.0f);
     }
-    if (inputs[TEXT2_INPUT].isConnected()) {
-      auto decoder_status = decoder2.readFloat(inputs[TEXT2_INPUT].getVoltage());
-      if (!paused) {
-        if (!decoder2.isError(decoder_status)) {
-          if (decoder_status == tipsy::DecoderResult::BODY_READY) {
-            // TODO: Obviously check more things like that it's a string type.
-            std::string next(std::string((const char *) recvBuffer2));
-            if (next.compare("!!CLEAR!!") == 0) {
-              clear_command_received = true;
-              clear_light_countdown = std::floor(args.sampleRate / 10.0f);
-            } else {
-              next.append("\n");
-              add_string(next);
-            }
-          }
-        }
-      }
-    }
-    if (inputs[TEXT3_INPUT].isConnected()) {
-      auto decoder_status = decoder3.readFloat(inputs[TEXT3_INPUT].getVoltage());
-      if (!paused) {
-        if (!decoder3.isError(decoder_status)) {
-          if (decoder_status == tipsy::DecoderResult::BODY_READY) {
-            // TODO: Obviously check more things like that it's a string type.
-            std::string next(std::string((const char *) recvBuffer3));
-            if (next.compare("!!CLEAR!!") == 0) {
-              clear_command_received = true;
-              clear_light_countdown = std::floor(args.sampleRate / 10.0f);
-            } else {
-              next.append("\n");
-              add_string(next);
-            }
-          }
-        }
-      }
-    }
+
     was_paused = paused;
     // Buttons.
     // Note that we don't bother to set clear_light_countdown when the user
@@ -218,14 +205,9 @@ struct TTY : Module {
     lights[PAUSE_LIGHT].setBrightness(paused);
   }
 
-  static constexpr size_t recvBufferSize{1024 * 64};
-  unsigned char recvBuffer1[recvBufferSize];
-  tipsy::ProtocolDecoder decoder1;
-  unsigned char recvBuffer2[recvBufferSize];
-  tipsy::ProtocolDecoder decoder2;
-  unsigned char recvBuffer3[recvBufferSize];
-  tipsy::ProtocolDecoder decoder3;
+  TextInput ti1, ti2, ti3;
 
+  bool clear_command_received;
   int clear_light_countdown = 0;
 
   // If we transition from paused -> flowing, move the cursor to the bottom
@@ -445,7 +427,8 @@ struct TTYTextField : STTextField {
 };
 
 static std::string module_browser_text =
-  "TODO: write this text\n";
+  "Logs DISTINCT values coming in through V1 or V2.\n"
+  "And logs Tipsy text messages sent to TEXT1/2/3\n";
 
 struct TTYDisplay : LedDisplay {
   TTYTextField* textField;
@@ -613,6 +596,7 @@ struct TTYWidget : ModuleWidget {
       {"Amber on Black", 0xffc000000000},
       {"Blue on Black", 0x29b2ef000000},
       {"Black on White", 0x000000ffffff},
+      {"Black on Yellow (TTY Paper)", 0x000000edc672},
       {"Blue on White", 0x29b2efffffff}
     };
     MenuItem* color_menu = createSubmenuItem("Screen Colors", "",
@@ -629,6 +613,7 @@ struct TTYWidget : ModuleWidget {
 
     std::pair<std::string, std::string> fonts[] = {
       {"VCV font (like Notes)", "res/fonts/ShareTechMono-Regular.ttf"},
+      {"Veteran Typewriter (TTY-ish font)", "fonts/veteran-typewriter.regular.ttf"},
       {"RobotoMono Bold", "fonts/RobotoMono-Bold.ttf"},
       {"RobotoMono Light", "fonts/RobotoMono-Light.ttf"},
       {"RobotoMono Medium", "fonts/RobotoMono-Medium.ttf"},
