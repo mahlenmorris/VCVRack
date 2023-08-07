@@ -14,7 +14,6 @@
   Change Rate from samples to ms of skipped observations.
   Add menu option to save/load text.
   Try to get the scroll position to not reset to the top when text is deleted.
-  Add menu option to preface sources.
   Add new type and color to BASICally and Fermata?
   Make sure the Text inputs are evenly spaced.
   Move the RATE knob to the top, to suggest it only deals with V1 and V2.
@@ -22,13 +21,15 @@
   Add Fermata docs to TTY Examples.
   Write docs for TTY.
   Chat with paul+paul about documenting Tipsy.
-
+  Update BASICally docs!
+  Add new BASICally "text" section to context menu, like Math and Syntax.
 */
 
 static constexpr size_t recvBufferSize{1024 * 64};
 
 struct TextInput {
   int id;
+  std::string preface;
   unsigned char recvBuffer[recvBufferSize];
   tipsy::ProtocolDecoder decoder;
 
@@ -36,8 +37,9 @@ struct TextInput {
     decoder.provideDataBuffer(recvBuffer, recvBufferSize);
   }
 
-  void init(int the_id) {
+  void init(int the_id, const std::string &the_preface) {
     id = the_id;
+    preface = the_preface;
   }
 };
 
@@ -78,9 +80,9 @@ struct TTY : Module {
     configInput(TEXT1_INPUT, "Input for Tipsy text info");
     configInput(TEXT2_INPUT, "Input for Tipsy text info");
     configInput(TEXT3_INPUT, "Input for Tipsy text info");
-    ti1.init(TEXT1_INPUT);
-    ti2.init(TEXT2_INPUT);
-    ti3.init(TEXT3_INPUT);
+    ti1.init(TEXT1_INPUT, "TEXT1");
+    ti2.init(TEXT2_INPUT, "TEXT2");
+    ti3.init(TEXT3_INPUT, "TEXT3");
   }
 
   json_t* dataToJson() override {
@@ -92,6 +94,10 @@ struct TTY : Module {
       json_object_set_new(rootJ, "font_choice",
                           json_stringn(font_choice.c_str(), font_choice.size()));
     }
+    if (preface_outputs) {
+      json_object_set_new(rootJ, "preface_outputs", json_integer(1));
+    }
+
     return rootJ;
   }
 
@@ -105,6 +111,12 @@ struct TTY : Module {
     json_t* font_choiceJ = json_object_get(rootJ, "font_choice");
 		if (font_choiceJ) {
 			font_choice = json_string_value(font_choiceJ);
+    }
+    json_t* preface_outputsJ = json_object_get(rootJ, "preface_outputs");
+    if (preface_outputsJ) {
+      preface_outputs = json_integer_value(preface_outputsJ) == 1;
+    } else {
+      preface_outputs = false;
     }
   }
 
@@ -136,6 +148,10 @@ struct TTY : Module {
         if (next.compare("!!CLEAR!!") == 0) {
           clear_command_received = true;
         } else {
+          if (preface_outputs) {
+            next.insert(0, "> ");
+            next.insert(0, text_input->preface);
+          }
           next.append("\n");
           add_string(next);
         }
@@ -170,6 +186,9 @@ struct TTY : Module {
 
             // Add to buffer.
             std::string next(str_value);
+            if (preface_outputs) {
+              next.insert(0, "V1> ");
+            }
             next.append("\n");
             add_string(next);
           }
@@ -184,6 +203,9 @@ struct TTY : Module {
 
             // Add to buffer.
             std::string next(str_value);
+            if (preface_outputs) {
+              next.insert(0, "V2> ");
+            }
             next.append("\n");
             add_string(next);
           }
@@ -248,6 +270,8 @@ struct TTY : Module {
   std::string text;
   // Text to be added to the bottom of the screen.
   TTYQueue additions;
+  // Preface outputs with source port when true; set via context menu.
+  bool preface_outputs = false;
 
   // Amber on Black is the default; it matches the !!!! decor perfectly.
   long long int screen_colors = 0xffc000000000;
@@ -603,6 +627,12 @@ struct TTYWidget : ModuleWidget {
 
   void appendContextMenu(Menu* menu) override {
     TTY* module = dynamic_cast<TTY*>(this->module);
+    menu->addChild(new MenuSeparator);
+
+    // Some functionality choices.
+    menu->addChild(createBoolPtrMenuItem("Preface lines with source port", "",
+                                          &module->preface_outputs));
+
     // Add color choices.
     menu->addChild(new MenuSeparator);
     std::pair<std::string, long long int> colors[] = {
