@@ -89,7 +89,8 @@ struct Basically : Module {
 
     void AddToQueue(const std::string &text) {
       // If there's enough of a backlog, we shed incoming load.
-      if (unsent_queue.size() < 6) {
+      // Not that it takes very long to send a message.
+      if (unsent_queue.size() < 101) {
         unsent_queue.push(text);
       }
     }
@@ -169,9 +170,8 @@ struct Basically : Module {
         triggers[index] = trig;
       }
 
-      // TODO: reset the TextEncoders? Or are they not really considered
-      // running code? As far as user is concerned, the text is already sent,
-      // right?
+      // Currently choosing not to reset the TextEncoders. As far as user is
+      // concerned, the text is already sent, right?
     }
 
     void UpdateTriggers() {

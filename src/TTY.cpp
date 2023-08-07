@@ -297,11 +297,6 @@ struct TTY : Module {
   // But we don't actully have a good pointer to the text field.
   // drawLayer() uses this if it's > -1.
   int cursor_override = -1;
-  // The undo/redo sometimes needs to reset the module position.
-  // But we don't actully have a good pointer to the TTYWidget.
-  // TTYWidget::step() uses this if update_pos is set.
-  float box_pos_x;
-  bool update_pos = false;
   // Can be overriden by saved menu choice.
   std::string font_choice = "fonts/RobotoSlab-Regular.ttf";
 };
@@ -309,13 +304,9 @@ struct TTY : Module {
 // Adds support for undo/redo in the text field where people type programs.
 struct TTYUndoRedoAction : history::ModuleAction {
   int old_width, new_width;
-  // Having left-side resize means the 'box' for the module can move.
-  float old_posx, new_posx;
 
-  TTYUndoRedoAction(int64_t id, int old_width, int new_width,
-                        float old_posx, float new_posx) :
-      old_width{old_width}, new_width{new_width}, old_posx{old_posx},
-      new_posx{new_posx} {
+  TTYUndoRedoAction(int64_t id, int old_width, int new_width) :
+      old_width{old_width}, new_width{new_width} {
     moduleId = id;
     name = "module width change";
   }
@@ -323,8 +314,6 @@ struct TTYUndoRedoAction : history::ModuleAction {
     TTY *module = dynamic_cast<TTY*>(APP->engine->getModule(moduleId));
     if (module) {
       module->width = this->old_width;
-      module->box_pos_x = this->old_posx;  // Used by TTYWidget::step.
-      module->update_pos = true;
     }
   }
 
@@ -332,8 +321,6 @@ struct TTYUndoRedoAction : history::ModuleAction {
     TTY *module = dynamic_cast<TTY*>(APP->engine->getModule(moduleId));
     if (module) {
       module->width = this->new_width;
-      module->box_pos_x = this->new_posx;
-      module->update_pos = true;
     }
   }
 };
@@ -345,7 +332,6 @@ struct TTYModuleResizeHandle : OpaqueWidget {
 	Vec dragPos;
 	Rect originalBox;
 	TTY* module;
-  bool right = false;  // True for one on the right side.
 
 	TTYModuleResizeHandle() {
     // One hole wide and full length tall.
@@ -375,18 +361,10 @@ struct TTYModuleResizeHandle : OpaqueWidget {
     // Minimum and maximum number of holes we allow the module to be.
 		const float minWidth = 4 * RACK_GRID_WIDTH;
     const float maxWidth = 64 * RACK_GRID_WIDTH;
-    if (right) {
-  		newBox.size.x += deltaX;
-  		newBox.size.x = std::fmax(newBox.size.x, minWidth);
-      newBox.size.x = std::fmin(newBox.size.x, maxWidth);
-  		newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
-    } else {
-      newBox.size.x -= deltaX;
-  		newBox.size.x = std::fmax(newBox.size.x, minWidth);
-      newBox.size.x = std::fmin(newBox.size.x, maxWidth);
-  		newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
-      newBox.pos.x = originalBox.pos.x + originalBox.size.x - newBox.size.x;
-    }
+		newBox.size.x += deltaX;
+		newBox.size.x = std::fmax(newBox.size.x, minWidth);
+    newBox.size.x = std::fmin(newBox.size.x, maxWidth);
+		newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
 		// Set box and test whether it's valid.
 		mw->box = newBox;
 		if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
@@ -398,8 +376,7 @@ struct TTYModuleResizeHandle : OpaqueWidget {
       // different module's move will cause them to overlap (aka, a
       // transporter malfunction).
       APP->history->push(
-        new TTYUndoRedoAction(module->id, original_width, module->width,
-                                  oldBox.pos.x, mw->box.pos.x));
+        new TTYUndoRedoAction(module->id, original_width, module->width));
     }
 	}
 
@@ -594,7 +571,6 @@ struct TTYWidget : ModuleWidget {
 
     // Resize bar on right.
     rightHandle = new TTYModuleResizeHandle;
-    rightHandle->right = true;
 		rightHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module
     // browser.
@@ -619,10 +595,6 @@ struct TTYWidget : ModuleWidget {
       } else {
         topRightScrew->show();
         bottomRightScrew->show();
-      }
-      if (module->update_pos) {
-        module->update_pos = false;
-        box.pos.x = module->box_pos_x;
       }
 		} else {
       // Like when showing the module in the module browser.
