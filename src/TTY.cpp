@@ -15,9 +15,6 @@
   Add menu option to save/load text.
   Try to get the scroll position to not reset to the top when text is deleted.
   Add new type and color to BASICally and Fermata?
-  Make sure the Text inputs are evenly spaced.
-  Move the RATE knob to the top, to suggest it only deals with V1 and V2.
-  Maybe put a box around RATE, V1, and V2, to suggest their interaction.
   Add Fermata docs to TTY Examples.
   Write docs for TTY.
   Chat with paul+paul about documenting Tipsy.
@@ -70,11 +67,10 @@ struct TTY : Module {
 
   TTY() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-    configSwitch(PAUSE_PARAM, 0, 1, 0, "Stops changing the screen contents",
+    configSwitch(PAUSE_PARAM, 0, 1, 0, "Stop writing to output",
                  {"Writing", "Paused"});
 		configParam(CLEAR_PARAM, 0.f, 1.f, 0.f, "Clears all output");
-    configParam(SAMPLE_PARAM, 1000, 0, 500, "Number of samples skipped between logging attempts");
-    getParamQuantity(SAMPLE_PARAM)->snapEnabled = true;
+    configParam(SAMPLE_PARAM, 1000.0f, 0.0f, 50.0f, "Number of milliseconds skipped between V1/V2 logging attempts");
 		configInput(V1_INPUT, "New values will be shown on screen");
     configInput(V2_INPUT, "New values will be shown on screen");
     configInput(TEXT1_INPUT, "Input for Tipsy text info");
@@ -174,7 +170,7 @@ struct TTY : Module {
       tick_count += 1;
       // ">" is correct here. The SAMPLE_PARAM is really the number of samples
       // to skip, and can go to zero.
-      if (tick_count > params[SAMPLE_PARAM].getValue()) {
+      if (tick_count > params[SAMPLE_PARAM].getValue() * args.sampleRate / 1000) {
         tick_count = 0;
         if (inputs[V1_INPUT].isConnected()) {
           float v1 = inputs[V1_INPUT].getVoltage();
