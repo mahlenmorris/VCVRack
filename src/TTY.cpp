@@ -17,7 +17,7 @@
   Add new type and color to BASICally and Fermata?
   Make sure the Text inputs are evenly spaced.
   Move the RATE knob to the top, to suggest it only deals with V1 and V2.
-  Maybe put a box around RATE, V1, and V2, to suggest their interation.
+  Maybe put a box around RATE, V1, and V2, to suggest their interaction.
   Add Fermata docs to TTY Examples.
   Write docs for TTY.
   Chat with paul+paul about documenting Tipsy.
@@ -550,7 +550,7 @@ struct TTYWidget : ModuleWidget {
     addChild(bottomRightScrew);
 
     addParam(createParamCentered<RoundBlackKnob>(
-         mm2px(Vec(8.938, 46.0)), module, TTY::SAMPLE_PARAM));
+         mm2px(Vec(8.938, 22.329)), module, TTY::SAMPLE_PARAM));
     addParam(createLightParamCentered<VCVLightLatch<
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 59.0)),
                                              module, TTY::PAUSE_PARAM,
@@ -560,15 +560,15 @@ struct TTYWidget : ModuleWidget {
                                              module, TTY::CLEAR_PARAM,
                                              TTY::CLEAR_LIGHT));
 
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 16.0)), module,
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 34.663)), module,
         TTY::V1_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 29.0)), module,
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 45.546)), module,
         TTY::V2_INPUT));
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 86.0)), module,
         TTY::TEXT1_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 101.872)), module,
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 102.0)), module,
         TTY::TEXT2_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 118.579)), module,
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 118.0)), module,
         TTY::TEXT3_INPUT));
 
     textDisplay = createWidget<TTYDisplay>(mm2px(Vec(18.08, 5.9)));
