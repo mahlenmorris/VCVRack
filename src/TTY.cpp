@@ -11,11 +11,10 @@
 
 /*
   TODO's:
-  Change Rate from samples to ms of skipped observations.
-  Add menu option to save/load text.
   Try to get the scroll position to not reset to the top when text is deleted.
   Add new type and color to BASICally and Fermata?
   Add Fermata docs to TTY Examples.
+  Pick default colors and font.
   Write docs for TTY.
   Chat with paul+paul about documenting Tipsy.
   Update BASICally docs!
@@ -93,7 +92,10 @@ struct TTY : Module {
     if (preface_outputs) {
       json_object_set_new(rootJ, "preface_outputs", json_integer(1));
     }
-
+    if (preserve_output) {
+      json_object_set_new(rootJ, "preserve_output", json_integer(1));
+      json_object_set_new(rootJ, "text", json_stringn(text.c_str(), text.size()));
+    }
     return rootJ;
   }
 
@@ -113,6 +115,20 @@ struct TTY : Module {
       preface_outputs = json_integer_value(preface_outputsJ) == 1;
     } else {
       preface_outputs = false;
+    }
+    json_t* preserve_outputJ = json_object_get(rootJ, "preserve_output");
+    if (preserve_outputJ) {
+      preserve_output = json_integer_value(preserve_outputJ) == 1;
+      if (preserve_output) {
+        json_t* textJ = json_object_get(rootJ, "text");
+        if (textJ) {
+          text = json_string_value(textJ);
+          cursor_override = 2000000;
+          editor_refresh = true;
+        }
+      }
+    } else {
+      preserve_output = false;
     }
   }
 
@@ -268,6 +284,8 @@ struct TTY : Module {
   TTYQueue additions;
   // Preface outputs with source port when true; set via context menu.
   bool preface_outputs = false;
+  // Save/restore output when saving/loading the patch.
+  bool preserve_output = false;
 
   // Amber on Black is the default; it matches the !!!! decor perfectly.
   long long int screen_colors = 0xffc000000000;
@@ -628,6 +646,8 @@ struct TTYWidget : ModuleWidget {
     // Some functionality choices.
     menu->addChild(createBoolPtrMenuItem("Preface lines with source port", "",
                                           &module->preface_outputs));
+    menu->addChild(createBoolPtrMenuItem("Keep recent output when patch is saved", "",
+                                          &module->preserve_output));
 
     // Add color choices.
     menu->addChild(new MenuSeparator);
