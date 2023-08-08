@@ -9,6 +9,8 @@ self-regulating structure. Exploring the region between random and static.
 * [Fermata](#fermata): A text editor and labeling module. Write much longer text notes. Resizable, scrolls, font choices, and more. Or just add some visual emphasis,
 Stochastic Telegraph-style.
 * [Fuse](#fuse): Block, allow, or attenuate a signal passing through, based on the number of triggers observed in a different signal.
+* [TTY](#tty): A scrolling text window that displays distinct values it gets, and displays Tipsy text messages
+sent by other modules (like BASICally).
 
 ![Line Break image](images/Separator.png)
 
@@ -1068,6 +1070,109 @@ option is set to something else.
 
 * AlliewayAudio's [Bumper](https://library.vcvrack.com/AlliewayAudio_Series_I/Bumper).
 * ML Modules' [Counter](https://library.vcvrack.com/ML_modules/Counter).
+
+![Line Break image](images/Separator.png)
+
+# TTY
+A [teletype](https://en.wikipedia.org/wiki/Teletype_Model_33)-like module for
+displaying text messages. Useful for
+debugging or saving sets of values that are of interest. TTY can also track
+streams of unique CV values from modules, noting them only when they change.
+
+### Examples
+
+TTY logs the values being produced by Random.
+![TTYValue](images/TTYValue.png)
+
+TTY logging the text being sent by BASICally.
+![TTYBasic](images/TTYBasic.png)
+
+More examples in [this patch](examples/TTYExamples.vcv).
+
+### Uses
+* Logging CV values that a generative or non-deterministic process creates. In
+some cases, this is more precise, more fine-grained, and easier to read than
+a scope trace, especially when monitoring over a long period of time.
+* Logging text messages from modules that produce them using the [Tipsy
+protocol](https://github.com/baconpaul/tipsy-encoder). As of this writing
+in August 2023,
+the only such module is my [BASICally](#basically) module, but more
+are coming.
+
+### Features
+* **Note that navigation works much better when the Pause button is lit**.
+Up and Down arrow keys work mostly like you expect. Home and End go to the
+top and bottom of the text, PgUp and PgDown go up and down a screen length.
+* Text scrolls as you move up and down.
+* Resize the module by dragging the right edge. Size can range
+from 4-64 HP.
+* Pick from a (small) variety of fonts. Be sure to try "Veteran Typewriter" font
+for a more authentic teletype feeling.
+* Pick from a (small) variety of foreground/background colors. Be sure to try
+"Black on Yellow (TTY Paper)" for that authentic teletype feeling.
+* Can be cleared by clicking the CLEAR button or by sending a "!!CLEAR!!" message.
+
+### Controls
+
+#### RATE Knob
+Specifies the number of milliseconds between reads on the V1/V2 inputs. If
+set to zero, then every sample will be examined. If set to 1000, then TTY will
+only examine inputs to V1/V2 once every second.
+Note that a low number (turning the knob to the right) means a very high RATE.
+This may be a poor nomenclature decision on my part.
+RATE has no effect on TEXT inputs.
+#### V1 and V2 inputs
+Signals sent to V1 or V2 will be monitored. Each time they are examined (see
+RATE knob), if the value is different than it was the time before, the new
+value will be printed to the text window.
+#### PAUSE button
+This button latches. If set, new messages will no longer be written to the log.
+When unset, new messages will start being written again to the log.
+#### CLEAR button
+When pressed, the logging window will be cleared of all messages.
+The window will also be cleared if any of the TEXT inputs receives a message
+that is exactly the special message "**!!CLEAR!!**" (no quotes).
+#### TEXT1, TEXT2, and TEXT3 inputs
+Text messages can be sent to these ports via the [Tipsy
+protocol](https://github.com/baconpaul/tipsy-encoder). If they have the
+Tipsy MIME type "text/plain", then they will be added to the log.
+
+### Menu Options
+#### Preface lines with source port
+If set, then each message will be proceeded by the port that the message
+came from, e.g., from "1.23456" to "V1> 1.23456".
+#### Keep recent output when patch is saved
+If set, then the text currently visible in the buffer will be saved into the
+patch, and will be restored when the patch is loaded. If not set, then
+the log will be empty when the patch starts.
+#### Screen Colors
+Pick from a small number of color choices for the editor window.
+#### Font
+Pick from a small number of fonts. The "Mono" fonts are monospaced fonts.
+
+### Known Limitations
+* By design, TTY only keeps the previous 900-1000 lines of output. By "lines",
+this means physical lines on the screen. Since line length is dictated by the
+screen width, this means that shrinking the module down to it's minimum width
+can result in deleting most of the contents of the output window.
+* Putting noise into the TEXTn inputs can crash VCV Rack.
+* If lines of text are scrolling by very quickly, it's probably using more CPU
+than you want. If the values are coming from V1 or V2, consider raising the
+RATE.
+* There is internal load-shedding inside of TTY. If the UI is not keeping
+up with the all of messages being added, it will throw away new ones until
+the backlog is lessened. This typically only happens when V1/V2 is connected to
+a continuously changing signal (e.g., a VCO Sine wave) and the RATE is very high
+(like less than ten).
+
+### Bypass Behavior
+If this module is bypassed, then it will stop logging new input, much like
+when it is Paused.
+
+### Related Modules
+* Despite TTY being a common shorthand for "teletype", do NOT confuse
+TTY with [Monome's Teletype](https://library.vcvrack.com/monome/teletype),
+which is a deep, interesting platform for dynamic algorithmic event triggering.
 
 ![Line Break image](images/Separator.png)
 

@@ -12,6 +12,8 @@
 /*
   TODO's:
   Try to get the scroll position to not reset to the top when text is deleted.
+  And consider making a cursor at the end of the output, to show user that's
+  where the next output will be? Maybe not, might not be wrth the effort.
   Add new type and color to BASICally and Fermata?
   Add Fermata docs to TTY Examples.
   Pick default colors and font.
