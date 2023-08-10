@@ -16,7 +16,6 @@
   where the next output will be? Maybe not, might not be worth the effort.
   Add new type and color to BASICally and Fermata?
   Add Fermata docs to TTY Examples.
-  Pick default colors and font.
   Chat with paul+paul about documenting Tipsy.
 */
 

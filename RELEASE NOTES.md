@@ -1,5 +1,14 @@
 # Release Notes
 
+### 2.0.12
+#### (date)
+* Introducing the idea of sending text by audio cable via the
+[Tipsy protocol](https://github.com/baconpaul/tipsy-encoder).
+* Added new print() and debug() methods to BASICally so it can send text to
+other modules.
+* Added a new module, TTY, for display of text from BASICally.
+* Added some quantization Presets to BASICally.
+
 ### 2.0.11
 #### May 21, 2023
 * Added support for PgUp and PgDown keys in BASICally and Fermata.
