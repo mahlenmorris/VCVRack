@@ -1205,6 +1205,10 @@ willingness to help and advise me as I've been learning this new domain.
 Many thanks to [Marc Weidenbaum](https://disquiet.com/) for his
 encouragement and enthusiasm for my module-making efforts.
 
+Thanks to both @baconpaul and @pachde of the VCV Rack community for greatly
+extending my silly idea to send text over a VCV cable and seeing far more
+value in it then I did. And also for doing the actual work of implementing it.
+
 And my deepest gratitude to Diane LeVan, for letting me ignore her and/or
 the world for periods of time just to craft these things. I apologize for
 waking up with new ideas at 5AM, and for having a retirement hobby that
