@@ -39,7 +39,7 @@ struct TextInput {
 };
 
 struct TTY : Module {
-  static const int DEFAULT_WIDTH = 18;
+  static const int DEFAULT_WIDTH = 12;
   enum ParamId {
 		CLEAR_PARAM,
     SAMPLE_PARAM,
@@ -286,8 +286,8 @@ struct TTY : Module {
   // Save/restore output when saving/loading the patch.
   bool preserve_output = false;
 
-  // Amber on Black is the default; it matches the !!!! decor perfectly.
-  long long int screen_colors = 0xffc000000000;
+  // Black on yellow paper color (by my memory, at least).
+  long long int screen_colors = 0x000000edc672;
   // width (in "holes") of the whole module. Changed by the resize bar on the
   // right (within limits), and informs the size of the display and text field.
   // Saved in the json for the module.
@@ -297,7 +297,7 @@ struct TTY : Module {
   // drawLayer() uses this if it's > -1.
   int cursor_override = -1;
   // Can be overriden by saved menu choice.
-  std::string font_choice = "fonts/RobotoSlab-Regular.ttf";
+  std::string font_choice = "fonts/RobotoMono-Regular.ttf";
 };
 
 // Adds support for undo/redo in the text field where people type programs.
