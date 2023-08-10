@@ -1492,6 +1492,7 @@ struct BasicallyWidget : ModuleWidget {
       }
     );
     menu->addChild(syntax_menu);
+
     // Now add math functions.
     // description, inserted text.
     std::pair<std::string, std::string> math_funcs[] = {
@@ -1534,6 +1535,29 @@ struct BasicallyWidget : ModuleWidget {
       }
     );
     menu->addChild(math_menu);
+
+    // Now add text functions.
+    // description, inserted text.
+    std::pair<std::string, std::string> text_funcs[] = {
+      {"debug(var_name) - text of the form 'var_name = (current value of var_name)'",
+       "debug(foo)"},
+      {"debug(array_name[], startpos, lastpos) - "
+       "text of the form 'array_name[startpos] = {(current values of array_name)}'",
+       "debug(foo[], 0, 10)"},
+      {"print(OUTn, text, text, ...) - joins all of the text and sends them to OUTn",
+       "print(OUT6, \"hello, world!\")"}
+    };
+    MenuItem* text_menu = createSubmenuItem("Text", "",
+      [=](Menu* menu) {
+          for (auto line : text_funcs) {
+            menu->addChild(createMenuItem(line.first, "",
+              [=]() { codeDisplay->insertText(line.second); }
+            ));
+          }
+      }
+    );
+    menu->addChild(text_menu);
+
   }
 };
 

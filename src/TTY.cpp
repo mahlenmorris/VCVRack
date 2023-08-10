@@ -13,14 +13,11 @@
   TODO's:
   Try to get the scroll position to not reset to the top when text is deleted.
   And consider making a cursor at the end of the output, to show user that's
-  where the next output will be? Maybe not, might not be wrth the effort.
+  where the next output will be? Maybe not, might not be worth the effort.
   Add new type and color to BASICally and Fermata?
   Add Fermata docs to TTY Examples.
   Pick default colors and font.
-  Write docs for TTY.
   Chat with paul+paul about documenting Tipsy.
-  Update BASICally docs!
-  Add new BASICally "text" section to context menu, like Math and Syntax.
 */
 
 static constexpr size_t recvBufferSize{1024 * 64};

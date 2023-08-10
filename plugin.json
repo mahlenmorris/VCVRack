@@ -16,7 +16,7 @@
     {
       "slug": "BASICally",
       "name": "BASICally",
-      "description": "Generate sequences or perform math on inputs with a simple BASIC-like language.",
+      "description": "Generate sequences, perform math on inputs, and even multitask with a simple BASIC-like language. Can also send Tipsy text messages to modules that support them.",
       "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/README.md#basically",
       "tags": [
         "Attenuator",

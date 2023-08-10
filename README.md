@@ -79,6 +79,13 @@ through it.
 * Edits in the text window become part of the VCV Rack Undo/Redo system.
 * You can pick from a (small) number of screen color schemes in the menu.
 * [Scientific pitch notation](https://en.m.wikipedia.org/wiki/Scientific_pitch_notation) is supported (e.g., c4, Db2, d#8). They are turned into V/OCT values.
+* Using the [Tipsy text protocol](https://github.com/baconpaul/tipsy-encoder),
+BASICally can [send messages](#text-functions) to modules that accept Tipsy text messages, such as
+[TTY](#tty). This can be useful for debugging and other situations where mere graphs
+are not as informative as text, and one may expect future modules that accept
+Tipsy text messages.
+* Easily allows for [multitasking](#multitasking-also-and-when-blocks) within
+the same BASICally module.
 
 ## The Language
 ### Setting and Using Variables (Assignment and Math)
@@ -122,7 +129,7 @@ in IF-THEN[-ELSE] statements.
 * **"and", "or", "not"** -- Boolean logic operators. For purposes of these, a zero
 value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 
-### Functions
+### Math Functions
 
 | Function  | Meaning        | Examples |
 | --------- | -------------- | -------- |
@@ -151,6 +158,19 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 system-dependent. On my Windows system, for one, the minimum non-zero interval
 between calls to time_millis() is about 16 milliseconds. This makes them
 unsuitable for making, say, consistent 40Hz signals.
+
+### Text functions
+
+BASICally can create text messages and send them in the Tipsy encoding to
+modules that can use them or display them (for example, [TTY](#tty)). Unlike
+most other languages, BASICally does *not* (yet) have variables or arrays that
+can store text, so the only way these get used is via **print()**.
+
+| Function | Meaning       | Examples |
+| -------- | ------------- | -------- |
+| **debug(foo)** | returns text of the form 'foo = (current value of var_name)' | debug(foo) -> "foo = 3.14159" |
+| **debug(bar[], start, end)** | returns text of the form 'bar[start] = { (values in bar[]) }' | debug(bar[], 0, 3) -> "bar[0] = {2, 3.11, 0, -4}" |
+| **print(OUTn, text, text, ...)** | Joins the computed text and sends it out the port. | print(OUT6, "note = ", sin(IN1)) -> Sends "note = 0.5" via OUT6 port. |
 
 ### WAIT Statements
 Always in the form:
@@ -392,7 +412,7 @@ to the RUN input or pushing the RUN button will start it again.
 
 ### RESET
 Whenever a "RESET" is executed, it immediately stops processing this sample, and on the
-next sample each block (see Multithreading, below) will start from scratch. It does NOT
+next sample each block (see Multitasking, below) will start from scratch. It does NOT
 change any variable values. This is very similar to the state when you've just typed a
 character into the editing window and the code compiles correctly, with one
 exception; recompiling the code makes start() become true, but RESET does NOT make start() become true.
@@ -410,7 +430,7 @@ END IF
 
 the "out2 = 0" will NEVER be executed.
 
-## Multithreading: ALSO and WHEN blocks
+## Multitasking: ALSO and WHEN blocks
 
 **Note: This section has kind of advanced topics, or at least they have the
 potential to make BASICally more confusing, especially if you are new to
@@ -429,7 +449,7 @@ this concept should be better integrated into the language.
 * Checking for a trigger at an IN port is difficult, and impossible during a
 WAIT.
 
-To allow BASICally to do these things, version 2.0.7 introduced "multithreading"
+To allow BASICally to do these things, version 2.0.7 introduced "multitasking"
 and "blocks".
 
 ### Blocks
@@ -561,7 +581,7 @@ pause_length = random(100, 2000)  '  How fast we play the notes.
 END WHEN
 ```
 
-### Details of Multithreading
+### Details of Multitasking
 
 Some notes about how this all works under the hood.
 
