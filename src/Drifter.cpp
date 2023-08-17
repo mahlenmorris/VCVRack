@@ -680,14 +680,15 @@ struct DrifterDisplay : LedDisplay {
 struct DrifterWidget : ModuleWidget {
   DrifterWidget(Drifter* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/Drifter.svg")));
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/Drifter.svg"),
+                         asset::plugin(pluginInstance, "res/Drifter-dark.svg")));
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(
+    addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
+    addChild(createWidget<ThemedScrew>(
         Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(
+    addChild(createWidget<ThemedScrew>(
         Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(
+    addChild(createWidget<ThemedScrew>(
         Vec(box.size.x - 2 * RACK_GRID_WIDTH,
             RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
@@ -722,7 +723,7 @@ struct DrifterWidget : ModuleWidget {
 
     // X Drift.
     // Input.
-    addInput(createInputCentered<PJ301MPort>(
+    addInput(createInputCentered<ThemedPJ301MPort>(
         mm2px(Vec(8.024, 48.0)), module, Drifter::X_SCALE_INPUT));
     // Knob.
     addParam(createParamCentered<RoundBlackKnob>(
@@ -730,7 +731,7 @@ struct DrifterWidget : ModuleWidget {
 
     // Total Drift.
     // Input.
-    addInput(createInputCentered<PJ301MPort>(
+    addInput(createInputCentered<ThemedPJ301MPort>(
         mm2px(Vec(8.024, 64.0)), module, Drifter::SCALE_INPUT));
     // Knob.
     addParam(createParamCentered<RoundBlackKnob>(
@@ -738,7 +739,7 @@ struct DrifterWidget : ModuleWidget {
 
     // Commands from user/system.
     // Drift
-    addInput(createInputCentered<PJ301MPort>(
+    addInput(createInputCentered<ThemedPJ301MPort>(
         mm2px(Vec(8.024, 80.0)), module, Drifter::DRIFT_INPUT));
     addParam(createLightParamCentered<VCVLightButton<
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(22.624, 80.0)),
@@ -746,7 +747,7 @@ struct DrifterWidget : ModuleWidget {
                                              Drifter::DRIFT_LIGHT));
 
     // Reset
-    addInput(createInputCentered<PJ301MPort>(
+    addInput(createInputCentered<ThemedPJ301MPort>(
         mm2px(Vec(8.024, 96.0)), module, Drifter::RESET_INPUT));
     // Making this a Button and not a Latch means that it pops back up
     // when you let go.
@@ -756,11 +757,11 @@ struct DrifterWidget : ModuleWidget {
                                              Drifter::RESET_LIGHT));
 
     // Input
-    addInput(createInputCentered<PJ301MPort>(
+    addInput(createInputCentered<ThemedPJ301MPort>(
         mm2px(Vec(13.905, 112.000)), module, Drifter::DOMAIN_INPUT));
 
     // The Output
-    addOutput(createOutputCentered<PJ301MPort>(
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
         mm2px(Vec(27.797, 112.000)), module, Drifter::RANGE_OUTPUT));
   }
 
