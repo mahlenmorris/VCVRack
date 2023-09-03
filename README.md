@@ -945,11 +945,13 @@ the text will be reachable.
 If this module is bypassed, then it will be darker. But otherwise, no different.
 
 ### Related Modules
-
+#### Writing Text
 * VCV's [Notes](https://library.vcvrack.com/Core/Notes).
+#### Labels
 * cf's [LABEL](https://library.vcvrack.com/cf/LABEL).
 * NYSTHI's [Label](https://library.vcvrack.com/NYSTHI/Label) and
 [LabelSlim](https://library.vcvrack.com/NYSTHI/LabelSlim).
+* stoermelder's [GLUE](https://library.vcvrack.com/Stoermelder-P1/Glue).
 * Submarine's [TD-510](https://library.vcvrack.com/SubmarineFree/TD-510),
 [TD-410](https://library.vcvrack.com/SubmarineFree/TD-410), and
 [TD-316](https://library.vcvrack.com/SubmarineFree/TD-316).
