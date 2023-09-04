@@ -465,14 +465,15 @@ struct FuseDisplay : Widget {
 struct FuseWidget : ModuleWidget {
   FuseWidget(Fuse* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/Fuse.svg")));
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/Fuse.svg"),
+                         asset::plugin(pluginInstance, "res/Fuse-dark.svg")));
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(
+    addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
+    addChild(createWidget<ThemedScrew>(
 	      Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(
+    addChild(createWidget<ThemedScrew>(
 	      Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(
+    addChild(createWidget<ThemedScrew>(
 	      Vec(box.size.x - 2 * RACK_GRID_WIDTH,
 	          RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
@@ -495,7 +496,7 @@ struct FuseWidget : ModuleWidget {
         mm2px(Vec(20.971, 32.0)), module, Fuse::COUNT_PARAM));
 
     // Trigger
-    addInput(createInputCentered<PJ301MPort>(
+    addInput(createInputCentered<ThemedPJ301MPort>(
 	      mm2px(Vec(8.024, 48.0)), module, Fuse::TRIGGER_INPUT));
         // Making this a Button and not a Latch means that it pops back up
         // when you let go.
@@ -505,7 +506,7 @@ struct FuseWidget : ModuleWidget {
                                                  Fuse::TRIGGER_LIGHT));
 
     // Untrigger
-    addInput(createInputCentered<PJ301MPort>(
+    addInput(createInputCentered<ThemedPJ301MPort>(
 	      mm2px(Vec(8.024, 64.0)), module, Fuse::UNTRIGGER_INPUT));
         // Making this a Button and not a Latch means that it pops back up
         // when you let go.
@@ -515,7 +516,7 @@ struct FuseWidget : ModuleWidget {
                                                  Fuse::UNTRIGGER_LIGHT));
 
     // Reset
-    addInput(createInputCentered<PJ301MPort>(
+    addInput(createInputCentered<ThemedPJ301MPort>(
 	      mm2px(Vec(8.024, 80.0)), module, Fuse::RESET_INPUT));
         // Making this a Button and not a Latch means that it pops back up
         // when you let go.
@@ -527,13 +528,13 @@ struct FuseWidget : ModuleWidget {
     addParam(createParamCentered<RoundSmallBlackKnob>(
         mm2px(Vec(8.024, 96.0)), module, Fuse::SLEW_PARAM));
 
-    addOutput(createOutputCentered<PJ301MPort>(
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
 	      mm2px(Vec(20.971, 96.0)), module, Fuse::BLOWN_OUTPUT));
 
-    addInput(createInputCentered<PJ301MPort>(
+    addInput(createInputCentered<ThemedPJ301MPort>(
 	      mm2px(Vec(8.024, 112.0)), module, Fuse::MAIN_INPUT));
 
-    addOutput(createOutputCentered<PJ301MPort>(
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
 	      mm2px(Vec(20.971, 112.0)), module, Fuse::MAIN_OUTPUT));
   }
 

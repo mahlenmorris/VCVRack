@@ -514,7 +514,8 @@ struct TTYWidget : ModuleWidget {
 
   TTYWidget(TTY* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/TTY.svg")));
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/TTY.svg"),
+                         asset::plugin(pluginInstance, "res/TTY-dark.svg")));
 
     // Set reasonable initial size of module. Will likely get updated below.
     box.size = Vec(RACK_GRID_WIDTH * TTY::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
@@ -526,14 +527,14 @@ struct TTYWidget : ModuleWidget {
       box.size.x = TTY::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    topRightScrew = createWidget<ScrewSilver>(
+    addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
+    topRightScrew = createWidget<ThemedScrew>(
         Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0));
     addChild(topRightScrew);
     // TODO: this next line's Y coordinate is very odd.
-    addChild(createWidget<ScrewSilver>(
+    addChild(createWidget<ThemedScrew>(
         Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    bottomRightScrew = createWidget<ScrewSilver>(
+    bottomRightScrew = createWidget<ThemedScrew>(
         Vec(box.size.x - 2 * RACK_GRID_WIDTH,
             RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
     addChild(bottomRightScrew);
@@ -549,15 +550,15 @@ struct TTYWidget : ModuleWidget {
                                              module, TTY::CLEAR_PARAM,
                                              TTY::CLEAR_LIGHT));
 
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 34.663)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 34.663)), module,
         TTY::V1_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 45.546)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 45.546)), module,
         TTY::V2_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 86.0)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 86.0)), module,
         TTY::TEXT1_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 102.0)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 102.0)), module,
         TTY::TEXT2_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.938, 118.0)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 118.0)), module,
         TTY::TEXT3_INPUT));
 
     textDisplay = createWidget<TTYDisplay>(mm2px(Vec(18.08, 5.9)));

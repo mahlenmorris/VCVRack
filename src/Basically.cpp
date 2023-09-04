@@ -911,7 +911,8 @@ struct TitleTextField : LightWidget {
         std::shared_ptr<Font> font = APP->window->loadFont(module->getFontPath());
         if (font) {
           std::string text = module->title_text;
-          nvgFillColor(args.vg, color::BLACK);
+          nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
+                                                             color::BLACK);
           // The longer the text, the smaller the font. 20 is our largest size,
           // and it handles 10 chars of this font. 10 is smallest size, it can
           // handle 25 chars.
@@ -1242,7 +1243,8 @@ struct BasicallyWidget : ModuleWidget {
 
   BasicallyWidget(Basically* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/Basically.svg")));
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/Basically.svg"),
+                         asset::plugin(pluginInstance, "res/Basically-dark.svg")));
 
     // Set reasonable initial size of module. Will likely get updated below.
     box.size = Vec(RACK_GRID_WIDTH * Basically::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
@@ -1254,14 +1256,14 @@ struct BasicallyWidget : ModuleWidget {
       box.size.x = Basically::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    topRightScrew = createWidget<ScrewSilver>(
+    addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
+    topRightScrew = createWidget<ThemedScrew>(
         Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0));
     addChild(topRightScrew);
     // TODO: this next line's Y coordinate is very odd.
-    addChild(createWidget<ScrewSilver>(
+    addChild(createWidget<ThemedScrew>(
         Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    bottomRightScrew = createWidget<ScrewSilver>(
+    bottomRightScrew = createWidget<ThemedScrew>(
         Vec(box.size.x - 2 * RACK_GRID_WIDTH,
             RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
     addChild(bottomRightScrew);
@@ -1276,7 +1278,7 @@ struct BasicallyWidget : ModuleWidget {
 
     // Controls.
     // Run button/trigger/gate.
-    addInput(createInputCentered<PJ301MPort>(
+    addInput(createInputCentered<ThemedPJ301MPort>(
         mm2px(Vec(6.496, 17.698)), module, Basically::RUN_INPUT));
     // Making this a Button and not a Latch means that it pops back up
     // when you let go.
@@ -1309,37 +1311,37 @@ struct BasicallyWidget : ModuleWidget {
     addChild(title);
 
     // Data Inputs
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 57.35)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 57.35)),
       module, Basically::IN1_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 57.35)),
+		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 57.35)),
       module, Basically::IN2_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.794, 57.35)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 57.35)),
       module, Basically::IN3_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 71.35)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 71.35)),
       module, Basically::IN4_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 71.35)),
+		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 71.35)),
       module, Basically::IN5_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.794, 71.35)),
+		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 71.35)),
       module, Basically::IN6_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 83.65)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 83.65)),
       module, Basically::IN7_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 83.65)),
+		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 83.65)),
       module, Basically::IN8_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.794, 83.65)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 83.65)),
       module, Basically::IN9_INPUT));
 
     // The Outputs
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.496, 101.601)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 101.601)),
       module, Basically::OUT1_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.645, 101.601)),
+		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 101.601)),
       module, Basically::OUT2_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(24.794, 101.601)),
+		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 101.601)),
       module, Basically::OUT3_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.496, 115.601)),
+		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 115.601)),
       module, Basically::OUT4_OUTPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.645, 115.601)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 115.601)),
       module, Basically::OUT5_OUTPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(24.794, 115.601)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 115.601)),
       module, Basically::OUT6_OUTPUT));
 
     // Resize bar on right.
