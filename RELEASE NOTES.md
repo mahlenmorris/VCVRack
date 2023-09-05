@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.12
-#### (date)
+#### September 5, 2023
 * Introducing the idea of sending text by audio cable via the
 [Tipsy protocol](https://github.com/baconpaul/tipsy-encoder).
 * Added new print() and debug() methods to BASICally so it can send text to
