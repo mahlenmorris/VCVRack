@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
-#include <thread>
 #include <unordered_map>
 #include <utility>  // pair
 #include <vector>
@@ -261,7 +260,8 @@ struct FermataTitleTextField : LightWidget {
         text = "A Longer Note";
       }
       if (font) {
-        nvgFillColor(args.vg, color::BLACK);
+        nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
+                                                           color::BLACK);
         int font_size = 18;
         nvgFontSize(args.vg, font_size);
         nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_LEFT);
@@ -335,7 +335,8 @@ struct ClosedTitleTextField : LightWidget {
             int font_size = longest < 8 ? max_font_size : floor(max_font_size * 7 / longest);
             float spacing = longest < 8 ? max_spacing : max_spacing * 7 / longest;
 
-            nvgFillColor(args.vg, color::BLACK);
+            nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
+                                                               color::BLACK);
             nvgFontSize(args.vg, font_size);
             nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
             nvgFontFaceId(args.vg, font->handle);
@@ -355,7 +356,8 @@ struct ClosedTitleTextField : LightWidget {
             nvgFontFaceId(args.vg, font->handle);
             nvgTextAlign(args.vg, NVG_ALIGN_LEFT|NVG_ALIGN_BASELINE);
             nvgTextLetterSpacing(args.vg, 0);
-            nvgFillColor(args.vg, color::BLACK);
+            nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
+                                                               color::BLACK);
             float desc, lh;
             nvgTextMetrics(args.vg, NULL, &desc, &lh);
             nvgRotate(args.vg, -M_PI / 2.0f);
@@ -530,7 +532,8 @@ struct FermataWidget : ModuleWidget {
 
   FermataWidget(Fermata* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/Fermata.svg")));
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/Fermata.svg"),
+                         asset::plugin(pluginInstance, "res/Fermata-dark.svg")));
 
     // Set reasonable initial size of module. Will likely get updated below.
     box.size = Vec(RACK_GRID_WIDTH * Fermata::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
@@ -542,14 +545,14 @@ struct FermataWidget : ModuleWidget {
       box.size.x = Fermata::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    topRightScrew = createWidget<ScrewSilver>(
+    addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
+    topRightScrew = createWidget<ThemedScrew>(
         Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0));
     addChild(topRightScrew);
     // TODO: this next line's Y coordinate is very odd.
-    addChild(createWidget<ScrewSilver>(
+    addChild(createWidget<ThemedScrew>(
         Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    bottomRightScrew = createWidget<ScrewSilver>(
+    bottomRightScrew = createWidget<ThemedScrew>(
         Vec(box.size.x - 2 * RACK_GRID_WIDTH,
             RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
     addChild(bottomRightScrew);

@@ -9,6 +9,8 @@ self-regulating structure. Exploring the region between random and static.
 * [Fermata](#fermata): A text editor and labeling module. Write much longer text notes. Resizable, scrolls, font choices, and more. Or just add some visual emphasis,
 Stochastic Telegraph-style.
 * [Fuse](#fuse): Block, allow, or attenuate a signal passing through, based on the number of triggers observed in a different signal.
+* [TTY](#tty): A scrolling text window that displays distinct values it gets, and displays Tipsy text messages
+sent by other modules (like BASICally).
 
 ![Line Break image](images/Separator.png)
 
@@ -48,12 +50,14 @@ The examples above are all in [this patch](examples/BASICallyExamples1.vcv).
 A patch with some simple/strange/silly ideas for other things BASICally can do
 are in [this patch](examples/BASICallyExperiments.vcv).
 
-#### A tape loop with five playback heads
-![ten second tape loop image](images/BASICallyTapeLoop.png)
-Send audio to IN 2-4 of the VCA MIX and then try listening to the various
-playback heads in OUT1-OUT5 of BASICally. Look in the Presets for this code.
+#### Presets
+There are over a dozen presets demonstrating how BASICally can be used,
+including unusual sequencers, oscillators, tape and delay effects,
+a sample and hold, a signal router, and four different quantizers. Since the
+workings of these are controlled solely by the BASICally code, it's easy to
+change how they behave.
 
-<!-- TODO: video of different examples and their output -->
+<!-- TODO: video of different Presets and their output -->
 
 ## Unique Features
 While there are
@@ -75,6 +79,13 @@ through it.
 * Edits in the text window become part of the VCV Rack Undo/Redo system.
 * You can pick from a (small) number of screen color schemes in the menu.
 * [Scientific pitch notation](https://en.m.wikipedia.org/wiki/Scientific_pitch_notation) is supported (e.g., c4, Db2, d#8). They are turned into V/OCT values.
+* Using the [Tipsy text protocol](https://github.com/baconpaul/tipsy-encoder),
+BASICally can [send messages](#text-functions) to modules that accept Tipsy text messages, such as
+[TTY](#tty). This can be useful for debugging and other situations where mere graphs
+are not as informative as text, and one may expect future modules that accept
+Tipsy text messages.
+* Easily allows for [multitasking](#multitasking-also-and-when-blocks) within
+the same BASICally module.
 
 ## The Language
 ### Setting and Using Variables (Assignment and Math)
@@ -118,7 +129,7 @@ in IF-THEN[-ELSE] statements.
 * **"and", "or", "not"** -- Boolean logic operators. For purposes of these, a zero
 value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 
-### Functions
+### Math Functions
 
 | Function  | Meaning        | Examples |
 | --------- | -------------- | -------- |
@@ -147,6 +158,19 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 system-dependent. On my Windows system, for one, the minimum non-zero interval
 between calls to time_millis() is about 16 milliseconds. This makes them
 unsuitable for making, say, consistent 40Hz signals.
+
+### Text functions
+
+BASICally can create text messages and send them in the Tipsy encoding to
+modules that can use them or display them (for example, [TTY](#tty)). Unlike
+most other languages, BASICally does *not* (yet) have variables or arrays that
+can store text, so the only way these get used is via **print()**.
+
+| Function | Meaning       | Examples |
+| -------- | ------------- | -------- |
+| **debug(foo)** | returns text of the form 'foo = (current value of var_name)' | debug(foo) -> "foo = 3.14159" |
+| **debug(bar[], start, end)** | returns text of the form 'bar[start] = { (values in bar[]) }' | debug(bar[], 0, 3) -> "bar[0] = {2, 3.11, 0, -4}" |
+| **print(OUTn, text, text, ...)** | Joins the computed text and sends it out the port. | print(OUT6, "note = ", sin(IN1)) -> Sends "note = 0.5" via OUT6 port. |
 
 ### WAIT Statements
 Always in the form:
@@ -388,7 +412,7 @@ to the RUN input or pushing the RUN button will start it again.
 
 ### RESET
 Whenever a "RESET" is executed, it immediately stops processing this sample, and on the
-next sample each block (see Multithreading, below) will start from scratch. It does NOT
+next sample each block (see Multitasking, below) will start from scratch. It does NOT
 change any variable values. This is very similar to the state when you've just typed a
 character into the editing window and the code compiles correctly, with one
 exception; recompiling the code makes start() become true, but RESET does NOT make start() become true.
@@ -406,7 +430,7 @@ END IF
 
 the "out2 = 0" will NEVER be executed.
 
-## Multithreading: ALSO and WHEN blocks
+## Multitasking: ALSO and WHEN blocks
 
 **Note: This section has kind of advanced topics, or at least they have the
 potential to make BASICally more confusing, especially if you are new to
@@ -425,7 +449,7 @@ this concept should be better integrated into the language.
 * Checking for a trigger at an IN port is difficult, and impossible during a
 WAIT.
 
-To allow BASICally to do these things, version 2.0.7 introduced "multithreading"
+To allow BASICally to do these things, version 2.0.7 introduced "multitasking"
 and "blocks".
 
 ### Blocks
@@ -557,7 +581,7 @@ pause_length = random(100, 2000)  '  How fast we play the notes.
 END WHEN
 ```
 
-### Details of Multithreading
+### Details of Multitasking
 
 Some notes about how this all works under the hood.
 
@@ -781,13 +805,16 @@ When the module is bypassed, all OUTn ports are set to zero volts.
 [Formula](https://library.vcvrack.com/FrankBuss/Formula).
 * docB's
 [Formula One](https://library.vcvrack.com/dbRackFormulaOne), which, compared
-to Formula and BASICally, seems to be **very** CPU efficient.
-* docB's [dbRackCsound](https://github.com/docb/dbRackCsound) ([download](https://github.com/docb/dbRackCsound/releases/tag/v2.0.1)),
-which uses the very powerful [CSound](https://csound.com/) engine. Not in the Library as I write this (January 2023).
-* [Monome Teletype](https://community.vcvrack.com/t/monome-teletype/12815),
-which isn't in the Library, but can be acquired via that link. If I understand
-it correctly, it mostly responds to triggers with scripts in a very terse language,
-likely an artifact of [the hardware it is based on](https://market.monome.org/products/teletype).
+to BASICally, seems to be slightly more CPU efficient for doing raw math.
+* [Monome Teletype](https://library.vcvrack.com/monome/teletype),
+If I understand it correctly, it mostly responds to triggers with scripts in
+a very terse language, likely an artifact of
+[the hardware it is based on](https://market.monome.org/products/teletype).
+Looks pretty deep and interesting.
+* docB's [dbRackCsound](https://github.com/docb/dbRackCsound)
+([download](https://github.com/docb/dbRackCsound/releases/tag/v2.0.1)),
+which uses the very powerful [CSound](https://csound.com/) engine.
+ Not in the Library as I write this (January 2023).
 * [VCV Prototype](https://vcvrack.com/Prototype#manual), which I _think_ is only available for
 VCV Rack version 1. But you can write code in Lua or Javascript (in an external editor).
 
@@ -1068,6 +1095,109 @@ option is set to something else.
 
 ![Line Break image](images/Separator.png)
 
+# TTY
+A [teletype](https://en.wikipedia.org/wiki/Teletype_Model_33)-like module for
+displaying text messages. Useful for
+debugging or saving sets of values that are of interest. TTY can also track
+streams of unique CV values from modules, noting them only when they change.
+
+### Examples
+
+TTY logs the values being produced by Random.
+![TTYValue](images/TTYValue.png)
+
+TTY logging the text being sent by BASICally.
+![TTYBasic](images/TTYBasic.png)
+
+More examples in [this patch](examples/TTYExamples.vcv).
+
+### Uses
+* Logging CV values that a generative or non-deterministic process creates. In
+some cases, this is more precise, more fine-grained, and easier to read than
+a scope trace, especially when monitoring over a long period of time.
+* Logging text messages from modules that produce them using the [Tipsy
+protocol](https://github.com/baconpaul/tipsy-encoder). As of this writing
+in August 2023,
+the only such module is my [BASICally](#basically) module, but more
+are coming.
+
+### Features
+* **Note that navigation works much better when the Pause button is lit**.
+Up and Down arrow keys work mostly like you expect. Home and End go to the
+top and bottom of the text, PgUp and PgDown go up and down a screen length.
+* Text scrolls as you move up and down.
+* Resize the module by dragging the right edge. Size can range
+from 4-64 HP.
+* Pick from a (small) variety of fonts. Be sure to try "Veteran Typewriter" font
+for a more authentic teletype feeling.
+* Pick from a (small) variety of foreground/background colors. Be sure to try
+"Black on Yellow (TTY Paper)" for that authentic teletype feeling.
+* Can be cleared by clicking the CLEAR button or by sending a "!!CLEAR!!" message.
+
+### Controls
+
+#### RATE Knob
+Specifies the number of milliseconds between reads on the V1/V2 inputs. If
+set to zero, then every sample will be examined. If set to 1000, then TTY will
+only examine inputs to V1/V2 once every second.
+Note that a low number (turning the knob to the right) means a very high RATE.
+This may be a poor nomenclature decision on my part.
+RATE has no effect on TEXT inputs.
+#### V1 and V2 inputs
+Signals sent to V1 or V2 will be monitored. Each time they are examined (see
+RATE knob), if the value is different than it was the time before, the new
+value will be printed to the text window.
+#### PAUSE button
+This button latches. If set, new messages will no longer be written to the log.
+When unset, new messages will start being written again to the log.
+#### CLEAR button
+When pressed, the logging window will be cleared of all messages.
+The window will also be cleared if any of the TEXT inputs receives a message
+that is exactly the special message "**!!CLEAR!!**" (no quotes).
+#### TEXT1, TEXT2, and TEXT3 inputs
+Text messages can be sent to these ports via the [Tipsy
+protocol](https://github.com/baconpaul/tipsy-encoder). If they have the
+Tipsy MIME type "text/plain", then they will be added to the log.
+
+### Menu Options
+#### Preface lines with source port
+If set, then each message will be proceeded by the port that the message
+came from, e.g., from "1.23456" to "V1> 1.23456".
+#### Keep recent output when patch is saved
+If set, then the text currently visible in the buffer will be saved into the
+patch, and will be restored when the patch is loaded. If not set, then
+the log will be empty when the patch starts.
+#### Screen Colors
+Pick from a small number of color choices for the editor window.
+#### Font
+Pick from a small number of fonts. The "Mono" fonts are monospaced fonts.
+
+### Known Limitations
+* By design, TTY only keeps the previous 900-1000 lines of output. By "lines",
+this means physical lines on the screen. Since line length is dictated by the
+screen width, this means that shrinking the module down to it's minimum width
+can result in deleting most of the contents of the output window.
+* Putting noise into the TEXTn inputs can crash VCV Rack.
+* If lines of text are scrolling by very quickly, it's probably using more CPU
+than you want. If the values are coming from V1 or V2, consider raising the
+RATE.
+* There is internal load-shedding inside of TTY. If the UI is not keeping
+up with the all of messages being added, it will throw away new ones until
+the backlog is lessened. This typically only happens when V1/V2 is connected to
+a continuously changing signal (e.g., a VCO Sine wave) and the RATE is very high
+(like less than ten).
+
+### Bypass Behavior
+If this module is bypassed, then it will stop logging new input, much like
+when it is Paused.
+
+### Related Modules
+* Despite TTY being a common shorthand for "teletype", do NOT confuse
+TTY with [Monome's Teletype](https://library.vcvrack.com/monome/teletype),
+which is a deep, interesting platform for dynamic algorithmic event triggering.
+
+![Line Break image](images/Separator.png)
+
 # Acknowledgements
 
 Thanks to all of the helpful people on the
@@ -1076,6 +1206,10 @@ willingness to help and advise me as I've been learning this new domain.
 
 Many thanks to [Marc Weidenbaum](https://disquiet.com/) for his
 encouragement and enthusiasm for my module-making efforts.
+
+Thanks to both @baconpaul and @pachde of the VCV Rack community for greatly
+extending my silly idea to send text over a VCV cable and seeing far more
+value in it then I did. And also for doing the actual work of implementing it.
 
 And my deepest gratitude to Diane LeVan, for letting me ignore her and/or
 the world for periods of time just to craft these things. I apologize for

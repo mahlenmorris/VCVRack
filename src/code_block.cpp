@@ -167,6 +167,19 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
           current_line++;
         }
       }
+      break;
+      case PCode::PRINT: {
+        // Get the string values of expr_list, and concatenate them together.
+        std::string result;
+        for (Expression expr : pcode->expr_list.expressions) {
+          result.append(expr.ComputeString());
+        }
+        // Note: once tested that result was not empty, but sending empty string
+        // could be intended behavior, I realize.
+        environment->Send(pcode->assign_port, result);
+        current_line++;
+      }
+      break;
     }
     // pcode->state is only set in a select few situations, like the assignment
     // before a FORLOOP.

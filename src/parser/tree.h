@@ -18,6 +18,7 @@ class Expression {
  public:
   enum Type {
     NUMBER,  // 3, 4.5, -283823
+    STRING,  // "hello, world"
     BINOP,   // plus, times
     VARIABLE, // in1, out1, foo
     ARRAY_VARIABLE, // array[subexpressions[0]]
@@ -25,7 +26,8 @@ class Expression {
     ZEROARGFUNC, // operation
     ONEARGFUNC, // operation (subexpressions[0])
     ONEPORTFUNC, // operation (port)
-    TWOARGFUNC // func2(subexpressions[0], subexpressions[1])
+    TWOARGFUNC, // func2(subexpressions[0], subexpressions[1])
+    STRINGFUNC  // Depends on function.
   };
   Type type;
   // Which method/operation is this?
@@ -45,6 +47,7 @@ class Expression {
     ABS,
     CEILING,
     CONNECTED,
+    DEBUG,
     FLOOR,
     LOG2,
     LOGE,
@@ -65,7 +68,7 @@ class Expression {
   };
   Operation operation;
   float float_value;
-
+  std::string string_value;
   // Some variables are just pointers to a float (e.g., i, foo, etc.).
   float* variable_ptr;
   // But other variables are Input or Output ports in the UI. We can avoid
@@ -81,8 +84,11 @@ class Expression {
   static std::unordered_map<std::string, float> note_to_volt_octave_4;
   Expression() {}
 
-  // Compute the result of this Expression.
+  // Compute the float numeric result of this Expression.
   float Compute();
+
+  // Compute the string version of this expression.
+  std::string ComputeString();
   // Determine if this Expression can Compute() different results depending on
   // INn or any other volatile source (e.g., a random() function.)
   bool Volatile();
@@ -106,6 +112,7 @@ class ExpressionFactory {
   Expression Not(const Expression &expr);
   Expression Note(const std::string &note_name);
   Expression Number(float the_value);
+  Expression Quoted(const std::string &quoted);
   Expression ZeroArgFunc(const std::string &func_name);
   Expression OneArgFunc(const std::string &func_name,
                         const Expression &arg1);
@@ -123,14 +130,27 @@ class ExpressionFactory {
   // The parser seems to need many variants of Variable.
   Expression Variable(const std::string &expr, Driver* driver);
   Expression Variable(char * var_name, Driver* driver);
+  Expression DebugId(const std::string &var_name, Driver* driver);
+  Expression DebugId(const std::string &var_name, const Expression &start,
+                     const Expression &end, Driver* driver);
  private:
   static std::unordered_map<std::string, Expression::Operation> string_to_operation;
 };
 
 struct ExpressionList {
   std::vector<Expression> expressions;
+  bool is_strings;
 
-  ExpressionList() { }
+  ExpressionList() {
+    is_strings = false;
+  }
+
+  static ExpressionList StringList() {
+    ExpressionList list;
+    list.is_strings = true;
+    return list;
+  }
+
   ExpressionList(Expression new_expr) {
     expressions.push_back(new_expr);
   }
@@ -161,6 +181,7 @@ struct Line {
     FORNEXT,     // for str1 = expr1 to expr2 state1 next
     IFTHEN,      // if expr1 then state1 [elseifs - state2] end if
     IFTHENELSE,  // if expr1 then state1 [elseifs - state3] else state2 end if
+    PRINT,       // print(out1, )
     RESET,       // Start all blocks from the top, as if newly compiled.
     WAIT         // wait expr1
   };
@@ -213,6 +234,9 @@ struct Line {
                          const Statements &then_state,
                          const Statements &else_state,
                          const Statements &elseifs);
+
+  static Line Print(const std::string &port1, const ExpressionList &args,
+                    Driver* driver);
 
   static Line Reset();
 

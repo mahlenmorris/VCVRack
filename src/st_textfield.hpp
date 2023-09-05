@@ -1,5 +1,11 @@
 #pragma once
 #include "extended_text.h"
+#include "NoLockQueue.h"
+
+struct TTYQueue {
+  // TODO: instead of string, string pointers, that the consumer deletes?
+  SpScLockFreeQueue<std::string, 50> text_additions;
+};
 
 // An expansion of the VCV TextField class, but allowing for features I wish
 // to add, including:
@@ -36,6 +42,9 @@ struct STTextField : OpaqueWidget {
 	// TODO: get rid of this?
 	std::string previous_text;
 
+	// Some uses (e.g., TTY) don't allow the user to type text into window.
+	bool allow_text_entry;
+
 	STTextField();
 
   // Pulled in from oui-blendish code.
@@ -68,4 +77,9 @@ struct STTextField : OpaqueWidget {
 	void cursorToPrevWord();
 	void cursorToNextWord();
 	void createContextMenu();
+
+	// For TTY. Adds the following lines to text, removes top lines if too long,
+	// moves cursor if already at end.
+	void make_additions(TTYQueue *additions);
+
 };

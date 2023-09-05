@@ -1,0 +1,23 @@
+{
+  "plugin": "StochasticTelegraph",
+  "model": "BASICally",
+  "version": "2.0.11",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    }
+  ],
+  "data": {
+    "text": "' Quantizes values from -5 to 5 evenly over\n' \"numlevels\" different values.\n\nif odd THEN\n  out1 = range * floor(IN1 / range + 0.5)\nELSE\n  out1 = range * floor(IN1 / range) + (range / 2)\nEND IF\n\nWHEN start()\n  ' Change this to the number of values you want.\n  numlevels = 6\n  ' 10 = distance from -5V to 5V.\n  range = 10 / (numlevels - 1)\n  odd = mod(numlevels, 2)\nEND WHEN\n\n' Thanks to Alphagem-O in the VCV Community for\n' providing the initial version of this.\n",
+    "width": 27,
+    "allow_error_highlight": 1,
+    "screen_colors": 1095216660480,
+    "title_text": "Quantize Evenly",
+    "font_choice": "fonts/RobotoMono-Regular.ttf"
+  }
+}

@@ -1,0 +1,3 @@
+[submodule "tipsy-encoder"]
+	path = tipsy-encoder
+	url = https://github.com/baconpaul/tipsy-encoder.git

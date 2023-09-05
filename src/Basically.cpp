@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <queue>
 #include <thread>
 #include <unordered_map>
 #include <utility>  // pair
@@ -12,6 +13,7 @@
 #include "parser/driver.hh"
 #include "pcode_trans.h"
 #include "st_textfield.hpp"
+#include <tipsy/tipsy.h>  // Library for sending text.
 
 enum Style {
   ALWAYS_STYLE,
@@ -80,6 +82,43 @@ struct Basically : Module {
     bool current_value;
   };
 
+  struct TextSender {
+    std::queue<std::string> unsent_queue;
+    tipsy::ProtocolEncoder encoder;
+    std::string sending_message;
+
+    void AddToQueue(const std::string &text) {
+      // If there's enough of a backlog, we shed incoming load.
+      // Not that it takes very long to send a message.
+      if (unsent_queue.size() < 101) {
+        unsent_queue.push(text);
+      }
+    }
+
+    void ProcessEncoder(int port_index, std::vector<Output>* outputs) {
+      // Do we need to do anything?
+      if (unsent_queue.empty() && encoder.isDormant()) {
+        outputs->at(port_index).setVoltage(0.0f);
+        return;
+      }
+      if (!unsent_queue.empty() && encoder.isDormant()) {
+        // Have message waiting, but not currently sending anything.
+        sending_message = unsent_queue.front();
+        unsent_queue.pop();
+        // size() + 1 because the decoder needs the NUL at the end, I suspect.
+        encoder.initiateMessage("text/plain", sending_message.size() + 1,
+                                (unsigned char *)sending_message.c_str());
+      }
+      if (!encoder.isDormant()) {
+        float f = 0.0f;  // Compiler complains otherwise.
+        auto result = encoder.getNextMessageFloat(f);
+        if (!encoder.isError(result)) {
+            outputs->at(port_index).setVoltage(f);
+        }
+      }
+    }
+  };
+
   class ProductionEnvironment : public Environment {
     std::vector<Input>* inputs;
     std::vector<Output>* outputs;
@@ -93,6 +132,9 @@ struct Basically : Module {
     std::chrono::high_resolution_clock::time_point time_start;
     // Map output index to whether or not we should clamp values for it.
     std::unordered_map<int, bool>* out_index_to_clamp;
+    // Map output index to encoder that sends text out of that port and
+    // also the queue for that port.
+    std::unordered_map<int, TextSender*> text_encoders;
 
    public:
     ProductionEnvironment(std::vector<Input>* the_inputs,
@@ -127,6 +169,9 @@ struct Basically : Module {
         trig->current_value = false;
         triggers[index] = trig;
       }
+
+      // Currently choosing not to reset the TextEncoders. As far as user is
+      // concerned, the text is already sent, right?
     }
 
     void UpdateTriggers() {
@@ -229,6 +274,29 @@ struct Basically : Module {
         return false;
       }
     }
+
+    void Send(const PortPointer &port, const std::string &str) override {
+      TextSender* sender;
+      auto found = text_encoders.find(port.index);
+      if (found == text_encoders.end()) {
+        sender = new TextSender();
+        text_encoders[port.index] = sender;
+      } else {
+        sender = found->second;
+      }
+      sender->AddToQueue(str);
+    }
+
+    // If anything is sending out encoded messages, further them along.
+    void ProcessAllSenders() {
+      // Most programs do no text processing, so optimize for that case.
+      if (!text_encoders.empty()) {
+        for (auto entry : text_encoders) {
+          entry.second->ProcessEncoder(entry.first, outputs);
+        }
+      }
+    }
+
   };
 
   // Class devoted to handling the lengthy (compared to single sample)
@@ -264,12 +332,10 @@ struct Basically : Module {
     void Compile() {
       running = true;
       useful = false;
-      // We are deliberately case-insensitive.
-      std::string lowercase;
-      lowercase.resize(text.size());
-      std::transform(text.begin(), text.end(),
-                     lowercase.begin(), ::tolower);
-      bool compiles = !driver->parse(lowercase);
+      // 'text' might get changed during compilation which would be bad.
+      // Let's copy it and send that.
+      std::string stable_text(text);
+      bool compiles = !driver->parse(stable_text);
       if (!compiles) {  // Nothing more to do.
         running = false;
         return;
@@ -641,6 +707,9 @@ struct Basically : Module {
       }
     }
 
+    // Move forward all Tipsy messages we sending, if any.
+    environment->ProcessAllSenders();
+
     // Lights.
     if (run_light_countdown > 0) {
       run_light_countdown--;
@@ -842,7 +911,8 @@ struct TitleTextField : LightWidget {
         std::shared_ptr<Font> font = APP->window->loadFont(module->getFontPath());
         if (font) {
           std::string text = module->title_text;
-          nvgFillColor(args.vg, color::BLACK);
+          nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
+                                                             color::BLACK);
           // The longer the text, the smaller the font. 20 is our largest size,
           // and it handles 10 chars of this font. 10 is smallest size, it can
           // handle 25 chars.
@@ -1173,7 +1243,8 @@ struct BasicallyWidget : ModuleWidget {
 
   BasicallyWidget(Basically* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/Basically.svg")));
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/Basically.svg"),
+                         asset::plugin(pluginInstance, "res/Basically-dark.svg")));
 
     // Set reasonable initial size of module. Will likely get updated below.
     box.size = Vec(RACK_GRID_WIDTH * Basically::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
@@ -1185,14 +1256,14 @@ struct BasicallyWidget : ModuleWidget {
       box.size.x = Basically::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    topRightScrew = createWidget<ScrewSilver>(
+    addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
+    topRightScrew = createWidget<ThemedScrew>(
         Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0));
     addChild(topRightScrew);
     // TODO: this next line's Y coordinate is very odd.
-    addChild(createWidget<ScrewSilver>(
+    addChild(createWidget<ThemedScrew>(
         Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    bottomRightScrew = createWidget<ScrewSilver>(
+    bottomRightScrew = createWidget<ThemedScrew>(
         Vec(box.size.x - 2 * RACK_GRID_WIDTH,
             RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
     addChild(bottomRightScrew);
@@ -1207,7 +1278,7 @@ struct BasicallyWidget : ModuleWidget {
 
     // Controls.
     // Run button/trigger/gate.
-    addInput(createInputCentered<PJ301MPort>(
+    addInput(createInputCentered<ThemedPJ301MPort>(
         mm2px(Vec(6.496, 17.698)), module, Basically::RUN_INPUT));
     // Making this a Button and not a Latch means that it pops back up
     // when you let go.
@@ -1240,37 +1311,37 @@ struct BasicallyWidget : ModuleWidget {
     addChild(title);
 
     // Data Inputs
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 57.35)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 57.35)),
       module, Basically::IN1_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 57.35)),
+		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 57.35)),
       module, Basically::IN2_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.794, 57.35)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 57.35)),
       module, Basically::IN3_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 71.35)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 71.35)),
       module, Basically::IN4_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 71.35)),
+		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 71.35)),
       module, Basically::IN5_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.794, 71.35)),
+		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 71.35)),
       module, Basically::IN6_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.496, 83.65)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 83.65)),
       module, Basically::IN7_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.645, 83.65)),
+		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 83.65)),
       module, Basically::IN8_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.794, 83.65)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 83.65)),
       module, Basically::IN9_INPUT));
 
     // The Outputs
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.496, 101.601)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 101.601)),
       module, Basically::OUT1_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.645, 101.601)),
+		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 101.601)),
       module, Basically::OUT2_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(24.794, 101.601)),
+		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 101.601)),
       module, Basically::OUT3_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.496, 115.601)),
+		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 115.601)),
       module, Basically::OUT4_OUTPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.645, 115.601)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 115.601)),
       module, Basically::OUT5_OUTPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(24.794, 115.601)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 115.601)),
       module, Basically::OUT6_OUTPUT));
 
     // Resize bar on right.
@@ -1423,6 +1494,7 @@ struct BasicallyWidget : ModuleWidget {
       }
     );
     menu->addChild(syntax_menu);
+
     // Now add math functions.
     // description, inserted text.
     std::pair<std::string, std::string> math_funcs[] = {
@@ -1465,6 +1537,29 @@ struct BasicallyWidget : ModuleWidget {
       }
     );
     menu->addChild(math_menu);
+
+    // Now add text functions.
+    // description, inserted text.
+    std::pair<std::string, std::string> text_funcs[] = {
+      {"debug(var_name) - text of the form 'var_name = (current value of var_name)'",
+       "debug(foo)"},
+      {"debug(array_name[], startpos, lastpos) - "
+       "text of the form 'array_name[startpos] = {(current values of array_name)}'",
+       "debug(foo[], 0, 10)"},
+      {"print(OUTn, text, text, ...) - joins all of the text and sends them to OUTn",
+       "print(OUT6, \"hello, world!\")"}
+    };
+    MenuItem* text_menu = createSubmenuItem("Text", "",
+      [=](Menu* menu) {
+          for (auto line : text_funcs) {
+            menu->addChild(createMenuItem(line.first, "",
+              [=]() { codeDisplay->insertText(line.second); }
+            ));
+          }
+      }
+    );
+    menu->addChild(text_menu);
+
   }
 };
 

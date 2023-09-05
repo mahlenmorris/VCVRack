@@ -5,6 +5,8 @@
 //
 // There is both a production and a test implementation of this class.
 
+#include <string>
+
 struct PortPointer {
   // Hard to imagine there will ever be more than these two, but being prepared.
   enum PortType {
@@ -52,6 +54,9 @@ class Environment {
 
   // Returns True only during the sample when this port has received a trigger.
   virtual bool Trigger(const PortPointer &port) = 0;
+
+  // Start outputting a string via an OUTn port.
+  virtual void Send(const PortPointer &port, const std::string &str) = 0;
 };
 
 #endif // ENVIRONMENT_H
