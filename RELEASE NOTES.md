@@ -4,9 +4,9 @@
 #### September 5, 2023
 * Introducing the idea of sending text by audio cable via the
 [Tipsy protocol](https://github.com/baconpaul/tipsy-encoder).
-* Added new print() and debug() methods to BASICally so it can send text to
-other modules.
-* Added a new module, TTY, for display of text from BASICally.
+* Added new [print() and debug() methods](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#text-functions)
+to BASICally so it can send text to other modules.
+* Added a new module, [TTY](https://library.vcvrack.com/StochasticTelegraph/TTY), for display of text from BASICally.
 * Added some quantization Presets to BASICally.
 
 ### 2.0.11
