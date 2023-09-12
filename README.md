@@ -848,6 +848,9 @@ oscillator output, random,... Drifter alters signals, basically.
 [Here's a video from Pazi K.](https://www.youtube.com/watch?v=L5No8J7SPK4) showing two Drifters being used to simultaneously
 create the timbre of two sounds **and** create matching visuals in Etchasketchoscope.
 
+[Another patch](https://patchstorage.com/partch-2/), this one demonstratating using Drifter to hold melodies that we play
+several times and then allow to vary at specific times.
+
 (Someday I'll make a video or two that demonstrates these other notions better.)
 
 ### Controls
