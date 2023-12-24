@@ -92,6 +92,7 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
             wait_info.in_wait = false;
             current_line++;
           }
+          // We set 'waiting' after this IF.
         } else {
           // Just arriving at this WAIT statement.
           int ticks = std::floor(
