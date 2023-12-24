@@ -1,5 +1,10 @@
 # Release Notes
 
+### 2.0.13
+#### ???
+* Fixed bug where on startup, WAIT times for some statements would randomly be zero length
+instead of the length asked for.
+
 ### 2.0.12
 #### September 5, 2023
 * Introducing the idea of sending text by audio cable via the
