@@ -80,6 +80,12 @@ speed.o : $(USER_DIR)/speed.cpp ../src/parser/parser.o ../src/parser/scanner.o .
 speed : speed.o ../src/parser/driver.o ../src/parser/parser.o ../src/parser/scanner.o ../src/parser/tree.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
+fmod_bug.o : $(USER_DIR)/fmod_bug.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/fmod_bug.cpp
+
+fmod_bug : fmod_bug.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
+
 test_libs.o : $(USER_DIR)/test_libs.cpp ../src/parser/parser.o ../src/parser/scanner.o ../src/parser/driver.o ../src/parser/tree.o ../src/code_block.o ../src/pcode.o $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/test_libs.cpp
 
