@@ -82,6 +82,7 @@ struct Basically : Module {
     bool current_value;
   };
 
+  // The queue of Tipsy messages being sent out of a single OUTn port.
   struct TextSender {
     std::queue<std::string> unsent_queue;
     tipsy::ProtocolEncoder encoder;
@@ -119,6 +120,8 @@ struct Basically : Module {
     }
   };
 
+  // The actual runtime class for the Environment interface that
+  // represents the world outside of the running program.
   class ProductionEnvironment : public Environment {
     std::vector<Input>* inputs;
     std::vector<Output>* outputs;
@@ -301,7 +304,7 @@ struct Basically : Module {
 
   // Class devoted to handling the lengthy (compared to single sample)
   // process of compiling the code.
-  // TODO: Typing in comments recompiles every on every keystroke.
+  // TODO: Typing in comments recompiles everything on every keystroke.
   // This is a good place to include logic for determining if a compile actually
   // changed anything. Maybe some sort of hash on the AST (Line) structure? Or
   // even just a hash on the list of tokens?
@@ -345,6 +348,12 @@ struct Basically : Module {
       expression_blocks = new std::vector<std::pair<Expression, CodeBlock*> >();
       running_expression_blocks = new std::vector<bool>();
       useful = true;
+      // Wait until 'environment' has a non-zero SampleRate() value. At most five
+      // seconds, in case there are unknown reasons why it would stay zero.
+      for (int waits = 0; waits < 50; ++waits) {
+        if (environment->SampleRate() > 1.0) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
       for (auto ast_block : driver->blocks) {
         CodeBlock* new_block = new CodeBlock(environment);
         if (translator.BlockToCodeBlock(new_block, ast_block)) {
