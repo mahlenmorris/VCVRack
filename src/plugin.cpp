@@ -10,7 +10,10 @@ void init(Plugin* p) {
 	p->addModel(modelDrifter);
 	p->addModel(modelFermata);
 	p->addModel(modelFuse);
-	p->addModel(modelTTY);
+	p->addModel(modelMemory);
+	p->addModel(modelRecall);
+  p->addModel(modelRemember);
+ 	p->addModel(modelTTY);
 
 	// Any other plugin initialization may go here.
 	// As an alternative, consider lazy-loading assets and lookup tables when your module is created to reduce startup times of Rack.

@@ -60,6 +60,27 @@
       ]
     },
     {
+      "slug": "Memory",
+      "name": "Memory",
+      "description": "TODO: fill this in.",
+      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#memory",
+      "tags": []
+    },
+    {
+      "slug": "Recall",
+      "name": "Recall",
+      "description": "TODO: fill this in.",
+      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#recall",
+      "tags": []
+    },
+    {
+      "slug": "Remember",
+      "name": "Remember",
+      "description": "TODO: fill this in.",
+      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#remember",
+      "tags": []
+    },
+    {
       "slug": "TTY",
       "name": "TTY",
       "description": "Logs values from cables and/or text messages from Tipsy text sources (e.g., BASICally). Makes monitoring of values or logging far easier. TTY is resizable, scrolls, has font and color choices, and more.",

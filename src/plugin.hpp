@@ -11,4 +11,7 @@ extern Model* modelBasically;
 extern Model* modelDrifter;
 extern Model* modelFermata;
 extern Model* modelFuse;
+extern Model* modelMemory;
+extern Model* modelRecall;
+extern Model* modelRemember;
 extern Model* modelTTY;
