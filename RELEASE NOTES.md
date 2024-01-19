@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.13
-#### ???
+#### January 3, 2024
 * Fixed bug where on startup, WAIT times for some statements would randomly be zero length
 instead of the length asked for.
 
