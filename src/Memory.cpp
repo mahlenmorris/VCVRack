@@ -22,9 +22,10 @@ struct FillThread {
   // of main_blocks and expression_blocks for module to use later.
   void Fill() {
     running = true;
-    int seconds = 10;
+    int seconds = 50;
     int samples = std::round(seconds * sample_rate);
-    float* new_array = new float[samples];
+    float* new_left_array = new float[samples];
+    float* new_right_array = new float[samples];
 
     // Fill in array before giving it to buffer.
 
@@ -43,12 +44,15 @@ struct FillThread {
           new_value = value + (rising ? 1 : -1) * rise;
         }
         value = new_value;
-        new_array[pos] = value;
+        new_left_array[pos] = value;
+        new_right_array[pos] = value * .667;
       }
     }
 
+    buffer->left_array = new_left_array;
+    buffer->right_array = new_right_array;
     buffer->length = samples;
-    buffer->array = new_array;
+    buffer->seconds = seconds;
     running = false;
   }
 };
@@ -77,7 +81,6 @@ struct Memory : BufferedModule {
   Memory() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     filler = new FillThread(getBuffer());
-
   }
 
   // Save and retrieve menu choice(s).

@@ -15,8 +15,9 @@ struct Recall : Module {
 		INPUTS_LEN
 	};
 	enum OutputId {
-		LEFT_OUT_OUTPUT,
-		RIGHT_OUT_OUTPUT,
+		NOW_POSITION_OUTPUT,
+		LEFT_OUTPUT,
+		RIGHT_OUTPUT,
 		OUTPUTS_LEN
 	};
 	enum LightId {
@@ -31,6 +32,10 @@ struct Recall : Module {
 	// To help implement Bounce, we need to know when we're bouncing.
 	bool invertSpeed;
 
+  // To display timestamps correctly.
+	double seconds = 0.0;
+	int length = 0;
+
 	Recall() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configSwitch(LOOP_PARAM, 0, 2, 0, "What to do when hitting the endpoints",
@@ -38,12 +43,13 @@ struct Recall : Module {
 		// This has distinct values.
     getParamQuantity(LOOP_PARAM)->snapEnabled = true;
 	  configParam(SPEED_PARAM, -10.f, 10.f, 1.f, "Playback speed/direction");
-		configParam(POSITION_PARAM, 0.f, 10.f, 0.f, "Starting position");
+		configParam(POSITION_PARAM, 0.f, 10.f, 0.f, "0 - 10V position we start at");
 		configSwitch(PLAY_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this play head",
 	               {"Silent", "Playing"});
 		configInput(PLAY_GATE_INPUT, "Gate to start/stop playing");
-		configOutput(LEFT_OUT_OUTPUT, "");
-		configOutput(RIGHT_OUT_OUTPUT, "");
+		configOutput(NOW_POSITION_OUTPUT, "0 - 10V point in Memory this is now reading");
+		configOutput(LEFT_OUTPUT, "");
+		configOutput(RIGHT_OUTPUT, "");
 
 		invertSpeed = false;
 		playback_position = -1;
@@ -59,13 +65,15 @@ struct Recall : Module {
 
 		// If connected and buffer isn't empty.
 		if (connected && buffer->length > 0) {
+			length = buffer->length;
+			seconds = buffer->seconds;
 			playTrigger.process(rescale(
 					inputs[PLAY_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
 			bool playing = (params[PLAY_BUTTON_PARAM].getValue() > 0.1f) ||
 			               playTrigger.isHigh();
 			if (playing) {
-				int length = buffer->length;
-				float* array = buffer->array;
+				float* left_array = buffer->left_array;
+				float* right_array = buffer->right_array;
 				int loop_type = (int) params[LOOP_PARAM].getValue();
 				if (loop_type != 1) {
 					invertSpeed = false;
@@ -103,14 +111,21 @@ struct Recall : Module {
 				while (playback_position >= length) {
 					playback_position -= length;
 				}
+				outputs[NOW_POSITION_OUTPUT].setVoltage(playback_position * 10.0 / length);
+
+				// Determine values to emit.
 				int playback_start = trunc(playback_position);
 				float start_fraction = playback_position - playback_start;
-				float value = array[playback_start] * (1.0 - start_fraction) +
-				  array[playback_start + 1] * (start_fraction);
-				outputs[LEFT_OUT_OUTPUT].setVoltage(value);
+				outputs[LEFT_OUTPUT].setVoltage(
+					left_array[playback_start] * (1.0 - start_fraction) +
+				  left_array[playback_start + 1] * (start_fraction));
+				outputs[RIGHT_OUTPUT].setVoltage(
+					right_array[playback_start] * (1.0 - start_fraction) +
+				  right_array[playback_start + 1] * (start_fraction));
 				lights[PLAY_BUTTON_LIGHT].setBrightness(1.0f);
 			} else {
-				outputs[LEFT_OUT_OUTPUT].setVoltage(0.0f);
+				outputs[LEFT_OUTPUT].setVoltage(0.0f);
+				outputs[RIGHT_OUTPUT].setVoltage(0.0f);
 				lights[PLAY_BUTTON_LIGHT].setBrightness(0.0f);
 			}
 
@@ -123,6 +138,47 @@ struct Recall : Module {
 	}
 };
 
+struct StartTimestamp : TimestampField {
+	StartTimestamp() {
+  }
+
+  Recall* module;
+
+  double getPosition() override {
+    if (module && module->length > 0) {
+			return module->params[Recall::POSITION_PARAM].getValue() * module->seconds / 10.0;
+		}
+		return 0.00;  // Dummy display value.
+  }
+
+	double getSeconds() override {
+    if (module && module->seconds > 0.0) {
+			return module->seconds;
+		}
+		return 2.0;
+	}
+};
+
+struct NowTimestamp : TimestampField {
+	NowTimestamp() {
+  }
+
+  Recall* module;
+
+  double getPosition() override {
+    if (module && module->length > 0) {
+			return module->playback_position * module->seconds / module->length;
+		}
+		return 0.00;  // Dummy display value.
+  }
+
+	double getSeconds() override {
+    if (module && module->seconds > 0.0) {
+			return module->seconds;
+		}
+		return 2.0;
+	}
+};
 
 struct RecallWidget : ModuleWidget {
 	RecallWidget(Recall* module) {
@@ -141,7 +197,12 @@ struct RecallWidget : ModuleWidget {
     loop_knob->snap = true;
     addParam(loop_knob);
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(20.971, 32.0)), module, Recall::SPEED_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(15.24, 48.0)), module, Recall::POSITION_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(8.024, 54.0)), module, Recall::POSITION_PARAM));
+		// A timestamp is 14 wide.
+		StartTimestamp* start_timestamp = createWidget<StartTimestamp>(mm2px(
+        Vec(8.024 - (14.0 / 2.0), 59.0)));
+    start_timestamp->module = module;
+    addChild(start_timestamp);
 
 		// Play button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
@@ -150,8 +211,15 @@ struct RecallWidget : ModuleWidget {
                                              Recall::PLAY_BUTTON_LIGHT));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 80.0)), module, Recall::PLAY_GATE_INPUT));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.024, 112.0)), module, Recall::LEFT_OUT_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.971, 112.0)), module, Recall::RIGHT_OUT_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.971, 54.0)), module, Recall::NOW_POSITION_OUTPUT));
+		// A timestamp is 14 wide.
+		NowTimestamp* now_timestamp = createWidget<NowTimestamp>(mm2px(
+        Vec(20.971 - (14.0 / 2.0), 59.0)));
+    now_timestamp->module = module;
+    addChild(now_timestamp);
+
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.024, 112.0)), module, Recall::LEFT_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.971, 112.0)), module, Recall::RIGHT_OUTPUT));
 
 		addChild(createLightCentered<MediumLight<GreenLight>>(mm2px(Vec(3.394, 7.56)), module, Recall::CONNECTED_LIGHT));
 	}
