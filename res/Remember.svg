@@ -24,7 +24,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2.0000001"
-     inkscape:cx="78.249996"
+     inkscape:cx="76.749996"
      inkscape:cy="209.99999"
      inkscape:document-units="mm"
      inkscape:current-layer="g1684"
@@ -255,6 +255,36 @@
          d="m 25.420432,255.47588 q 0,0.48954 -0.21463,0.88745 -0.212218,0.39791 -0.566718,0.61736 -0.24598,0.15193 -0.549837,0.21946 -0.301446,0.0675 -0.795818,0.0675 H 22.38668 v -3.59082 h 0.897103 q 0.525722,0 0.834402,0.0772 0.311093,0.0747 0.525722,0.20739 0.366558,0.2291 0.571541,0.61013 0.204984,0.38102 0.204984,0.90434 z m -0.499195,-0.007 q 0,-0.42202 -0.147105,-0.71141 -0.147106,-0.28939 -0.438906,-0.45579 -0.212218,-0.12058 -0.450963,-0.1664 -0.238745,-0.0482 -0.571541,-0.0482 H 22.86417 v 2.77089 h 0.448552 q 0.344854,0 0.60048,-0.0506 0.258038,-0.0506 0.472667,-0.1881 0.267684,-0.17122 0.400321,-0.45097 0.135047,-0.27974 0.135047,-0.69935 z"
          id="path369" />
     </g>
+    <rect
+       style="display:inline;opacity:1;fill:#000000;fill-opacity:0.88755;stroke-width:0.175583;image-rendering:auto"
+       id="rect652-7"
+       width="10.616776"
+       height="8.3559361"
+       x="9.931612"
+       y="263.54074"
+       ry="1.9487509" />
+    <text
+       xml:space="preserve"
+       style="font-size:4.23333px;line-height:1.25;font-family:sans-serif;word-spacing:0px;stroke-width:0.264583"
+       x="1.9259081"
+       y="262.82391"
+       id="text1702"><tspan
+         sodipodi:role="line"
+         id="tspan1700"
+         style="font-size:4.23333px;stroke-width:0.264583"
+         x="1.9259081"
+         y="262.82391">CURR</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:4.23333px;line-height:1.25;font-family:sans-serif;word-spacing:0px;stroke-width:0.264583"
+       x="16.497019"
+       y="262.82803"
+       id="text1706"><tspan
+         sodipodi:role="line"
+         id="tspan1704"
+         style="font-size:4.23333px;stroke-width:0.264583"
+         x="16.497019"
+         y="262.82803">POS</tspan></text>
   </g>
   <g
      inkscape:groupmode="layer"
@@ -310,5 +340,12 @@
        cy="7.5595684"
        r="4"
        inkscape:label="connected" />
+    <circle
+       style="display:inline;opacity:1;fill:#0000ff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
+       id="circle4958-1"
+       cx="15.24"
+       cy="99.218758"
+       r="4"
+       inkscape:label="now_position" />
   </g>
 </svg>

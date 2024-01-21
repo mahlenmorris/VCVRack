@@ -12,6 +12,7 @@ struct Recall : Module {
 	};
 	enum InputId {
 		PLAY_GATE_INPUT,
+		SPEED_INPUT,
 		INPUTS_LEN
 	};
 	enum OutputId {
@@ -46,6 +47,7 @@ struct Recall : Module {
 		configParam(POSITION_PARAM, 0.f, 10.f, 0.f, "0 - 10V position we start at");
 		configSwitch(PLAY_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this play head",
 	               {"Silent", "Playing"});
+		configInput(SPEED_INPUT, "Playback speed (added to knob value)");
 		configInput(PLAY_GATE_INPUT, "Gate to start/stop playing");
 		configOutput(NOW_POSITION_OUTPUT, "0 - 10V point in Memory this is now reading");
 		configOutput(LEFT_OUTPUT, "");
@@ -81,7 +83,9 @@ struct Recall : Module {
 				if (playback_position == -1) { // Starting.
 					playback_position = length * (params[POSITION_PARAM].getValue() / 10.0);
 				}
-				playback_position += params[SPEED_PARAM].getValue() * (invertSpeed ? -1 : 1);
+				playback_position +=
+					(inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue()) *
+					(invertSpeed ? -1 : 1);
 				// Behavior at the endpoint depends on the LOOP setting.
 				if ((playback_position < 0) || (playback_position >= length)) {
 					switch (loop_type) {
@@ -96,7 +100,9 @@ struct Recall : Module {
 						break;
 						case 1: {  // Bounce.
 							invertSpeed = !invertSpeed;
-							playback_position += params[SPEED_PARAM].getValue() * (invertSpeed ? -1 : 1);
+							playback_position +=
+							 (inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue()) *
+							 (invertSpeed ? -1 : 1);
 						}
 						break;
 						case 2: {
@@ -115,13 +121,17 @@ struct Recall : Module {
 
 				// Determine values to emit.
 				int playback_start = trunc(playback_position);
+				int playback_end = trunc(playback_start + 1);
+				if (playback_end >= length) {
+					playback_end -= length;  // Should be zero.
+				}
 				float start_fraction = playback_position - playback_start;
 				outputs[LEFT_OUTPUT].setVoltage(
 					left_array[playback_start] * (1.0 - start_fraction) +
-				  left_array[playback_start + 1] * (start_fraction));
+				  left_array[playback_end] * (start_fraction));
 				outputs[RIGHT_OUTPUT].setVoltage(
 					right_array[playback_start] * (1.0 - start_fraction) +
-				  right_array[playback_start + 1] * (start_fraction));
+				  right_array[playback_end] * (start_fraction));
 				lights[PLAY_BUTTON_LIGHT].setBrightness(1.0f);
 			} else {
 				outputs[LEFT_OUTPUT].setVoltage(0.0f);
@@ -191,12 +201,15 @@ struct RecallWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
 		Trimpot* loop_knob = createParamCentered<Trimpot>(
-        mm2px(Vec(8.024, 32.0)), module, Recall::LOOP_PARAM);
+        mm2px(Vec(8.024, 19.3)), module, Recall::LOOP_PARAM);
     loop_knob->minAngle = -0.28f * M_PI;
     loop_knob->maxAngle = 0.28f * M_PI;
     loop_knob->snap = true;
     addParam(loop_knob);
+
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 32.0)), module, Recall::SPEED_INPUT));
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(20.971, 32.0)), module, Recall::SPEED_PARAM));
+
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(8.024, 54.0)), module, Recall::POSITION_PARAM));
 		// A timestamp is 14 wide.
 		StartTimestamp* start_timestamp = createWidget<StartTimestamp>(mm2px(

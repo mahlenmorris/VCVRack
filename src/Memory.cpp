@@ -22,7 +22,7 @@ struct FillThread {
   // of main_blocks and expression_blocks for module to use later.
   void Fill() {
     running = true;
-    int seconds = 50;
+    int seconds = 15;
     int samples = std::round(seconds * sample_rate);
     float* new_left_array = new float[samples];
     float* new_right_array = new float[samples];

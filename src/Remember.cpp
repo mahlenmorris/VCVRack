@@ -16,6 +16,7 @@ struct Remember : Module {
 		INPUTS_LEN
 	};
 	enum OutputId {
+		NOW_POSITION_OUTPUT,
 		OUTPUTS_LEN
 	};
 	enum LightId {
@@ -30,6 +31,10 @@ struct Remember : Module {
 	// To help implement Bounce, we need to know when we're bouncing.
 	bool invertSpeed;
 
+	// To display timestamps correctly.
+	double seconds = 0.0;
+	int length = 0;
+
 	Remember() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configSwitch(LOOP_PARAM, 0, 2, 0, "What to do when hitting the endpoints",
@@ -40,6 +45,7 @@ struct Remember : Module {
 		configSwitch(RECORD_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this record head",
 	               {"Inactive", "Recording"});
 		configInput(RECORD_GATE_INPUT, "Gate to start/stop recording");
+		configOutput(NOW_POSITION_OUTPUT, "");
 		configInput(LEFT_INPUT, "");
 		configInput(RIGHT_INPUT, "");
 
@@ -57,6 +63,8 @@ struct Remember : Module {
 
 		// If connected and buffer isn't empty.
 		if (connected && buffer->length > 0) {
+			length = buffer->length;
+			seconds = buffer->seconds;
 			recordTrigger.process(rescale(
 					inputs[RECORD_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
 			bool recording = (params[RECORD_BUTTON_PARAM].getValue() > 0.1f) ||
@@ -103,6 +111,8 @@ struct Remember : Module {
 				while (recording_position >= length) {
 					recording_position -= length;
 				}
+				outputs[NOW_POSITION_OUTPUT].setVoltage(recording_position * 10.0 / length);
+
 				// This module is optimized for recording one sample to one integral position
 				// in array. Later modules can figure out how to do fancier stuff.
 			  left_array[recording_position] = inputs[LEFT_INPUT].getVoltage();
@@ -120,6 +130,26 @@ struct Remember : Module {
 	}
 };
 
+struct NowRememberTimestamp : TimestampField {
+	NowRememberTimestamp() {
+  }
+
+  Remember* module;
+
+  double getPosition() override {
+    if (module && module->length > 0) {
+			return module->recording_position * module->seconds / module->length;
+		}
+		return 0.00;  // Dummy display value.
+  }
+
+	double getSeconds() override {
+    if (module && module->seconds > 0.0) {
+			return module->seconds;
+		}
+		return 2.0;
+	}
+};
 
 struct RememberWidget : ModuleWidget {
 	RememberWidget(Remember* module) {
@@ -145,6 +175,15 @@ struct RememberWidget : ModuleWidget {
                                              module, Remember::RECORD_BUTTON_PARAM,
                                              Remember::RECORD_BUTTON_LIGHT));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 80.0)), module, Remember::RECORD_GATE_INPUT));
+
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.24, 99.219)), module, Remember::NOW_POSITION_OUTPUT));
+		// A timestamp is 14 wide.
+		NowRememberTimestamp* now_timestamp = createWidget<NowRememberTimestamp>(mm2px(
+        Vec(15.24 - (14.0 / 2.0), 104.219)));
+    now_timestamp->module = module;
+    addChild(now_timestamp);
+
+
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 112.0)), module, Remember::LEFT_INPUT));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(20.971, 112.0)), module, Remember::RIGHT_INPUT));
 
