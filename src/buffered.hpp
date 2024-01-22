@@ -1,14 +1,74 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "plugin.hpp"
 
+// Just to make tarnsiting data easier, but might not need?
+struct FloatPair {
+  float left;
+  float right;
+
+  FloatPair(float l, float r) : left{l}, right{r} {}
+};
+
+// A record of a moment that a record head called Set(). Used by Play heads
+// to see if they need to duck their volume to prevent a click when passing
+// over the path of a Record head.
+struct RecordHeadTrace {
+  long long module_id;  // Unique (I think) ID for each module instance.
+  int position;  // Position in the byffer.
+  int age;  // Approximate number of samples since this module_id has recorded.
+
+  RecordHeadTrace(long long id, int pos) : module_id{id}, position{pos}, age{0} {}
+};
+
 struct Buffer {
+  // Consider making this a 2 x length array.
   float* left_array;   // make this std::shared_ptr.
   float* right_array;   // make this std::shared_ptr.
   double seconds;
   int length = 0;
+
+  std::vector<RecordHeadTrace> record_heads;
+
+  bool NearHead(int position) {
+    // TODO: not correct when near the ends of the buffer.
+    for (int i = 0; i < (int) record_heads.size(); ++i) {
+      if (abs(record_heads[i].position - position) < 60) {
+        // WARN("head = %d, pos = %d", record_heads[i].position, position);
+        return true;
+      }
+      if (abs(record_heads[i].position + length - position) < 60) {
+        // WARN("head = %d, pos = %d", record_heads[i].position, position);
+        return true;
+      }
+      if (abs(record_heads[i].position - (position + length)) < 60) {
+        // WARN("head = %d, pos = %d", record_heads[i].position, position);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void Set(int position, float left, float right, long long module_id) {
+    left_array[position] = left;
+    right_array[position] = right;
+
+    // Update (or create) a trace for this Set() call.
+    bool found = false;
+    for (int i = 0; i < (int) record_heads.size(); ++i) {
+      if (record_heads[i].module_id == module_id) {
+        found = true;
+        record_heads[i].position = position;
+        record_heads[i].age = 0;
+      }
+    }
+    if (!found) {
+      record_heads.push_back(RecordHeadTrace(module_id, position));
+    }
+  }
 };
 
 struct BufferedModule : Module {

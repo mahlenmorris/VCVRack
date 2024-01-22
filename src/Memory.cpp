@@ -27,26 +27,10 @@ struct FillThread {
     float* new_left_array = new float[samples];
     float* new_right_array = new float[samples];
 
-    // Fill in array before giving it to buffer.
-
-    for (int sec = 0; sec < seconds; ++sec) {
-      int pos = std::round(sec * sample_rate);
-      int limit = std::fmin(samples, std::round((sec + 1) * sample_rate));
-      float value = 0.0;
-      bool rising = true;
-      double frequency = 200 + 10 * sec;
-      // 10. is distance from -5.0 to 5.0.
-      float rise = 10.0 / (sample_rate / frequency / 2);
-      for (; pos < limit; ++pos) {
-        float new_value = value + (rising ? 1 : -1) * rise;
-        if (fabs(new_value) > 5.0) {
-          rising = !rising;
-          new_value = value + (rising ? 1 : -1) * rise;
-        }
-        value = new_value;
-        new_left_array[pos] = value;
-        new_right_array[pos] = value * .667;
-      }
+    // Wipe array before giving it to buffer.
+    for (int i = 0; i < samples; ++i) {
+      new_left_array[i] = 0.0f;
+      new_right_array[i] = 0.0f;
     }
 
     buffer->left_array = new_left_array;
@@ -77,6 +61,9 @@ struct Memory : BufferedModule {
   bool fill_in_progress = false;
   FillThread* filler;
   std::thread* fill_thread;
+
+  // Just to debug record_heads.
+  int sample_count = 0;
 
   Memory() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -113,6 +100,17 @@ struct Memory : BufferedModule {
         }
       }
     }
+    /*
+    sample_count++;
+    // Every five seconds, print out the structure.
+    if (sample_count > args.sampleRate * 5) {
+      sample_count = 0;
+      Buffer* buffer = getBuffer();
+      for (RecordHeadTrace trace : buffer->record_heads) {
+        WARN("module = %lld, position = %d, age = %d", trace.module_id, trace.position, trace.age);
+      }
+    }
+    */
   }
 
 };

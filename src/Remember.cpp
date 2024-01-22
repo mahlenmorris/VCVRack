@@ -71,8 +71,8 @@ struct Remember : Module {
 			               recordTrigger.isHigh();
 			if (recording) {
 				int length = buffer->length;
-				float* left_array = buffer->left_array;
-				float* right_array = buffer->right_array;
+				//float* left_array = buffer->left_array;
+				//float* right_array = buffer->right_array;
 				int loop_type = (int) params[LOOP_PARAM].getValue();
 				if (loop_type != 1) {
 					invertSpeed = false;
@@ -115,8 +115,9 @@ struct Remember : Module {
 
 				// This module is optimized for recording one sample to one integral position
 				// in array. Later modules can figure out how to do fancier stuff.
-			  left_array[recording_position] = inputs[LEFT_INPUT].getVoltage();
-				right_array[recording_position] = inputs[RIGHT_INPUT].getVoltage();
+				buffer->Set(recording_position,
+					 inputs[LEFT_INPUT].getVoltage(), inputs[RIGHT_INPUT].getVoltage(),
+				   getId());
 				lights[RECORD_BUTTON_LIGHT].setBrightness(1.0f);
 			} else {
 				lights[RECORD_BUTTON_LIGHT].setBrightness(0.0f);

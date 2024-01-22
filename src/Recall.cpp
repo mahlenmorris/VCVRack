@@ -37,6 +37,9 @@ struct Recall : Module {
 	double seconds = 0.0;
 	int length = 0;
 
+	// To fade volume when near a recording head.
+	double fade = 1.0f;
+
 	Recall() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configSwitch(LOOP_PARAM, 0, 2, 0, "What to do when hitting the endpoints",
@@ -126,12 +129,19 @@ struct Recall : Module {
 					playback_end -= length;  // Should be zero.
 				}
 				float start_fraction = playback_position - playback_start;
-				outputs[LEFT_OUTPUT].setVoltage(
-					left_array[playback_start] * (1.0 - start_fraction) +
-				  left_array[playback_end] * (start_fraction));
-				outputs[RIGHT_OUTPUT].setVoltage(
-					right_array[playback_start] * (1.0 - start_fraction) +
-				  right_array[playback_end] * (start_fraction));
+				if (buffer->NearHead(playback_start)) {
+					fade = std::max(fade - 0.02, 0.0);
+				} else {
+					if (fade < 1.0) {
+						fade = std::min(fade + 0.02, 1.0);
+					}
+				}
+				outputs[LEFT_OUTPUT].setVoltage(fade *
+					(left_array[playback_start] * (1.0 - start_fraction) +
+				   left_array[playback_end] * (start_fraction)));
+				outputs[RIGHT_OUTPUT].setVoltage(fade *
+					(right_array[playback_start] * (1.0 - start_fraction) +
+				   right_array[playback_end] * (start_fraction)));
 				lights[PLAY_BUTTON_LIGHT].setBrightness(1.0f);
 			} else {
 				outputs[LEFT_OUTPUT].setVoltage(0.0f);
