@@ -17,6 +17,8 @@ struct Remember : Module {
 	};
 	enum OutputId {
 		NOW_POSITION_OUTPUT,
+		LEFT_OUTPUT,
+		RIGHT_OUTPUT,
 		OUTPUTS_LEN
 	};
 	enum LightId {
@@ -45,6 +47,8 @@ struct Remember : Module {
 		configSwitch(RECORD_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this record head",
 	               {"Inactive", "Recording"});
 		configInput(RECORD_GATE_INPUT, "Gate to start/stop recording");
+		configOutput(LEFT_OUTPUT, "");
+		configOutput(RIGHT_OUTPUT, "");
 		configOutput(NOW_POSITION_OUTPUT, "");
 		configInput(LEFT_INPUT, "");
 		configInput(RIGHT_INPUT, "");
@@ -71,8 +75,8 @@ struct Remember : Module {
 			               recordTrigger.isHigh();
 			if (recording) {
 				int length = buffer->length;
-				//float* left_array = buffer->left_array;
-				//float* right_array = buffer->right_array;
+				float* left_array = buffer->left_array;
+				float* right_array = buffer->right_array;
 				int loop_type = (int) params[LOOP_PARAM].getValue();
 				if (loop_type != 1) {
 					invertSpeed = false;
@@ -111,6 +115,8 @@ struct Remember : Module {
 				while (recording_position >= length) {
 					recording_position -= length;
 				}
+				outputs[LEFT_OUTPUT].setVoltage(left_array[recording_position]);
+				outputs[RIGHT_OUTPUT].setVoltage(right_array[recording_position]);
 				outputs[NOW_POSITION_OUTPUT].setVoltage(recording_position * 10.0 / length);
 
 				// This module is optimized for recording one sample to one integral position
@@ -172,21 +178,29 @@ struct RememberWidget : ModuleWidget {
 
 		// Record button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 80.0)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 63.067)),
                                              module, Remember::RECORD_BUTTON_PARAM,
                                              Remember::RECORD_BUTTON_LIGHT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 80.0)), module, Remember::RECORD_GATE_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 63.067)), module,
+		                                         Remember::RECORD_GATE_INPUT));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.24, 99.219)), module, Remember::NOW_POSITION_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.24, 82.285)),
+		                                           module, Remember::NOW_POSITION_OUTPUT));
 		// A timestamp is 14 wide.
 		NowRememberTimestamp* now_timestamp = createWidget<NowRememberTimestamp>(mm2px(
-        Vec(15.24 - (14.0 / 2.0), 104.219)));
+        Vec(15.24 - (14.0 / 2.0), 87.286)));
     now_timestamp->module = module;
     addChild(now_timestamp);
 
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(7.814, 99.412)),
+		                                           module, Remember::LEFT_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.761, 99.412)),
+		                                           module, Remember::RIGHT_OUTPUT));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 112.0)), module, Remember::LEFT_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(20.971, 112.0)), module, Remember::RIGHT_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 112.0)), module,
+		                                         Remember::LEFT_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(20.971, 112.0)), module,
+		                                         Remember::RIGHT_INPUT));
 
 		addChild(createLightCentered<MediumLight<GreenLight>>(mm2px(Vec(3.394, 7.56)), module, Remember::CONNECTED_LIGHT));
 	}
