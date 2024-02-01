@@ -5,12 +5,10 @@
 
 #include "plugin.hpp"
 
-// Just to make tarnsiting data easier, but might not need?
+// Just to make transmiting data easier, but might not need?
 struct FloatPair {
   float left;
   float right;
-
-  FloatPair(float l, float r) : left{l}, right{r} {}
 };
 
 // A record of a moment that a record head called Set(). Used by Play heads
@@ -34,8 +32,33 @@ struct Buffer {
   std::vector<RecordHeadTrace> record_heads;
 
   bool NearHead(int position) {
-    // TODO: not correct when near the ends of the buffer.
+    // TODO: not sure if correct when near the ends of the buffer.
     for (int i = 0; i < (int) record_heads.size(); ++i) {
+      if (abs(record_heads[i].position - position) < 60) {
+        // WARN("head = %d, pos = %d", record_heads[i].position, position);
+        return true;
+      }
+      if (abs(record_heads[i].position + length - position) < 60) {
+        // WARN("head = %d, pos = %d", record_heads[i].position, position);
+        return true;
+      }
+      if (abs(record_heads[i].position - (position + length)) < 60) {
+        // WARN("head = %d, pos = %d", record_heads[i].position, position);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Returns true if near a recording head, except for module_id.
+  // Typically called for the benefit of play heads that are part of recording
+  // heads.
+  bool NearHeadButNotThisModule(int position, long long module_id) {
+    // TODO: not sure if correct when near the ends of the buffer.
+    for (int i = 0; i < (int) record_heads.size(); ++i) {
+      if (record_heads[i].module_id == module_id) {
+        continue;
+      }
       if (abs(record_heads[i].position - position) < 60) {
         // WARN("head = %d, pos = %d", record_heads[i].position, position);
         return true;
@@ -66,17 +89,43 @@ struct Buffer {
       }
     }
     if (!found) {
+      // TODO: this is dangerous!
       record_heads.push_back(RecordHeadTrace(module_id, position));
     }
   }
 };
 
+// Module that has a buffer that others can access. Probably only Memory
+// will be this.
 struct BufferedModule : Module {
   Buffer buffer;
 
   Buffer* getBuffer() {
     return &buffer;
   }
+};
+
+// Module that has an associated position. Play and record heads have these.
+
+enum ModuleType {
+	RECALL,
+	REMEMBER
+	// More later.
+};
+
+struct LineRecord {
+	double position;  // Set by module. Read by Display.
+	NVGcolor color;  // Set by Memory. Read by Display and the module.
+	ModuleType type;  // Set by module class. Read by Display.
+
+  LineRecord() {
+    // A color the system should never set. Indicates something is wrong.
+    color = nvgRGBA(255, 0, 255, 255);
+  }
+};
+
+struct PositionedModule : Module {
+  LineRecord line_record;
 };
 
 Buffer* findClosestMemory(Module* leftModule);

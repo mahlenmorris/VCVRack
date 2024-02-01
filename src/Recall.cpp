@@ -1,8 +1,9 @@
-#include "plugin.hpp"
+#include <cmath>
 
+#include "plugin.hpp"
 #include "buffered.hpp"
 
-struct Recall : Module {
+struct Recall : PositionedModule {
 	enum ParamId {
 		LOOP_PARAM,
 		SPEED_PARAM,
@@ -27,11 +28,21 @@ struct Recall : Module {
 		LIGHTS_LEN
 	};
 
+	// Where we are in the movement, before taking POSITION parameters into account.
+	// Always 0.0 <= playback_position < length when Looping.
+	// Always 0.0 <= playback_position < 2 * length when Bouncing.
   double playback_position;
-  dsp::SchmittTrigger playTrigger;
 
-	// To help implement Bounce, we need to know when we're bouncing.
-	bool invertSpeed;
+  // Where we are in memory (for the timestamp indicator).
+  double display_position;
+
+  // Offset indicated by POSITION parameters.
+  float prev_position;
+
+	// Always 0.0 <= position_offset < length.
+	double position_offset;
+
+  dsp::SchmittTrigger playTrigger;
 
   // To display timestamps correctly.
 	double seconds = 0.0;
@@ -42,8 +53,9 @@ struct Recall : Module {
 
 	Recall() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		configSwitch(LOOP_PARAM, 0, 2, 0, "What to do when hitting the endpoints",
-								 {"Loop around", "Bounce", "Go back to Position"});
+		// TODO: change this to a button.
+		configSwitch(LOOP_PARAM, 0, 1, 0, "What to do when hitting the endpoints",
+								 {"Loop around", "Bounce"});
 		// This has distinct values.
     getParamQuantity(LOOP_PARAM)->snapEnabled = true;
 	  configParam(SPEED_PARAM, -10.f, 10.f, 1.f, "Playback speed/direction");
@@ -56,8 +68,8 @@ struct Recall : Module {
 		configOutput(LEFT_OUTPUT, "");
 		configOutput(RIGHT_OUTPUT, "");
 
-		invertSpeed = false;
 		playback_position = -1;
+		prev_position = -1.0;
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -80,55 +92,67 @@ struct Recall : Module {
 				float* left_array = buffer->left_array;
 				float* right_array = buffer->right_array;
 				int loop_type = (int) params[LOOP_PARAM].getValue();
-				if (loop_type != 1) {
-					invertSpeed = false;
-				}
 				if (playback_position == -1) { // Starting.
-					playback_position = length * (params[POSITION_PARAM].getValue() / 10.0);
+					prev_position = params[POSITION_PARAM].getValue();
+					position_offset = length * (params[POSITION_PARAM].getValue() / 10.0);
+					playback_position = 0;
 				}
 				playback_position +=
-					(inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue()) *
-					(invertSpeed ? -1 : 1);
+					inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
+				switch (loop_type) {
+					case 0: {  // Loop around.
+						if (playback_position < 0.0) {
+							playback_position += length;
+						} else if (playback_position >= length) {
+							playback_position -= length;
+						}
+					}
+					break;
+					case 1: {  // Bounce.
+						if (playback_position < 0.0) {
+							playback_position += 2 * length;
+						} else if (playback_position >= 2 * length) {
+							playback_position -= 2 * length;
+						}
+					}
+					break;
+				}
+				// Now add the influence of POSITION parameters.
+				// Only recalc influence when params change.
+				if (prev_position != params[POSITION_PARAM].getValue()) {
+					prev_position = params[POSITION_PARAM].getValue();
+					position_offset = length * (params[POSITION_PARAM].getValue() / 10.0);
+				}
+
+				display_position = playback_position + position_offset;
+
 				// Behavior at the endpoint depends on the LOOP setting.
-				if ((playback_position < 0) || (playback_position >= length)) {
+				if (display_position >= length) {
 					switch (loop_type) {
 						case 0: {  // Loop around.
-							while (playback_position < 0) {
-								playback_position += length;
-							}
-							while (playback_position >= length) {
-								playback_position -= length;
-							}
+							display_position -= length;
 						}
 						break;
 						case 1: {  // Bounce.
-							invertSpeed = !invertSpeed;
-							playback_position +=
-							 (inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue()) *
-							 (invertSpeed ? -1 : 1);
+							// There might be simpler math for this, it just escapes me now.
+							if (display_position < 2 * length) {
+								display_position = length * 2 - display_position;
+							} else {
+								display_position -= length * 2;
+							}
 						}
 						break;
-						case 2: {
-							playback_position = length * (params[POSITION_PARAM].getValue() / 10.0);
-						}
-            break;
 					}
 				}
-				while (playback_position < 0) {
-					playback_position += length;
-				}
-				while (playback_position >= length) {
-					playback_position -= length;
-				}
-				outputs[NOW_POSITION_OUTPUT].setVoltage(playback_position * 10.0 / length);
-
+				outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
+        line_record.position = display_position;
 				// Determine values to emit.
-				int playback_start = trunc(playback_position);
+				int playback_start = trunc(display_position);
 				int playback_end = trunc(playback_start + 1);
 				if (playback_end >= length) {
 					playback_end -= length;  // Should be zero.
 				}
-				float start_fraction = playback_position - playback_start;
+				float start_fraction = display_position - playback_start;
 				if (buffer->NearHead(playback_start)) {
 					fade = std::max(fade - 0.02, 0.0);
 				} else {
@@ -187,7 +211,7 @@ struct NowTimestamp : TimestampField {
 
   double getPosition() override {
     if (module && module->length > 0) {
-			return module->playback_position * module->seconds / module->length;
+			return module->display_position * module->seconds / module->length;
 		}
 		return 0.00;  // Dummy display value.
   }
@@ -197,6 +221,17 @@ struct NowTimestamp : TimestampField {
 			return module->seconds;
 		}
 		return 2.0;
+	}
+};
+
+struct ConnectedLight : MediumLight<GreenLight> {
+	Recall* module;
+
+  void step() override {
+		if (module) {
+			baseColors[0] = module->line_record.color;
+		}
+		MediumLight::step();
 	}
 };
 
@@ -244,7 +279,10 @@ struct RecallWidget : ModuleWidget {
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.024, 112.0)), module, Recall::LEFT_OUTPUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.971, 112.0)), module, Recall::RIGHT_OUTPUT));
 
-		addChild(createLightCentered<MediumLight<GreenLight>>(mm2px(Vec(3.394, 7.56)), module, Recall::CONNECTED_LIGHT));
+//		addChild(createLightCentered<MediumLight<GreenLight>>(mm2px(Vec(3.394, 7.56)), module, Recall::CONNECTED_LIGHT));
+		ConnectedLight* connect_light = createLightCentered<ConnectedLight>(mm2px(Vec(3.394, 7.56)), module, Recall::CONNECTED_LIGHT);
+    connect_light->module = module;
+		addChild(connect_light);
 	}
 };
 

@@ -6,8 +6,10 @@ Buffer* findClosestMemory(Module* leftModule) {
     if (leftModule->model == modelMemory) {
       return dynamic_cast<BufferedModule*>(leftModule)->getBuffer();
     }
-    if ((leftModule->model == modelRecall) ||
-        (leftModule->model == modelRemember)) {  // This will be a list soon...
+    auto m = leftModule->model;
+    if ((m == modelRecall) ||
+        (m == modelRemember) ||
+        (m == modelDisplay)) {  // This will be a list soon...
       leftModule = leftModule->getLeftExpander().module;
     } else {
       return nullptr;

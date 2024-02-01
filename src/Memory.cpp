@@ -62,8 +62,10 @@ struct Memory : BufferedModule {
   FillThread* filler;
   std::thread* fill_thread;
 
-  // Just to debug record_heads.
-  int sample_count = 0;
+  // To do some tasks every NN samples. Some UI-related tasks are not as
+  // latency-sensitive as the audio thread, and we don't need to do often.
+  // TODO: consider putting these tasks on a background thread...
+  int assign_color_countdown = 0;
 
   Memory() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -78,6 +80,18 @@ struct Memory : BufferedModule {
 
   void dataFromJson(json_t* rootJ) override {
   }
+
+  static constexpr int COLOR_COUNT = 6;
+
+  // TODO: need something with no limit to the colors.
+	NVGcolor colors[COLOR_COUNT] = {
+		SCHEME_RED,
+		SCHEME_BLUE,
+		SCHEME_YELLOW,
+		SCHEME_PURPLE,
+		SCHEME_GREEN,
+		SCHEME_ORANGE
+	};
 
   void process(const ProcessArgs& args) override {
     // We can't fill the buffer until process() is called, since we don't know
@@ -100,6 +114,31 @@ struct Memory : BufferedModule {
         }
       }
     }
+    if (--assign_color_countdown <= 0) {
+      // One hundredth of a second.
+      assign_color_countdown = (int) (args.sampleRate / 100);
+
+      Module* next_module = getRightExpander().module;
+      int color_index = -1;
+      while (next_module) {
+        if (next_module->model == modelRecall) {
+          // Assign Color.
+          color_index = (color_index + 1) % COLOR_COUNT;
+          dynamic_cast<PositionedModule*>(next_module)->line_record.color = colors[color_index];
+        }
+        // If we are still in our module list, move to the right.
+        auto m = next_module->model;
+        if ((m == modelRecall) ||
+            (m == modelRemember) ||
+            (m == modelDisplay)) {  // This will be a list soon...
+          next_module = next_module->getRightExpander().module;
+        } else {
+          break;
+        }
+      }
+    }
+
+
     /*
     sample_count++;
     // Every five seconds, print out the structure.

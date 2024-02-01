@@ -90,6 +90,12 @@
         "Utility",
         "Visual"
       ]
+    },
+    {
+      "slug": "Display",
+      "name": "Display",
+      "description": "Visualizes activity within the Memory system.",
+      "tags": []
     }
   ]
 }
