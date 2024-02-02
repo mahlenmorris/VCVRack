@@ -5,7 +5,7 @@
 
 struct Recall : PositionedModule {
 	enum ParamId {
-		LOOP_PARAM,
+		BOUNCE_PARAM,
 		SPEED_PARAM,
 		POSITION_PARAM,
 		PLAY_BUTTON_PARAM,
@@ -23,6 +23,7 @@ struct Recall : PositionedModule {
 		OUTPUTS_LEN
 	};
 	enum LightId {
+		BOUNCE_LIGHT,
 		CONNECTED_LIGHT,
 		PLAY_BUTTON_LIGHT,
 		LIGHTS_LEN
@@ -54,10 +55,10 @@ struct Recall : PositionedModule {
 	Recall() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		// TODO: change this to a button.
-		configSwitch(LOOP_PARAM, 0, 1, 0, "What to do when hitting the endpoints",
+		configSwitch(BOUNCE_PARAM, 0, 1, 0, "Endpoint Behavior",
 								 {"Loop around", "Bounce"});
 		// This has distinct values.
-    getParamQuantity(LOOP_PARAM)->snapEnabled = true;
+    getParamQuantity(BOUNCE_PARAM)->snapEnabled = true;
 	  configParam(SPEED_PARAM, -10.f, 10.f, 1.f, "Playback speed/direction");
 		configParam(POSITION_PARAM, 0.f, 10.f, 0.f, "0 - 10V position we start at");
 		configSwitch(PLAY_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this play head",
@@ -82,6 +83,7 @@ struct Recall : PositionedModule {
 		Buffer* buffer = findClosestMemory(getLeftExpander().module);
 		bool connected = (buffer != nullptr);
 
+		int loop_type = (int) params[BOUNCE_PARAM].getValue();
 		// If connected and buffer isn't empty.
 		if (connected && buffer->length > 0) {
 			length = buffer->length;
@@ -93,7 +95,6 @@ struct Recall : PositionedModule {
 			if (playing) {
 				float* left_array = buffer->left_array;
 				float* right_array = buffer->right_array;
-				int loop_type = (int) params[LOOP_PARAM].getValue();
 				if (playback_position == -1) { // Starting.
 					prev_position = params[POSITION_PARAM].getValue();
 					position_offset = length * (params[POSITION_PARAM].getValue() / 10.0);
@@ -179,7 +180,7 @@ struct Recall : PositionedModule {
 			// Can only be playing if connected.
 			lights[PLAY_BUTTON_LIGHT].setBrightness(0.0f);
 		}
-
+    lights[BOUNCE_LIGHT].setBrightness(loop_type == 1);
 		lights[CONNECTED_LIGHT].setBrightness(connected ? 1.0f : 0.0f);
 	}
 };
@@ -236,12 +237,10 @@ struct RecallWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-		Trimpot* loop_knob = createParamCentered<Trimpot>(
-        mm2px(Vec(8.024, 19.3)), module, Recall::LOOP_PARAM);
-    loop_knob->minAngle = -0.28f * M_PI;
-    loop_knob->maxAngle = 0.28f * M_PI;
-    loop_knob->snap = true;
-    addParam(loop_knob);
+		addParam(createLightParamCentered<VCVLightLatch<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.024, 19.3)),
+                                             module, Recall::BOUNCE_PARAM,
+                                             Recall::BOUNCE_LIGHT));
 
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 32.0)), module, Recall::SPEED_INPUT));
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(20.971, 32.0)), module, Recall::SPEED_PARAM));
