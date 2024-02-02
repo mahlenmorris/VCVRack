@@ -68,6 +68,8 @@ struct Recall : PositionedModule {
 		configOutput(LEFT_OUTPUT, "");
 		configOutput(RIGHT_OUTPUT, "");
 
+    line_record.position = 0.0;
+		line_record.type = RECALL;
 		playback_position = -1;
 		prev_position = -1.0;
 	}
@@ -224,17 +226,6 @@ struct NowTimestamp : TimestampField {
 	}
 };
 
-struct ConnectedLight : MediumLight<GreenLight> {
-	Recall* module;
-
-  void step() override {
-		if (module) {
-			baseColors[0] = module->line_record.color;
-		}
-		MediumLight::step();
-	}
-};
-
 struct RecallWidget : ModuleWidget {
 	RecallWidget(Recall* module) {
 		setModule(module);
@@ -279,7 +270,6 @@ struct RecallWidget : ModuleWidget {
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.024, 112.0)), module, Recall::LEFT_OUTPUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.971, 112.0)), module, Recall::RIGHT_OUTPUT));
 
-//		addChild(createLightCentered<MediumLight<GreenLight>>(mm2px(Vec(3.394, 7.56)), module, Recall::CONNECTED_LIGHT));
 		ConnectedLight* connect_light = createLightCentered<ConnectedLight>(mm2px(Vec(3.394, 7.56)), module, Recall::CONNECTED_LIGHT);
     connect_light->module = module;
 		addChild(connect_light);

@@ -20,7 +20,11 @@ struct Display : Module {
 
   Buffer* buffer;
 
+  // Set by process(), read by drawLayer().
   std::vector<LineRecord> line_records;
+	// I guess technically this would be close to the 'distance of the right-most
+	// module, but I don't know if I want to count on that.
+	int max_distance;
 
 	// To do some tasks every NN samples. Some UI-related tasks are not as
   // latency-sensitive as the audio thread, and we don't need to do often.
@@ -45,14 +49,17 @@ struct Display : Module {
       get_line_record_countdown = (int) (args.sampleRate / 100);
 
 			bool connected = false;
+			max_distance = 0;
 
 			line_records.clear();
 			// First head to the right.
 			Module* next_module = getRightExpander().module;
 			while (next_module) {
-				if (next_module->model == modelRecall) {
+				if ((next_module->model == modelRecall) ||
+				    (next_module->model == modelRemember)) {
 					// Add to line_records.
 					line_records.push_back(dynamic_cast<PositionedModule*>(next_module)->line_record);
+					max_distance = std::max(max_distance, line_records.back().distance);
 				}
 				// If we are still in our module list, move to the right.
 				auto m = next_module->model;
@@ -67,9 +74,13 @@ struct Display : Module {
 			// Now to the left.
 			next_module = getLeftExpander().module;
 			while (next_module) {
-				if (next_module->model == modelRecall) {
+				if ((next_module->model == modelRecall) ||
+				    (next_module->model == modelRemember)) {
 					// Add to line_records.
 					line_records.push_back(dynamic_cast<PositionedModule*>(next_module)->line_record);
+          // The largest one might actually be to the left of us! Like if were
+					// the left-most module.
+					max_distance = std::max(max_distance, line_records.back().distance);
 				}
 				// If we are still in our module list, move to the left.
 				auto m = next_module->model;
@@ -104,6 +115,8 @@ struct MemoryDisplay : Widget {
 	// when the "room lights" are turned down. That seems correct to me.
   void drawLayer(const DrawArgs& args, int layer) override {
     if ((layer == 1) && module && module->buffer && module->buffer->length > 0) {
+			// just in case max_distance is zero somehow, I don't want to divide by it.
+			int max_distance = std::max(1, module->max_distance + 1);
 			Rect r = box.zeroPos();
 			Vec bounding_box = r.getBottomRight();
 			for (int i = 0; i < (int) module->line_records.size(); i++) {
@@ -112,7 +125,15 @@ struct MemoryDisplay : Widget {
 				// I picture 0.0 at the bottom. TODO: is that a good idea?
 				double y_pos = bounding_box.y *
 				               (1 - ((double) line.position / module->buffer->length));
-				nvgRect(args.vg, 0.0, y_pos, bounding_box.x, 1);
+				// Line is changed by distance and type.
+				if (line.type == RECALL) {
+					// Endpoint of line suggests which module it is.
+					double len = bounding_box.x * line.distance / max_distance;
+					nvgRect(args.vg, 0.0, y_pos, len, 1);
+				} else {
+					double len = bounding_box.x * (max_distance - line.distance) / max_distance;
+					nvgRect(args.vg, bounding_box.x - len, y_pos, len, 2);
+				}
 				nvgFillColor(args.vg, line.color);
 				nvgFill(args.vg);
 	    }

@@ -117,6 +117,8 @@ struct LineRecord {
 	double position;  // Set by module. Read by Display.
 	NVGcolor color;  // Set by Memory. Read by Display and the module.
 	ModuleType type;  // Set by module class. Read by Display.
+  // Number of modules away from Memory this is. One-indexed.
+  int distance;  // Set by Memory, Read by Display.
 
   LineRecord() {
     // A color the system should never set. Indicates something is wrong.
@@ -154,4 +156,17 @@ struct TimestampField : TextField {
     }
     Widget::drawLayer(args, layer);
   }
+};
+
+
+// Common UI elements.
+struct ConnectedLight : MediumLight<GreenLight> {
+	PositionedModule* module;
+
+  void step() override {
+		if (module) {
+			baseColors[0] = module->line_record.color;
+		}
+		MediumLight::step();
+	}
 };

@@ -2,7 +2,7 @@
 
 #include "buffered.hpp"
 
-struct Remember : Module {
+struct Remember : PositionedModule {
 	enum ParamId {
 		LOOP_PARAM,
 		POSITION_PARAM,
@@ -53,6 +53,8 @@ struct Remember : Module {
 		configInput(LEFT_INPUT, "");
 		configInput(RIGHT_INPUT, "");
 
+		line_record.position = 0.0;
+		line_record.type = REMEMBER;
 		invertSpeed = false;
 		recording_position = -1;
 	}
@@ -118,6 +120,9 @@ struct Remember : Module {
 				outputs[LEFT_OUTPUT].setVoltage(left_array[recording_position]);
 				outputs[RIGHT_OUTPUT].setVoltage(right_array[recording_position]);
 				outputs[NOW_POSITION_OUTPUT].setVoltage(recording_position * 10.0 / length);
+
+ 			  // So Display knows where we are.
+				line_record.position = (double) recording_position;
 
 				// This module is optimized for recording one sample to one integral position
 				// in array. Later modules can figure out how to do fancier stuff.
@@ -202,7 +207,9 @@ struct RememberWidget : ModuleWidget {
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(20.971, 112.0)), module,
 		                                         Remember::RIGHT_INPUT));
 
-		addChild(createLightCentered<MediumLight<GreenLight>>(mm2px(Vec(3.394, 7.56)), module, Remember::CONNECTED_LIGHT));
+		ConnectedLight* connect_light = createLightCentered<ConnectedLight>(mm2px(Vec(3.394, 7.56)), module, Remember::CONNECTED_LIGHT);
+    connect_light->module = module;
+		addChild(connect_light);
 	}
 };
 

@@ -120,11 +120,16 @@ struct Memory : BufferedModule {
 
       Module* next_module = getRightExpander().module;
       int color_index = -1;
+      int distance = 0;
       while (next_module) {
-        if (next_module->model == modelRecall) {
-          // Assign Color.
+        if ((next_module->model == modelRecall) ||
+            (next_module->model == modelRemember)) {
+          // Assign a Color.
+          distance++;
           color_index = (color_index + 1) % COLOR_COUNT;
-          dynamic_cast<PositionedModule*>(next_module)->line_record.color = colors[color_index];
+          PositionedModule* pos_module = dynamic_cast<PositionedModule*>(next_module);
+          pos_module->line_record.color = colors[color_index];
+          pos_module->line_record.distance = distance;
         }
         // If we are still in our module list, move to the right.
         auto m = next_module->model;
