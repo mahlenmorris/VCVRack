@@ -1,6 +1,60 @@
+#include <thread>
+
 #include "plugin.hpp"
 
 #include "buffered.hpp"
+
+// Much of the ideas and names for the waveform drawing are lifted from the
+// VCV Scope module.
+// Number of lines in the waveforms.
+// TODO: Test and see if this number is too large.
+static const int WAVEFORM_SIZE = 1024;
+struct Point {
+	float min = INFINITY;
+	float max = -INFINITY;
+};
+
+struct PointBuffer {
+	Point points[WAVEFORM_SIZE][2];
+};
+
+struct WaveformScanner {
+  Buffer* buffer;
+	PointBuffer* points;
+
+	WaveformScanner(Buffer* the_buffer, PointBuffer* the_points) : buffer{the_buffer},
+	                                                               points{the_points} {}
+
+  // TODO: to make this faster, add a bool array of dirty bits, telling us
+	// which sections to scan.
+
+	void Scan() {
+		while (true) {
+			int point_size = buffer->length / WAVEFORM_SIZE;
+			// For now, do this the most brute-force way; scan from bottom to top.
+			for (int p = 0; p < WAVEFORM_SIZE; p++) {
+				Point left_point, right_point;
+				for (int i = p * point_size;
+					  i < std::min((p + 1) * point_size, buffer->length); i++) {
+					float left = buffer->left_array[i];
+					float right = buffer->right_array[i];
+					left_point.min = std::min(left_point.min, left);
+					left_point.max = std::max(left_point.max, left);
+					right_point.min = std::min(right_point.min, right);
+					right_point.max = std::max(right_point.max, right);
+				}
+				points->points[p][0].min = left_point.min;
+				points->points[p][0].max = left_point.max;
+				points->points[p][1].min = right_point.min;
+				points->points[p][1].max = right_point.max;
+
+		    // WARN("%d: min = %f, max = %f", p, left_point.min, left_point.max);
+
+			}
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		}
+	}
+};
 
 
 struct Display : Module {
@@ -20,7 +74,14 @@ struct Display : Module {
 
   Buffer* buffer;
 
+	// [2] -> 0 is left, 1 is right.
+  PointBuffer point_buffer;
+	WaveformScanner* scanner;
+	std::thread* point_refresher;
+
   // Set by process(), read by drawLayer().
+	// Tells the UI where to draw the moving lines representing the player and
+	// recorder "heads".
   std::vector<LineRecord> line_records;
 	// I guess technically this would be close to the 'distance of the right-most
 	// module, but I don't know if I want to count on that.
@@ -34,6 +95,7 @@ struct Display : Module {
 	Display() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		buffer = nullptr;
+		scanner = nullptr;  // Can't create this until Buffer is found.
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -47,6 +109,13 @@ struct Display : Module {
 		if (--get_line_record_countdown <= 0) {
       // One hundredth of a second.
       get_line_record_countdown = (int) (args.sampleRate / 100);
+
+      if (scanner == nullptr) {
+				if (buffer != nullptr) {
+					scanner = new WaveformScanner(buffer, &point_buffer);
+					point_refresher = new std::thread(&WaveformScanner::Scan, scanner);
+				}
+			}
 
 			bool connected = false;
 			max_distance = 0;
@@ -119,6 +188,53 @@ struct MemoryDisplay : Widget {
 			int max_distance = std::max(1, module->max_distance + 1);
 			Rect r = box.zeroPos();
 			Vec bounding_box = r.getBottomRight();
+
+			double x_per_volt = bounding_box.x / 20.0;
+			double zero_volt = bounding_box.x / 2;
+			double y_per_point = bounding_box.y / WAVEFORM_SIZE;
+
+			// Draw the wave form.
+			// TODO: just drawing the left side for now.
+			// Make half-white.
+			nvgFillColor(args.vg, nvgRGBA(128, 128, 128, 255));
+
+			nvgSave(args.vg);
+			nvgScissor(args.vg, RECT_ARGS(r));  // Not sure this is right?
+			nvgBeginPath(args.vg);
+			// Draw max points on the left.
+			for (int i = 0; i < WAVEFORM_SIZE; i++) {
+				const Point& point = module->point_buffer.points[i][0];
+				float max = point.max;
+				if (!std::isfinite(max))
+					max = 0.f;
+				// We'll say the x position ranges from -10V to 10V.
+				float x = zero_volt - (max * x_per_volt);
+				float y = (WAVEFORM_SIZE - i) * y_per_point;
+				if (i == 0)
+					nvgMoveTo(args.vg, x, y);
+				else
+					nvgLineTo(args.vg, x, y);
+			}
+
+			// Draw min points on bottom
+			for (int i = WAVEFORM_SIZE - 1; i >= 0; i--) {
+				const Point& point = module->point_buffer.points[i][0];
+				float min = point.min;
+				if (!std::isfinite(min))
+					min = 0.f;
+				float x = zero_volt - (min * x_per_volt);
+				float y = (WAVEFORM_SIZE - 1 - i) * y_per_point;
+				nvgLineTo(args.vg, x, y);
+			}
+			nvgClosePath(args.vg);
+			// nvgLineCap(args.vg, NVG_ROUND);
+			// nvgMiterLimit(args.vg, 2.f);
+			nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
+			nvgFill(args.vg);
+			nvgResetScissor(args.vg);
+			nvgRestore(args.vg);
+
+			// Then draw the recording heads on top.
 			for (int i = 0; i < (int) module->line_records.size(); i++) {
 				LineRecord line = module->line_records[i];
 				nvgBeginPath(args.vg);
