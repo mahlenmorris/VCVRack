@@ -9,13 +9,12 @@
 // Number of lines in the waveforms.
 // TODO: Test and see if this number is too large.
 static const int WAVEFORM_SIZE = 1024;
-struct Point {
-	float min = INFINITY;
-	float max = -INFINITY;
-};
 
 struct PointBuffer {
-	Point points[WAVEFORM_SIZE][2];
+	// We just measure the amplitudes, not the min and max of the waves.
+	// At the scale we show, a single channel is nearly certain to be symmetric.
+	// I.e., we are closer to SoundCloud than Scope.
+	float points[WAVEFORM_SIZE][2];
 };
 
 struct WaveformScanner {
@@ -25,7 +24,6 @@ struct WaveformScanner {
 
 	WaveformScanner(Buffer* the_buffer, PointBuffer* the_points) :
 	    buffer{the_buffer}, points{the_points}, shutdown{false} {}
-
 
   void Halt() {
 		shutdown = true;
@@ -38,22 +36,17 @@ struct WaveformScanner {
 			int point_size = buffer->length / WAVEFORM_SIZE;
 			// For now, do this the most brute-force way; scan from bottom to top.
 			for (int p = 0; !shutdown && p < WAVEFORM_SIZE; p++) {
-				Point left_point, right_point;
+				float left_amplitude = 0.0, right_amplitude = 0.0;
 				for (int i = p * point_size;
 					   !shutdown && i < std::min((p + 1) * point_size, buffer->length);
 						 i++) {
-					float left = buffer->left_array[i];
-					float right = buffer->right_array[i];
-					left_point.min = std::min(left_point.min, left);
-					left_point.max = std::max(left_point.max, left);
-					right_point.min = std::min(right_point.min, right);
-					right_point.max = std::max(right_point.max, right);
+					left_amplitude = std::max(left_amplitude,
+						                        std::fabs(buffer->left_array[i]));
+					right_amplitude = std::max(right_amplitude,
+					                           std::fabs(buffer->right_array[i]));
 				}
-				points->points[p][0].min = left_point.min;
-				points->points[p][0].max = left_point.max;
-				points->points[p][1].min = right_point.min;
-				points->points[p][1].max = right_point.max;
-
+				points->points[p][0] = left_amplitude;
+				points->points[p][1] = right_amplitude;
 		    // WARN("%d: min = %f, max = %f", p, left_point.min, left_point.max);
 
 			}
@@ -114,13 +107,12 @@ struct Display : Module {
 	}
 
 	void process(const ProcessArgs& args) override {
-		// This process() method, every so often (like maybe every hundredth of a second):
+		// This process() method, many times per second:
 		// * Walks left and right on the Memory modules, noting the color and
 		//   related position they have (if any).
-		// Updates local data structure to note the positions, so that the
-		// MemoryDisplay (below) can draw the results.
+		// * Updates local data structure to note the positions, so that the
+		//   MemoryDisplay (below) can draw the results.
 		// Note that Memory is responsible for telling each module what color it is.
-
 		if (--get_line_record_countdown <= 0) {
       // One hundredth of a second.
       get_line_record_countdown = (int) (args.sampleRate / 100);
@@ -135,6 +127,8 @@ struct Display : Module {
 			bool connected = false;
 			max_distance = 0;
 
+      // TODO: Drastic, I know. Maybe slightly better to just replace the
+			// existing records and hack off any that should be removed?
 			line_records.clear();
 			// First head to the right.
 			Module* next_module = getRightExpander().module;
@@ -155,7 +149,7 @@ struct Display : Module {
 					break;
 				}
 			}
-			// Now to the left.
+			// Now move to the left.
 			next_module = getLeftExpander().module;
 			while (next_module) {
 				if ((next_module->model == modelRecall) ||
@@ -204,48 +198,58 @@ struct MemoryDisplay : Widget {
 			Rect r = box.zeroPos();
 			Vec bounding_box = r.getBottomRight();
 
-			double x_per_volt = bounding_box.x / 20.0;
-			double zero_volt = bounding_box.x / 2;
+			double x_per_volt = (bounding_box.x - 1.0) / 20.0;
+			double zero_volt_left = bounding_box.x / 2 + 0.5;
+			double zero_volt_right = bounding_box.x / 2 + 0.5;
 			double y_per_point = bounding_box.y / WAVEFORM_SIZE;
 
-			// Draw the wave form.
-			// TODO: just drawing the left side for now.
+			// Draw the wave forms.
+			// In one shape we:
+			// * Draw the left side side from bottom to top.
+			// * Draw the right side line from top to bottom.
+			// * Join them. Draw that shape.
+			// Then draw a black line down the middle to make clear that these are
+			// two separate channels.
+
 			// Make half-white.
 			nvgFillColor(args.vg, nvgRGBA(128, 128, 128, 255));
 
 			nvgSave(args.vg);
 			nvgScissor(args.vg, RECT_ARGS(r));  // Not sure this is right?
 			nvgBeginPath(args.vg);
-			// Draw max points on the left.
+
+			// Draw left points on the left of the mid.
 			for (int i = 0; i < WAVEFORM_SIZE; i++) {
-				const Point& point = module->point_buffer.points[i][0];
-				float max = point.max;
-				if (!std::isfinite(max))
-					max = 0.f;
+				float max = module->point_buffer.points[i][0];
 				// We'll say the x position ranges from -10V to 10V.
-				float x = zero_volt - (max * x_per_volt);
+				float x = zero_volt_left - (max * x_per_volt);
 				float y = (WAVEFORM_SIZE - i) * y_per_point;
-				if (i == 0)
+				if (i == 0) {
 					nvgMoveTo(args.vg, x, y);
-				else
+				} else {
 					nvgLineTo(args.vg, x, y);
+				}
 			}
 
-			// Draw min points on bottom
+			// Now do the right channel.
 			for (int i = WAVEFORM_SIZE - 1; i >= 0; i--) {
-				const Point& point = module->point_buffer.points[i][0];
-				float min = point.min;
-				if (!std::isfinite(min))
-					min = 0.f;
-				float x = zero_volt - (min * x_per_volt);
+				float max = module->point_buffer.points[i][1];
+				float x = zero_volt_right + (max * x_per_volt);
 				float y = (WAVEFORM_SIZE - 1 - i) * y_per_point;
 				nvgLineTo(args.vg, x, y);
 			}
+
 			nvgClosePath(args.vg);
-			// nvgLineCap(args.vg, NVG_ROUND);
-			// nvgMiterLimit(args.vg, 2.f);
 			nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
 			nvgFill(args.vg);
+
+			// Draw line.
+      nvgBeginPath(args.vg);
+			nvgRect(args.vg, zero_volt_left, 0, 0.5f, bounding_box.y);
+			nvgFillColor(args.vg, SCHEME_WHITE);
+			nvgFill(args.vg);
+
+			// Restore previous state.
 			nvgResetScissor(args.vg);
 			nvgRestore(args.vg);
 
