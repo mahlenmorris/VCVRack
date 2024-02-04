@@ -21,21 +21,27 @@ struct PointBuffer {
 struct WaveformScanner {
   Buffer* buffer;
 	PointBuffer* points;
+	bool shutdown;
 
-	WaveformScanner(Buffer* the_buffer, PointBuffer* the_points) : buffer{the_buffer},
-	                                                               points{the_points} {}
+	WaveformScanner(Buffer* the_buffer, PointBuffer* the_points) :
+	    buffer{the_buffer}, points{the_points}, shutdown{false} {}
+
+
+  void Halt() {
+		shutdown = true;
+	}
 
   // TODO: to make this faster, add a bool array of dirty bits, telling us
 	// which sections to scan.
-
 	void Scan() {
-		while (true) {
+		while (!shutdown) {
 			int point_size = buffer->length / WAVEFORM_SIZE;
 			// For now, do this the most brute-force way; scan from bottom to top.
-			for (int p = 0; p < WAVEFORM_SIZE; p++) {
+			for (int p = 0; !shutdown && p < WAVEFORM_SIZE; p++) {
 				Point left_point, right_point;
 				for (int i = p * point_size;
-					  i < std::min((p + 1) * point_size, buffer->length); i++) {
+					   !shutdown && i < std::min((p + 1) * point_size, buffer->length);
+						 i++) {
 					float left = buffer->left_array[i];
 					float right = buffer->right_array[i];
 					left_point.min = std::min(left_point.min, left);
@@ -51,7 +57,9 @@ struct WaveformScanner {
 		    // WARN("%d: min = %f, max = %f", p, left_point.min, left_point.max);
 
 			}
-			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+			if (!shutdown) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(500));
+			}
 		}
 	}
 };
@@ -96,6 +104,13 @@ struct Display : Module {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		buffer = nullptr;
 		scanner = nullptr;  // Can't create this until Buffer is found.
+	}
+
+	~Display() {
+		scanner->Halt();
+		point_refresher->join();
+		delete point_refresher;
+		delete scanner;
 	}
 
 	void process(const ProcessArgs& args) override {
