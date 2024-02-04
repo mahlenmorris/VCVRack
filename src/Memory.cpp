@@ -33,8 +33,14 @@ struct FillThread {
       new_right_array[i] = 0.0f;
     }
 
+    // And mark every sector dirty.
+    for (int i = 0; i < WAVEFORM_SIZE; ++i) {
+      buffer->dirty[i] = true;
+    }
+
     buffer->left_array = new_left_array;
     buffer->right_array = new_right_array;
+
     buffer->length = samples;
     buffer->seconds = seconds;
     running = false;
@@ -142,21 +148,7 @@ struct Memory : BufferedModule {
         }
       }
     }
-
-
-    /*
-    sample_count++;
-    // Every five seconds, print out the structure.
-    if (sample_count > args.sampleRate * 5) {
-      sample_count = 0;
-      Buffer* buffer = getBuffer();
-      for (RecordHeadTrace trace : buffer->record_heads) {
-        WARN("module = %lld, position = %d, age = %d", trace.module_id, trace.position, trace.age);
-      }
-    }
-    */
   }
-
 };
 
 struct MemoryWidget : ModuleWidget {

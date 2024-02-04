@@ -22,12 +22,19 @@ struct RecordHeadTrace {
   RecordHeadTrace(long long id, int pos) : module_id{id}, position{pos}, age{0} {}
 };
 
+// Number of lines in the waveforms.
+// TODO: Test and see if this number is too large.
+static const int WAVEFORM_SIZE = 1024;
+
 struct Buffer {
   // Consider making this a 2 x length array.
   float* left_array;   // make this std::shared_ptr.
   float* right_array;   // make this std::shared_ptr.
   double seconds;
   int length = 0;
+
+  // For marking blocks of the waveform that Display shows as needing to be updated.
+  bool dirty[WAVEFORM_SIZE];
 
   std::vector<RecordHeadTrace> record_heads;
 
@@ -48,6 +55,10 @@ struct Buffer {
       }
     }
     return false;
+  }
+
+  void SetDirty(int position) {
+    dirty[(int) floor(position / ((double) length / WAVEFORM_SIZE))] = true;
   }
 
   // Returns true if near a recording head, except for module_id.
@@ -78,8 +89,11 @@ struct Buffer {
   void Set(int position, float left, float right, long long module_id) {
     left_array[position] = left;
     right_array[position] = right;
+    SetDirty(position);
 
     // Update (or create) a trace for this Set() call.
+    // TODO: Memory should create/update this list during the module scan in
+    // process().
     bool found = false;
     for (int i = 0; i < (int) record_heads.size(); ++i) {
       if (record_heads[i].module_id == module_id) {

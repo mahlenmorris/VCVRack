@@ -6,15 +6,13 @@
 
 // Much of the ideas and names for the waveform drawing are lifted from the
 // VCV Scope module.
-// Number of lines in the waveforms.
-// TODO: Test and see if this number is too large.
-static const int WAVEFORM_SIZE = 1024;
 
 struct PointBuffer {
 	// We just measure the amplitudes, not the min and max of the waves.
 	// At the scale we show, a single channel is nearly certain to be symmetric.
 	// I.e., we are closer to SoundCloud than Scope.
 	float points[WAVEFORM_SIZE][2];
+	double normalize_factor;
 };
 
 struct WaveformScanner {
@@ -33,25 +31,38 @@ struct WaveformScanner {
 	// which sections to scan.
 	void Scan() {
 		while (!shutdown) {
-			int point_size = buffer->length / WAVEFORM_SIZE;
+			int sector_size = buffer->length / WAVEFORM_SIZE;
+			float peak_value = 0.0f;
 			// For now, do this the most brute-force way; scan from bottom to top.
 			for (int p = 0; !shutdown && p < WAVEFORM_SIZE; p++) {
-				float left_amplitude = 0.0, right_amplitude = 0.0;
-				for (int i = p * point_size;
-					   !shutdown && i < std::min((p + 1) * point_size, buffer->length);
-						 i++) {
-					left_amplitude = std::max(left_amplitude,
-						                        std::fabs(buffer->left_array[i]));
-					right_amplitude = std::max(right_amplitude,
-					                           std::fabs(buffer->right_array[i]));
-				}
-				points->points[p][0] = left_amplitude;
-				points->points[p][1] = right_amplitude;
-		    // WARN("%d: min = %f, max = %f", p, left_point.min, left_point.max);
+				if (buffer->dirty[p]) {
+					float left_amplitude = 0.0, right_amplitude = 0.0;
+					for (int i = p * sector_size;
+						   !shutdown && i < std::min((p + 1) * sector_size, buffer->length);
+							 i++) {
+						left_amplitude = std::max(left_amplitude,
+							                        std::fabs(buffer->left_array[i]));
+						right_amplitude = std::max(right_amplitude,
+						                           std::fabs(buffer->right_array[i]));
+					}
+					points->points[p][0] = left_amplitude;
+					points->points[p][1] = right_amplitude;
+			    // WARN("%d: left = %f, right = %f", p, left_amplitude, right_amplitude);
 
+					// Not stricly speaking correct (the sector may have been written
+					// to during the scan). But correctness is not critical, and the new
+					// values will be caught if any futher writes to this sector occur,
+					// which, since writes are sequential, is quite likely.
+					buffer->dirty[p] = false;
+				}
+				peak_value = std::max(peak_value, points->points[p][0]);
+				peak_value = std::max(peak_value, points->points[p][1]);
 			}
+			// Avoid divide by zero.
+			peak_value = std::max(peak_value, 0.01f);
+			points->normalize_factor = 9.0f / peak_value;
 			if (!shutdown) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(500));
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			}
 		}
 	}
@@ -208,7 +219,7 @@ struct MemoryDisplay : Widget {
 			// * Draw the left side side from bottom to top.
 			// * Draw the right side line from top to bottom.
 			// * Join them. Draw that shape.
-			// Then draw a black line down the middle to make clear that these are
+			// Then draw a white line down the middle to suggest that these are
 			// two separate channels.
 
 			// Make half-white.
@@ -220,7 +231,7 @@ struct MemoryDisplay : Widget {
 
 			// Draw left points on the left of the mid.
 			for (int i = 0; i < WAVEFORM_SIZE; i++) {
-				float max = module->point_buffer.points[i][0];
+				float max = module->point_buffer.points[i][0] * module->point_buffer.normalize_factor;
 				// We'll say the x position ranges from -10V to 10V.
 				float x = zero_volt_left - (max * x_per_volt);
 				float y = (WAVEFORM_SIZE - i) * y_per_point;
@@ -233,7 +244,7 @@ struct MemoryDisplay : Widget {
 
 			// Now do the right channel.
 			for (int i = WAVEFORM_SIZE - 1; i >= 0; i--) {
-				float max = module->point_buffer.points[i][1];
+				float max = module->point_buffer.points[i][1] * module->point_buffer.normalize_factor;
 				float x = zero_volt_right + (max * x_per_volt);
 				float y = (WAVEFORM_SIZE - 1 - i) * y_per_point;
 				nvgLineTo(args.vg, x, y);
@@ -248,6 +259,8 @@ struct MemoryDisplay : Widget {
 			nvgRect(args.vg, zero_volt_left, 0, 0.5f, bounding_box.y);
 			nvgFillColor(args.vg, SCHEME_WHITE);
 			nvgFill(args.vg);
+
+			// TODO: should display the normalization or peak value.
 
 			// Restore previous state.
 			nvgResetScissor(args.vg);
