@@ -13,6 +13,19 @@ struct PointBuffer {
 	// I.e., we are closer to SoundCloud than Scope.
 	float points[WAVEFORM_SIZE][2];
 	double normalize_factor;
+	std::string text_factor;
+};
+
+static const float WIDTHS[] = {
+	0.01, 0.02, 0.05,
+	0.1, 0.2, 0.5,
+	1, 2, 5,
+  10, 20, 50};
+static const char* TEXTS[] = {
+	"0.01V", "0.02V", "0.05V",
+	"0.1V", "0.2V", "0.5V",
+	"1V", "2V", "5V",
+	"10V", "20V", "50V"
 };
 
 struct WaveformScanner {
@@ -58,16 +71,25 @@ struct WaveformScanner {
 				peak_value = std::max(peak_value, points->points[p][0]);
 				peak_value = std::max(peak_value, points->points[p][1]);
 			}
-			// Avoid divide by zero.
-			peak_value = std::max(peak_value, 0.01f);
-			points->normalize_factor = 9.0f / peak_value;
+			float window_size;
+			for (int i = 0; i < 12; i++) {
+				float f = WIDTHS[i];
+				if (peak_value <= f || i == 11) {
+					window_size = f;
+					points->text_factor.assign(TEXTS[i]);
+					break;
+				}
+			}
+			points->normalize_factor = 10.0f / window_size;
+
+			//points->normalize_factor = 9.0f / std::max(peak_value, 0.01f);
+			// Pause for a bit to let other threads give us something to do.
 			if (!shutdown) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			}
 		}
 	}
 };
-
 
 struct Display : Module {
 	enum ParamId {
@@ -210,7 +232,7 @@ struct MemoryDisplay : Widget {
 			Vec bounding_box = r.getBottomRight();
 
 			double x_per_volt = (bounding_box.x - 1.0) / 20.0;
-			double zero_volt_left = bounding_box.x / 2 + 0.5;
+			double zero_volt_left = bounding_box.x / 2 - 0.5;
 			double zero_volt_right = bounding_box.x / 2 + 0.5;
 			double y_per_point = bounding_box.y / WAVEFORM_SIZE;
 
@@ -261,6 +283,15 @@ struct MemoryDisplay : Widget {
 			nvgFill(args.vg);
 
 			// TODO: should display the normalization or peak value.
+			nvgBeginPath(args.vg);
+			nvgFillColor(args.vg, color::WHITE);
+			nvgFontSize(args.vg, 11);
+			// Do I need this? nvgFontFaceId(args.vg, font->handle);
+			nvgTextLetterSpacing(args.vg, -2);
+
+			// Place on the line just off the left edge.
+			nvgText(args.vg, 4, 10, module->point_buffer.text_factor.c_str(), NULL);
+
 
 			// Restore previous state.
 			nvgResetScissor(args.vg);
