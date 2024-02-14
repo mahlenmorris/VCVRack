@@ -82,7 +82,6 @@ struct WaveformScanner {
 			}
 			points->normalize_factor = 10.0f / window_size;
 
-			//points->normalize_factor = 9.0f / std::max(peak_value, 0.01f);
 			// Pause for a bit to let other threads give us something to do.
 			if (!shutdown) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -133,10 +132,14 @@ struct Display : Module {
 	}
 
 	~Display() {
-		scanner->Halt();
-		point_refresher->join();
-		delete point_refresher;
-		delete scanner;
+		if (scanner != nullptr) {
+			scanner->Halt();
+			if (point_refresher->joinable()) {
+				point_refresher->join();
+			}
+			delete point_refresher;
+			delete scanner;
+		}
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -150,6 +153,8 @@ struct Display : Module {
       // One hundredth of a second.
       get_line_record_countdown = (int) (args.sampleRate / 100);
 
+      // TODO: Shouldn't these be assigned in Display() ctor?
+			// Or at least create the thread then?
       if (scanner == nullptr) {
 				if (buffer != nullptr) {
 					scanner = new WaveformScanner(buffer, &point_buffer);
@@ -225,7 +230,7 @@ struct MemoryDisplay : Widget {
 	// By using drawLayer() instead of draw(), this becomes a glowing display
 	// when the "room lights" are turned down. That seems correct to me.
   void drawLayer(const DrawArgs& args, int layer) override {
-    if ((layer == 1) && module && module->buffer && module->buffer->length > 0) {
+    if ((layer == 1) && module && module->buffer && module->buffer->IsValid()) {
 			// just in case max_distance is zero somehow, I don't want to divide by it.
 			int max_distance = std::max(1, module->max_distance + 1);
 			Rect r = box.zeroPos();

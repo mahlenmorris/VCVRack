@@ -9,6 +9,8 @@
 struct FloatPair {
   float left;
   float right;
+
+  FloatPair() : left{0.0f}, right{0.0f} {}
 };
 
 // A record of a moment that a record head called Set(). Used by Play heads
@@ -30,13 +32,21 @@ struct Buffer {
   // Consider making this a 2 x length array.
   float* left_array;   // make this std::shared_ptr.
   float* right_array;   // make this std::shared_ptr.
-  double seconds;
   int length = 0;
+  double seconds;
 
   // For marking blocks of the waveform that Display shows as needing to be updated.
   bool dirty[WAVEFORM_SIZE];
 
   std::vector<RecordHeadTrace> record_heads;
+
+  Buffer() : left_array{nullptr}, right_array{nullptr}, length{0},
+             seconds{0.0} {}
+
+  bool IsValid() {
+    return (length > 0) && (seconds > 0.0) && (left_array != nullptr) &&
+           (right_array != nullptr);
+  }
 
   bool NearHead(int position) {
     // TODO: not sure if correct when near the ends of the buffer.
@@ -86,6 +96,21 @@ struct Buffer {
     return false;
   }
 
+  // Caller is responsible for only calling this when IsValid() is true.
+  void Get(FloatPair *pair, double position) {
+    int playback_start = trunc(position);
+    int playback_end = trunc(playback_start + 1);
+    if (playback_end >= length) {
+      playback_end -= length;  // Should be zero.
+    }
+    float start_fraction = position - playback_start;
+    pair->left = left_array[playback_start] * (1.0 - start_fraction) +
+                 left_array[playback_end] * (start_fraction);
+    pair->right = right_array[playback_start] * (1.0 - start_fraction) +
+                  right_array[playback_end] * (start_fraction);
+  }
+
+  // Caller is responsible for only calling this when IsValid() is true.
   void Set(int position, float left, float right, long long module_id) {
     left_array[position] = left;
     right_array[position] = right;
@@ -164,6 +189,10 @@ struct TimestampField : TextField {
         // display "seconds.hundreths"
         int value = trunc(sec_position * 100);
         sprintf(text_buffer, "%02d.%02d", value / 100, value % 100);
+      } else {
+        // TODO: this hasn't really been tested.
+        int value = trunc(sec_position);
+        sprintf(text_buffer, "%d:%02d", value / 60, value % 60);
       }
       std::string result(text_buffer);
       text = result;

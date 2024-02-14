@@ -65,12 +65,17 @@ struct Remember : PositionedModule {
 		// The number of modules it needs to go through does seem to increase the
 		// CPU consummed by the module.
 		Buffer* buffer = findClosestMemory(getLeftExpander().module);
-		bool connected = (buffer != nullptr);
+		bool connected = (buffer != nullptr) && buffer->IsValid();
 
 		// If connected and buffer isn't empty.
-		if (connected && buffer->length > 0) {
+		if (connected) {
+			// These help the Timestamps UI widgets on this module.
+			// While we could have Timestamp only pick these up from the Buffer,
+			// This means that disconnecting the module doesn't zero-out the
+			// Timestamp displays.
 			length = buffer->length;
 			seconds = buffer->seconds;
+
 			recordTrigger.process(rescale(
 					inputs[RECORD_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
 			bool recording = (params[RECORD_BUTTON_PARAM].getValue() > 0.1f) ||
@@ -149,15 +154,17 @@ struct NowRememberTimestamp : TimestampField {
   Remember* module;
 
   double getPosition() override {
-    if (module && module->length > 0) {
-			return module->recording_position * module->seconds / module->length;
+    if (module && module->seconds > 0 && module->length > 0) {
+			//return module->recording_position * module->seconds / module->length;
+			return 1.23;
 		}
 		return 0.00;  // Dummy display value.
   }
 
 	double getSeconds() override {
     if (module && module->seconds > 0.0) {
-			return module->seconds;
+			//return module->seconds;
+			return 4.56;
 		}
 		return 2.0;
 	}

@@ -81,20 +81,23 @@ struct Recall : PositionedModule {
 		// The number of modules it needs to go through does seem to increase the
 		// CPU consummed by the module.
 		Buffer* buffer = findClosestMemory(getLeftExpander().module);
-		bool connected = (buffer != nullptr);
+		bool connected = (buffer != nullptr) && buffer->IsValid();
 
 		int loop_type = (int) params[BOUNCE_PARAM].getValue();
 		// If connected and buffer isn't empty.
-		if (connected && buffer->length > 0) {
-			length = buffer->length;
-			seconds = buffer->seconds;
+		if (connected) {
+			// These help the Timestamps UI widgets on this module.
+			// While we could have Timestamp only pick these up from the Buffer,
+			// This means that disconnecting the module doesn't zero-out the
+			// Timestamp displays.
+			// Bad things happen if these are zero, which sometimes happens on startup.
+			length = std::max(buffer->length, 10);
+			seconds = std::max(buffer->seconds, 1.0);
 			playTrigger.process(rescale(
 					inputs[PLAY_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
 			bool playing = (params[PLAY_BUTTON_PARAM].getValue() > 0.1f) ||
 			               playTrigger.isHigh();
 			if (playing) {
-				float* left_array = buffer->left_array;
-				float* right_array = buffer->right_array;
 				if (playback_position == -1) { // Starting.
 					prev_position = params[POSITION_PARAM].getValue();
 					position_offset = length * (params[POSITION_PARAM].getValue() / 10.0);
@@ -150,25 +153,17 @@ struct Recall : PositionedModule {
 				outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
         line_record.position = display_position;
 				// Determine values to emit.
-				int playback_start = trunc(display_position);
-				int playback_end = trunc(playback_start + 1);
-				if (playback_end >= length) {
-					playback_end -= length;  // Should be zero.
-				}
-				float start_fraction = display_position - playback_start;
-				if (buffer->NearHead(playback_start)) {
+				if (buffer->NearHead(display_position)) {
 					fade = std::max(fade - 0.02, 0.0);
 				} else {
 					if (fade < 1.0) {
 						fade = std::min(fade + 0.02, 1.0);
 					}
 				}
-				outputs[LEFT_OUTPUT].setVoltage(fade *
-					(left_array[playback_start] * (1.0 - start_fraction) +
-				   left_array[playback_end] * (start_fraction)));
-				outputs[RIGHT_OUTPUT].setVoltage(fade *
-					(right_array[playback_start] * (1.0 - start_fraction) +
-				   right_array[playback_end] * (start_fraction)));
+				FloatPair gotten;
+				buffer->Get(&gotten, display_position);
+				outputs[LEFT_OUTPUT].setVoltage(fade * gotten.left);
+				outputs[RIGHT_OUTPUT].setVoltage(fade * gotten.right);
 				lights[PLAY_BUTTON_LIGHT].setBrightness(1.0f);
 			} else {
 				outputs[LEFT_OUTPUT].setVoltage(0.0f);
@@ -192,7 +187,7 @@ struct StartTimestamp : TimestampField {
   Recall* module;
 
   double getPosition() override {
-    if (module && module->length > 0) {
+    if (module && module->seconds > 0) {
 			return module->params[Recall::POSITION_PARAM].getValue() * module->seconds / 10.0;
 		}
 		return 0.00;  // Dummy display value.
@@ -213,7 +208,7 @@ struct NowTimestamp : TimestampField {
   Recall* module;
 
   double getPosition() override {
-    if (module && module->length > 0) {
+    if (module && module->length > 0 && module->seconds > 0.0) {
 			return module->display_position * module->seconds / module->length;
 		}
 		return 0.00;  // Dummy display value.

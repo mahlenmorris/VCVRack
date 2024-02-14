@@ -5,13 +5,23 @@
 
 // Class devoted to handling the lengthy (compared to single sample)
 // process of filling or replacing the current Buffer.
-struct FillThread {
+struct WorkThread {
   Buffer* buffer;
   float sample_rate;
+  bool shutdown;
+  bool initiateFill;
+  bool initiateWipe;
   bool running;  // TRUE if still compiling, false if completed.
 
-  explicit FillThread(Buffer* the_buffer) : buffer{the_buffer} {
+  explicit WorkThread(Buffer* the_buffer) : buffer{the_buffer} {
     running = false;
+    initiateFill = false;
+    initiateWipe = false;
+    shutdown = false;
+  }
+
+  void Halt() {
+    shutdown = true;
   }
 
   void SetRate(float rate) {
@@ -20,53 +30,81 @@ struct FillThread {
 
   // If compilation succeeds, sets flag saying so and prepares vectors
   // of main_blocks and expression_blocks for module to use later.
-  void Fill() {
-    running = true;
-    int seconds = 15;
-    int samples = std::round(seconds * sample_rate);
-    float* new_left_array = new float[samples];
-    float* new_right_array = new float[samples];
+  void Work() {
+    while (!shutdown) {
+      if (initiateFill) {
+        running = true;
+        initiateFill = false;
+        int seconds = 15;
+        int samples = std::round(seconds * sample_rate);
+        float* new_left_array = new float[samples];
+        float* new_right_array = new float[samples];
 
-    // Wipe array before giving it to buffer.
-    for (int i = 0; i < samples; ++i) {
-      new_left_array[i] = 0.0f;
-      new_right_array[i] = 0.0f;
+        // Note that this data is still random. Needs to be wiped!
+
+        // And mark every sector dirty.
+        for (int i = 0; i < WAVEFORM_SIZE; ++i) {
+          buffer->dirty[i] = true;
+        }
+
+        buffer->left_array = new_left_array;
+        buffer->right_array = new_right_array;
+
+        buffer->length = samples;
+        buffer->seconds = seconds;
+        running = false;
+      } else if (initiateWipe) {
+        running = true;
+        initiateWipe = false;
+        for (int i = 0; i < buffer->length && !shutdown; ++i) {
+          buffer->left_array[i] = 0.0f;
+          buffer->right_array[i] = 0.0f;
+        }
+
+        // And mark every sector dirty.
+        for (int i = 0; i < WAVEFORM_SIZE && ! shutdown; ++i) {
+          buffer->dirty[i] = true;
+        }
+        running = false;
+      }
+      // It seems like I need a tiny sleep here to allow join() to work
+      // on this thread?
+      if (!shutdown) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
     }
-
-    // And mark every sector dirty.
-    for (int i = 0; i < WAVEFORM_SIZE; ++i) {
-      buffer->dirty[i] = true;
-    }
-
-    buffer->left_array = new_left_array;
-    buffer->right_array = new_right_array;
-
-    buffer->length = samples;
-    buffer->seconds = seconds;
-    running = false;
   }
 };
 
-
 struct Memory : BufferedModule {
   enum ParamId {
+    WIPE_BUTTON_PARAM,
     PARAMS_LEN
   };
   enum InputId {
+    WIPE_TRIGGER_INPUT,
     INPUTS_LEN
   };
   enum OutputId {
     OUTPUTS_LEN
   };
   enum LightId {
+    WIPE_BUTTON_LIGHT,
     LIGHTS_LEN
   };
 
-
-  bool buffer_valid = false;
+  bool buffer_filled = false;
   bool fill_in_progress = false;
-  FillThread* filler;
-  std::thread* fill_thread;
+  bool buffer_wiped = false;
+  bool wipe_in_progress = false;
+  WorkThread* worker;
+  std::thread* work_thread;
+
+  // For wiping contents.
+  dsp::SchmittTrigger wipe_trigger;
+  // Keeps lights on buttons lit long enough to see.
+  int wipe_light_countdown = 0;
+
 
   // To do some tasks every NN samples. Some UI-related tasks are not as
   // latency-sensitive as the audio thread, and we don't need to do often.
@@ -75,7 +113,22 @@ struct Memory : BufferedModule {
 
   Memory() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-    filler = new FillThread(getBuffer());
+    configButton(WIPE_BUTTON_PARAM, "Press to wipe contents to 0.0V");
+    configInput(WIPE_TRIGGER_INPUT, "A trigger wipes contents to 0.0V");
+    worker = new WorkThread(getBuffer());
+  }
+
+  ~Memory() {
+    if (worker != nullptr) {
+      worker->Halt();
+      worker->initiateFill = false;
+      worker->initiateWipe = false;
+      if (work_thread != nullptr) {
+        work_thread->join();
+        delete work_thread;
+      }
+      delete worker;
+    }
   }
 
   // Save and retrieve menu choice(s).
@@ -87,9 +140,8 @@ struct Memory : BufferedModule {
   void dataFromJson(json_t* rootJ) override {
   }
 
-  static constexpr int COLOR_COUNT = 6;
-
   // TODO: need something with no limit to the colors.
+  static constexpr int COLOR_COUNT = 6;
 	NVGcolor colors[COLOR_COUNT] = {
 		SCHEME_RED,
 		SCHEME_BLUE,
@@ -100,26 +152,55 @@ struct Memory : BufferedModule {
 	};
 
   void process(const ProcessArgs& args) override {
+    // This is just for the initial creation of the buffer.
     // We can't fill the buffer until process() is called, since we don't know
     // what the sample rate is.
-    if (!buffer_valid) {
-      if (fill_in_progress) {
-        if (filler->running) {
-          // OK, just wait for it to finish.
+    if (!buffer_filled || !buffer_wiped) {
+      if (!buffer_filled) {
+        if (!fill_in_progress) {
+          // Confirm that we can read the sample rate before starting a fill.
+          if (args.sampleRate > 1.0) {
+            worker->SetRate(args.sampleRate);
+            worker->initiateFill = true;
+            // TODO: Should the worker thread be part of the Buffer itself?
+            // Should it just be waiting for the sample rate to be filled, and then
+            // start itself?
+            work_thread = new std::thread(&WorkThread::Work, worker);
+            fill_in_progress = true;
+          }
         } else {
-          // Filling done.
-          fill_in_progress = false;
-          buffer_valid = true;
+          if (worker->running) {
+            // OK, just wait for it to finish.
+          } else {
+            // Filling done.
+            fill_in_progress = false;
+            buffer_filled = true;
+          }
         }
-      } else {
-        // Confirm that we can read the sample rate before starting a fill.
-        if (args.sampleRate > 1.0) {
-          fill_in_progress = true;
-          filler->SetRate(args.sampleRate);
-          fill_thread = new std::thread(&FillThread::Fill, filler);
+      }
+      if (buffer_filled) {
+        if (!wipe_in_progress) {
+          worker->initiateWipe = true;
+          wipe_in_progress = true;
+        } else {
+          if (worker->running) {
+            // OK, just wait for it to finish.
+          } else {
+            // Wiping done.
+            wipe_in_progress = false;
+            buffer_wiped = true;
+          }
         }
       }
     }
+
+    // Some lights are lit by triggers; these enable them to be
+    // lit long enough to be seen by humans.
+    if (wipe_light_countdown > 0) {
+      wipe_light_countdown--;
+    }
+
+    // Periodically assign colors to each connected module's light.
     if (--assign_color_countdown <= 0) {
       // One hundredth of a second.
       assign_color_countdown = (int) (args.sampleRate / 100);
@@ -148,6 +229,33 @@ struct Memory : BufferedModule {
         }
       }
     }
+
+    // Have we been asked to wipe?
+    bool wipe_was_low = !wipe_trigger.isHigh();
+    wipe_trigger.process(rescale(
+        inputs[WIPE_TRIGGER_INPUT].getVoltage(), 0.1f, 2.0f, 0.0f, 1.0f));
+    if (wipe_was_low && wipe_trigger.isHigh()) {
+      // Flash the wpie light for a tenth of second.
+      // Compute how many samples to show the light.
+      wipe_light_countdown = std::floor(args.sampleRate / 10.0f);
+    }
+    // Note that we don't bother to set wipe_light_countdown when the user
+    // presses the button; we just light up the button while it's
+    // being pressed.
+    bool wipe = (params[WIPE_BUTTON_PARAM].getValue() > 0.1f) ||
+      (wipe_was_low && wipe_trigger.isHigh());
+
+    if (wipe) {
+      // TODO: Decide (or menu options) to pause all recording and playing
+      // during a wipe? Or at least fade the players?
+      worker->initiateWipe = true;
+    }
+
+
+
+    // Set lights.
+    lights[WIPE_BUTTON_LIGHT].setBrightness(
+      wipe || wipe_light_countdown > 0 ? 1.0f : 0.0f);
   }
 };
 
@@ -161,8 +269,18 @@ struct MemoryWidget : ModuleWidget {
 
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,
+                                           RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH,
+                                           RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+
+    // WIPE button and trigger.
+    addParam(createLightParamCentered<VCVLightButton<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 18.918)),
+                                             module, Memory::WIPE_BUTTON_PARAM,
+                                             Memory::WIPE_BUTTON_LIGHT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 18.918)), module,
+                                             Memory::WIPE_TRIGGER_INPUT));
   }
 
   void appendContextMenu(Menu* menu) override {
