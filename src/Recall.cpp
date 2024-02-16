@@ -241,9 +241,9 @@ struct RecallWidget : ModuleWidget {
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(20.971, 32.0)), module, Recall::SPEED_PARAM));
 
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(8.024, 54.0)), module, Recall::POSITION_PARAM));
-		// A timestamp is 14 wide.
+		// A timestamp is 10 wide.
 		StartTimestamp* start_timestamp = createWidget<StartTimestamp>(mm2px(
-        Vec(8.024 - (14.0 / 2.0), 59.0)));
+        Vec(8.024 - (10.0 / 2.0), 59.0)));
     start_timestamp->module = module;
     addChild(start_timestamp);
 
@@ -255,9 +255,9 @@ struct RecallWidget : ModuleWidget {
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 80.0)), module, Recall::PLAY_GATE_INPUT));
 
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.971, 54.0)), module, Recall::NOW_POSITION_OUTPUT));
-		// A timestamp is 14 wide.
+		// A timestamp is 10 wide.
 		NowTimestamp* now_timestamp = createWidget<NowTimestamp>(mm2px(
-        Vec(20.971 - (14.0 / 2.0), 59.0)));
+        Vec(20.971 - (10.0 / 2.0), 59.0)));
     now_timestamp->module = module;
     addChild(now_timestamp);
 

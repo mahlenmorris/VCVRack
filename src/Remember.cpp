@@ -154,17 +154,15 @@ struct NowRememberTimestamp : TimestampField {
   Remember* module;
 
   double getPosition() override {
-    if (module && module->seconds > 0 && module->length > 0) {
-			//return module->recording_position * module->seconds / module->length;
-			return 1.23;
+    if (module && module->length > 0) {
+			return module->recording_position * module->seconds / module->length;
 		}
 		return 0.00;  // Dummy display value.
   }
 
 	double getSeconds() override {
     if (module && module->seconds > 0.0) {
-			//return module->seconds;
-			return 4.56;
+			return module->seconds;
 		}
 		return 2.0;
 	}
@@ -198,9 +196,9 @@ struct RememberWidget : ModuleWidget {
 
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.24, 82.285)),
 		                                           module, Remember::NOW_POSITION_OUTPUT));
-		// A timestamp is 14 wide.
+		// A timestamp is 10 wide.
 		NowRememberTimestamp* now_timestamp = createWidget<NowRememberTimestamp>(mm2px(
-        Vec(15.24 - (14.0 / 2.0), 87.286)));
+        Vec(15.24 - (10.0 / 2.0), 87.286)));
     now_timestamp->module = module;
     addChild(now_timestamp);
 

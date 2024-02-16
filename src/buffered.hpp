@@ -171,10 +171,9 @@ struct PositionedModule : Module {
 
 Buffer* findClosestMemory(Module* leftModule);
 
-struct TimestampField : TextField {
+struct TimestampField : OpaqueWidget {
 	TimestampField() {
-    box.size = mm2px(Vec(14.0, 6.0));
-    multiline = false;
+    box.size = mm2px(Vec(10.0, 5.0));
   }
 
   virtual double getPosition() = 0;
@@ -195,7 +194,31 @@ struct TimestampField : TextField {
         sprintf(text_buffer, "%d:%02d", value / 60, value % 60);
       }
       std::string result(text_buffer);
-      text = result;
+
+      // Draw the timestamp result in the box.
+      Rect r = box.zeroPos();
+      Vec bounding_box = r.getBottomRight();
+
+      // Save previous state.
+      nvgSave(args.vg);
+
+      // Draw background color.
+      nvgBeginPath(args.vg);
+      nvgRect(args.vg, 0.0, 0.0, bounding_box.x, bounding_box.y);
+      nvgFillColor(args.vg, SCHEME_DARK_GRAY);
+      nvgFill(args.vg);
+
+      nvgBeginPath(args.vg);
+      nvgFillColor(args.vg, SCHEME_WHITE);
+      nvgFontSize(args.vg, 11);
+      // Do I need this? nvgFontFaceId(args.vg, font->handle);
+      nvgTextLetterSpacing(args.vg, -1);
+
+      // Place on the line just off the left edge.
+      nvgText(args.vg, 3, 11, result.c_str(), NULL);
+
+      // Restore previous state.
+      nvgRestore(args.vg);
     }
     Widget::drawLayer(args, layer);
   }

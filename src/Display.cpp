@@ -46,7 +46,6 @@ struct WaveformScanner {
 	// case, we need to act accordingly.
   void UpdateBuffer(Buffer* updated_buffer) {
 		if (next_buffer == nullptr && updated_buffer != buffer) {
-			WARN("setting next_buffer to %p", updated_buffer);
 			next_buffer = updated_buffer;
 		}
 		// Scan() will actually do the updating.
@@ -61,8 +60,6 @@ struct WaveformScanner {
 
 			// We may be pointing to a different Buffer. act accordingly.
 			bool full_scan = false;
-			WARN("buffer = %p", buffer);
-			WARN("next_buffer = %p", next_buffer);
 			if (next_buffer != nullptr) {
 				if (next_buffer != buffer) {
 					buffer = next_buffer;
@@ -231,7 +228,6 @@ struct Display : Module {
 						buffer = found_buffer;
 						// Make sure that we scan the buffer currently connected to us.
 						if (scanner != nullptr) {
-							WARN("updating buffer!! %p", found_buffer);
 							scanner->UpdateBuffer(found_buffer);
 						}
 					}
@@ -286,7 +282,7 @@ struct MemoryDisplay : Widget {
 				// two separate channels.
 
 				// Make half-white.
-				nvgFillColor(args.vg, nvgRGBA(128, 128, 128, 255));
+				nvgFillColor(args.vg, nvgRGBA(140, 140, 140, 255));
 
 				nvgSave(args.vg);
 				nvgScissor(args.vg, RECT_ARGS(r));  // Not sure this is right?
@@ -323,16 +319,16 @@ struct MemoryDisplay : Widget {
 				nvgFillColor(args.vg, SCHEME_WHITE);
 				nvgFill(args.vg);
 
-				// TODO: should display the normalization or peak value.
+				// Add text to indicate the largest value we currently display.
 				nvgBeginPath(args.vg);
-				nvgFillColor(args.vg, color::WHITE);
+				nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
+				nvgFillColor(args.vg, SCHEME_BLUE);
 				nvgFontSize(args.vg, 11);
 				// Do I need this? nvgFontFaceId(args.vg, font->handle);
-				nvgTextLetterSpacing(args.vg, -2);
+				nvgTextLetterSpacing(args.vg, -1);
 
 				// Place on the line just off the left edge.
 				nvgText(args.vg, 4, 10, module->point_buffer.text_factor.c_str(), NULL);
-
 
 				// Restore previous state.
 				nvgResetScissor(args.vg);
