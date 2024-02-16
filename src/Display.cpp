@@ -376,7 +376,7 @@ struct DisplayWidget : ModuleWidget {
 		display->module = module;
 		addChild(display);
 
-		addChild(createLightCentered<MediumLight<WhiteLight>>(mm2px(Vec(3.394, 7.56)),
+		addChild(createLightCentered<MediumLight<WhiteLight>>(mm2px(Vec(14.240, 3.0)),
 		             module, Display::CONNECTED_LIGHT));
 	}
 };

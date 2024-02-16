@@ -24,10 +24,10 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2.0000001"
-     inkscape:cx="-249.24999"
+     inkscape:cx="-306.24998"
      inkscape:cy="227.99999"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="layer2"
      showgrid="false"
      units="mm"
      inkscape:snap-bbox="true"
@@ -128,8 +128,8 @@
     <circle
        style="display:inline;fill:#ff00ff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
        id="path4954-3-0-2-9-0-0"
-       cx="3.3935137"
-       cy="7.5595684"
+       cx="15.024"
+       cy="3"
        r="4"
        inkscape:label="connected" />
   </g>

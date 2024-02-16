@@ -184,7 +184,8 @@ struct RememberWidget : ModuleWidget {
     loop_knob->maxAngle = 0.28f * M_PI;
     loop_knob->snap = true;
     addParam(loop_knob);
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(15.24, 48.0)), module, Remember::POSITION_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(
+			mm2px(Vec(15.24, 48.0)), module, Remember::POSITION_PARAM));
 
 		// Record button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
@@ -212,7 +213,8 @@ struct RememberWidget : ModuleWidget {
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(20.971, 112.0)), module,
 		                                         Remember::RIGHT_INPUT));
 
-		ConnectedLight* connect_light = createLightCentered<ConnectedLight>(mm2px(Vec(3.394, 7.56)), module, Remember::CONNECTED_LIGHT);
+		ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
+			mm2px(Vec(14.240, 3.0)), module, Remember::CONNECTED_LIGHT);
     connect_light->module = module;
 		addChild(connect_light);
 	}
