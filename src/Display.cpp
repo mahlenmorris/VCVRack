@@ -30,14 +30,26 @@ static const char* TEXTS[] = {
 
 struct WaveformScanner {
   Buffer* buffer;
+	Buffer* next_buffer;
 	PointBuffer* points;
 	bool shutdown;
 
 	WaveformScanner(Buffer* the_buffer, PointBuffer* the_points) :
-	    buffer{the_buffer}, points{the_points}, shutdown{false} {}
+	    buffer{the_buffer}, next_buffer{nullptr}, points{the_points},
+			shutdown{false} {}
 
   void Halt() {
 		shutdown = true;
+	}
+
+  // If this Display is attched to a different Memeory than was previously the
+	// case, we need to act accordingly.
+  void UpdateBuffer(Buffer* updated_buffer) {
+		if (next_buffer == nullptr && updated_buffer != buffer) {
+			WARN("setting next_buffer to %p", updated_buffer);
+			next_buffer = updated_buffer;
+		}
+		// Scan() will actually do the updating.
 	}
 
   // TODO: to make this faster, add a bool array of dirty bits, telling us
@@ -46,9 +58,22 @@ struct WaveformScanner {
 		while (!shutdown) {
 			int sector_size = buffer->length / WAVEFORM_SIZE;
 			float peak_value = 0.0f;
+
+			// We may be pointing to a different Buffer. act accordingly.
+			bool full_scan = false;
+			WARN("buffer = %p", buffer);
+			WARN("next_buffer = %p", next_buffer);
+			if (next_buffer != nullptr) {
+				if (next_buffer != buffer) {
+					buffer = next_buffer;
+					full_scan = true;
+				}
+				next_buffer = nullptr;
+			}
+
 			// For now, do this the most brute-force way; scan from bottom to top.
 			for (int p = 0; !shutdown && p < WAVEFORM_SIZE; p++) {
-				if (buffer->dirty[p]) {
+				if (full_scan || buffer->dirty[p]) {
 					float left_amplitude = 0.0, right_amplitude = 0.0;
 					for (int i = p * sector_size;
 						   !shutdown && i < std::min((p + 1) * sector_size, buffer->length);
@@ -201,7 +226,15 @@ struct Display : Module {
 				// If we are still in our module list, move to the left.
 				auto m = next_module->model;
 				if (m == modelMemory) {
-					buffer = dynamic_cast<BufferedModule*>(next_module)->getBuffer();
+					Buffer* found_buffer = dynamic_cast<BufferedModule*>(next_module)->getBuffer();
+					if (buffer != found_buffer && found_buffer->IsValid()) {
+						buffer = found_buffer;
+						// Make sure that we scan the buffer currently connected to us.
+						if (scanner != nullptr) {
+							WARN("updating buffer!! %p", found_buffer);
+							scanner->UpdateBuffer(found_buffer);
+						}
+					}
 					connected = true;
 					// Memory marks the end of the left side anyway.
 					break;
@@ -230,97 +263,101 @@ struct MemoryDisplay : Widget {
 	// By using drawLayer() instead of draw(), this becomes a glowing display
 	// when the "room lights" are turned down. That seems correct to me.
   void drawLayer(const DrawArgs& args, int layer) override {
-    if ((layer == 1) && module && module->buffer && module->buffer->IsValid()) {
-			// just in case max_distance is zero somehow, I don't want to divide by it.
-			int max_distance = std::max(1, module->max_distance + 1);
-			Rect r = box.zeroPos();
-			Vec bounding_box = r.getBottomRight();
+    if ((layer == 1) && module) {
+			Buffer* buffer = module->buffer;  // In case it gets reset by another action.
+			if (buffer && buffer->IsValid()) {
 
-			double x_per_volt = (bounding_box.x - 1.0) / 20.0;
-			double zero_volt_left = bounding_box.x / 2 - 0.5;
-			double zero_volt_right = bounding_box.x / 2 + 0.5;
-			double y_per_point = bounding_box.y / WAVEFORM_SIZE;
+				// just in case max_distance is zero somehow, I don't want to divide by it.
+				int max_distance = std::max(1, module->max_distance + 1);
+				Rect r = box.zeroPos();
+				Vec bounding_box = r.getBottomRight();
 
-			// Draw the wave forms.
-			// In one shape we:
-			// * Draw the left side side from bottom to top.
-			// * Draw the right side line from top to bottom.
-			// * Join them. Draw that shape.
-			// Then draw a white line down the middle to suggest that these are
-			// two separate channels.
+				double x_per_volt = (bounding_box.x - 1.0) / 20.0;
+				double zero_volt_left = bounding_box.x / 2 - 0.5;
+				double zero_volt_right = bounding_box.x / 2 + 0.5;
+				double y_per_point = bounding_box.y / WAVEFORM_SIZE;
 
-			// Make half-white.
-			nvgFillColor(args.vg, nvgRGBA(128, 128, 128, 255));
+				// Draw the wave forms.
+				// In one shape we:
+				// * Draw the left side side from bottom to top.
+				// * Draw the right side line from top to bottom.
+				// * Join them. Draw that shape.
+				// Then draw a white line down the middle to suggest that these are
+				// two separate channels.
 
-			nvgSave(args.vg);
-			nvgScissor(args.vg, RECT_ARGS(r));  // Not sure this is right?
-			nvgBeginPath(args.vg);
+				// Make half-white.
+				nvgFillColor(args.vg, nvgRGBA(128, 128, 128, 255));
 
-			// Draw left points on the left of the mid.
-			for (int i = 0; i < WAVEFORM_SIZE; i++) {
-				float max = module->point_buffer.points[i][0] * module->point_buffer.normalize_factor;
-				// We'll say the x position ranges from -10V to 10V.
-				float x = zero_volt_left - (max * x_per_volt);
-				float y = (WAVEFORM_SIZE - i) * y_per_point;
-				if (i == 0) {
-					nvgMoveTo(args.vg, x, y);
-				} else {
+				nvgSave(args.vg);
+				nvgScissor(args.vg, RECT_ARGS(r));  // Not sure this is right?
+				nvgBeginPath(args.vg);
+
+				// Draw left points on the left of the mid.
+				for (int i = 0; i < WAVEFORM_SIZE; i++) {
+					float max = module->point_buffer.points[i][0] * module->point_buffer.normalize_factor;
+					// We'll say the x position ranges from -10V to 10V.
+					float x = zero_volt_left - (max * x_per_volt);
+					float y = (WAVEFORM_SIZE - i) * y_per_point;
+					if (i == 0) {
+						nvgMoveTo(args.vg, x, y);
+					} else {
+						nvgLineTo(args.vg, x, y);
+					}
+				}
+
+				// Now do the right channel.
+				for (int i = WAVEFORM_SIZE - 1; i >= 0; i--) {
+					float max = module->point_buffer.points[i][1] * module->point_buffer.normalize_factor;
+					float x = zero_volt_right + (max * x_per_volt);
+					float y = (WAVEFORM_SIZE - 1 - i) * y_per_point;
 					nvgLineTo(args.vg, x, y);
 				}
-			}
 
-			// Now do the right channel.
-			for (int i = WAVEFORM_SIZE - 1; i >= 0; i--) {
-				float max = module->point_buffer.points[i][1] * module->point_buffer.normalize_factor;
-				float x = zero_volt_right + (max * x_per_volt);
-				float y = (WAVEFORM_SIZE - 1 - i) * y_per_point;
-				nvgLineTo(args.vg, x, y);
-			}
-
-			nvgClosePath(args.vg);
-			nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
-			nvgFill(args.vg);
-
-			// Draw line.
-      nvgBeginPath(args.vg);
-			nvgRect(args.vg, zero_volt_left, 0, 0.5f, bounding_box.y);
-			nvgFillColor(args.vg, SCHEME_WHITE);
-			nvgFill(args.vg);
-
-			// TODO: should display the normalization or peak value.
-			nvgBeginPath(args.vg);
-			nvgFillColor(args.vg, color::WHITE);
-			nvgFontSize(args.vg, 11);
-			// Do I need this? nvgFontFaceId(args.vg, font->handle);
-			nvgTextLetterSpacing(args.vg, -2);
-
-			// Place on the line just off the left edge.
-			nvgText(args.vg, 4, 10, module->point_buffer.text_factor.c_str(), NULL);
-
-
-			// Restore previous state.
-			nvgResetScissor(args.vg);
-			nvgRestore(args.vg);
-
-			// Then draw the recording heads on top.
-			for (int i = 0; i < (int) module->line_records.size(); i++) {
-				LineRecord line = module->line_records[i];
-				nvgBeginPath(args.vg);
-				// I picture 0.0 at the bottom. TODO: is that a good idea?
-				double y_pos = bounding_box.y *
-				               (1 - ((double) line.position / module->buffer->length));
-				// Line is changed by distance and type.
-				if (line.type == RECALL) {
-					// Endpoint of line suggests which module it is.
-					double len = bounding_box.x * line.distance / max_distance;
-					nvgRect(args.vg, 0.0, y_pos, len, 1);
-				} else {
-					double len = bounding_box.x * (max_distance - line.distance) / max_distance;
-					nvgRect(args.vg, bounding_box.x - len, y_pos, len, 2);
-				}
-				nvgFillColor(args.vg, line.color);
+				nvgClosePath(args.vg);
+				nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
 				nvgFill(args.vg);
-	    }
+
+				// Draw line.
+	      nvgBeginPath(args.vg);
+				nvgRect(args.vg, zero_volt_left, 0, 0.5f, bounding_box.y);
+				nvgFillColor(args.vg, SCHEME_WHITE);
+				nvgFill(args.vg);
+
+				// TODO: should display the normalization or peak value.
+				nvgBeginPath(args.vg);
+				nvgFillColor(args.vg, color::WHITE);
+				nvgFontSize(args.vg, 11);
+				// Do I need this? nvgFontFaceId(args.vg, font->handle);
+				nvgTextLetterSpacing(args.vg, -2);
+
+				// Place on the line just off the left edge.
+				nvgText(args.vg, 4, 10, module->point_buffer.text_factor.c_str(), NULL);
+
+
+				// Restore previous state.
+				nvgResetScissor(args.vg);
+				nvgRestore(args.vg);
+
+				// Then draw the recording heads on top.
+				for (int i = 0; i < (int) module->line_records.size(); i++) {
+					LineRecord line = module->line_records[i];
+					nvgBeginPath(args.vg);
+					// I picture 0.0 at the bottom. TODO: is that a good idea?
+					double y_pos = bounding_box.y *
+					               (1 - ((double) line.position / buffer->length));
+					// Line is changed by distance and type.
+					if (line.type == RECALL) {
+						// Endpoint of line suggests which module it is.
+						double len = bounding_box.x * line.distance / max_distance;
+						nvgRect(args.vg, 0.0, y_pos, len, 1);
+					} else {
+						double len = bounding_box.x * (max_distance - line.distance) / max_distance;
+						nvgRect(args.vg, bounding_box.x - len, y_pos, len, 2);
+					}
+					nvgFillColor(args.vg, line.color);
+					nvgFill(args.vg);
+		    }
+			}
 		}
     Widget::drawLayer(args, layer);
   }
