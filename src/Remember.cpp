@@ -4,7 +4,7 @@
 
 struct Remember : PositionedModule {
 	enum ParamId {
-		LOOP_PARAM,
+		BOUNCE_PARAM,
 		POSITION_PARAM,
 		RECORD_BUTTON_PARAM,
 		PARAMS_LEN
@@ -24,10 +24,18 @@ struct Remember : PositionedModule {
 	enum LightId {
 		CONNECTED_LIGHT,
 		RECORD_BUTTON_LIGHT,
+		BOUNCE_LIGHT,
 		LIGHTS_LEN
 	};
 
+	// Where we are in the movement, before taking POSITION parameters into account.
+	// Always 0.0 <= playback_position < length when Looping.
+	// Always 0.0 <= playback_position < 2 * length when Bouncing.
 	int recording_position;
+
+	// Where we are in memory (for the timestamp indicator).
+  int display_position;
+
   dsp::SchmittTrigger recordTrigger;
 
 	// To help implement Bounce, we need to know when we're bouncing.
@@ -39,10 +47,8 @@ struct Remember : PositionedModule {
 
 	Remember() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		configSwitch(LOOP_PARAM, 0, 2, 0, "What to do when hitting the endpoints",
-								 {"Loop around", "Bounce", "Go back to Position"});
-		// This has distinct values.
-    getParamQuantity(LOOP_PARAM)->snapEnabled = true;
+		configSwitch(BOUNCE_PARAM, 0, 1, 0, "Endpoint Behavior",
+								 {"Loop around", "Bounce"});
 		configParam(POSITION_PARAM, 0.f, 10.f, 0.f, "Starting position");
 		configSwitch(RECORD_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this record head",
 	               {"Inactive", "Recording"});
@@ -55,7 +61,6 @@ struct Remember : PositionedModule {
 
 		line_record.position = 0.0;
 		line_record.type = REMEMBER;
-		invertSpeed = false;
 		recording_position = -1;
 	}
 
@@ -66,6 +71,7 @@ struct Remember : PositionedModule {
 		// CPU consummed by the module.
 		Buffer* buffer = findClosestMemory(getLeftExpander().module);
 		bool connected = (buffer != nullptr) && buffer->IsValid();
+		int loop_type = (int) params[BOUNCE_PARAM].getValue();
 
 		// If connected and buffer isn't empty.
 		if (connected) {
@@ -76,62 +82,75 @@ struct Remember : PositionedModule {
 			length = buffer->length;
 			seconds = buffer->seconds;
 
+			// Are we in motion or not?
 			recordTrigger.process(rescale(
 					inputs[RECORD_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
 			bool recording = (params[RECORD_BUTTON_PARAM].getValue() > 0.1f) ||
 			               recordTrigger.isHigh();
 			if (recording) {
-				int length = buffer->length;
-				float* left_array = buffer->left_array;
-				float* right_array = buffer->right_array;
-				int loop_type = (int) params[LOOP_PARAM].getValue();
-				if (loop_type != 1) {
-					invertSpeed = false;
-				}
 				if (recording_position == -1) { // Starting.
-					recording_position = trunc(length * (params[POSITION_PARAM].getValue() / 10.0));
+					recording_position = 0;
 				}
 
-				recording_position += (invertSpeed ? -1 : 1);
-				// Behavior at the endpoint depends on the LOOP setting.
-				if ((recording_position < 0) || (recording_position >= length)) {
+				recording_position += 1;
+				switch (loop_type) {
+					case 0: {  // Loop around.
+						if (recording_position < 0) {
+							// Can't happen now, but might add a reverse speed.
+							recording_position += length;
+						} else if (recording_position >= length) {
+							recording_position -= length;
+						}
+					}
+					break;
+					case 1: {  // Bounce.
+						if (recording_position < 0) {
+							// Can't happen now, but might add a reverse speed.
+							recording_position += 2 * length;
+						} else if (recording_position >= 2 * length) {
+							recording_position -= 2 * length;
+						}
+					}
+					break;
+				}
+				// Now add the influence of POSITION parameters.
+			  // Offset indicated by POSITION parameter(s).
+				int position_offset = trunc(length * (params[POSITION_PARAM].getValue() / 10.0));
+
+				display_position = recording_position + position_offset;
+
+				if (display_position >= length) {
 					switch (loop_type) {
 						case 0: {  // Loop around.
-							while (recording_position < 0) {
-								recording_position += length;
-							}
-							while (recording_position >= length) {
-								recording_position -= length;
-							}
+							display_position -= length;
 						}
 						break;
 						case 1: {  // Bounce.
-							invertSpeed = !invertSpeed;
-							recording_position += (invertSpeed ? -1 : 1);
+							// There might be simpler math for this, it just escapes me now.
+							if (display_position < 2 * length) {
+								display_position = length * 2 - display_position - 1;
+							} else {
+								display_position -= length * 2;
+							}
 						}
 						break;
-						case 2: {
-							recording_position = length * (params[POSITION_PARAM].getValue() / 10.0);
-						}
-            break;
 					}
 				}
-				while (recording_position < 0) {
-					recording_position += length;
-				}
-				while (recording_position >= length) {
-					recording_position -= length;
-				}
-				outputs[LEFT_OUTPUT].setVoltage(left_array[recording_position]);
-				outputs[RIGHT_OUTPUT].setVoltage(right_array[recording_position]);
-				outputs[NOW_POSITION_OUTPUT].setVoltage(recording_position * 10.0 / length);
+
+				FloatPair gotten;
+				buffer->Get(&gotten, display_position);
+
+				// TODO(clicks): Should do fade if detect we're near another record head.
+				outputs[LEFT_OUTPUT].setVoltage(gotten.left);
+				outputs[RIGHT_OUTPUT].setVoltage(gotten.right);
+				outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
 
  			  // So Display knows where we are.
-				line_record.position = (double) recording_position;
+				line_record.position = (double) display_position;
 
 				// This module is optimized for recording one sample to one integral position
 				// in array. Later modules can figure out how to do fancier stuff.
-				buffer->Set(recording_position,
+				buffer->Set(display_position,
 					 inputs[LEFT_INPUT].getVoltage(), inputs[RIGHT_INPUT].getVoltage(),
 				   getId());
 				lights[RECORD_BUTTON_LIGHT].setBrightness(1.0f);
@@ -142,7 +161,7 @@ struct Remember : PositionedModule {
 			// Can only be recording if connected.
 			lights[RECORD_BUTTON_LIGHT].setBrightness(0.0f);
 		}
-
+    lights[BOUNCE_LIGHT].setBrightness(loop_type == 1);
 		lights[CONNECTED_LIGHT].setBrightness(connected ? 1.0f : 0.0f);
 	}
 };
@@ -155,7 +174,7 @@ struct NowRememberTimestamp : TimestampField {
 
   double getPosition() override {
     if (module && module->length > 0) {
-			return module->recording_position * module->seconds / module->length;
+			return module->display_position * module->seconds / module->length;
 		}
 		return 0.00;  // Dummy display value.
   }
@@ -178,12 +197,11 @@ struct RememberWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-		Trimpot* loop_knob = createParamCentered<Trimpot>(
-        mm2px(Vec(8.024, 32.0)), module, Remember::LOOP_PARAM);
-    loop_knob->minAngle = -0.28f * M_PI;
-    loop_knob->maxAngle = 0.28f * M_PI;
-    loop_knob->snap = true;
-    addParam(loop_knob);
+		addParam(createLightParamCentered<VCVLightLatch<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.024, 14.0)),
+                                             module, Remember::BOUNCE_PARAM,
+                                             Remember::BOUNCE_LIGHT));
+
 		addParam(createParamCentered<RoundBlackKnob>(
 			mm2px(Vec(15.24, 48.0)), module, Remember::POSITION_PARAM));
 

@@ -54,11 +54,8 @@ struct Recall : PositionedModule {
 
 	Recall() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		// TODO: change this to a button.
 		configSwitch(BOUNCE_PARAM, 0, 1, 0, "Endpoint Behavior",
 								 {"Loop around", "Bounce"});
-		// This has distinct values.
-    getParamQuantity(BOUNCE_PARAM)->snapEnabled = true;
 	  configParam(SPEED_PARAM, -10.f, 10.f, 1.f, "Playback speed/direction");
 		configParam(POSITION_PARAM, 0.f, 10.f, 0.f, "0 - 10V position we start at");
 		configSwitch(PLAY_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this play head",
@@ -93,6 +90,8 @@ struct Recall : PositionedModule {
 			// Bad things happen if these are zero, which sometimes happens on startup.
 			length = std::max(buffer->length, 10);
 			seconds = std::max(buffer->seconds, 1.0);
+
+			// Are we in motion or not?
 			playTrigger.process(rescale(
 					inputs[PLAY_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
 			bool playing = (params[PLAY_BUTTON_PARAM].getValue() > 0.1f) ||
@@ -132,7 +131,6 @@ struct Recall : PositionedModule {
 
 				display_position = playback_position + position_offset;
 
-				// Behavior at the endpoint depends on the LOOP setting.
 				if (display_position >= length) {
 					switch (loop_type) {
 						case 0: {  // Loop around.
@@ -142,7 +140,7 @@ struct Recall : PositionedModule {
 						case 1: {  // Bounce.
 							// There might be simpler math for this, it just escapes me now.
 							if (display_position < 2 * length) {
-								display_position = length * 2 - display_position;
+								display_position = length * 2 - display_position - 1;
 							} else {
 								display_position -= length * 2;
 							}

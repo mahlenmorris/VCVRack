@@ -98,6 +98,7 @@ struct Buffer {
 
   // Caller is responsible for only calling this when IsValid() is true.
   void Get(FloatPair *pair, double position) {
+    assert(position < length);
     int playback_start = trunc(position);
     int playback_end = trunc(playback_start + 1);
     if (playback_end >= length) {
@@ -112,6 +113,7 @@ struct Buffer {
 
   // Caller is responsible for only calling this when IsValid() is true.
   void Set(int position, float left, float right, long long module_id) {
+    assert(position < length);
     left_array[position] = left;
     right_array[position] = right;
     SetDirty(position);
