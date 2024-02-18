@@ -113,40 +113,44 @@ struct Remember : PositionedModule {
 					}
 					break;
 				}
+			}
 				// Now add the influence of POSITION parameters.
-			  // Offset indicated by POSITION parameter(s).
-				int position_offset = trunc(length * (params[POSITION_PARAM].getValue() / 10.0));
+			double offset = trunc((loop_type == 1 ? 2.0 : 1.0) * length *
+			  (params[POSITION_PARAM].getValue() / 10.0));
+			display_position = recording_position + offset;
 
-				display_position = recording_position + position_offset;
+			while (display_position > 2 * length) {
+				display_position -= 2 * length;
+			}
 
-				if (display_position >= length) {
-					switch (loop_type) {
-						case 0: {  // Loop around.
-							display_position -= length;
-						}
-						break;
-						case 1: {  // Bounce.
-							// There might be simpler math for this, it just escapes me now.
-							if (display_position < 2 * length) {
-								display_position = length * 2 - display_position - 1;
-							} else {
-								display_position -= length * 2;
-							}
-						}
-						break;
+			if (display_position >= length) {
+				switch (loop_type) {
+					case 0: {  // Loop around.
+						display_position -= length;
 					}
+					break;
+					case 1: {  // Bounce.
+						// There might be simpler math for this, it just escapes me now.
+						if (display_position < 2 * length) {
+							display_position = std::max(0, length * 2 - display_position - 1);
+						} else {
+							display_position -= length * 2;
+						}
+					}
+					break;
 				}
+			}
+			outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
+			// So Display knows where we are.
+			line_record.position = (double) display_position;
 
+			if (recording) {
 				FloatPair gotten;
 				buffer->Get(&gotten, display_position);
 
 				// TODO(clicks): Should do fade if detect we're near another record head.
 				outputs[LEFT_OUTPUT].setVoltage(gotten.left);
 				outputs[RIGHT_OUTPUT].setVoltage(gotten.right);
-				outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
-
- 			  // So Display knows where we are.
-				line_record.position = (double) display_position;
 
 				// This module is optimized for recording one sample to one integral position
 				// in array. Later modules can figure out how to do fancier stuff.
@@ -159,6 +163,8 @@ struct Remember : PositionedModule {
 			}
 		} else {
 			// Can only be recording if connected.
+			outputs[LEFT_OUTPUT].setVoltage(0.0f);
+			outputs[RIGHT_OUTPUT].setVoltage(0.0f);
 			lights[RECORD_BUTTON_LIGHT].setBrightness(0.0f);
 		}
     lights[BOUNCE_LIGHT].setBrightness(loop_type == 1);

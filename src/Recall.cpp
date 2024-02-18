@@ -37,12 +37,6 @@ struct Recall : PositionedModule {
   // Where we are in memory (for the timestamp indicator).
   double display_position;
 
-  // Offset indicated by POSITION parameters.
-  float prev_position;
-
-	// Always 0.0 <= position_offset < length.
-	double position_offset;
-
   dsp::SchmittTrigger playTrigger;
 
   // To display timestamps correctly.
@@ -69,7 +63,6 @@ struct Recall : PositionedModule {
     line_record.position = 0.0;
 		line_record.type = RECALL;
 		playback_position = -1;
-		prev_position = -1.0;
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -98,8 +91,6 @@ struct Recall : PositionedModule {
 			               playTrigger.isHigh();
 			if (playing) {
 				if (playback_position == -1) { // Starting.
-					prev_position = params[POSITION_PARAM].getValue();
-					position_offset = length * (params[POSITION_PARAM].getValue() / 10.0);
 					playback_position = 0;
 				}
 				playback_position +=
@@ -122,34 +113,40 @@ struct Recall : PositionedModule {
 					}
 					break;
 				}
-				// Now add the influence of POSITION parameters.
-				// Only recalc influence when params change.
-				if (prev_position != params[POSITION_PARAM].getValue()) {
-					prev_position = params[POSITION_PARAM].getValue();
-					position_offset = length * (params[POSITION_PARAM].getValue() / 10.0);
-				}
+			}
 
-				display_position = playback_position + position_offset;
+			// Even if we're not playing, we want to show movement caused by POSITION movement,
+			// so user can see where playback will pick up. 
+			// Now add the influence of POSITION parameter(s).
+			double offset = (loop_type == 1 ? 2.0 : 1.0) * length *
+			  (params[POSITION_PARAM].getValue() / 10.0);
+			display_position = playback_position + offset;
 
-				if (display_position >= length) {
-					switch (loop_type) {
-						case 0: {  // Loop around.
-							display_position -= length;
-						}
-						break;
-						case 1: {  // Bounce.
-							// There might be simpler math for this, it just escapes me now.
-							if (display_position < 2 * length) {
-								display_position = length * 2 - display_position - 1;
-							} else {
-								display_position -= length * 2;
-							}
-						}
-						break;
+			while (display_position > 2 * length) {
+				display_position -= 2 * length;
+			}
+
+			if (display_position >= length) {
+				switch (loop_type) {
+					case 0: {  // Loop around.
+						display_position -= length;
 					}
+					break;
+					case 1: {  // Bounce.
+						// There might be simpler math for this, it just escapes me now.
+						if (display_position < 2 * length) {
+							display_position = std::max(0.0, length * 2 - display_position - 1);
+						} else {
+							display_position -= length * 2;
+						}
+					}
+					break;
 				}
-				outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
-        line_record.position = display_position;
+			}
+			outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
+			line_record.position = display_position;
+
+			if (playing) {
 				// Determine values to emit.
 				if (buffer->NearHead(display_position)) {
 					fade = std::max(fade - 0.02, 0.0);
@@ -159,6 +156,9 @@ struct Recall : PositionedModule {
 					}
 				}
 				FloatPair gotten;
+				if (display_position < 0 || display_position > length) {
+					WARN("playback_position = %f, offset = %f", playback_position, offset);
+				}
 				buffer->Get(&gotten, display_position);
 				outputs[LEFT_OUTPUT].setVoltage(fade * gotten.left);
 				outputs[RIGHT_OUTPUT].setVoltage(fade * gotten.right);
@@ -168,7 +168,6 @@ struct Recall : PositionedModule {
 				outputs[RIGHT_OUTPUT].setVoltage(0.0f);
 				lights[PLAY_BUTTON_LIGHT].setBrightness(0.0f);
 			}
-
 		} else {
 			// Can only be playing if connected.
 			lights[PLAY_BUTTON_LIGHT].setBrightness(0.0f);
