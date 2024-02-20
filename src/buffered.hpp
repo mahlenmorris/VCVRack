@@ -43,99 +43,21 @@ struct Buffer {
   Buffer() : left_array{nullptr}, right_array{nullptr}, length{0},
              seconds{0.0} {}
 
-  bool IsValid() {
-    return (length > 0) && (seconds > 0.0) && (left_array != nullptr) &&
-           (right_array != nullptr);
-  }
+  bool IsValid();
 
-  bool NearHead(int position) {
-    // TODO: not sure if correct when near the ends of the buffer.
-    for (int i = 0; i < (int) record_heads.size(); ++i) {
-      if (abs(record_heads[i].position - position) < 60) {
-        // WARN("head = %d, pos = %d", record_heads[i].position, position);
-        return true;
-      }
-      if (abs(record_heads[i].position + length - position) < 60) {
-        // WARN("head = %d, pos = %d", record_heads[i].position, position);
-        return true;
-      }
-      if (abs(record_heads[i].position - (position + length)) < 60) {
-        // WARN("head = %d, pos = %d", record_heads[i].position, position);
-        return true;
-      }
-    }
-    return false;
-  }
-
-  void SetDirty(int position) {
-    dirty[(int) floor(position / ((double) length / WAVEFORM_SIZE))] = true;
-  }
+  bool NearHead(int position);
+  void SetDirty(int position);
 
   // Returns true if near a recording head, except for module_id.
   // Typically called for the benefit of play heads that are part of recording
   // heads.
-  bool NearHeadButNotThisModule(int position, long long module_id) {
-    // TODO: not sure if correct when near the ends of the buffer.
-    for (int i = 0; i < (int) record_heads.size(); ++i) {
-      if (record_heads[i].module_id == module_id) {
-        continue;
-      }
-      if (abs(record_heads[i].position - position) < 60) {
-        // WARN("head = %d, pos = %d", record_heads[i].position, position);
-        return true;
-      }
-      if (abs(record_heads[i].position + length - position) < 60) {
-        // WARN("head = %d, pos = %d", record_heads[i].position, position);
-        return true;
-      }
-      if (abs(record_heads[i].position - (position + length)) < 60) {
-        // WARN("head = %d, pos = %d", record_heads[i].position, position);
-        return true;
-      }
-    }
-    return false;
-  }
+  // TODO: Not currently called.
+  bool NearHeadButNotThisModule(int position, long long module_id);
 
   // Caller is responsible for only calling this when IsValid() is true.
-  void Get(FloatPair *pair, double position) {
-    assert(position >= 0.0);
-    assert(position < length);
-    int playback_start = trunc(position);
-    int playback_end = trunc(playback_start + 1);
-    if (playback_end >= length) {
-      playback_end -= length;  // Should be zero.
-    }
-    float start_fraction = position - playback_start;
-    pair->left = left_array[playback_start] * (1.0 - start_fraction) +
-                 left_array[playback_end] * (start_fraction);
-    pair->right = right_array[playback_start] * (1.0 - start_fraction) +
-                  right_array[playback_end] * (start_fraction);
-  }
-
+  void Get(FloatPair *pair, double position);
   // Caller is responsible for only calling this when IsValid() is true.
-  void Set(int position, float left, float right, long long module_id) {
-    assert(position >= 0);
-    assert(position < length);
-    left_array[position] = left;
-    right_array[position] = right;
-    SetDirty(position);
-
-    // Update (or create) a trace for this Set() call.
-    // TODO: Memory should create/update this list during the module scan in
-    // process().
-    bool found = false;
-    for (int i = 0; i < (int) record_heads.size(); ++i) {
-      if (record_heads[i].module_id == module_id) {
-        found = true;
-        record_heads[i].position = position;
-        record_heads[i].age = 0;
-      }
-    }
-    if (!found) {
-      // TODO: this is dangerous!
-      record_heads.push_back(RecordHeadTrace(module_id, position));
-    }
-  }
+  void Set(int position, float left, float right, long long module_id);
 };
 
 // Module that has a buffer that others can access. Probably only Memory
