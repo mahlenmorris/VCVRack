@@ -93,20 +93,16 @@ void Buffer::Set(int position, float left, float right, long long module_id) {
   right_array[position] = right;
   SetDirty(position);
 
-  // Update (or create) a trace for this Set() call.
-  // TODO: Memory should create/update this list during the module scan in
+  // Update position for this Set() call's module.
+  // Memory creates and updates this list during the module scan in
   // process().
-  bool found = false;
+  // If we don't find it now, we will when it updates.
   for (int i = 0; i < (int) record_heads.size(); ++i) {
     if (record_heads[i].module_id == module_id) {
-      found = true;
       record_heads[i].position = position;
       record_heads[i].age = 0;
+      break;
     }
-  }
-  if (!found) {
-    // TODO: this is dangerous!
-    record_heads.push_back(RecordHeadTrace(module_id, position));
   }
 }
 

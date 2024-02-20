@@ -38,6 +38,10 @@ struct Buffer {
   // For marking blocks of the waveform that Display shows as needing to be updated.
   bool dirty[WAVEFORM_SIZE];
 
+  // Since Recording heads of any kind are a source of discontinuities (and thus
+  // clicks), we track where they are and make sure to duck the volume of a play
+  // head encountering one.
+  // This list is maintained by Memory, and consulted with by NearHead().
   std::vector<RecordHeadTrace> record_heads;
 
   Buffer() : left_array{nullptr}, right_array{nullptr}, length{0},

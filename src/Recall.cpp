@@ -155,6 +155,7 @@ struct Recall : PositionedModule {
 						fade = std::min(fade + 0.02, 1.0);
 					}
 				}
+
 				FloatPair gotten;
 				if (display_position < 0 || display_position > length) {
 					WARN("playback_position = %f, offset = %f", playback_position, offset);

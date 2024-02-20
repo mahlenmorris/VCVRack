@@ -217,6 +217,20 @@ struct Memory : BufferedModule {
           PositionedModule* pos_module = dynamic_cast<PositionedModule*>(next_module);
           pos_module->line_record.color = colors[color_index];
           pos_module->line_record.distance = distance;
+          if (next_module->model == modelRemember) {
+            // Make sure it's on the list of record heads.
+            bool found = false;
+            for (int i = 0; i < (int) getBuffer()->record_heads.size(); ++i) {
+              if (getBuffer()->record_heads[i].module_id == next_module->getId()) {
+                found = true;
+                break;
+              }
+            }
+            if (!found) {
+              getBuffer()->record_heads.push_back(RecordHeadTrace(next_module->getId(),
+                                                  pos_module->line_record.position));
+            }
+          }
         }
         // If we are still in our module list, move to the right.
         auto m = next_module->model;
@@ -228,6 +242,9 @@ struct Memory : BufferedModule {
           break;
         }
       }
+      // TODO: add a process that eliminates very old RecordHead records.
+      // We are possibly not connected to them any more.
+      // Or in some other way, remove them.
     }
 
     // Have we been asked to wipe?
@@ -250,8 +267,6 @@ struct Memory : BufferedModule {
       // during a wipe? Or at least fade the players?
       worker->initiateWipe = true;
     }
-
-
 
     // Set lights.
     lights[WIPE_BUTTON_LIGHT].setBrightness(
