@@ -10,6 +10,7 @@ struct WorkThread {
   float sample_rate;
   bool shutdown;
   bool initiateFill;
+  int seconds;
   bool initiateWipe;
   bool running;  // TRUE if still compiling, false if completed.
 
@@ -28,6 +29,11 @@ struct WorkThread {
     sample_rate = rate;
   }
 
+  void InitiateFill(int new_seconds) {
+    seconds = new_seconds;
+    initiateFill = true;
+  }
+
   // If compilation succeeds, sets flag saying so and prepares vectors
   // of main_blocks and expression_blocks for module to use later.
   void Work() {
@@ -35,7 +41,6 @@ struct WorkThread {
       if (initiateFill) {
         running = true;
         initiateFill = false;
-        int seconds = 15;
         int samples = std::round(seconds * sample_rate);
         float* new_left_array = new float[samples];
         float* new_right_array = new float[samples];
@@ -79,6 +84,7 @@ struct WorkThread {
 struct Memory : BufferedModule {
   enum ParamId {
     WIPE_BUTTON_PARAM,
+    SECONDS_PARAM,
     PARAMS_LEN
   };
   enum InputId {
@@ -115,6 +121,10 @@ struct Memory : BufferedModule {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configButton(WIPE_BUTTON_PARAM, "Press to wipe contents to 0.0V");
     configInput(WIPE_TRIGGER_INPUT, "A trigger wipes contents to 0.0V");
+    configParam(SECONDS_PARAM, 1, 1000, 15,
+        "Length of Memory in seconds.");
+    // This is really an integer.
+    getParamQuantity(SECONDS_PARAM)->snapEnabled = true;
     worker = new WorkThread(getBuffer());
   }
 
@@ -161,7 +171,7 @@ struct Memory : BufferedModule {
           // Confirm that we can read the sample rate before starting a fill.
           if (args.sampleRate > 1.0) {
             worker->SetRate(args.sampleRate);
-            worker->initiateFill = true;
+            worker->InitiateFill(params[SECONDS_PARAM].getValue());
             // TODO: Should the worker thread be part of the Buffer itself?
             // Should it just be waiting for the sample rate to be filled, and then
             // start itself?
@@ -296,6 +306,9 @@ struct MemoryWidget : ModuleWidget {
                                              Memory::WIPE_BUTTON_LIGHT));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 18.918)), module,
                                              Memory::WIPE_TRIGGER_INPUT));
+
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(14.441, 32.837)),
+             module, Memory::SECONDS_PARAM));
   }
 
   void appendContextMenu(Menu* menu) override {
