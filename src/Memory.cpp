@@ -39,8 +39,12 @@ struct WorkThread {
   void Work() {
     while (!shutdown) {
       if (initiateFill) {
-        running = true;
         initiateFill = false;
+        running = true;
+        // Invalidate existing contents, if any.
+        buffer->length = 0;
+        buffer->seconds = 0;
+
         int samples = std::round(seconds * sample_rate);
         float* new_left_array = new float[samples];
         float* new_right_array = new float[samples];
@@ -52,13 +56,22 @@ struct WorkThread {
           buffer->dirty[i] = true;
         }
 
+        if (buffer->left_array != nullptr) {
+          delete buffer->left_array;
+        }
         buffer->left_array = new_left_array;
+        if (buffer->right_array != nullptr) {
+          delete buffer->right_array;
+        }
         buffer->right_array = new_right_array;
 
         buffer->length = samples;
         buffer->seconds = seconds;
         running = false;
-      } else if (initiateWipe) {
+        // A fill always prompts a wipe, let's just do that here.
+        initiateWipe = true;
+      }
+      if (initiateWipe) {
         running = true;
         initiateWipe = false;
         for (int i = 0; i < buffer->length && !shutdown; ++i) {
@@ -85,6 +98,7 @@ struct Memory : BufferedModule {
   enum ParamId {
     WIPE_BUTTON_PARAM,
     SECONDS_PARAM,
+    RESET_BUTTON_PARAM,
     PARAMS_LEN
   };
   enum InputId {
@@ -96,13 +110,13 @@ struct Memory : BufferedModule {
   };
   enum LightId {
     WIPE_BUTTON_LIGHT,
+    RESET_BUTTON_LIGHT,
     LIGHTS_LEN
   };
 
-  bool buffer_filled = false;
-  bool fill_in_progress = false;
-  bool buffer_wiped = false;
-  bool wipe_in_progress = false;
+  // Initialization happens on startup, but also during a reset.
+  bool buffer_initialized = false;
+  bool init_in_progress = false;
   WorkThread* worker;
   std::thread* work_thread;
 
@@ -111,8 +125,7 @@ struct Memory : BufferedModule {
   // Keeps lights on buttons lit long enough to see.
   int wipe_light_countdown = 0;
 
-
-  // To do some tasks every NN samples. Some UI-related tasks are not as
+  // Do some tasks every NN samples. Some UI-related tasks are not as
   // latency-sensitive as the audio thread, and we don't need to do often.
   // TODO: consider putting these tasks on a background thread...
   int assign_color_countdown = 0;
@@ -125,10 +138,13 @@ struct Memory : BufferedModule {
         "Length of Memory in seconds.");
     // This is really an integer.
     getParamQuantity(SECONDS_PARAM)->snapEnabled = true;
+    configButton(RESET_BUTTON_PARAM, "Press to reset length and wipe contents to 0.0V");
     worker = new WorkThread(getBuffer());
+    work_thread = new std::thread(&WorkThread::Work, worker);
   }
 
   ~Memory() {
+    WARN("~Memory() called");
     if (worker != nullptr) {
       worker->Halt();
       worker->initiateFill = false;
@@ -139,6 +155,7 @@ struct Memory : BufferedModule {
       }
       delete worker;
     }
+    WARN("~Memory() complete");
   }
 
   // Save and retrieve menu choice(s).
@@ -165,122 +182,122 @@ struct Memory : BufferedModule {
     // This is just for the initial creation of the buffer.
     // We can't fill the buffer until process() is called, since we don't know
     // what the sample rate is.
-    if (!buffer_filled || !buffer_wiped) {
-      if (!buffer_filled) {
-        if (!fill_in_progress) {
-          // Confirm that we can read the sample rate before starting a fill.
-          if (args.sampleRate > 1.0) {
-            worker->SetRate(args.sampleRate);
-            worker->InitiateFill(params[SECONDS_PARAM].getValue());
-            // TODO: Should the worker thread be part of the Buffer itself?
-            // Should it just be waiting for the sample rate to be filled, and then
-            // start itself?
-            work_thread = new std::thread(&WorkThread::Work, worker);
-            fill_in_progress = true;
-          }
-        } else {
-          if (worker->running) {
-            // OK, just wait for it to finish.
-          } else {
-            // Filling done.
-            fill_in_progress = false;
-            buffer_filled = true;
-          }
+    if (!buffer_initialized) {
+      if (!init_in_progress) {
+        // Confirm that we can read the sample rate before starting a fill.
+        // Sometimes during startup, sampleRate is still zero.
+        if (args.sampleRate > 1.0) {
+          worker->SetRate(args.sampleRate);
+          worker->InitiateFill(params[SECONDS_PARAM].getValue());
+          // TODO: Should the worker thread be part of the Buffer itself?
+          // Should it just be waiting for the sample rate to be filled, and then
+          // start itself?
+          init_in_progress = true;
+        }
+      } else {
+        if (!worker->running) {
+          // Filling+wiping done.
+          init_in_progress = false;
+          buffer_initialized = true;
         }
       }
-      if (buffer_filled) {
-        if (!wipe_in_progress) {
-          worker->initiateWipe = true;
-          wipe_in_progress = true;
-        } else {
-          if (worker->running) {
-            // OK, just wait for it to finish.
-          } else {
-            // Wiping done.
-            wipe_in_progress = false;
-            buffer_wiped = true;
-          }
-        }
+    } else {
+      // We don't pay any attention to the buttons, etc, until the buffer is initialized.
+      // Some lights are lit by triggers; these enable them to be
+      // lit long enough to be seen by humans.
+      if (wipe_light_countdown > 0) {
+        wipe_light_countdown--;
       }
-    }
 
-    // Some lights are lit by triggers; these enable them to be
-    // lit long enough to be seen by humans.
-    if (wipe_light_countdown > 0) {
-      wipe_light_countdown--;
-    }
+      // Periodically assign colors to each connected module's light.
+      // TODO: Maybe put this into a background too?
+      if (--assign_color_countdown <= 0) {
+        // One hundredth of a second.
+        assign_color_countdown = (int) (args.sampleRate / 100);
 
-    // Periodically assign colors to each connected module's light.
-    if (--assign_color_countdown <= 0) {
-      // One hundredth of a second.
-      assign_color_countdown = (int) (args.sampleRate / 100);
-
-      Module* next_module = getRightExpander().module;
-      int color_index = -1;
-      int distance = 0;
-      while (next_module) {
-        if ((next_module->model == modelRecall) ||
-            (next_module->model == modelRemember)) {
-          // Assign a Color.
-          distance++;
-          color_index = (color_index + 1) % COLOR_COUNT;
-          PositionedModule* pos_module = dynamic_cast<PositionedModule*>(next_module);
-          pos_module->line_record.color = colors[color_index];
-          pos_module->line_record.distance = distance;
-          if (next_module->model == modelRemember) {
-            // Make sure it's on the list of record heads.
-            bool found = false;
-            for (int i = 0; i < (int) getBuffer()->record_heads.size(); ++i) {
-              if (getBuffer()->record_heads[i].module_id == next_module->getId()) {
-                found = true;
-                break;
+        Module* next_module = getRightExpander().module;
+        int color_index = -1;
+        int distance = 0;
+        while (next_module) {
+          if ((next_module->model == modelRecall) ||
+              (next_module->model == modelRemember)) {
+            // Assign a Color.
+            distance++;
+            color_index = (color_index + 1) % COLOR_COUNT;
+            PositionedModule* pos_module = dynamic_cast<PositionedModule*>(next_module);
+            pos_module->line_record.color = colors[color_index];
+            pos_module->line_record.distance = distance;
+            if (next_module->model == modelRemember) {
+              // Make sure it's on the list of record heads.
+              bool found = false;
+              for (int i = 0; i < (int) getBuffer()->record_heads.size(); ++i) {
+                if (getBuffer()->record_heads[i].module_id == next_module->getId()) {
+                  found = true;
+                  break;
+                }
+              }
+              if (!found) {
+                getBuffer()->record_heads.push_back(RecordHeadTrace(next_module->getId(),
+                                                    pos_module->line_record.position));
               }
             }
-            if (!found) {
-              getBuffer()->record_heads.push_back(RecordHeadTrace(next_module->getId(),
-                                                  pos_module->line_record.position));
-            }
+          }
+          // If we are still in our module list, move to the right.
+          auto m = next_module->model;
+          if ((m == modelRecall) ||
+              (m == modelRemember) ||
+              (m == modelDisplay)) {  // This will be a list soon...
+            next_module = next_module->getRightExpander().module;
+          } else {
+            break;
           }
         }
-        // If we are still in our module list, move to the right.
-        auto m = next_module->model;
-        if ((m == modelRecall) ||
-            (m == modelRemember) ||
-            (m == modelDisplay)) {  // This will be a list soon...
-          next_module = next_module->getRightExpander().module;
-        } else {
-          break;
-        }
+        // TODO: add a process that eliminates very old RecordHead records.
+        // We are possibly not connected to them any more.
+        // Or in some other way, remove them.
       }
-      // TODO: add a process that eliminates very old RecordHead records.
-      // We are possibly not connected to them any more.
-      // Or in some other way, remove them.
-    }
 
-    // Have we been asked to wipe?
-    bool wipe_was_low = !wipe_trigger.isHigh();
-    wipe_trigger.process(rescale(
-        inputs[WIPE_TRIGGER_INPUT].getVoltage(), 0.1f, 2.0f, 0.0f, 1.0f));
-    if (wipe_was_low && wipe_trigger.isHigh()) {
-      // Flash the wpie light for a tenth of second.
-      // Compute how many samples to show the light.
-      wipe_light_countdown = std::floor(args.sampleRate / 10.0f);
-    }
-    // Note that we don't bother to set wipe_light_countdown when the user
-    // presses the button; we just light up the button while it's
-    // being pressed.
-    bool wipe = (params[WIPE_BUTTON_PARAM].getValue() > 0.1f) ||
-      (wipe_was_low && wipe_trigger.isHigh());
+      // We may be being asked to wipe and/or reset. Both of these take more than one
+      // process() call to complete.
+      // If asked to do neither, we do neither, although we may be waiting for
+      // a previous action to complete.
+      // A wipe doesn't (currently) require us to watch the state progress, and it
+      // doesn't prevent using the Buffer. So we don't particularly attend to it.
+      // If only a reset is requested, then we start a reset. This can take while,
+      // so we make sure not to allow another reset to interrupt it or another wipe
+      // to occur while in progress.
+      // If a reset AND a wipe are requested at the same process() call, only the reset
+      // call is acted on.
 
-    if (wipe) {
-      // TODO: Decide (or menu options) to pause all recording and playing
-      // during a wipe? Or at least fade the players?
-      worker->initiateWipe = true;
-    }
+      // Have we been asked to wipe?
+      bool wipe_was_low = !wipe_trigger.isHigh();
+      wipe_trigger.process(rescale(
+          inputs[WIPE_TRIGGER_INPUT].getVoltage(), 0.1f, 2.0f, 0.0f, 1.0f));
+      if (wipe_was_low && wipe_trigger.isHigh()) {
+        // Flash the wpie light for a tenth of second.
+        // Compute how many samples to show the light.
+        wipe_light_countdown = std::floor(args.sampleRate / 10.0f);
+      }
+      bool reset = (params[RESET_BUTTON_PARAM].getValue() > 0.1f);
 
-    // Set lights.
-    lights[WIPE_BUTTON_LIGHT].setBrightness(
-      wipe || wipe_light_countdown > 0 ? 1.0f : 0.0f);
+
+      // Note that we don't bother to set wipe_light_countdown when the user
+      // presses the button; we just light up the button while it's
+      // being pressed.
+      bool wipe = (params[WIPE_BUTTON_PARAM].getValue() > 0.1f) ||
+        (wipe_was_low && wipe_trigger.isHigh());
+
+      if (wipe) {
+        // TODO: Decide (or menu options) to pause all recording and playing
+        // during a wipe? Or at least fade the players?
+        worker->initiateWipe = true;
+      }
+
+      // Set lights.
+      lights[WIPE_BUTTON_LIGHT].setBrightness(
+        wipe || wipe_light_countdown > 0 ? 1.0f : 0.0f);
+      lights[RESET_BUTTON_LIGHT].setBrightness(reset ? 1.0f : 0.0f);
+    }
   }
 };
 
@@ -309,6 +326,11 @@ struct MemoryWidget : ModuleWidget {
 
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(14.441, 32.837)),
              module, Memory::SECONDS_PARAM));
+    // RESET button.
+    addParam(createLightParamCentered<VCVLightButton<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 48.456)),
+                                             module, Memory::RESET_BUTTON_PARAM,
+                                             Memory::RESET_BUTTON_LIGHT));
   }
 
   void appendContextMenu(Menu* menu) override {

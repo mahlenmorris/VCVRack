@@ -157,9 +157,6 @@ struct Recall : PositionedModule {
 				}
 
 				FloatPair gotten;
-				if (display_position < 0 || display_position > length) {
-					WARN("playback_position = %f, offset = %f", playback_position, offset);
-				}
 				buffer->Get(&gotten, display_position);
 				outputs[LEFT_OUTPUT].setVoltage(fade * gotten.left);
 				outputs[RIGHT_OUTPUT].setVoltage(fade * gotten.right);

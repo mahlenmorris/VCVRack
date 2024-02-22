@@ -47,6 +47,17 @@ struct Buffer {
   Buffer() : left_array{nullptr}, right_array{nullptr}, length{0},
              seconds{0.0} {}
 
+  ~Buffer() {
+    WARN("~Buffer() called");
+    if (left_array) {
+      delete left_array;
+    }
+    if (right_array) {
+      delete right_array;
+    }
+    WARN("~Buffer() complete");
+  }
+
   bool IsValid();
 
   bool NearHead(int position);
