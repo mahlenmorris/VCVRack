@@ -70,7 +70,7 @@ struct Recall : PositionedModule {
 		// the time this won't change.
 		// The number of modules it needs to go through does seem to increase the
 		// CPU consummed by the module.
-		Buffer* buffer = findClosestMemory(getLeftExpander().module);
+		std::shared_ptr<Buffer> buffer = findClosestMemory(getLeftExpander().module);
 		bool connected = (buffer != nullptr) && buffer->IsValid();
 
 		int loop_type = (int) params[BOUNCE_PARAM].getValue();

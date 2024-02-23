@@ -48,14 +48,13 @@ struct Buffer {
              seconds{0.0} {}
 
   ~Buffer() {
-    WARN("~Buffer() called");
+    WARN("dtor for Buffer in progress.");
     if (left_array) {
       delete left_array;
     }
     if (right_array) {
       delete right_array;
     }
-    WARN("~Buffer() complete");
   }
 
   bool IsValid();
@@ -75,13 +74,18 @@ struct Buffer {
   void Set(int position, float left, float right, long long module_id);
 };
 
+struct BufferHandle {
+  std::shared_ptr<Buffer> buffer;
+};
+
 // Module that has a buffer that others can access. Probably only Memory
 // will be this.
+// 
 struct BufferedModule : Module {
-  Buffer buffer;
+  BufferHandle handle;
 
-  Buffer* getBuffer() {
-    return &buffer;
+  BufferHandle* getHandle() {
+    return &handle;
   }
 };
 
@@ -110,7 +114,7 @@ struct PositionedModule : Module {
   LineRecord line_record;
 };
 
-Buffer* findClosestMemory(Module* leftModule);
+std::shared_ptr<Buffer> findClosestMemory(Module* leftModule);
 
 struct TimestampField : OpaqueWidget {
 	TimestampField() {

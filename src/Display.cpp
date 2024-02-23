@@ -29,12 +29,12 @@ static const char* TEXTS[] = {
 };
 
 struct WaveformScanner {
-  Buffer* buffer;
-	Buffer* next_buffer;
+  std::shared_ptr<Buffer> buffer;
+	std::shared_ptr<Buffer> next_buffer;
 	PointBuffer* points;
 	bool shutdown;
 
-	WaveformScanner(Buffer* the_buffer, PointBuffer* the_points) :
+	WaveformScanner(std::shared_ptr<Buffer> the_buffer, PointBuffer* the_points) :
 	    buffer{the_buffer}, next_buffer{nullptr}, points{the_points},
 			shutdown{false} {}
 
@@ -44,7 +44,7 @@ struct WaveformScanner {
 
   // If this Display is attched to a different Memeory than was previously the
 	// case, we need to act accordingly.
-  void UpdateBuffer(Buffer* updated_buffer) {
+  void UpdateBuffer(std::shared_ptr<Buffer> updated_buffer) {
 		if (next_buffer == nullptr && updated_buffer != buffer) {
 			next_buffer = updated_buffer;
 		}
@@ -127,7 +127,7 @@ struct Display : Module {
 		LIGHTS_LEN
 	};
 
-  Buffer* buffer;
+  std::shared_ptr<Buffer> buffer;
 
 	// [2] -> 0 is left, 1 is right.
   PointBuffer point_buffer;
@@ -223,7 +223,7 @@ struct Display : Module {
 				// If we are still in our module list, move to the left.
 				auto m = next_module->model;
 				if (m == modelMemory) {
-					Buffer* found_buffer = dynamic_cast<BufferedModule*>(next_module)->getBuffer();
+					std::shared_ptr<Buffer> found_buffer = dynamic_cast<BufferedModule*>(next_module)->getHandle()->buffer;
 					if (buffer != found_buffer && found_buffer->IsValid()) {
 						buffer = found_buffer;
 						// Make sure that we scan the buffer currently connected to us.
@@ -260,7 +260,7 @@ struct MemoryDisplay : Widget {
 	// when the "room lights" are turned down. That seems correct to me.
   void drawLayer(const DrawArgs& args, int layer) override {
     if ((layer == 1) && module) {
-			Buffer* buffer = module->buffer;  // In case it gets reset by another action.
+			std::shared_ptr<Buffer> buffer = module->buffer;  // In case it gets reset by another action.
 			if (buffer && buffer->IsValid()) {
 
 				// just in case max_distance is zero somehow, I don't want to divide by it.

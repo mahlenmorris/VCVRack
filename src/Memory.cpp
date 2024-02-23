@@ -6,7 +6,7 @@
 // Class devoted to handling the lengthy (compared to single sample)
 // process of filling or replacing the current Buffer.
 struct WorkThread {
-  Buffer* buffer;
+  BufferHandle* handle;
   float sample_rate;
   bool shutdown;
   bool initiateFill;
@@ -14,7 +14,7 @@ struct WorkThread {
   bool initiateWipe;
   bool running;  // TRUE if still compiling, false if completed.
 
-  explicit WorkThread(Buffer* the_buffer) : buffer{the_buffer} {
+  explicit WorkThread(BufferHandle* the_handle) : handle{the_handle} {
     running = false;
     initiateFill = false;
     initiateWipe = false;
@@ -38,52 +38,55 @@ struct WorkThread {
   // of main_blocks and expression_blocks for module to use later.
   void Work() {
     while (!shutdown) {
-      if (initiateFill) {
-        initiateFill = false;
-        running = true;
-        // Invalidate existing contents, if any.
-        buffer->length = 0;
-        buffer->seconds = 0;
+      std::shared_ptr<Buffer> buffer = handle->buffer;
+      if (buffer) {
+        if (initiateFill) {
+          initiateFill = false;
+          running = true;
+          // Invalidate existing contents, if any.
+          buffer->length = 0;
+          buffer->seconds = 0;
 
-        int samples = std::round(seconds * sample_rate);
-        float* new_left_array = new float[samples];
-        float* new_right_array = new float[samples];
+          int samples = std::round(seconds * sample_rate);
+          float* new_left_array = new float[samples];
+          float* new_right_array = new float[samples];
 
-        // Note that this data is still random. Needs to be wiped!
+          // Note that this data is still random. Needs to be wiped!
 
-        // And mark every sector dirty.
-        for (int i = 0; i < WAVEFORM_SIZE; ++i) {
-          buffer->dirty[i] = true;
+          // And mark every sector dirty.
+          for (int i = 0; i < WAVEFORM_SIZE; ++i) {
+            buffer->dirty[i] = true;
+          }
+
+          if (buffer->left_array != nullptr) {
+            delete buffer->left_array;
+          }
+          buffer->left_array = new_left_array;
+          if (buffer->right_array != nullptr) {
+            delete buffer->right_array;
+          }
+          buffer->right_array = new_right_array;
+
+          buffer->length = samples;
+          buffer->seconds = seconds;
+          running = false;
+          // A fill always prompts a wipe, let's just do that here.
+          initiateWipe = true;
         }
+        if (initiateWipe) {
+          running = true;
+          initiateWipe = false;
+          for (int i = 0; i < buffer->length && !shutdown; ++i) {
+            buffer->left_array[i] = 0.0f;
+            buffer->right_array[i] = 0.0f;
+          }
 
-        if (buffer->left_array != nullptr) {
-          delete buffer->left_array;
+          // And mark every sector dirty.
+          for (int i = 0; i < WAVEFORM_SIZE && ! shutdown; ++i) {
+            buffer->dirty[i] = true;
+          }
+          running = false;
         }
-        buffer->left_array = new_left_array;
-        if (buffer->right_array != nullptr) {
-          delete buffer->right_array;
-        }
-        buffer->right_array = new_right_array;
-
-        buffer->length = samples;
-        buffer->seconds = seconds;
-        running = false;
-        // A fill always prompts a wipe, let's just do that here.
-        initiateWipe = true;
-      }
-      if (initiateWipe) {
-        running = true;
-        initiateWipe = false;
-        for (int i = 0; i < buffer->length && !shutdown; ++i) {
-          buffer->left_array[i] = 0.0f;
-          buffer->right_array[i] = 0.0f;
-        }
-
-        // And mark every sector dirty.
-        for (int i = 0; i < WAVEFORM_SIZE && ! shutdown; ++i) {
-          buffer->dirty[i] = true;
-        }
-        running = false;
       }
       // It seems like I need a tiny sleep here to allow join() to work
       // on this thread?
@@ -139,12 +142,17 @@ struct Memory : BufferedModule {
     // This is really an integer.
     getParamQuantity(SECONDS_PARAM)->snapEnabled = true;
     configButton(RESET_BUTTON_PARAM, "Press to reset length and wipe contents to 0.0V");
-    worker = new WorkThread(getBuffer());
+
+    // Setting an initial Buffer object.
+    std::shared_ptr<Buffer> temp = std::make_shared<Buffer>();
+    (*getHandle()).buffer.swap(temp);
+
+    worker = new WorkThread(getHandle());
     work_thread = new std::thread(&WorkThread::Work, worker);
   }
 
   ~Memory() {
-    WARN("~Memory() called");
+    (*getHandle()).buffer.reset();
     if (worker != nullptr) {
       worker->Halt();
       worker->initiateFill = false;
@@ -155,7 +163,6 @@ struct Memory : BufferedModule {
       }
       delete worker;
     }
-    WARN("~Memory() complete");
   }
 
   // Save and retrieve menu choice(s).
@@ -215,41 +222,44 @@ struct Memory : BufferedModule {
         // One hundredth of a second.
         assign_color_countdown = (int) (args.sampleRate / 100);
 
-        Module* next_module = getRightExpander().module;
-        int color_index = -1;
-        int distance = 0;
-        while (next_module) {
-          if ((next_module->model == modelRecall) ||
-              (next_module->model == modelRemember)) {
-            // Assign a Color.
-            distance++;
-            color_index = (color_index + 1) % COLOR_COUNT;
-            PositionedModule* pos_module = dynamic_cast<PositionedModule*>(next_module);
-            pos_module->line_record.color = colors[color_index];
-            pos_module->line_record.distance = distance;
-            if (next_module->model == modelRemember) {
-              // Make sure it's on the list of record heads.
-              bool found = false;
-              for (int i = 0; i < (int) getBuffer()->record_heads.size(); ++i) {
-                if (getBuffer()->record_heads[i].module_id == next_module->getId()) {
-                  found = true;
-                  break;
+        std::shared_ptr<Buffer> buffer = getHandle()->buffer;
+        if (buffer) {  // Checks for null.
+          Module* next_module = getRightExpander().module;
+          int color_index = -1;
+          int distance = 0;
+          while (next_module) {
+            if ((next_module->model == modelRecall) ||
+                (next_module->model == modelRemember)) {
+              // Assign a Color.
+              distance++;
+              color_index = (color_index + 1) % COLOR_COUNT;
+              PositionedModule* pos_module = dynamic_cast<PositionedModule*>(next_module);
+              pos_module->line_record.color = colors[color_index];
+              pos_module->line_record.distance = distance;
+              if (next_module->model == modelRemember) {
+                // Make sure it's on the list of record heads.
+                bool found = false;
+                for (int i = 0; i < (int) buffer->record_heads.size(); ++i) {
+                  if (buffer->record_heads[i].module_id == next_module->getId()) {
+                    found = true;
+                    break;
+                  }
+                }
+                if (!found) {
+                  buffer->record_heads.push_back(RecordHeadTrace(next_module->getId(),
+                                                      pos_module->line_record.position));
                 }
               }
-              if (!found) {
-                getBuffer()->record_heads.push_back(RecordHeadTrace(next_module->getId(),
-                                                    pos_module->line_record.position));
-              }
             }
-          }
-          // If we are still in our module list, move to the right.
-          auto m = next_module->model;
-          if ((m == modelRecall) ||
-              (m == modelRemember) ||
-              (m == modelDisplay)) {  // This will be a list soon...
-            next_module = next_module->getRightExpander().module;
-          } else {
-            break;
+            // If we are still in our module list, move to the right.
+            auto m = next_module->model;
+            if ((m == modelRecall) ||
+                (m == modelRemember) ||
+                (m == modelDisplay)) {  // This will be a list soon...
+              next_module = next_module->getRightExpander().module;
+            } else {
+              break;
+            }
           }
         }
         // TODO: add a process that eliminates very old RecordHead records.

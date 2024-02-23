@@ -1,10 +1,10 @@
 #include "buffered.hpp"
 
-Buffer* findClosestMemory(Module* leftModule) {
+std::shared_ptr<Buffer> findClosestMemory(Module* leftModule) {
   while (true) {
     if (!leftModule) return nullptr;
     if (leftModule->model == modelMemory) {
-      return dynamic_cast<BufferedModule*>(leftModule)->getBuffer();
+      return dynamic_cast<BufferedModule*>(leftModule)->getHandle()->buffer;
     }
     auto m = leftModule->model;
     if ((m == modelRecall) ||
