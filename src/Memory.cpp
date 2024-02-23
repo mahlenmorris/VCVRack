@@ -289,20 +289,25 @@ struct Memory : BufferedModule {
         wipe_light_countdown = std::floor(args.sampleRate / 10.0f);
       }
       bool reset = (params[RESET_BUTTON_PARAM].getValue() > 0.1f);
-
-
       // Note that we don't bother to set wipe_light_countdown when the user
       // presses the button; we just light up the button while it's
       // being pressed.
       bool wipe = (params[WIPE_BUTTON_PARAM].getValue() > 0.1f) ||
         (wipe_was_low && wipe_trigger.isHigh());
 
-      if (wipe) {
-        // TODO: Decide (or menu options) to pause all recording and playing
-        // during a wipe? Or at least fade the players?
-        worker->initiateWipe = true;
-      }
+      if (reset) {
+        if (buffer_initialized) {
+          buffer_initialized = false;  // Should rerun the code at the top of process()?
+          // TODO: Honestly, probably better to swap in a new Buffer instead...
+        }
+      } else {
 
+        if (wipe) {
+          // TODO: Decide (or menu options) to pause all recording and playing
+          // during a wipe? Or at least fade the players?
+          worker->initiateWipe = true;
+        }
+      }
       // Set lights.
       lights[WIPE_BUTTON_LIGHT].setBrightness(
         wipe || wipe_light_countdown > 0 ? 1.0f : 0.0f);

@@ -48,7 +48,6 @@ struct Buffer {
              seconds{0.0} {}
 
   ~Buffer() {
-    WARN("dtor for Buffer in progress.");
     if (left_array) {
       delete left_array;
     }
