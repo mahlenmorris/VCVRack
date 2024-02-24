@@ -376,7 +376,7 @@ struct DepictWidget : ModuleWidget {
 		display->module = module;
 		addChild(display);
 
-		addChild(createLightCentered<MediumLight<WhiteLight>>(mm2px(Vec(14.240, 3.0)),
+		addChild(createLightCentered<MediumLight<WhiteLight>>(mm2px(Vec(15.240, 3.0)),
 		             module, Depict::CONNECTED_LIGHT));
 	}
 };
