@@ -42,7 +42,7 @@ struct WaveformScanner {
 		shutdown = true;
 	}
 
-  // If this Display is attched to a different Memeory than was previously the
+  // If this Depict is attached to a different Memeory than was previously the
 	// case, we need to act accordingly.
   void UpdateBuffer(std::shared_ptr<Buffer> updated_buffer) {
 		if (next_buffer == nullptr && updated_buffer != buffer) {
@@ -112,7 +112,7 @@ struct WaveformScanner {
 	}
 };
 
-struct Display : Module {
+struct Depict : Module {
 	enum ParamId {
 		PARAMS_LEN
 	};
@@ -147,13 +147,13 @@ struct Display : Module {
   // TODO: consider putting these tasks on a background thread...
   int get_line_record_countdown = 0;
 
-	Display() {
+	Depict() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		buffer = nullptr;
 		scanner = nullptr;  // Can't create this until Buffer is found.
 	}
 
-	~Display() {
+	~Depict() {
 		if (scanner != nullptr) {
 			scanner->Halt();
 			if (point_refresher->joinable()) {
@@ -169,13 +169,13 @@ struct Display : Module {
 		// * Walks left and right on the Memory modules, noting the color and
 		//   related position they have (if any).
 		// * Updates local data structure to note the positions, so that the
-		//   MemoryDisplay (below) can draw the results.
+		//   MemoryDepict (below) can draw the results.
 		// Note that Memory is responsible for telling each module what color it is.
 		if (--get_line_record_countdown <= 0) {
       // One hundredth of a second.
       get_line_record_countdown = (int) (args.sampleRate / 100);
 
-      // TODO: Shouldn't these be assigned in Display() ctor?
+      // TODO: Shouldn't these be assigned in Depict() ctor?
 			// Or at least create the thread then?
       if (scanner == nullptr) {
 				if (buffer != nullptr) {
@@ -203,7 +203,7 @@ struct Display : Module {
 				auto m = next_module->model;
 				if ((m == modelRecall) ||
 						(m == modelRemember) ||
-						(m == modelDisplay)) {  // This will be a list soon...
+						(m == modelDepict)) {  // This will be a list soon...
 					next_module = next_module->getRightExpander().module;
 				} else {
 					break;
@@ -237,7 +237,7 @@ struct Display : Module {
 				}
 				if ((m == modelRecall) ||
 						(m == modelRemember) ||
-						(m == modelDisplay)) {  // This will be a list soon...
+						(m == modelDepict)) {  // This will be a list soon...
 					next_module = next_module->getLeftExpander().module;
 				} else {
 					break;
@@ -251,12 +251,12 @@ struct Display : Module {
 	}
 };
 
-struct MemoryDisplay : Widget {
-  Display* module;
+struct MemoryDepict : Widget {
+  Depict* module;
 
-  MemoryDisplay() {}
+  MemoryDepict() {}
 
-	// By using drawLayer() instead of draw(), this becomes a glowing display
+	// By using drawLayer() instead of draw(), this becomes a glowing Depict
 	// when the "room lights" are turned down. That seems correct to me.
   void drawLayer(const DrawArgs& args, int layer) override {
     if ((layer == 1) && module) {
@@ -359,10 +359,10 @@ struct MemoryDisplay : Widget {
   }
 };
 
-struct DisplayWidget : ModuleWidget {
-	DisplayWidget(Display* module) {
+struct DepictWidget : ModuleWidget {
+	DepictWidget(Depict* module) {
 		setModule(module);
-		setPanel(createPanel(asset::plugin(pluginInstance, "res/Display.svg")));
+		setPanel(createPanel(asset::plugin(pluginInstance, "res/Depict.svg")));
 
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
@@ -370,16 +370,16 @@ struct DisplayWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
     // Screen.
-		MemoryDisplay* display = createWidget<MemoryDisplay>(
+		MemoryDepict* display = createWidget<MemoryDepict>(
 			mm2px(Vec(2.408, 14.023)));
 	  display->box.size = mm2px(Vec(25.665, 109.141));
 		display->module = module;
 		addChild(display);
 
 		addChild(createLightCentered<MediumLight<WhiteLight>>(mm2px(Vec(14.240, 3.0)),
-		             module, Display::CONNECTED_LIGHT));
+		             module, Depict::CONNECTED_LIGHT));
 	}
 };
 
 
-Model* modelDisplay = createModel<Display, DisplayWidget>("Display");
+Model* modelDepict = createModel<Depict, DepictWidget>("Depict");

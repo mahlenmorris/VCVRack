@@ -9,7 +9,7 @@ std::shared_ptr<Buffer> findClosestMemory(Module* leftModule) {
     auto m = leftModule->model;
     if ((m == modelRecall) ||
         (m == modelRemember) ||
-        (m == modelDisplay)) {  // This will be a list soon...
+        (m == modelDepict)) {  // This will be a list soon...
       leftModule = leftModule->getLeftExpander().module;
     } else {
       return nullptr;

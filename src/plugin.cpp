@@ -7,7 +7,7 @@ void init(Plugin* p) {
 
 	// Add modules here
 	p->addModel(modelBasically);
-	p->addModel(modelDisplay);
+	p->addModel(modelDepict);
 	p->addModel(modelDrifter);
 	p->addModel(modelFermata);
 	p->addModel(modelFuse);

@@ -255,7 +255,7 @@ struct Memory : BufferedModule {
             auto m = next_module->model;
             if ((m == modelRecall) ||
                 (m == modelRemember) ||
-                (m == modelDisplay)) {  // This will be a list soon...
+                (m == modelDepict)) {  // This will be a list soon...
               next_module = next_module->getRightExpander().module;
             } else {
               break;
