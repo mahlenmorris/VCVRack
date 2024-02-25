@@ -28,6 +28,17 @@ struct Remember : PositionedModule {
 		LIGHTS_LEN
 	};
 
+  enum RecordState {
+    // We have a few states we could be in.
+		NO_RECORD,	// * Not recording at all.
+		FADE_UP,  	// * Starting to record.
+		RECORDING, 	// * Continuing to record.
+		FADE_DOWN		// * Fading out the recording.
+		    				// * And back to not recording at all.
+	};
+
+	const double FADE_INCREMENT = 0.02;
+
 	// Where we are in the movement, before taking POSITION parameters into account.
 	// Always 0.0 <= playback_position < length when Looping.
 	// Always 0.0 <= playback_position < 2 * length when Bouncing.
@@ -44,6 +55,11 @@ struct Remember : PositionedModule {
 	// To display timestamps correctly.
 	double seconds = 0.0;
 	int length = 0;
+
+	// To fade volume up (or down) under certain circumstances.
+	// Helps us avoid clicks.
+	double record_fade = 1.0f;
+	RecordState record_state;
 
 	Remember() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -62,6 +78,8 @@ struct Remember : PositionedModule {
 		line_record.position = 0.0;
 		line_record.type = REMEMBER;
 		recording_position = -1;
+		record_state = NO_RECORD;
+		record_fade = 0.0;
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -85,9 +103,44 @@ struct Remember : PositionedModule {
 			// Are we in motion or not?
 			recordTrigger.process(rescale(
 					inputs[RECORD_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+			// 'recording' just reflects the state of the button and the gate input.
 			bool recording = (params[RECORD_BUTTON_PARAM].getValue() > 0.1f) ||
 			               recordTrigger.isHigh();
-			if (recording) {
+
+			// Let's figure out what RecordState to be in.
+			switch (record_state) {
+				case NO_RECORD:
+				case FADE_DOWN: {
+					if (recording) {
+						record_state = FADE_UP;
+					}
+				}
+				break;
+				case FADE_UP:
+				case RECORDING:  {
+					if (!recording) {
+						record_state = FADE_DOWN;
+					}
+				}
+				break;
+			}
+			// Now set the record_fade value appropriately, which may also affect the state.
+			if (record_state == FADE_UP) {
+				if (record_fade < 1.0) {
+					record_fade = std::min(record_fade + FADE_INCREMENT, 1.0);
+				} else {
+					record_state = RECORDING;
+				}
+			} else if (record_state == FADE_DOWN) {
+				if (record_fade > 0.0) {
+					record_fade = std::max(record_fade - FADE_INCREMENT, 0.0);
+				} else {
+					record_state = NO_RECORD;
+				}
+			}
+
+			// This is all to figure out the next position in the memory to go to.
+			if (record_state != NO_RECORD) {  // We're still moving forward.
 				if (recording_position == -1) { // Starting.
 					recording_position = 0;
 				}
@@ -114,7 +167,7 @@ struct Remember : PositionedModule {
 					break;
 				}
 			}
-				// Now add the influence of POSITION parameters.
+			// Now add the influence of POSITION parameters.
 			double offset = trunc((loop_type == 1 ? 2.0 : 1.0) * length *
 			  (params[POSITION_PARAM].getValue() / 10.0));
 			display_position = recording_position + offset;
@@ -144,18 +197,20 @@ struct Remember : PositionedModule {
 			// So Display knows where we are.
 			line_record.position = (double) display_position;
 
-			if (recording) {
+			if (record_state != NO_RECORD) {  // Still recording.
 				FloatPair gotten;
 				buffer->Get(&gotten, display_position);
 
-				// TODO(clicks): Should do fade if detect we're near another record head.
+				// TODO(clicks): Should do fade on outputs if we detect we're
+				// near *another* record head (we're always near this one!).
 				outputs[LEFT_OUTPUT].setVoltage(gotten.left);
 				outputs[RIGHT_OUTPUT].setVoltage(gotten.right);
 
 				// This module is optimized for recording one sample to one integral position
 				// in array. Later modules can figure out how to do fancier stuff.
 				buffer->Set(display_position,
-					 inputs[LEFT_INPUT].getVoltage(), inputs[RIGHT_INPUT].getVoltage(),
+					 record_fade * inputs[LEFT_INPUT].getVoltage(),
+					 record_fade * inputs[RIGHT_INPUT].getVoltage(),
 				   getId());
 				lights[RECORD_BUTTON_LIGHT].setBrightness(1.0f);
 			} else {
