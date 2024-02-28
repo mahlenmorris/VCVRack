@@ -229,14 +229,14 @@ struct Memory : BufferedModule {
           int distance = 0;
           while (next_module) {
             if ((next_module->model == modelRecall) ||
-                (next_module->model == modelRemember)) {
+                (next_module->model == modelEmbellish)) {
               // Assign a Color.
               distance++;
               color_index = (color_index + 1) % COLOR_COUNT;
               PositionedModule* pos_module = dynamic_cast<PositionedModule*>(next_module);
               pos_module->line_record.color = colors[color_index];
               pos_module->line_record.distance = distance;
-              if (next_module->model == modelRemember) {
+              if (next_module->model == modelEmbellish) {
                 // Make sure it's on the list of record heads.
                 bool found = false;
                 for (int i = 0; i < (int) buffer->record_heads.size(); ++i) {
@@ -254,7 +254,7 @@ struct Memory : BufferedModule {
             // If we are still in our module list, move to the right.
             auto m = next_module->model;
             if ((m == modelRecall) ||
-                (m == modelRemember) ||
+                (m == modelEmbellish) ||
                 (m == modelDepict)) {  // This will be a list soon...
               next_module = next_module->getRightExpander().module;
             } else {

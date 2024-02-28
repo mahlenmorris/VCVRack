@@ -92,7 +92,7 @@ struct BufferedModule : Module {
 
 enum ModuleType {
 	RECALL,
-	REMEMBER
+	EMBELLISH
 	// More later.
 };
 

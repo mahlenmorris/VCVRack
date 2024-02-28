@@ -9,11 +9,11 @@ void init(Plugin* p) {
 	p->addModel(modelBasically);
 	p->addModel(modelDepict);
 	p->addModel(modelDrifter);
+  p->addModel(modelEmbellish);
 	p->addModel(modelFermata);
 	p->addModel(modelFuse);
 	p->addModel(modelMemory);
 	p->addModel(modelRecall);
-  p->addModel(modelRemember);
  	p->addModel(modelTTY);
 
 	// Any other plugin initialization may go here.

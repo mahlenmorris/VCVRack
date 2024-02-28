@@ -118,8 +118,13 @@ struct Recall : PositionedModule {
 			// Even if we're not playing, we want to show movement caused by POSITION movement,
 			// so user can see where playback will pick up. 
 			// Now add the influence of POSITION parameter(s).
-			double offset = (loop_type == 1 ? 2.0 : 1.0) * length *
-			  (params[POSITION_PARAM].getValue() / 10.0);
+
+
+			double offset = (loop_type == 1 ? 2.0 : 1.0) * length * (0.0 / 10.0);
+			//double offset = (loop_type == 1 ? 2.0 : 1.0) * length *
+			//  (params[POSITION_PARAM].getValue() / 10.0);
+
+
 			display_position = playback_position + offset;
 
 			while (display_position > 2 * length) {
@@ -143,6 +148,11 @@ struct Recall : PositionedModule {
 					break;
 				}
 			}
+
+
+			params[POSITION_PARAM].setValue(display_position * 10.0 / length);
+
+
 			outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
 			line_record.position = display_position;
 

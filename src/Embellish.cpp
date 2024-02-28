@@ -2,7 +2,7 @@
 
 #include "buffered.hpp"
 
-struct Remember : PositionedModule {
+struct Embellish : PositionedModule {
 	enum ParamId {
 		BOUNCE_PARAM,
 		POSITION_PARAM,
@@ -61,7 +61,7 @@ struct Remember : PositionedModule {
 	double record_fade = 1.0f;
 	RecordState record_state;
 
-	Remember() {
+	Embellish() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configSwitch(BOUNCE_PARAM, 0, 1, 0, "Endpoint Behavior",
 								 {"Loop around", "Bounce"});
@@ -76,7 +76,7 @@ struct Remember : PositionedModule {
 		configInput(RIGHT_INPUT, "");
 
 		line_record.position = 0.0;
-		line_record.type = REMEMBER;
+		line_record.type = EMBELLISH;
 		recording_position = -1;
 		record_state = NO_RECORD;
 		record_fade = 0.0;
@@ -227,11 +227,11 @@ struct Remember : PositionedModule {
 	}
 };
 
-struct NowRememberTimestamp : TimestampField {
-	NowRememberTimestamp() {
+struct NowEmbellishTimestamp : TimestampField {
+	NowEmbellishTimestamp() {
   }
 
-  Remember* module;
+  Embellish* module;
 
   double getPosition() override {
     if (module && module->length > 0) {
@@ -248,10 +248,10 @@ struct NowRememberTimestamp : TimestampField {
 	}
 };
 
-struct RememberWidget : ModuleWidget {
-	RememberWidget(Remember* module) {
+struct EmbellishWidget : ModuleWidget {
+	EmbellishWidget(Embellish* module) {
 		setModule(module);
-		setPanel(createPanel(asset::plugin(pluginInstance, "res/Remember.svg")));
+		setPanel(createPanel(asset::plugin(pluginInstance, "res/Embellish.svg")));
 
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
@@ -260,44 +260,44 @@ struct RememberWidget : ModuleWidget {
 
 		addParam(createLightParamCentered<VCVLightLatch<
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.024, 14.0)),
-                                             module, Remember::BOUNCE_PARAM,
-                                             Remember::BOUNCE_LIGHT));
+                                             module, Embellish::BOUNCE_PARAM,
+                                             Embellish::BOUNCE_LIGHT));
 
 		addParam(createParamCentered<RoundBlackKnob>(
-			mm2px(Vec(15.24, 48.0)), module, Remember::POSITION_PARAM));
+			mm2px(Vec(15.24, 48.0)), module, Embellish::POSITION_PARAM));
 
 		// Record button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 63.067)),
-                                             module, Remember::RECORD_BUTTON_PARAM,
-                                             Remember::RECORD_BUTTON_LIGHT));
+                                             module, Embellish::RECORD_BUTTON_PARAM,
+                                             Embellish::RECORD_BUTTON_LIGHT));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 63.067)), module,
-		                                         Remember::RECORD_GATE_INPUT));
+		                                         Embellish::RECORD_GATE_INPUT));
 
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.24, 82.285)),
-		                                           module, Remember::NOW_POSITION_OUTPUT));
+		                                           module, Embellish::NOW_POSITION_OUTPUT));
 		// A timestamp is 10 wide.
-		NowRememberTimestamp* now_timestamp = createWidget<NowRememberTimestamp>(mm2px(
+		NowEmbellishTimestamp* now_timestamp = createWidget<NowEmbellishTimestamp>(mm2px(
         Vec(15.24 - (10.0 / 2.0), 87.286)));
     now_timestamp->module = module;
     addChild(now_timestamp);
 
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(7.814, 99.412)),
-		                                           module, Remember::LEFT_OUTPUT));
+		                                           module, Embellish::LEFT_OUTPUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.761, 99.412)),
-		                                           module, Remember::RIGHT_OUTPUT));
+		                                           module, Embellish::RIGHT_OUTPUT));
 
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 112.0)), module,
-		                                         Remember::LEFT_INPUT));
+		                                         Embellish::LEFT_INPUT));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(20.971, 112.0)), module,
-		                                         Remember::RIGHT_INPUT));
+		                                         Embellish::RIGHT_INPUT));
 
 		ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
-			mm2px(Vec(14.240, 3.0)), module, Remember::CONNECTED_LIGHT);
+			mm2px(Vec(14.240, 3.0)), module, Embellish::CONNECTED_LIGHT);
     connect_light->module = module;
 		addChild(connect_light);
 	}
 };
 
 
-Model* modelRemember = createModel<Remember, RememberWidget>("Remember");
+Model* modelEmbellish = createModel<Embellish, EmbellishWidget>("Embellish");
