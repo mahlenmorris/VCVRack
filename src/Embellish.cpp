@@ -5,7 +5,7 @@
 struct Embellish : PositionedModule {
 	enum ParamId {
 		BOUNCE_PARAM,
-		POSITION_PARAM,
+		ADJUST_PARAM,
 		RECORD_BUTTON_PARAM,
 		PARAMS_LEN
 	};
@@ -42,7 +42,7 @@ struct Embellish : PositionedModule {
 	// Where we are in the movement, before taking POSITION parameters into account.
 	// Always 0.0 <= playback_position < length when Looping.
 	// Always 0.0 <= playback_position < 2 * length when Bouncing.
-	int recording_position;
+	double recording_position;
 
 	// Where we are in memory (for the timestamp indicator).
   int display_position;
@@ -65,7 +65,7 @@ struct Embellish : PositionedModule {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configSwitch(BOUNCE_PARAM, 0, 1, 0, "Endpoint Behavior",
 								 {"Loop around", "Bounce"});
-		configParam(POSITION_PARAM, 0.f, 10.f, 0.f, "Starting position");
+		configParam(ADJUST_PARAM, -10.f, 10.f, 0.f, "Adjust position");
 		configSwitch(RECORD_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this record head",
 	               {"Inactive", "Recording"});
 		configInput(RECORD_GATE_INPUT, "Gate to start/stop recording");
@@ -106,8 +106,11 @@ struct Embellish : PositionedModule {
 			// 'recording' just reflects the state of the button and the gate input.
 			bool recording = (params[RECORD_BUTTON_PARAM].getValue() > 0.1f) ||
 			               recordTrigger.isHigh();
+			// User (or input) is adjusting the position.
+			bool adjusting = std::fabs(params[ADJUST_PARAM].getValue()) > std::numeric_limits<float>::epsilon(); // i.e., is not zero.
 
 			// Let's figure out what RecordState to be in.
+			// TODO: Should 'adjusting' be taken into account here? 
 			switch (record_state) {
 				case NO_RECORD:
 				case FADE_DOWN: {
@@ -140,16 +143,23 @@ struct Embellish : PositionedModule {
 			}
 
 			// This is all to figure out the next position in the memory to go to.
-			if (record_state != NO_RECORD) {  // We're still moving forward.
+			if (record_state != NO_RECORD || adjusting) {  // We're still moving forward.
 				if (recording_position == -1) { // Starting.
+				  // TODO: change zero to value of "start recording position indicator".
 					recording_position = 0;
 				}
 
-				recording_position += 1;
+				// zero -> no movement.
+				// 10 -> move entirety of length of buffer in two seconds.
+				double adjust = 1;
+				if (adjusting) {  // i.e., is not zero.
+					adjust = (params[ADJUST_PARAM].getValue() / 20.0) * length / args.sampleRate;
+				}
+
+				recording_position += adjust;
 				switch (loop_type) {
 					case 0: {  // Loop around.
 						if (recording_position < 0) {
-							// Can't happen now, but might add a reverse speed.
 							recording_position += length;
 						} else if (recording_position >= length) {
 							recording_position -= length;
@@ -158,7 +168,6 @@ struct Embellish : PositionedModule {
 					break;
 					case 1: {  // Bounce.
 						if (recording_position < 0) {
-							// Can't happen now, but might add a reverse speed.
 							recording_position += 2 * length;
 						} else if (recording_position >= 2 * length) {
 							recording_position -= 2 * length;
@@ -167,10 +176,18 @@ struct Embellish : PositionedModule {
 					break;
 				}
 			}
+
+			// TODO: Add a small "starting position" parameter, that is really only consulted the
+			// first time the module starts playing. It's basically an initial value for
+			// recording_position.
+			// TODO: suppress playing/recording when ADJUST is non-zero.
 			// Now add the influence of POSITION parameters.
+      /*
 			double offset = trunc((loop_type == 1 ? 2.0 : 1.0) * length *
-			  (params[POSITION_PARAM].getValue() / 10.0));
+			  (params[ADJUST_PARAM].getValue() / 10.0));
 			display_position = recording_position + offset;
+      */
+			display_position = (int) floor(recording_position);
 
 			while (display_position > 2 * length) {
 				display_position -= 2 * length;
@@ -197,7 +214,7 @@ struct Embellish : PositionedModule {
 			// So Display knows where we are.
 			line_record.position = (double) display_position;
 
-			if (record_state != NO_RECORD) {  // Still recording.
+			if (record_state != NO_RECORD && !adjusting) {  // Still recording.
 				FloatPair gotten;
 				buffer->Get(&gotten, display_position);
 
@@ -209,9 +226,9 @@ struct Embellish : PositionedModule {
 				// This module is optimized for recording one sample to one integral position
 				// in array. Later modules can figure out how to do fancier stuff.
 				buffer->Set(display_position,
-					 record_fade * inputs[LEFT_INPUT].getVoltage(),
-					 record_fade * inputs[RIGHT_INPUT].getVoltage(),
-				   getId());
+					record_fade * inputs[LEFT_INPUT].getVoltage(),
+					record_fade * inputs[RIGHT_INPUT].getVoltage(),
+					getId());
 				lights[RECORD_BUTTON_LIGHT].setBrightness(1.0f);
 			} else {
 				lights[RECORD_BUTTON_LIGHT].setBrightness(0.0f);
@@ -248,7 +265,16 @@ struct NowEmbellishTimestamp : TimestampField {
 	}
 };
 
+struct AdjustSlider : VCVSlider {
+  void onDragEnd(const DragEndEvent& e) override {
+    getParamQuantity()->setValue(0.0);
+	}
+};
+
+
 struct EmbellishWidget : ModuleWidget {
+  VCVLightSlider<WhiteLight>* adjust_slider;
+
 	EmbellishWidget(Embellish* module) {
 		setModule(module);
 		setPanel(createPanel(asset::plugin(pluginInstance, "res/Embellish.svg")));
@@ -263,8 +289,7 @@ struct EmbellishWidget : ModuleWidget {
                                              module, Embellish::BOUNCE_PARAM,
                                              Embellish::BOUNCE_LIGHT));
 
-		addParam(createParamCentered<RoundBlackKnob>(
-			mm2px(Vec(15.24, 48.0)), module, Embellish::POSITION_PARAM));
+    addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6, 35)), module, Embellish::ADJUST_PARAM));
 
 		// Record button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
@@ -294,9 +319,20 @@ struct EmbellishWidget : ModuleWidget {
 
 		ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
 			mm2px(Vec(14.240, 3.0)), module, Embellish::CONNECTED_LIGHT);
-    connect_light->module = module;
+    connect_light->pos_module = module;
 		addChild(connect_light);
 	}
+
+/*
+  void step() override {
+		// Kinda silly to do this every step(), but checking whether or not
+		// we should copy the value would take longer, I suspect.
+		if (module) {
+		  adjust_slider->getLight()->baseColors[0] = dynamic_cast<PositionedModule*>(module)->line_record.color;
+		}
+		ModuleWidget::step();
+	}
+*/
 };
 
 

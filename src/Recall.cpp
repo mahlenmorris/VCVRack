@@ -271,7 +271,7 @@ struct RecallWidget : ModuleWidget {
 
 		ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
 			mm2px(Vec(14.240, 3.0)), module, Recall::CONNECTED_LIGHT);
-    connect_light->module = module;
+    connect_light->pos_module = module;
 		addChild(connect_light);
 	}
 };
