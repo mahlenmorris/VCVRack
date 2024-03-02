@@ -30,11 +30,18 @@ struct Embellish : PositionedModule {
 
   enum RecordState {
     // We have a few states we could be in.
+		ADJUSTING,  // * Not recording, but actively moving.
 		NO_RECORD,	// * Not recording at all.
 		FADE_UP,  	// * Starting to record.
 		RECORDING, 	// * Continuing to record.
 		FADE_DOWN		// * Fading out the recording.
 		    				// * And back to not recording at all.
+
+		// When starting and stopping the record head, the sequence is:
+		// * NO_RECORD -> FADE_UP -> RECORDING -> FADE_DOWN -> NO_RECORD.
+		// If user starts adjusting in FADE_UP or RECORDING, we move to FADE_DOWN and then NO_RECORD.
+		// If user is adjusting when in NO_RECORD, we move to ADJUSTING, and stay there until
+		// user stops adjusting.
 	};
 
 	const double FADE_INCREMENT = 0.02;
@@ -110,32 +117,42 @@ struct Embellish : PositionedModule {
 			bool adjusting = std::fabs(params[ADJUST_PARAM].getValue()) > std::numeric_limits<float>::epsilon(); // i.e., is not zero.
 
 			// Let's figure out what RecordState to be in.
-			// TODO: Should 'adjusting' be taken into account here? 
+			// Take into account when the user starts or stops adjusting.
+			if (record_state == NO_RECORD && adjusting) {
+				record_state = ADJUSTING;
+			} else if (record_state == ADJUSTING && !adjusting) {
+				record_state = NO_RECORD;
+			}
+
 			switch (record_state) {
 				case NO_RECORD:
 				case FADE_DOWN: {
-					if (recording) {
+					if (recording && !adjusting) {
 						record_state = FADE_UP;
 					}
 				}
 				break;
 				case FADE_UP:
 				case RECORDING:  {
-					if (!recording) {
+					if (!recording || adjusting) {
 						record_state = FADE_DOWN;
 					}
 				}
+				break;
+				case ADJUSTING:
 				break;
 			}
 			// Now set the record_fade value appropriately, which may also affect the state.
 			if (record_state == FADE_UP) {
 				if (record_fade < 1.0) {
+					WARN("UP: fade = %f", record_fade);
 					record_fade = std::min(record_fade + FADE_INCREMENT, 1.0);
 				} else {
 					record_state = RECORDING;
 				}
 			} else if (record_state == FADE_DOWN) {
 				if (record_fade > 0.0) {
+					WARN("DOWN: fade = %f", record_fade);
 					record_fade = std::max(record_fade - FADE_INCREMENT, 0.0);
 				} else {
 					record_state = NO_RECORD;
@@ -143,16 +160,16 @@ struct Embellish : PositionedModule {
 			}
 
 			// This is all to figure out the next position in the memory to go to.
-			if (record_state != NO_RECORD || adjusting) {  // We're still moving forward.
+			if (record_state != NO_RECORD) {  // We're still moving, either foward or because user is adjusting.
 				if (recording_position == -1) { // Starting.
 				  // TODO: change zero to value of "start recording position indicator".
 					recording_position = 0;
 				}
 
-				// zero -> no movement.
-				// 10 -> move entirety of length of buffer in two seconds.
 				double adjust = 1;
-				if (adjusting) {  // i.e., is not zero.
+				if (record_state == ADJUSTING) {  // i.e., is not zero.
+  				// zero -> no movement.
+	  			// 10 -> move entirety of length of buffer in two seconds.
 					adjust = (params[ADJUST_PARAM].getValue() / 20.0) * length / args.sampleRate;
 				}
 
@@ -214,7 +231,7 @@ struct Embellish : PositionedModule {
 			// So Display knows where we are.
 			line_record.position = (double) display_position;
 
-			if (record_state != NO_RECORD && !adjusting) {  // Still recording.
+			if (record_state != NO_RECORD && record_state != ADJUSTING) {  // Still recording.
 				FloatPair gotten;
 				buffer->Get(&gotten, display_position);
 
