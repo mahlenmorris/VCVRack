@@ -170,13 +170,13 @@ struct TimestampField : OpaqueWidget {
 
 
 // Common UI elements.
-struct ConnectedLight : MediumLight<GreenLight> {
+struct ConnectedLight : LargeLight<GreenLight> {
 	PositionedModule* pos_module;
 
   void step() override {
 		if (pos_module) {
 			baseColors[0] = pos_module->line_record.color;
 		}
-		MediumLight::step();
+		LargeLight::step();
 	}
 };

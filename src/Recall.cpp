@@ -280,7 +280,7 @@ struct RecallWidget : ModuleWidget {
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.971, 112.0)), module, Recall::RIGHT_OUTPUT));
 
 		ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
-			mm2px(Vec(14.240, 3.0)), module, Recall::CONNECTED_LIGHT);
+			mm2px(Vec(15.240, 3.0)), module, Recall::CONNECTED_LIGHT);
     connect_light->pos_module = module;
 		addChild(connect_light);
 	}
