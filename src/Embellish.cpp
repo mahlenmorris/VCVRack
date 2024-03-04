@@ -46,6 +46,10 @@ struct Embellish : PositionedModule {
 
 	const double FADE_INCREMENT = 0.02;
 
+	// We look for the nearest Memory every NN samples. This saves CPU time.
+  int find_memory_countdown = 0;
+  std::shared_ptr<Buffer> buffer;
+
 	// Where we are in the movement, before taking POSITION parameters into account.
 	// Always 0.0 <= playback_position < length when Looping.
 	// Always 0.0 <= playback_position < 2 * length when Bouncing.
@@ -90,11 +94,17 @@ struct Embellish : PositionedModule {
 	}
 
 	void process(const ProcessArgs& args) override {
-		// TODO: maybe call this only every N samples, since the vast majority of
+		// Only call this only every N samples, since the vast majority of
 		// the time this won't change.
 		// The number of modules it needs to go through does seem to increase the
 		// CPU consummed by the module.
-		std::shared_ptr<Buffer> buffer = findClosestMemory(getLeftExpander().module);
+		if (--find_memory_countdown <= 0) {
+      // One hundredth of a second.
+      find_memory_countdown = (int) (args.sampleRate / 100);
+
+			buffer = findClosestMemory(getLeftExpander().module);
+		}
+
 		bool connected = (buffer != nullptr) && buffer->IsValid();
 		int loop_type = (int) params[BOUNCE_PARAM].getValue();
 
