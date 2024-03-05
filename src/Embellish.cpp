@@ -312,40 +312,41 @@ struct EmbellishWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
 		addParam(createLightParamCentered<VCVLightLatch<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.024, 14.0)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(6.35, 14.0)),
                                              module, Embellish::BOUNCE_PARAM,
                                              Embellish::BOUNCE_LIGHT));
 
-    addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6, 35)), module, Embellish::ADJUST_PARAM));
+    addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6.35, 35.0)),
+		   module, Embellish::ADJUST_PARAM));
 
 		// Record button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 63.067)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(19.05, 87.408)),
                                              module, Embellish::RECORD_BUTTON_PARAM,
                                              Embellish::RECORD_BUTTON_LIGHT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 63.067)), module,
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.35, 87.408)), module,
 		                                         Embellish::RECORD_GATE_INPUT));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.24, 82.285)),
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.7, 74.0)),
 		                                           module, Embellish::NOW_POSITION_OUTPUT));
 		// A timestamp is 10 wide.
 		NowEmbellishTimestamp* now_timestamp = createWidget<NowEmbellishTimestamp>(mm2px(
-        Vec(15.24 - (10.0 / 2.0), 87.286)));
+        Vec(12.7 - (10.0 / 2.0), 78.0)));
     now_timestamp->module = module;
     addChild(now_timestamp);
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(7.814, 99.412)),
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.35, 103.646)),
 		                                           module, Embellish::LEFT_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.761, 99.412)),
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.35, 113.965)),
 		                                           module, Embellish::RIGHT_OUTPUT));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 112.0)), module,
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 103.646)), module,
 		                                         Embellish::LEFT_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(20.971, 112.0)), module,
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 113.965)), module,
 		                                         Embellish::RIGHT_INPUT));
 
 		ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
-			mm2px(Vec(15.240, 3.0)), module, Embellish::CONNECTED_LIGHT);
+			mm2px(Vec(12.7, 3.0)), module, Embellish::CONNECTED_LIGHT);
     connect_light->pos_module = module;
 		addChild(connect_light);
 	}
