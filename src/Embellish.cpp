@@ -7,12 +7,15 @@ struct Embellish : PositionedModule {
 		BOUNCE_PARAM,
 		ADJUST_PARAM,
 		RECORD_BUTTON_PARAM,
+		INIT_POSITION_PARAM,
+		REVERSE_PARAM,
 		PARAMS_LEN
 	};
 	enum InputId {
 		RECORD_GATE_INPUT,
 		LEFT_INPUT,
 		RIGHT_INPUT,
+		ABS_POSITION_INPUT,
 		INPUTS_LEN
 	};
 	enum OutputId {
@@ -25,6 +28,7 @@ struct Embellish : PositionedModule {
 		CONNECTED_LIGHT,
 		RECORD_BUTTON_LIGHT,
 		BOUNCE_LIGHT,
+		REVERSE_LIGHT,
 		LIGHTS_LEN
 	};
 
@@ -58,10 +62,11 @@ struct Embellish : PositionedModule {
 	// Where we are in memory (for the timestamp indicator).
   int display_position;
 
-  dsp::SchmittTrigger recordTrigger;
+  // To detect when the ABS_POSITION_PARAM changes.
+	double prev_abs_position;
+	bool abs_changed; // Set when we detect movement, but only cleared when we use it.
 
-	// To help implement Bounce, we need to know when we're bouncing.
-	bool invertSpeed;
+  dsp::SchmittTrigger recordTrigger;
 
 	// To display timestamps correctly.
 	double seconds = 0.0;
@@ -76,10 +81,16 @@ struct Embellish : PositionedModule {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configSwitch(BOUNCE_PARAM, 0, 1, 0, "Endpoint Behavior",
 								 {"Loop around", "Bounce"});
+		configSwitch(REVERSE_PARAM, 0, 1, 0, "Recording Direction",
+								 {"Forward", "Reverse"});
 		configParam(ADJUST_PARAM, -10.f, 10.f, 0.f, "Adjust position");
 		configSwitch(RECORD_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this record head",
 	               {"Inactive", "Recording"});
+		configParam(INIT_POSITION_PARAM, 0.f, 10.f, 0.f, "Initial position (0-10v) when loading patch");
+
+		configInput(ABS_POSITION_INPUT, "Position (0-10v) to move to");
 		configInput(RECORD_GATE_INPUT, "Gate to start/stop recording");
+		// TODO: fill all of these in!
 		configOutput(LEFT_OUTPUT, "");
 		configOutput(RIGHT_OUTPUT, "");
 		configOutput(NOW_POSITION_OUTPUT, "");
@@ -89,6 +100,8 @@ struct Embellish : PositionedModule {
 		line_record.position = 0.0;
 		line_record.type = EMBELLISH;
 		recording_position = -1;
+		prev_abs_position = -20.0;
+		abs_changed = false;
 		record_state = NO_RECORD;
 		record_fade = 0.0;
 	}
@@ -107,6 +120,7 @@ struct Embellish : PositionedModule {
 
 		bool connected = (buffer != nullptr) && buffer->IsValid();
 		int loop_type = (int) params[BOUNCE_PARAM].getValue();
+		bool reverse = params[REVERSE_PARAM].getValue() > 0.1;
 
 		// If connected and buffer isn't empty.
 		if (connected) {
@@ -124,7 +138,17 @@ struct Embellish : PositionedModule {
 			bool recording = (params[RECORD_BUTTON_PARAM].getValue() > 0.1f) ||
 			               recordTrigger.isHigh();
 			// User (or input) is adjusting the position.
-			bool adjusting = std::fabs(params[ADJUST_PARAM].getValue()) > std::numeric_limits<float>::epsilon(); // i.e., is not zero.
+			if (inputs[ABS_POSITION_INPUT].getVoltage() != prev_abs_position) {
+				if (prev_abs_position == -20.0) {
+					// Getting an initial value, if any.
+					prev_abs_position = inputs[ABS_POSITION_INPUT].getVoltage();
+				} else {
+					prev_abs_position = inputs[ABS_POSITION_INPUT].getVoltage();
+					abs_changed = true;
+				}
+			}
+			bool adjusting = abs_changed ||
+			    std::fabs(params[ADJUST_PARAM].getValue()) > std::numeric_limits<float>::epsilon(); // i.e., is not zero.
 
 			// Let's figure out what RecordState to be in.
 			// Take into account when the user starts or stops adjusting.
@@ -155,14 +179,12 @@ struct Embellish : PositionedModule {
 			// Now set the record_fade value appropriately, which may also affect the state.
 			if (record_state == FADE_UP) {
 				if (record_fade < 1.0) {
-					WARN("UP: fade = %f", record_fade);
 					record_fade = std::min(record_fade + FADE_INCREMENT, 1.0);
 				} else {
 					record_state = RECORDING;
 				}
 			} else if (record_state == FADE_DOWN) {
 				if (record_fade > 0.0) {
-					WARN("DOWN: fade = %f", record_fade);
 					record_fade = std::max(record_fade - FADE_INCREMENT, 0.0);
 				} else {
 					record_state = NO_RECORD;
@@ -172,15 +194,32 @@ struct Embellish : PositionedModule {
 			// This is all to figure out the next position in the memory to go to.
 			if (record_state != NO_RECORD) {  // We're still moving, either foward or because user is adjusting.
 				if (recording_position == -1) { // Starting.
-				  // TODO: change zero to value of "start recording position indicator".
-					recording_position = 0;
+				  // Value of "start recording position indicator".
+					recording_position = (int) (params[INIT_POSITION_PARAM].getValue() * length / 10.0);
 				}
 
-				double adjust = 1;
-				if (record_state == ADJUSTING) {  // i.e., is not zero.
-  				// zero -> no movement.
-	  			// 10 -> move entirety of length of buffer in two seconds.
-					adjust = (params[ADJUST_PARAM].getValue() / 20.0) * length / args.sampleRate;
+				double adjust = reverse ? -1 : 1;
+				if (record_state == ADJUSTING) {
+					// Either the Adjust slider is non-zero or the ABS POSITION input has changed.
+					// we'll let the human slider override the ABS input.
+					if (std::fabs(params[ADJUST_PARAM].getValue()) > std::numeric_limits<float>::epsilon()) {
+					  // i.e., is not zero.
+	  				// zero -> no movement.
+		  			// 10 -> move entirety of length of buffer in two seconds.
+						adjust = (params[ADJUST_PARAM].getValue() / 20.0) * length / args.sampleRate;
+					} else {
+						// We'll just move directly to the specified spot.
+						double abs = inputs[ABS_POSITION_INPUT].getVoltage();
+						while (abs < 0.0) {
+							abs += 10.0;
+						}
+						while (abs > 10.0) {
+							abs -= 10.0;
+						}
+						recording_position = (int) (abs * length / 10.0);
+						adjust = 0;
+						abs_changed = false;
+					}
 				}
 
 				recording_position += adjust;
@@ -204,16 +243,6 @@ struct Embellish : PositionedModule {
 				}
 			}
 
-			// TODO: Add a small "starting position" parameter, that is really only consulted the
-			// first time the module starts playing. It's basically an initial value for
-			// recording_position.
-			// TODO: suppress playing/recording when ADJUST is non-zero.
-			// Now add the influence of POSITION parameters.
-      /*
-			double offset = trunc((loop_type == 1 ? 2.0 : 1.0) * length *
-			  (params[ADJUST_PARAM].getValue() / 10.0));
-			display_position = recording_position + offset;
-      */
 			display_position = (int) floor(recording_position);
 
 			while (display_position > 2 * length) {
@@ -266,6 +295,7 @@ struct Embellish : PositionedModule {
 			outputs[RIGHT_OUTPUT].setVoltage(0.0f);
 			lights[RECORD_BUTTON_LIGHT].setBrightness(0.0f);
 		}
+    lights[REVERSE_LIGHT].setBrightness(reverse);
     lights[BOUNCE_LIGHT].setBrightness(loop_type == 1);
 		lights[CONNECTED_LIGHT].setBrightness(connected ? 1.0f : 0.0f);
 	}
@@ -315,9 +345,19 @@ struct EmbellishWidget : ModuleWidget {
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(6.35, 14.0)),
                                              module, Embellish::BOUNCE_PARAM,
                                              Embellish::BOUNCE_LIGHT));
+		addParam(createLightParamCentered<VCVLightLatch<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(19.05, 14.0)),
+                                             module, Embellish::REVERSE_PARAM,
+                                             Embellish::REVERSE_LIGHT));
 
-    addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6.35, 35.0)),
+    addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6.35, 43.0)),
 		   module, Embellish::ADJUST_PARAM));
+
+    // TODO: make this a tiny attenuator knob?
+		addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(19.05, 50.8)),
+		   module, Embellish::INIT_POSITION_PARAM));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 34.396)),
+		   module, Embellish::ABS_POSITION_INPUT));
 
 		// Record button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
@@ -327,11 +367,11 @@ struct EmbellishWidget : ModuleWidget {
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.35, 87.408)), module,
 		                                         Embellish::RECORD_GATE_INPUT));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.7, 74.0)),
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.7, 65.0)),
 		                                           module, Embellish::NOW_POSITION_OUTPUT));
 		// A timestamp is 10 wide.
 		NowEmbellishTimestamp* now_timestamp = createWidget<NowEmbellishTimestamp>(mm2px(
-        Vec(12.7 - (10.0 / 2.0), 78.0)));
+        Vec(12.7 - (10.0 / 2.0), 69.0)));
     now_timestamp->module = module;
     addChild(now_timestamp);
 

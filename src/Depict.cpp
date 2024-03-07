@@ -58,7 +58,7 @@ struct WaveformScanner {
 			int sector_size = buffer->length / WAVEFORM_SIZE;
 			float peak_value = 0.0f;
 
-			// We may be pointing to a different Buffer. act accordingly.
+			// We may be pointing to a different Buffer. Act accordingly.
 			bool full_scan = false;
 			if (next_buffer != nullptr) {
 				if (next_buffer != buffer) {
@@ -86,7 +86,7 @@ struct WaveformScanner {
 
 					// Not stricly speaking correct (the sector may have been written
 					// to during the scan). But correctness is not critical, and the new
-					// values will be caught if any futher writes to this sector occur,
+					// values will be caught if any further writes to this sector occur,
 					// which, since writes are sequential, is quite likely.
 					buffer->dirty[p] = false;
 				}
