@@ -5,6 +5,8 @@
 
 #include "plugin.hpp"
 
+#include "NoLockQueue.h"  // For Smooth events.
+
 // Just to make transmiting data easier, but might not need?
 struct FloatPair {
   float left;
@@ -28,6 +30,31 @@ struct RecordHeadTrace {
 // TODO: Test and see if this number is too large.
 static const int WAVEFORM_SIZE = 1024;
 
+// Number of samples the algorithm will look on either side to find the
+// endpoints for smoothing.
+// TODO: this should, maybe, be based on time and sample rate? Maybe set by user?
+static const int MAX_SMOOTHING_DISTANCE = 25;
+
+struct Smooth {
+  int position;  // The position where the new write started.
+  // If -1, then no need to wait. Otherwise, wait a small amount of time to allow the
+  // record head to complete writes to the portion we will smooth.
+  double creation_time;
+
+  Smooth(int pos, bool immediate) : position{pos} {
+    if (!immediate) {
+      creation_time = system::getTime();
+    } else {
+      creation_time = -1.0;
+    }
+  }
+};
+
+struct SmoothQueue {
+  // Consumer is obligated to delete the Smooth objects it has completed.
+  SpScLockFreeQueue<Smooth*, 50> additions;
+};
+
 struct Buffer {
   // Consider making this a 2 x length array.
   float* left_array;   // make this std::shared_ptr.
@@ -43,6 +70,10 @@ struct Buffer {
   // head encountering one.
   // This list is maintained by Memory, and consulted with by NearHead().
   std::vector<RecordHeadTrace> record_heads;
+
+  // Embellish and other "recording" modules add to this, Memory's Work queue acts on them
+  // and removes them.
+  SmoothQueue smooths;
 
   Buffer() : left_array{nullptr}, right_array{nullptr}, length{0},
              seconds{0.0} {}

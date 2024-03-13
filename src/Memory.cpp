@@ -2,6 +2,7 @@
 
 #include "plugin.hpp"
 #include "buffered.hpp"
+#include "smoother.h"
 
 // Class devoted to handling the lengthy (compared to single sample)
 // process of filling or replacing the current Buffer.
@@ -40,6 +41,21 @@ struct WorkThread {
     while (!shutdown) {
       std::shared_ptr<Buffer> buffer = handle->buffer;
       if (buffer) {
+        if (buffer->smooths.additions.size() > 0) {
+          Smooth* item;
+          while (buffer->smooths.additions.pop(item)) {
+            // Check that creation_time is long enough ago that we're
+            // confident that the new section is written.
+            if (item->creation_time < 0 || (system::getTime() - item->creation_time > 0.001)) {
+        	    smooth(buffer->left_array, buffer->right_array, item->position, 25, buffer->length);
+              delete item;
+            } else {
+              buffer->smooths.additions.push(item);
+              break;
+            }
+	        }
+        }
+
         if (initiateFill) {
           initiateFill = false;
           running = true;

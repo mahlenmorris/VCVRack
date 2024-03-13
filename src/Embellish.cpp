@@ -48,8 +48,6 @@ struct Embellish : PositionedModule {
 		// user stops adjusting.
 	};
 
-	const double FADE_INCREMENT = 0.02;
-
 	// We look for the nearest Memory every NN samples. This saves CPU time.
   int find_memory_countdown = 0;
   std::shared_ptr<Buffer> buffer;
@@ -72,9 +70,6 @@ struct Embellish : PositionedModule {
 	double seconds = 0.0;
 	int length = 0;
 
-	// To fade volume up (or down) under certain circumstances.
-	// Helps us avoid clicks.
-	double record_fade = 1.0f;
 	RecordState record_state;
 
 	Embellish() {
@@ -103,7 +98,6 @@ struct Embellish : PositionedModule {
 		prev_abs_position = -20.0;
 		abs_changed = false;
 		record_state = NO_RECORD;
-		record_fade = 0.0;
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -176,19 +170,19 @@ struct Embellish : PositionedModule {
 				case ADJUSTING:
 				break;
 			}
-			// Now set the record_fade value appropriately, which may also affect the state.
-			if (record_state == FADE_UP) {
-				if (record_fade < 1.0) {
-					record_fade = std::min(record_fade + FADE_INCREMENT, 1.0);
-				} else {
-					record_state = RECORDING;
+
+			// Ending a recording means we need a Smooth.
+      if (record_state == FADE_DOWN) {
+				if (buffer->smooths.additions.size() < buffer->smooths.additions.max_size()) {
+					Smooth* new_smooth = new Smooth(display_position + 1, true);
+					// This isn't strictly kosher, since multiple Embellish modules could be pushing
+					// a Smooth onto the queue at the same time, and the NoLockQueue is rated as safe
+					// for only one writer.
+					// TODO: address this by having each Embellish create it's own NoLockQueue, which
+					// Memory dumps into it's queue. Or else let an Embellish worker thread handle the smoothing?
+					buffer->smooths.additions.push(new_smooth);
 				}
-			} else if (record_state == FADE_DOWN) {
-				if (record_fade > 0.0) {
-					record_fade = std::max(record_fade - FADE_INCREMENT, 0.0);
-				} else {
-					record_state = NO_RECORD;
-				}
+				record_state = NO_RECORD;
 			}
 
 			// This is all to figure out the next position in the memory to go to.
@@ -245,6 +239,14 @@ struct Embellish : PositionedModule {
 
 			display_position = (int) floor(recording_position);
 
+			if (record_state == FADE_UP) {
+				if (buffer->smooths.additions.size() < buffer->smooths.additions.max_size()) {
+					Smooth* new_smooth = new Smooth(display_position, false);
+					buffer->smooths.additions.push(new_smooth);
+				}
+				record_state = RECORDING;
+			}
+
 			while (display_position > 2 * length) {
 				display_position -= 2 * length;
 			}
@@ -282,8 +284,8 @@ struct Embellish : PositionedModule {
 				// This module is optimized for recording one sample to one integral position
 				// in array. Later modules can figure out how to do fancier stuff.
 				buffer->Set(display_position,
-					record_fade * inputs[LEFT_INPUT].getVoltage(),
-					record_fade * inputs[RIGHT_INPUT].getVoltage(),
+					inputs[LEFT_INPUT].getVoltage(),
+					inputs[RIGHT_INPUT].getVoltage(),
 					getId());
 				lights[RECORD_BUTTON_LIGHT].setBrightness(1.0f);
 			} else {
