@@ -4,114 +4,6 @@
 
 #include "buffered.hpp"
 
-// Much of the ideas and names for the waveform drawing are lifted from the
-// VCV Scope module.
-
-struct PointBuffer {
-	// We just measure the amplitudes, not the min and max of the waves.
-	// At the scale we show, a single channel is nearly certain to be symmetric.
-	// I.e., we are closer to SoundCloud than Scope.
-	float points[WAVEFORM_SIZE][2];
-	double normalize_factor;
-	std::string text_factor;
-};
-
-static const float WIDTHS[] = {
-	0.01, 0.02, 0.05,
-	0.1, 0.2, 0.5,
-	1, 2, 5,
-  10, 20, 50};
-static const char* TEXTS[] = {
-	"0.01V", "0.02V", "0.05V",
-	"0.1V", "0.2V", "0.5V",
-	"1V", "2V", "5V",
-	"10V", "20V", "50V"
-};
-
-struct WaveformScanner {
-  std::shared_ptr<Buffer> buffer;
-	std::shared_ptr<Buffer> next_buffer;
-	PointBuffer* points;
-	bool shutdown;
-
-	WaveformScanner(std::shared_ptr<Buffer> the_buffer, PointBuffer* the_points) :
-	    buffer{the_buffer}, next_buffer{nullptr}, points{the_points},
-			shutdown{false} {}
-
-  void Halt() {
-		shutdown = true;
-	}
-
-  // If this Depict is attached to a different Memeory than was previously the
-	// case, we need to act accordingly.
-  void UpdateBuffer(std::shared_ptr<Buffer> updated_buffer) {
-		if (next_buffer == nullptr && updated_buffer != buffer) {
-			next_buffer = updated_buffer;
-		}
-		// Scan() will actually do the updating.
-	}
-
-  // TODO: to make this faster, add a bool array of dirty bits, telling us
-	// which sections to scan.
-	void Scan() {
-		while (!shutdown) {
-			int sector_size = buffer->length / WAVEFORM_SIZE;
-			float peak_value = 0.0f;
-
-			// We may be pointing to a different Buffer. Act accordingly.
-			bool full_scan = false;
-			if (next_buffer != nullptr) {
-				if (next_buffer != buffer) {
-					buffer = next_buffer;
-					full_scan = true;
-				}
-				next_buffer = nullptr;
-			}
-
-			// For now, do this the most brute-force way; scan from bottom to top.
-			for (int p = 0; !shutdown && p < WAVEFORM_SIZE; p++) {
-				if (full_scan || buffer->dirty[p]) {
-					float left_amplitude = 0.0, right_amplitude = 0.0;
-					for (int i = p * sector_size;
-						   !shutdown && i < std::min((p + 1) * sector_size, buffer->length);
-							 i++) {
-						left_amplitude = std::max(left_amplitude,
-							                        std::fabs(buffer->left_array[i]));
-						right_amplitude = std::max(right_amplitude,
-						                           std::fabs(buffer->right_array[i]));
-					}
-					points->points[p][0] = left_amplitude;
-					points->points[p][1] = right_amplitude;
-			    // WARN("%d: left = %f, right = %f", p, left_amplitude, right_amplitude);
-
-					// Not stricly speaking correct (the sector may have been written
-					// to during the scan). But correctness is not critical, and the new
-					// values will be caught if any further writes to this sector occur,
-					// which, since writes are sequential, is quite likely.
-					buffer->dirty[p] = false;
-				}
-				peak_value = std::max(peak_value, points->points[p][0]);
-				peak_value = std::max(peak_value, points->points[p][1]);
-			}
-			float window_size;
-			for (int i = 0; i < 12; i++) {
-				float f = WIDTHS[i];
-				if (peak_value <= f || i == 11) {
-					window_size = f;
-					points->text_factor.assign(TEXTS[i]);
-					break;
-				}
-			}
-			points->normalize_factor = 10.0f / window_size;
-
-			// Pause for a bit to let other threads give us something to do.
-			if (!shutdown) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(100));
-			}
-		}
-	}
-};
-
 struct Depict : Module {
 	enum ParamId {
 		PARAMS_LEN
@@ -129,11 +21,6 @@ struct Depict : Module {
 
   std::shared_ptr<Buffer> buffer;
 
-	// [2] -> 0 is left, 1 is right.
-  PointBuffer point_buffer;
-	WaveformScanner* scanner;
-	std::thread* point_refresher;
-
   // Set by process(), read by drawLayer().
 	// Tells the UI where to draw the moving lines representing the player and
 	// recorder "heads".
@@ -150,18 +37,6 @@ struct Depict : Module {
 	Depict() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		buffer = nullptr;
-		scanner = nullptr;  // Can't create this until Buffer is found.
-	}
-
-	~Depict() {
-		if (scanner != nullptr) {
-			scanner->Halt();
-			if (point_refresher->joinable()) {
-				point_refresher->join();
-			}
-			delete point_refresher;
-			delete scanner;
-		}
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -174,15 +49,6 @@ struct Depict : Module {
 		if (--get_line_record_countdown <= 0) {
       // One hundredth of a second.
       get_line_record_countdown = (int) (args.sampleRate / 100);
-
-      // TODO: Shouldn't these be assigned in Depict() ctor?
-			// Or at least create the thread then?
-      if (scanner == nullptr) {
-				if (buffer != nullptr) {
-					scanner = new WaveformScanner(buffer, &point_buffer);
-					point_refresher = new std::thread(&WaveformScanner::Scan, scanner);
-				}
-			}
 
 			bool connected = false;
 			max_distance = 0;
@@ -226,10 +92,6 @@ struct Depict : Module {
 					std::shared_ptr<Buffer> found_buffer = dynamic_cast<BufferedModule*>(next_module)->getHandle()->buffer;
 					if (buffer != found_buffer && found_buffer->IsValid()) {
 						buffer = found_buffer;
-						// Make sure that we scan the buffer currently connected to us.
-						if (scanner != nullptr) {
-							scanner->UpdateBuffer(found_buffer);
-						}
 					}
 					connected = true;
 					// Memory marks the end of the left side anyway.
@@ -289,8 +151,9 @@ struct MemoryDepict : Widget {
 				nvgBeginPath(args.vg);
 
 				// Draw left points on the left of the mid.
+				double normalize = buffer->waveform.normalize_factor;
 				for (int i = 0; i < WAVEFORM_SIZE; i++) {
-					float max = module->point_buffer.points[i][0] * module->point_buffer.normalize_factor;
+					float max = buffer->waveform.points[i][0] * normalize;
 					// We'll say the x position ranges from -10V to 10V.
 					float x = zero_volt_left - (max * x_per_volt);
 					float y = (WAVEFORM_SIZE - i) * y_per_point;
@@ -303,7 +166,7 @@ struct MemoryDepict : Widget {
 
 				// Now do the right channel.
 				for (int i = WAVEFORM_SIZE - 1; i >= 0; i--) {
-					float max = module->point_buffer.points[i][1] * module->point_buffer.normalize_factor;
+					float max = buffer->waveform.points[i][1] * normalize;
 					float x = zero_volt_right + (max * x_per_volt);
 					float y = (WAVEFORM_SIZE - 1 - i) * y_per_point;
 					nvgLineTo(args.vg, x, y);
@@ -328,7 +191,7 @@ struct MemoryDepict : Widget {
 				nvgTextLetterSpacing(args.vg, -1);
 
 				// Place on the line just off the left edge.
-				nvgText(args.vg, 4, 10, module->point_buffer.text_factor.c_str(), NULL);
+				nvgText(args.vg, 4, 10, buffer->waveform.text_factor.c_str(), NULL);
 
 				// Restore previous state.
 				nvgResetScissor(args.vg);

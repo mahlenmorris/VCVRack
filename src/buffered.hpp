@@ -55,6 +55,18 @@ struct SmoothQueue {
   SpScLockFreeQueue<Smooth*, 50> additions;
 };
 
+/****
+ * Data for creating the drawing of the waveform in Depict.
+ */
+struct PointBuffer {
+	// We just measure the amplitudes, not the min and max of the waves.
+	// At the scale we show, a single channel is nearly certain to be symmetric.
+	// I.e., we are closer to SoundCloud than Scope.
+	float points[WAVEFORM_SIZE][2];
+	double normalize_factor;
+	std::string text_factor;
+};
+
 struct Buffer {
   // Consider making this a 2 x length array.
   float* left_array;   // make this std::shared_ptr.
@@ -64,6 +76,8 @@ struct Buffer {
 
   // For marking blocks of the waveform that Display shows as needing to be updated.
   bool dirty[WAVEFORM_SIZE];
+  // Shortcut to mark all blocks dirty.
+  bool full_scan;
 
   // Since Recording heads of any kind are a source of discontinuities (and thus
   // clicks), we track where they are and make sure to duck the volume of a play
@@ -72,11 +86,20 @@ struct Buffer {
   std::vector<RecordHeadTrace> record_heads;
 
   // Embellish and other "recording" modules add to this, Memory's Work queue acts on them
-  // and removes them.
+  // and removes them. They correspond to locations in the buffer that will need to be smoothed.
   SmoothQueue smooths;
 
+  // The waveform that Depict's will display.
+  PointBuffer waveform;
+  // Let's not bother to update depict_buffer if there aren't any Depict's
+  // looking at it.
+  bool freshen_waveform;
+
   Buffer() : left_array{nullptr}, right_array{nullptr}, length{0},
-             seconds{0.0} {}
+             seconds{0.0}, full_scan{false} {
+    // TODO: set to false when no Depicts are in range.
+    freshen_waveform = true;
+  }
 
   ~Buffer() {
     if (left_array) {

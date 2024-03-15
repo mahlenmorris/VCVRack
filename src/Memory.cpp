@@ -4,6 +4,21 @@
 #include "buffered.hpp"
 #include "smoother.h"
 
+// We auto-scale the view of the waveform in Depict, but snap to these values
+// to make it less confusing.
+static const float WIDTHS[] = {
+  0.01, 0.02, 0.05,
+  0.1, 0.2, 0.5,
+  1, 2, 5,
+  10, 20, 50};
+// The string versions of the WIDTHS above.
+static const char* TEXTS[] = {
+  "0.01V", "0.02V", "0.05V",
+  "0.1V", "0.2V", "0.5V",
+  "1V", "2V", "5V",
+  "10V", "20V", "50V"
+};
+
 // Class devoted to handling the lengthy (compared to single sample)
 // process of filling or replacing the current Buffer.
 struct WorkThread {
@@ -35,6 +50,51 @@ struct WorkThread {
     initiateFill = true;
   }
 
+  void RefreshWaveform(std::shared_ptr<Buffer> buffer) {
+    int sector_size = buffer->length / WAVEFORM_SIZE;
+    float peak_value = 0.0f;
+    bool full_scan = buffer->full_scan;
+
+    // For now, do this the most brute-force way; scan from bottom to top.
+    for (int p = 0; !shutdown && p < WAVEFORM_SIZE; p++) {
+      if (full_scan || buffer->dirty[p]) {
+        float left_amplitude = 0.0, right_amplitude = 0.0;
+        for (int i = p * sector_size;
+              !shutdown && i < std::min((p + 1) * sector_size, buffer->length);
+              i++) {
+          left_amplitude = std::max(left_amplitude,
+                                    std::fabs(buffer->left_array[i]));
+          right_amplitude = std::max(right_amplitude,
+                                      std::fabs(buffer->right_array[i]));
+        }
+        buffer->waveform.points[p][0] = left_amplitude;
+        buffer->waveform.points[p][1] = right_amplitude;
+        // WARN("%d: left = %f, right = %f", p, left_amplitude, right_amplitude);
+
+        // Not stricly speaking correct (the sector may have been written
+        // to during the scan). But correctness is not critical, and the new
+        // values will be caught if any further writes to this sector occur,
+        // which, since writes are sequential, is quite likely.
+        buffer->dirty[p] = false;
+      }
+      peak_value = std::max(peak_value, buffer->waveform.points[p][0]);
+      peak_value = std::max(peak_value, buffer->waveform.points[p][1]);
+    }
+    if (full_scan) {
+      buffer->full_scan = false;
+    }
+    float window_size;
+    for (int i = 0; i < 12; i++) {
+      float f = WIDTHS[i];
+      if (peak_value <= f || i == 11) {
+        window_size = f;
+        buffer->waveform.text_factor.assign(TEXTS[i]);
+        break;
+      }
+    }
+    buffer->waveform.normalize_factor = 10.0f / window_size;
+  }
+
   // If compilation succeeds, sets flag saying so and prepares vectors
   // of main_blocks and expression_blocks for module to use later.
   void Work() {
@@ -56,6 +116,10 @@ struct WorkThread {
 	        }
         }
 
+        if (buffer->freshen_waveform) {
+          RefreshWaveform(buffer);
+        }
+
         if (initiateFill) {
           initiateFill = false;
           running = true;
@@ -70,9 +134,7 @@ struct WorkThread {
           // Note that this data is still random. Needs to be wiped!
 
           // And mark every sector dirty.
-          for (int i = 0; i < WAVEFORM_SIZE; ++i) {
-            buffer->dirty[i] = true;
-          }
+          buffer->full_scan = true;
 
           if (buffer->left_array != nullptr) {
             delete buffer->left_array;
@@ -98,9 +160,7 @@ struct WorkThread {
           }
 
           // And mark every sector dirty.
-          for (int i = 0; i < WAVEFORM_SIZE && ! shutdown; ++i) {
-            buffer->dirty[i] = true;
-          }
+          buffer->full_scan = true;
           running = false;
         }
       }
@@ -233,7 +293,7 @@ struct Memory : BufferedModule {
       }
 
       // Periodically assign colors to each connected module's light.
-      // TODO: Maybe put this into a background too?
+      // TODO: Maybe put this into a background thread too?
       if (--assign_color_countdown <= 0) {
         // One hundredth of a second.
         assign_color_countdown = (int) (args.sampleRate / 100);
@@ -243,6 +303,7 @@ struct Memory : BufferedModule {
           Module* next_module = getRightExpander().module;
           int color_index = -1;
           int distance = 0;
+          bool found_depict = false;
           while (next_module) {
             if ((next_module->model == modelRecall) ||
                 (next_module->model == modelEmbellish)) {
@@ -269,6 +330,10 @@ struct Memory : BufferedModule {
             }
             // If we are still in our module list, move to the right.
             auto m = next_module->model;
+            if (m == modelDepict) {
+              // If there is a Depict, then make sure the waveform is being updated.
+              found_depict = true;
+            }
             if ((m == modelRecall) ||
                 (m == modelEmbellish) ||
                 (m == modelDepict)) {  // This will be a list soon...
@@ -277,6 +342,7 @@ struct Memory : BufferedModule {
               break;
             }
           }
+          buffer->freshen_waveform = found_depict;
         }
         // TODO: add a process that eliminates very old RecordHead records.
         // We are possibly not connected to them any more.
