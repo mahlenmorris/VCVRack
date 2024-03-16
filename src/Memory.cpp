@@ -55,6 +55,10 @@ struct WorkThread {
     float peak_value = 0.0f;
     bool full_scan = buffer->full_scan;
 
+    if (full_scan) {
+      buffer->full_scan = false;  // I'm doing the scan now.
+    }
+
     // For now, do this the most brute-force way; scan from bottom to top.
     for (int p = 0; !shutdown && p < WAVEFORM_SIZE; p++) {
       if (full_scan || buffer->dirty[p]) {
@@ -79,9 +83,6 @@ struct WorkThread {
       }
       peak_value = std::max(peak_value, buffer->waveform.points[p][0]);
       peak_value = std::max(peak_value, buffer->waveform.points[p][1]);
-    }
-    if (full_scan) {
-      buffer->full_scan = false;
     }
     float window_size;
     for (int i = 0; i < 12; i++) {
