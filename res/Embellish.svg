@@ -24,10 +24,10 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2.0000001"
-     inkscape:cx="55.499999"
+     inkscape:cx="4.2499998"
      inkscape:cy="210.49999"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer2"
+     inkscape:current-layer="layer1"
      showgrid="false"
      units="mm"
      inkscape:snap-bbox="true"
@@ -73,10 +73,10 @@
        aria-label="!"
        transform="matrix(1.1167128,-0.15549235,0.12836675,1.3252781,-4.8437299,165.39159)"
        id="text912"
-       style="font-style:normal;font-weight:normal;font-size:127.426px;line-height:1.25;font-family:sans-serif;display:inline;fill:#388fe4;fill-opacity:1;stroke:none;stroke-width:3.18552;stroke-miterlimit:4;stroke-dasharray:none">
+       style="font-style:normal;font-weight:normal;font-size:127.426px;line-height:1.25;font-family:sans-serif;display:inline;fill:#338adf;fill-opacity:1;stroke:none;stroke-width:3.18552;stroke-miterlimit:4;stroke-dasharray:none">
       <path
          d="M 17.007808,5.7176488 15.390095,72.852735 H 4.8127414 L 3.070589,5.7176488 Z M 16.385611,98.362823 H 3.6927863 V 85.234461 H 16.385611 Z"
-         style="display:inline;fill:#388fe4;fill-opacity:1;stroke-width:3.18552;stroke-miterlimit:4;stroke-dasharray:none"
+         style="display:inline;fill:#338adf;fill-opacity:1;stroke-width:3.18552;stroke-miterlimit:4;stroke-dasharray:none"
          id="path1767" />
     </g>
   </g>
