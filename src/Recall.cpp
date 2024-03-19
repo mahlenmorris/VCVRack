@@ -81,6 +81,19 @@ struct Recall : PositionedModule {
 		playback_position = -1;
 	}
 
+	// Overriding solely to make sure Adjust isn't left in a non-zero state.
+	// And also, we should randomize the position.
+	void onRandomize(const RandomizeEvent& e) override {
+		// Randomize all parameters
+		Module::onRandomize(e);
+
+		// Randomize custom state variables
+		params[ADJUST_PARAM].setValue(0.0f);
+		if (length > 0) {
+			playback_position = (int) (((double) length) * random::uniform());
+		}
+	}
+
 	void process(const ProcessArgs& args) override {
 		// Only call this only every N samples, since the vast majority of
 		// the time this won't change.
