@@ -83,14 +83,15 @@ struct Embellish : PositionedModule {
 	               {"Inactive", "Recording"});
 		configParam(INIT_POSITION_PARAM, 0.f, 10.f, 0.f, "Initial position (0-10v) when loading patch");
 
-		configInput(ABS_POSITION_INPUT, "Position (0-10v) to move to");
-		configInput(RECORD_GATE_INPUT, "Gate to start/stop recording");
 		// TODO: fill all of these in!
-		configOutput(LEFT_OUTPUT, "");
-		configOutput(RIGHT_OUTPUT, "");
-		configOutput(NOW_POSITION_OUTPUT, "");
+		configInput(ABS_POSITION_INPUT, "Slider to move this within Memory.");
+		configInput(RECORD_GATE_INPUT, "Gate to start/stop recording");
 		configInput(LEFT_INPUT, "");
 		configInput(RIGHT_INPUT, "");
+
+		configOutput(LEFT_OUTPUT, "");
+		configOutput(RIGHT_OUTPUT, "");
+		configOutput(NOW_POSITION_OUTPUT, "0 - 10V point in Memory this is now reading/writing");
 
 		line_record.position = 0.0;
 		line_record.type = EMBELLISH;

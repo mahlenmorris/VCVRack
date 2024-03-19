@@ -7,13 +7,15 @@ struct Recall : PositionedModule {
 	enum ParamId {
 		BOUNCE_PARAM,
 		SPEED_PARAM,
-		POSITION_PARAM,
+		ADJUST_PARAM,
 		PLAY_BUTTON_PARAM,
+		INIT_POSITION_PARAM,
 		PARAMS_LEN
 	};
 	enum InputId {
 		PLAY_GATE_INPUT,
 		SPEED_INPUT,
+		ABS_POSITION_INPUT,
 		INPUTS_LEN
 	};
 	enum OutputId {
@@ -41,6 +43,10 @@ struct Recall : PositionedModule {
   // Where we are in memory (for the timestamp indicator).
   double display_position;
 
+   // To detect when the ABS_POSITION_PARAM changes.
+	double prev_abs_position;
+	bool abs_changed; // Set when we detect movement, but only cleared when we use it.
+
   dsp::SchmittTrigger playTrigger;
 
   // To display timestamps correctly.
@@ -55,17 +61,23 @@ struct Recall : PositionedModule {
 		configSwitch(BOUNCE_PARAM, 0, 1, 0, "Endpoint Behavior",
 								 {"Loop around", "Bounce"});
 	  configParam(SPEED_PARAM, -10.f, 10.f, 1.f, "Playback speed/direction");
-		configParam(POSITION_PARAM, 0.f, 10.f, 0.f, "0 - 10V position we start at");
+		configParam(ADJUST_PARAM, -10.f, 10.f, 0.f, "Adjust position");
 		configSwitch(PLAY_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this play head",
 	               {"Silent", "Playing"});
+		configParam(INIT_POSITION_PARAM, 0.f, 10.f, 0.f, "Initial position (0-10v) when loading patch");
+
+		configInput(ABS_POSITION_INPUT, "Slider to move this within Memory.");
 		configInput(SPEED_INPUT, "Playback speed (added to knob value)");
 		configInput(PLAY_GATE_INPUT, "Gate to start/stop playing");
+	
 		configOutput(NOW_POSITION_OUTPUT, "0 - 10V point in Memory this is now reading");
 		configOutput(LEFT_OUTPUT, "");
 		configOutput(RIGHT_OUTPUT, "");
 
     line_record.position = 0.0;
 		line_record.type = RECALL;
+		prev_abs_position = -20.0;
+		abs_changed = false;
 		playback_position = -1;
 	}
 
@@ -94,48 +106,83 @@ struct Recall : PositionedModule {
 			length = std::max(buffer->length, 10);
 			seconds = std::max(buffer->seconds, 1.0);
 
+			if (playback_position == -1) { // Starting.
+			  // Value of "start recording position indicator".
+				playback_position = (int) (params[INIT_POSITION_PARAM].getValue() * length / 10.0);
+			}
+
 			// Are we in motion or not?
 			playTrigger.process(rescale(
 					inputs[PLAY_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
-			bool playing = (params[PLAY_BUTTON_PARAM].getValue() > 0.1f) ||
-			               playTrigger.isHigh();
+
+			// User (or input) is adjusting the position.
+			if (inputs[ABS_POSITION_INPUT].getVoltage() != prev_abs_position) {
+				if (prev_abs_position == -20.0) {
+					// Getting an initial value, if any.
+					prev_abs_position = inputs[ABS_POSITION_INPUT].getVoltage();
+				} else {
+					prev_abs_position = inputs[ABS_POSITION_INPUT].getVoltage();
+					abs_changed = true;
+				}
+			}
+			bool adjusting = abs_changed ||
+			    std::fabs(params[ADJUST_PARAM].getValue()) > std::numeric_limits<float>::epsilon(); // i.e., is not zero.
+
+			bool playing = !adjusting && 
+			               ((params[PLAY_BUTTON_PARAM].getValue() > 0.1f) || playTrigger.isHigh());
 			if (playing) {
 				if (playback_position == -1) { // Starting.
 					playback_position = 0;
 				}
 				playback_position +=
 					inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
-				switch (loop_type) {
-					case 0: {  // Loop around.
-						if (playback_position < 0.0) {
-							playback_position += length;
-						} else if (playback_position >= length) {
-							playback_position -= length;
-						}
+			} else if (adjusting) {
+     		// Even if we're not playing, we want to show movement caused by POSITION movement,
+				// so user can see where playback will pick up.
+				// 
+				// Either the Adjust slider is non-zero or the ABS POSITION input has changed.
+				// we'll let the human slider override the ABS input.
+				if (std::fabs(params[ADJUST_PARAM].getValue()) > std::numeric_limits<float>::epsilon()) {
+					// i.e., is not zero.
+					// zero -> no movement.
+					// 10 -> move entirety of length of buffer in two seconds.
+					playback_position += (params[ADJUST_PARAM].getValue() / 20.0) * length / args.sampleRate;
+				} else {
+					// We'll just move directly to the specified spot.
+					double abs = inputs[ABS_POSITION_INPUT].getVoltage();
+					// Correct for values outside of 0-10.
+					while (abs < 0.0) {
+						abs += 10.0;
 					}
-					break;
-					case 1: {  // Bounce.
-						if (playback_position < 0.0) {
-							playback_position += 2 * length;
-						} else if (playback_position >= 2 * length) {
-							playback_position -= 2 * length;
-						}
+					while (abs > 10.0) {
+						abs -= 10.0;
 					}
-					break;
+					playback_position = (abs * length / 10.0);
+					abs_changed = false;
 				}
 			}
 
-			// Even if we're not playing, we want to show movement caused by POSITION movement,
-			// so user can see where playback will pick up. 
-			// Now add the influence of POSITION parameter(s).
+			// Fix the position, now that the adjustments have occured.
+			switch (loop_type) {
+				case 0: {  // Loop around.
+					if (playback_position < 0.0) {
+						playback_position += length;
+					} else if (playback_position >= length) {
+						playback_position -= length;
+					}
+				}
+				break;
+				case 1: {  // Bounce.
+					if (playback_position < 0.0) {
+						playback_position += 2 * length;
+					} else if (playback_position >= 2 * length) {
+						playback_position -= 2 * length;
+					}
+				}
+				break;
+			}
 
-
-			double offset = (loop_type == 1 ? 2.0 : 1.0) * length * (0.0 / 10.0);
-			//double offset = (loop_type == 1 ? 2.0 : 1.0) * length *
-			//  (params[POSITION_PARAM].getValue() / 10.0);
-
-
-			display_position = playback_position + offset;
+			display_position = playback_position;
 
 			while (display_position > 2 * length) {
 				display_position -= 2 * length;
@@ -158,10 +205,6 @@ struct Recall : PositionedModule {
 					break;
 				}
 			}
-
-
-			params[POSITION_PARAM].setValue(display_position * 10.0 / length);
-
 
 			outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
 			line_record.position = display_position;
@@ -195,27 +238,6 @@ struct Recall : PositionedModule {
 	}
 };
 
-struct StartTimestamp : TimestampField {
-	StartTimestamp() {
-  }
-
-  Recall* module;
-
-  double getPosition() override {
-    if (module && module->seconds > 0) {
-			return module->params[Recall::POSITION_PARAM].getValue() * module->seconds / 10.0;
-		}
-		return 0.00;  // Dummy display value.
-  }
-
-	double getSeconds() override {
-    if (module && module->seconds > 0.0) {
-			return module->seconds;
-		}
-		return 2.0;
-	}
-};
-
 struct NowTimestamp : TimestampField {
 	NowTimestamp() {
   }
@@ -237,6 +259,12 @@ struct NowTimestamp : TimestampField {
 	}
 };
 
+struct AdjustSlider : VCVSlider {
+  void onDragEnd(const DragEndEvent& e) override {
+    getParamQuantity()->setValue(0.0);
+	}
+};
+
 struct RecallWidget : ModuleWidget {
 	RecallWidget(Recall* module) {
 		setModule(module);
@@ -248,19 +276,20 @@ struct RecallWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
 		addParam(createLightParamCentered<VCVLightLatch<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.024, 19.3)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(6.035, 14.0)),
                                              module, Recall::BOUNCE_PARAM,
                                              Recall::BOUNCE_LIGHT));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 32.0)), module, Recall::SPEED_INPUT));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(20.971, 32.0)), module, Recall::SPEED_PARAM));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(7.891, 97.087)), module, Recall::SPEED_INPUT));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(20.839, 97.087)), module, Recall::SPEED_PARAM));
 
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(8.024, 54.0)), module, Recall::POSITION_PARAM));
-		// A timestamp is 10 wide.
-		StartTimestamp* start_timestamp = createWidget<StartTimestamp>(mm2px(
-        Vec(8.024 - (10.0 / 2.0), 59.0)));
-    start_timestamp->module = module;
-    addChild(start_timestamp);
+    addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6.35, 43.0)),
+		   module, Recall::ADJUST_PARAM));
+    // TODO: make this a tiny attenuator knob?
+		addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(19.05, 50.8)),
+		   module, Recall::INIT_POSITION_PARAM));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 34.396)),
+		   module, Recall::ABS_POSITION_INPUT));
 
 		// Play button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
@@ -269,10 +298,11 @@ struct RecallWidget : ModuleWidget {
                                              Recall::PLAY_BUTTON_LIGHT));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 80.0)), module, Recall::PLAY_GATE_INPUT));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.971, 54.0)), module, Recall::NOW_POSITION_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.7, 65.0)),
+		                                           module, Recall::NOW_POSITION_OUTPUT));
 		// A timestamp is 10 wide.
 		NowTimestamp* now_timestamp = createWidget<NowTimestamp>(mm2px(
-        Vec(20.971 - (10.0 / 2.0), 59.0)));
+        Vec(12.7 - (10.0 / 2.0), 69.0)));
     now_timestamp->module = module;
     addChild(now_timestamp);
 
