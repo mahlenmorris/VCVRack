@@ -280,8 +280,8 @@ struct RecallWidget : ModuleWidget {
                                              module, Recall::BOUNCE_PARAM,
                                              Recall::BOUNCE_LIGHT));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(7.891, 97.087)), module, Recall::SPEED_INPUT));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(20.839, 97.087)), module, Recall::SPEED_PARAM));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 97.087)), module, Recall::SPEED_INPUT));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(19.05, 97.087)), module, Recall::SPEED_PARAM));
 
     addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6.35, 43.0)),
 		   module, Recall::ADJUST_PARAM));
@@ -293,10 +293,10 @@ struct RecallWidget : ModuleWidget {
 
 		// Play button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 80.0)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(19.05, 80.0)),
                                              module, Recall::PLAY_BUTTON_PARAM,
                                              Recall::PLAY_BUTTON_LIGHT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 80.0)), module, Recall::PLAY_GATE_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 80.0)), module, Recall::PLAY_GATE_INPUT));
 
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.7, 65.0)),
 		                                           module, Recall::NOW_POSITION_OUTPUT));
@@ -306,11 +306,11 @@ struct RecallWidget : ModuleWidget {
     now_timestamp->module = module;
     addChild(now_timestamp);
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.024, 112.0)), module, Recall::LEFT_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(20.971, 112.0)), module, Recall::RIGHT_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.035, 112.0)), module, Recall::LEFT_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(19.05, 112.0)), module, Recall::RIGHT_OUTPUT));
 
 		ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
-			mm2px(Vec(15.240, 3.0)), module, Recall::CONNECTED_LIGHT);
+			mm2px(Vec(12.7, 3.2)), module, Recall::CONNECTED_LIGHT);
     connect_light->pos_module = module;
 		addChild(connect_light);
 	}

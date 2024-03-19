@@ -389,7 +389,7 @@ struct EmbellishWidget : ModuleWidget {
 		                                         Embellish::RIGHT_INPUT));
 
 		ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
-			mm2px(Vec(12.7, 3.0)), module, Embellish::CONNECTED_LIGHT);
+			mm2px(Vec(12.7, 3.2)), module, Embellish::CONNECTED_LIGHT);
     connect_light->pos_module = module;
 		addChild(connect_light);
 	}
