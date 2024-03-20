@@ -145,7 +145,7 @@ struct BufferedModule : Module {
 // Module that has an associated position. Play and record heads have these.
 
 enum ModuleType {
-	RECALL,
+	RUMINATE,
 	EMBELLISH
 	// More later.
 };

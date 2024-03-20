@@ -7,7 +7,7 @@ std::shared_ptr<Buffer> findClosestMemory(Module* leftModule) {
       return dynamic_cast<BufferedModule*>(leftModule)->getHandle()->buffer;
     }
     auto m = leftModule->model;
-    if ((m == modelRecall) ||
+    if ((m == modelRuminate) ||
         (m == modelEmbellish) ||
         (m == modelDepict)) {  // This will be a list soon...
       leftModule = leftModule->getLeftExpander().module;

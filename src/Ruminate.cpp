@@ -3,7 +3,7 @@
 #include "plugin.hpp"
 #include "buffered.hpp"
 
-struct Recall : PositionedModule {
+struct Ruminate : PositionedModule {
 	enum ParamId {
 		BOUNCE_PARAM,
 		SPEED_PARAM,
@@ -56,7 +56,7 @@ struct Recall : PositionedModule {
 	// To fade volume when near a recording head.
 	double fade = 1.0f;
 
-	Recall() {
+	Ruminate() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configSwitch(BOUNCE_PARAM, 0, 1, 0, "Endpoint Behavior",
 								 {"Loop around", "Bounce"});
@@ -75,7 +75,7 @@ struct Recall : PositionedModule {
 		configOutput(RIGHT_OUTPUT, "");
 
     line_record.position = 0.0;
-		line_record.type = RECALL;
+		line_record.type = RUMINATE;
 		prev_abs_position = -20.0;
 		abs_changed = false;
 		playback_position = -1;
@@ -255,7 +255,7 @@ struct NowTimestamp : TimestampField {
 	NowTimestamp() {
   }
 
-  Recall* module;
+  Ruminate* module;
 
   double getPosition() override {
     if (module && module->length > 0 && module->seconds > 0.0) {
@@ -278,10 +278,10 @@ struct AdjustSlider : VCVSlider {
 	}
 };
 
-struct RecallWidget : ModuleWidget {
-	RecallWidget(Recall* module) {
+struct RuminateWidget : ModuleWidget {
+	RuminateWidget(Ruminate* module) {
 		setModule(module);
-		setPanel(createPanel(asset::plugin(pluginInstance, "res/Recall.svg")));
+		setPanel(createPanel(asset::plugin(pluginInstance, "res/Ruminate.svg")));
 
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
@@ -290,43 +290,43 @@ struct RecallWidget : ModuleWidget {
 
 		addParam(createLightParamCentered<VCVLightLatch<
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(6.035, 14.0)),
-                                             module, Recall::BOUNCE_PARAM,
-                                             Recall::BOUNCE_LIGHT));
+                                             module, Ruminate::BOUNCE_PARAM,
+                                             Ruminate::BOUNCE_LIGHT));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 97.087)), module, Recall::SPEED_INPUT));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(19.05, 97.087)), module, Recall::SPEED_PARAM));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 97.087)), module, Ruminate::SPEED_INPUT));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(19.05, 97.087)), module, Ruminate::SPEED_PARAM));
 
     addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6.35, 43.0)),
-		   module, Recall::ADJUST_PARAM));
+		   module, Ruminate::ADJUST_PARAM));
     // TODO: make this a tiny attenuator knob?
 		addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(19.05, 50.8)),
-		   module, Recall::INIT_POSITION_PARAM));
+		   module, Ruminate::INIT_POSITION_PARAM));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 34.396)),
-		   module, Recall::ABS_POSITION_INPUT));
+		   module, Ruminate::ABS_POSITION_INPUT));
 
 		// Play button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(19.05, 80.0)),
-                                             module, Recall::PLAY_BUTTON_PARAM,
-                                             Recall::PLAY_BUTTON_LIGHT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 80.0)), module, Recall::PLAY_GATE_INPUT));
+                                             module, Ruminate::PLAY_BUTTON_PARAM,
+                                             Ruminate::PLAY_BUTTON_LIGHT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 80.0)), module, Ruminate::PLAY_GATE_INPUT));
 
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.7, 65.0)),
-		                                           module, Recall::NOW_POSITION_OUTPUT));
+		                                           module, Ruminate::NOW_POSITION_OUTPUT));
 		// A timestamp is 10 wide.
 		NowTimestamp* now_timestamp = createWidget<NowTimestamp>(mm2px(
         Vec(12.7 - (10.0 / 2.0), 69.0)));
     now_timestamp->module = module;
     addChild(now_timestamp);
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.035, 112.0)), module, Recall::LEFT_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(19.05, 112.0)), module, Recall::RIGHT_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.035, 112.0)), module, Ruminate::LEFT_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(19.05, 112.0)), module, Ruminate::RIGHT_OUTPUT));
 
 		ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
-			mm2px(Vec(12.7, 3.2)), module, Recall::CONNECTED_LIGHT);
+			mm2px(Vec(12.7, 3.2)), module, Ruminate::CONNECTED_LIGHT);
     connect_light->pos_module = module;
 		addChild(connect_light);
 	}
 };
 
-Model* modelRecall = createModel<Recall, RecallWidget>("Recall");
+Model* modelRuminate = createModel<Ruminate, RuminateWidget>("Ruminate");

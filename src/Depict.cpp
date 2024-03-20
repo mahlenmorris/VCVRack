@@ -59,7 +59,7 @@ struct Depict : Module {
 			// First head to the right.
 			Module* next_module = getRightExpander().module;
 			while (next_module) {
-				if ((next_module->model == modelRecall) ||
+				if ((next_module->model == modelRuminate) ||
 				    (next_module->model == modelEmbellish)) {
 					// Add to line_records.
 					line_records.push_back(dynamic_cast<PositionedModule*>(next_module)->line_record);
@@ -67,7 +67,7 @@ struct Depict : Module {
 				}
 				// If we are still in our module list, move to the right.
 				auto m = next_module->model;
-				if ((m == modelRecall) ||
+				if ((m == modelRuminate) ||
 						(m == modelEmbellish) ||
 						(m == modelDepict)) {  // This will be a list soon...
 					next_module = next_module->getRightExpander().module;
@@ -78,7 +78,7 @@ struct Depict : Module {
 			// Now move to the left.
 			next_module = getLeftExpander().module;
 			while (next_module) {
-				if ((next_module->model == modelRecall) ||
+				if ((next_module->model == modelRuminate) ||
 				    (next_module->model == modelEmbellish)) {
 					// Add to line_records.
 					line_records.push_back(dynamic_cast<PositionedModule*>(next_module)->line_record);
@@ -97,7 +97,7 @@ struct Depict : Module {
 					// Memory marks the end of the left side anyway.
 					break;
 				}
-				if ((m == modelRecall) ||
+				if ((m == modelRuminate) ||
 						(m == modelEmbellish) ||
 						(m == modelDepict)) {  // This will be a list soon...
 					next_module = next_module->getLeftExpander().module;
@@ -205,7 +205,7 @@ struct MemoryDepict : Widget {
 					double y_pos = bounding_box.y *
 					               (1 - ((double) line.position / buffer->length));
 					// Line is changed by distance and type.
-					if (line.type == RECALL) {
+					if (line.type == RUMINATE) {
 						// Endpoint of line suggests which module it is.
 						double len = bounding_box.x * line.distance / max_distance;
 						nvgRect(args.vg, 0.0, y_pos, len, 1);

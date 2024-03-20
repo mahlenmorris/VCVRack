@@ -306,7 +306,7 @@ struct Memory : BufferedModule {
           int distance = 0;
           bool found_depict = false;
           while (next_module) {
-            if ((next_module->model == modelRecall) ||
+            if ((next_module->model == modelRuminate) ||
                 (next_module->model == modelEmbellish)) {
               // Assign a Color.
               distance++;
@@ -335,7 +335,7 @@ struct Memory : BufferedModule {
               // If there is a Depict, then make sure the waveform is being updated.
               found_depict = true;
             }
-            if ((m == modelRecall) ||
+            if ((m == modelRuminate) ||
                 (m == modelEmbellish) ||
                 (m == modelDepict)) {  // This will be a list soon...
               next_module = next_module->getRightExpander().module;

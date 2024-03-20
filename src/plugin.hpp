@@ -14,5 +14,5 @@ extern Model* modelEmbellish;
 extern Model* modelFermata;
 extern Model* modelFuse;
 extern Model* modelMemory;
-extern Model* modelRecall;
+extern Model* modelRuminate;
 extern Model* modelTTY;
