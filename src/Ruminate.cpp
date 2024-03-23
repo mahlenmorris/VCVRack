@@ -31,6 +31,24 @@ struct Ruminate : PositionedModule {
 		LIGHTS_LEN
 	};
 
+  enum PlayState {
+    // We have a few states we could be in.
+		ADJUSTING,  // * Not playing, but actively moving.
+		NO_PLAY,  	// * Not playing at all.
+		FADE_UP,  	// * Starting to play.
+		PLAYING,   	// * Continuing to play.
+		FADE_DOWN		// * Fading out the playing.
+		    				// * And back to not recording at all.
+
+		// When starting and stopping the head, the sequence is:
+		// * NO_PLAY -> FADE_UP -> PLAYING -> FADE_DOWN -> NO_PLAY.
+		// If user starts adjusting in FADE_UP or PLAYING, we move to FADE_DOWN and then NO_PLAY.
+		// If user is adjusting when in NO_PLAY, we move to ADJUSTING, and stay there until
+		// user stops adjusting.
+	};
+
+	const double FADE_INCREMENT = 0.02;
+
 	// We look for the nearest Memory every NN samples. This saves CPU time.
   int find_memory_countdown = 0;
   std::shared_ptr<Buffer> buffer;
@@ -55,6 +73,9 @@ struct Ruminate : PositionedModule {
 
 	// To fade volume when near a recording head.
 	double fade = 1.0f;
+	// When fading at the start or end of adjustments.
+	double play_fade = 1.0;
+	PlayState play_state;
 
 	Ruminate() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -78,6 +99,7 @@ struct Ruminate : PositionedModule {
 		line_record.type = RUMINATE;
 		prev_abs_position = -20.0;
 		abs_changed = false;
+		play_state = NO_PLAY;
 		playback_position = -1;
 	}
 
@@ -117,16 +139,7 @@ struct Ruminate : PositionedModule {
 			// Timestamp displays.
 			// Bad things happen if these are zero, which sometimes happens on startup.
 			length = std::max(buffer->length, 10);
-			seconds = std::max(buffer->seconds, 1.0);
-
-			if (playback_position == -1) { // Starting.
-			  // Value of "start recording position indicator".
-				playback_position = (int) (params[INIT_POSITION_PARAM].getValue() * length / 10.0);
-			}
-
-			// Are we in motion or not?
-			playTrigger.process(rescale(
-					inputs[PLAY_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+			seconds = std::max(buffer->seconds, 0.1);
 
 			// User (or input) is adjusting the position.
 			if (inputs[ABS_POSITION_INPUT].getVoltage() != prev_abs_position) {
@@ -138,61 +151,115 @@ struct Ruminate : PositionedModule {
 					abs_changed = true;
 				}
 			}
+			// Is our position being adjusted by the slider and/or the position input?
 			bool adjusting = abs_changed ||
 			    std::fabs(params[ADJUST_PARAM].getValue()) > std::numeric_limits<float>::epsilon(); // i.e., is not zero.
 
+			// Are we being told to play?
+			playTrigger.process(rescale(
+					inputs[PLAY_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
 			bool playing = !adjusting && 
 			               ((params[PLAY_BUTTON_PARAM].getValue() > 0.1f) || playTrigger.isHigh());
-			if (playing) {
-				if (playback_position == -1) { // Starting.
-					playback_position = 0;
+			
+      // Now that we understand our inputs, let's determine what PlayState should be.
+			// Take into account when the user starts or stops adjusting.
+			if (play_state == NO_PLAY && adjusting) {
+				play_state = ADJUSTING;
+			} else if (play_state == ADJUSTING && !adjusting) {
+				play_state = NO_PLAY;
+			}
+
+			switch (play_state) {
+				case NO_PLAY:
+				case FADE_DOWN: {
+					if (playing && !adjusting) {
+						play_state = FADE_UP;
+					}
 				}
-				playback_position +=
-					inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
-			} else if (adjusting) {
-     		// Even if we're not playing, we want to show movement caused by POSITION movement,
-				// so user can see where playback will pick up.
-				// 
-				// Either the Adjust slider is non-zero or the ABS POSITION input has changed.
-				// we'll let the human slider override the ABS input.
-				if (std::fabs(params[ADJUST_PARAM].getValue()) > std::numeric_limits<float>::epsilon()) {
-					// i.e., is not zero.
-					// zero -> no movement.
-					// 10 -> move entirety of length of buffer in two seconds.
-					playback_position += (params[ADJUST_PARAM].getValue() / 20.0) * length / args.sampleRate;
+				break;
+				case FADE_UP:
+				case PLAYING:  {
+					if (!playing || adjusting) {
+						play_state = FADE_DOWN;
+					}
+				}
+				break;
+				case ADJUSTING:
+				break;
+			}
+
+			// Now set the record_fade value appropriately, which may also affect the state.
+			if (play_state == FADE_UP) {
+				if (play_fade < 1.0) {
+					play_fade = std::min(play_fade + FADE_INCREMENT, 1.0);
 				} else {
-					// We'll just move directly to the specified spot.
-					double abs = inputs[ABS_POSITION_INPUT].getVoltage();
-					// Correct for values outside of 0-10.
-					while (abs < 0.0) {
-						abs += 10.0;
-					}
-					while (abs > 10.0) {
-						abs -= 10.0;
-					}
-					playback_position = (abs * length / 10.0);
-					abs_changed = false;
+					play_state = PLAYING;
+				}
+			} else if (play_state == FADE_DOWN) {
+				if (play_fade > 0.0) {
+					play_fade = std::max(play_fade - FADE_INCREMENT, 0.0);
+				} else {
+					play_state = NO_PLAY;
 				}
 			}
 
-			// Fix the position, now that the adjustments have occured.
-			switch (loop_type) {
-				case 0: {  // Loop around.
-					if (playback_position < 0.0) {
-						playback_position += length;
-					} else if (playback_position >= length) {
-						playback_position -= length;
+			// This is all to figure out the next position in the memory to go to.
+			if (play_state != NO_PLAY) {
+				// We're still moving, either forward or because user is adjusting.
+				if (playback_position == -1) { // Starting.
+					// Value of "start playing position indicator".
+					playback_position = (int) (params[INIT_POSITION_PARAM].getValue() * length / 10.0);
+				}
+				// Combination of speed input and speed param.
+				double movement = inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
+			  if (play_state == ADJUSTING) {
+					// Even if we're not playing, we want to show movement caused by POSITION movement,
+					// so user can see where playback will pick up.
+					// 
+					// Either the Adjust slider is non-zero or the ABS POSITION input has changed.
+					// we'll let the human slider override the ABS input.
+					if (std::fabs(params[ADJUST_PARAM].getValue()) > std::numeric_limits<float>::epsilon()) {
+						// i.e., is not zero.
+						// zero -> no movement.
+						// 10 -> move entirety of length of buffer in two seconds.
+						movement = (params[ADJUST_PARAM].getValue() / 20.0) * length / args.sampleRate;
+					} else {
+						// We'll just move directly to the specified spot.
+						double abs = inputs[ABS_POSITION_INPUT].getVoltage();
+						// Correct for values outside of 0-10.
+						while (abs < 0.0) {
+							abs += 10.0;
+						}
+						while (abs > 10.0) {
+							abs -= 10.0;
+						}
+						playback_position = (abs * length / 10.0);
+						movement = 0.0;
+						abs_changed = false;
 					}
 				}
-				break;
-				case 1: {  // Bounce.
-					if (playback_position < 0.0) {
-						playback_position += 2 * length;
-					} else if (playback_position >= 2 * length) {
-						playback_position -= 2 * length;
+
+				playback_position += movement;
+
+				// Fix the position, now that the movement has occured.
+				switch (loop_type) {
+					case 0: {  // Loop around.
+						if (playback_position < 0.0) {
+							playback_position += length;
+						} else if (playback_position >= length) {
+							playback_position -= length;
+						}
 					}
+					break;
+					case 1: {  // Bounce.
+						if (playback_position < 0.0) {
+							playback_position += 2 * length;
+						} else if (playback_position >= 2 * length) {
+							playback_position -= 2 * length;
+						}
+					}
+					break;
 				}
-				break;
 			}
 
 			display_position = playback_position;
@@ -222,7 +289,7 @@ struct Ruminate : PositionedModule {
 			outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
 			line_record.position = display_position;
 
-			if (playing) {
+			if (play_state != NO_PLAY && play_state != ADJUSTING) {
 				// Determine values to emit.
 				if (buffer->NearHead(display_position)) {
 					fade = std::max(fade - 0.02, 0.0);
@@ -234,8 +301,12 @@ struct Ruminate : PositionedModule {
 
 				FloatPair gotten;
 				buffer->Get(&gotten, display_position);
-				outputs[LEFT_OUTPUT].setVoltage(fade * gotten.left);
-				outputs[RIGHT_OUTPUT].setVoltage(fade * gotten.right);
+
+				// TODO: if the values we're outputting here are at or very close to zero,
+				// we could end a fade_out immediately? 
+
+				outputs[LEFT_OUTPUT].setVoltage(fade * play_fade * gotten.left);
+				outputs[RIGHT_OUTPUT].setVoltage(fade * play_fade * gotten.right);
 				lights[PLAY_BUTTON_LIGHT].setBrightness(1.0f);
 			} else {
 				outputs[LEFT_OUTPUT].setVoltage(0.0f);
