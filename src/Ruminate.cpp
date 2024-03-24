@@ -302,11 +302,18 @@ struct Ruminate : PositionedModule {
 				FloatPair gotten;
 				buffer->Get(&gotten, display_position);
 
-				// TODO: if the values we're outputting here are at or very close to zero,
-				// we could end a fade_out immediately? 
+				// If the values we're outputting here are at or very close to zero,
+				// we could end a fade_out immediately. 
+				double left = fade * play_fade * gotten.left;
+				double right = fade * play_fade * gotten.right;
+				if (play_state == FADE_DOWN && fabs(left) < 0.1 && fabs(right) < 0.1) {
+					play_state = NO_PLAY;
+					play_fade = 0.0;
+				}
+				// Sadly, no simple equivalent for FADE_UP -> PLAYING transition.
 
-				outputs[LEFT_OUTPUT].setVoltage(fade * play_fade * gotten.left);
-				outputs[RIGHT_OUTPUT].setVoltage(fade * play_fade * gotten.right);
+				outputs[LEFT_OUTPUT].setVoltage(left);
+				outputs[RIGHT_OUTPUT].setVoltage(right);
 				lights[PLAY_BUTTON_LIGHT].setBrightness(1.0f);
 			} else {
 				outputs[LEFT_OUTPUT].setVoltage(0.0f);
