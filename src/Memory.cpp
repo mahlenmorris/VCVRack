@@ -407,26 +407,24 @@ struct MemoryWidget : ModuleWidget {
     //    setPanel(createPanel(asset::plugin(pluginInstance, "res/Memory.svg"),
     //                         asset::plugin(pluginInstance, "res/Memory-dark.svg")));
 
+    // So narrow, we only include two screws instead of four.
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,
-                                           RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH,
                                            RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
     // WIPE button and trigger.
     addParam(createLightParamCentered<VCVLightButton<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 18.918)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(14.886, 14.817)),
                                              module, Memory::WIPE_BUTTON_PARAM,
                                              Memory::WIPE_BUTTON_LIGHT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 18.918)), module,
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.378, 14.817)), module,
                                              Memory::WIPE_TRIGGER_INPUT));
 
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(14.441, 32.837)),
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(10.16, 32.837)),
              module, Memory::SECONDS_PARAM));
     // RESET button.
     addParam(createLightParamCentered<VCVLightButton<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 48.456)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(10.16, 46.959)),
                                              module, Memory::RESET_BUTTON_PARAM,
                                              Memory::RESET_BUTTON_LIGHT));
   }
