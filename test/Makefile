@@ -98,6 +98,12 @@ text_field.o : $(USER_DIR)/text_field.cpp ../src/extended_text.h $(GTEST_HEADERS
 text_field : text_field.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
+test_smooth.o : $(USER_DIR)/test_smooth.cpp ../src/smoother.h $(GTEST_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/test_smooth.cpp
+
+test_smooth : test_smooth.o gtest_main.a
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
+
 kill_encoder.o : $(USER_DIR)/kill_encoder.cpp
 		$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/kill_encoder.cpp
 

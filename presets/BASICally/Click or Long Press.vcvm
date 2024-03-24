@@ -1,0 +1,23 @@
+{
+  "plugin": "StochasticTelegraph",
+  "model": "BASICally",
+  "version": "2.0.13",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    }
+  ],
+  "data": {
+    "text": "' Gate Input to IN1.\n' Click -> OUT1 emits a trigger on release.\n' Long press (see 'long' below for length) -> OUT2\n'     emits a trigger after 'long' millis.\n\nWHEN start()\n  ' Number of milliseconds to be\n  ' considered a LONG press.\n  long = 1000\n  ' state means:\n  ' * 0 - unpressed.\n  ' * 1 - pressed.\n  ' * 2 - long press sent, waiting for release.\n  state = 0\n  OUT1 = 0\n  OUT2 = 0\nEND WHEN\n\nALSO\n  IF IN1 > 2 THEN  ' Gate is high.\n    IF state == 0 THEN\n      state = 1 ' We've started a press.\n      start_time = time_millis()\n    ELSEIF state == 1 AND \n           time_millis() - start_time > long THEN\n      ' This is now a long press.\n      ' Send out long press trigger.\n      OUT2 = 10\n      WAIT 1\n      OUT2 = 0\n      state = 2\n    END IF\n  ELSE\n    IF state == 1 THEN\n      ' press ended before long press time.\n      ' Send click trigger.\n      OUT1 = 10\n      WAIT 1\n      OUT1 = 0\n    END IF\n    state = 0\n  END IF\nEND ALSO\n",
+    "width": 27,
+    "allow_error_highlight": 1,
+    "screen_colors": 1095216660480,
+    "title_text": "Click or Long Press",
+    "font_choice": "fonts/RobotoMono-Regular.ttf"
+  }
+}
