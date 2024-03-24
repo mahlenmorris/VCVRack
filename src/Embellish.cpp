@@ -350,7 +350,8 @@ struct EmbellishWidget : ModuleWidget {
 
 	EmbellishWidget(Embellish* module) {
 		setModule(module);
-		setPanel(createPanel(asset::plugin(pluginInstance, "res/Embellish.svg")));
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/Embellish.svg"),
+                         asset::plugin(pluginInstance, "res/Embellish-dark.svg")));
 
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));

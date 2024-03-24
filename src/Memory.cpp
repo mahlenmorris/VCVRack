@@ -402,10 +402,8 @@ struct Memory : BufferedModule {
 struct MemoryWidget : ModuleWidget {
   MemoryWidget(Memory* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/Memory.svg")));
-    // TODO: Make a dark version.
-    //    setPanel(createPanel(asset::plugin(pluginInstance, "res/Memory.svg"),
-    //                         asset::plugin(pluginInstance, "res/Memory-dark.svg")));
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/Memory.svg"),
+                         asset::plugin(pluginInstance, "res/Memory-dark.svg")));
 
     // So narrow, we only include two screws instead of four.
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));

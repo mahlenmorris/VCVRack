@@ -359,7 +359,8 @@ struct AdjustSlider : VCVSlider {
 struct RuminateWidget : ModuleWidget {
 	RuminateWidget(Ruminate* module) {
 		setModule(module);
-		setPanel(createPanel(asset::plugin(pluginInstance, "res/Ruminate.svg")));
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/Ruminate.svg"),
+                         asset::plugin(pluginInstance, "res/Ruminate-dark.svg")));
 
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
