@@ -70,6 +70,10 @@ struct Embellish : PositionedModule {
 	double seconds = 0.0;
 	int length = 0;
 
+	// To fade volume when near any other recording head.
+	const double FADE_INCREMENT = 0.02;
+	double fade = 1.0f;
+
 	RecordState record_state;
 
 	Embellish() {
@@ -188,7 +192,7 @@ struct Embellish : PositionedModule {
 			// Ending a recording means we need a Smooth.
       if (record_state == FADE_DOWN) {
 				if (buffer->smooths.additions.size() < buffer->smooths.additions.max_size()) {
-					Smooth* new_smooth = new Smooth(display_position + 1, true);
+					Smooth* new_smooth = new Smooth(display_position + (reverse ? -1 : 1), true);
 					// This isn't strictly kosher, since multiple Embellish modules could be pushing
 					// a Smooth onto the queue at the same time, and the NoLockQueue is rated as safe
 					// for only one writer.
@@ -287,19 +291,34 @@ struct Embellish : PositionedModule {
 			line_record.position = (double) display_position;
 
 			if (record_state != NO_RECORD && record_state != ADJUSTING) {  // Still recording.
+        // See if we're near any other record heads. Need to fade out the output
+				// if we're near a recording discontinuity.
+				if (buffer->NearHeadButNotThisModule(display_position, getId())) {
+					WARN("Fading down: %f", fade);
+					fade = std::max(fade - FADE_INCREMENT, 0.0);
+				} else {
+					if (fade < 1.0) {
+  					WARN("Fading up: %f", fade);
+						fade = std::min(fade + FADE_INCREMENT, 1.0);
+					}
+				}
+
 				FloatPair gotten;
 				buffer->Get(&gotten, display_position);
 
-				// TODO(clicks): Should do fade on outputs if we detect we're
+				// We need to do a fade on outputs if we detect we're
 				// near *another* record head (we're always near this one!).
+				// TODO: does this matter? Try getting rid of the fade here.
+				//outputs[LEFT_OUTPUT].setVoltage(fade * gotten.left);
+				//outputs[RIGHT_OUTPUT].setVoltage(fade * gotten.right);
 				outputs[LEFT_OUTPUT].setVoltage(gotten.left);
 				outputs[RIGHT_OUTPUT].setVoltage(gotten.right);
 
 				// This module is optimized for recording one sample to one integral position
 				// in array. Later modules can figure out how to do fancier stuff.
 				buffer->Set(display_position,
-					inputs[LEFT_INPUT].getVoltage(),
-					inputs[RIGHT_INPUT].getVoltage(),
+					fade * inputs[LEFT_INPUT].getVoltage(),
+					fade * inputs[RIGHT_INPUT].getVoltage(),
 					getId());
 				lights[RECORD_BUTTON_LIGHT].setBrightness(1.0f);
 			} else {

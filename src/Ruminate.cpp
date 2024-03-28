@@ -292,10 +292,10 @@ struct Ruminate : PositionedModule {
 			if (play_state != NO_PLAY && play_state != ADJUSTING) {
 				// Determine values to emit.
 				if (buffer->NearHead(display_position)) {
-					fade = std::max(fade - 0.02, 0.0);
+					fade = std::max(fade - FADE_INCREMENT, 0.0);
 				} else {
 					if (fade < 1.0) {
-						fade = std::min(fade + 0.02, 1.0);
+						fade = std::min(fade + FADE_INCREMENT, 1.0);
 					}
 				}
 
