@@ -58,6 +58,9 @@ struct Ruminate : PositionedModule {
 	// Always 0.0 <= playback_position < 2 * length when Bouncing.
   double playback_position;
 
+  // Haven't started playing yet, use initial position knob.
+  bool use_initial_position;
+
   // Where we are in memory (for the timestamp indicator).
   double display_position;
 
@@ -101,6 +104,7 @@ struct Ruminate : PositionedModule {
 		abs_changed = false;
 		play_state = NO_PLAY;
 		playback_position = -1;
+    use_initial_position = true;
 	}
 
 	// Overriding solely to make sure Adjust isn't left in a non-zero state.
@@ -204,12 +208,14 @@ struct Ruminate : PositionedModule {
 			}
 
 			// This is all to figure out the next position in the memory to go to.
+			// Want user to see what initial position we are in, even if not moving yet.
+			if (use_initial_position) { // Haven't started yet.
+				// Value of "start playing position indicator".
+				playback_position = (int) (params[INIT_POSITION_PARAM].getValue() * length / 10.0);
+			}
 			if (play_state != NO_PLAY) {
+				use_initial_position = false;
 				// We're still moving, either forward or because user is adjusting.
-				if (playback_position == -1) { // Starting.
-					// Value of "start playing position indicator".
-					playback_position = (int) (params[INIT_POSITION_PARAM].getValue() * length / 10.0);
-				}
 				// Combination of speed input and speed param.
 				double movement = inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
 			  if (play_state == ADJUSTING) {

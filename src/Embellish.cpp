@@ -57,6 +57,9 @@ struct Embellish : PositionedModule {
 	// Always 0.0 <= playback_position < 2 * length when Bouncing.
 	double recording_position;
 
+  // Haven't started playing yet, use initial position knob.
+  bool use_initial_position;
+
 	// Where we are in memory (for the timestamp indicator).
   int display_position;
 
@@ -100,6 +103,7 @@ struct Embellish : PositionedModule {
 		line_record.position = 0.0;
 		line_record.type = EMBELLISH;
 		recording_position = -1;
+    use_initial_position = true;
 		prev_abs_position = -20.0;
 		abs_changed = false;
 		record_state = NO_RECORD;
@@ -204,12 +208,13 @@ struct Embellish : PositionedModule {
 			}
 
 			// This is all to figure out the next position in the memory to go to.
+			// Want user to see what initial position we are in, even if not moving yet.
+			if (use_initial_position) { // Haven't started yet.
+				// Value of "start playing position indicator".
+				recording_position = (int) (params[INIT_POSITION_PARAM].getValue() * length / 10.0);
+			}
 			if (record_state != NO_RECORD) {  // We're still moving, either foward or because user is adjusting.
-				if (recording_position == -1) { // Starting.
-				  // Value of "start recording position indicator".
-					recording_position = (int) (params[INIT_POSITION_PARAM].getValue() * length / 10.0);
-				}
-
+				use_initial_position = false;
 				double adjust = reverse ? -1 : 1;
 				if (record_state == ADJUSTING) {
 					// Either the Adjust slider is non-zero or the ABS POSITION input has changed.
