@@ -294,11 +294,11 @@ struct Embellish : PositionedModule {
         // See if we're near any other record heads. Need to fade out the output
 				// if we're near a recording discontinuity.
 				if (buffer->NearHeadButNotThisModule(display_position, getId())) {
-					WARN("Fading down: %f", fade);
+//					WARN("Fading down: %f", fade);
 					fade = std::max(fade - FADE_INCREMENT, 0.0);
 				} else {
 					if (fade < 1.0) {
-  					WARN("Fading up: %f", fade);
+// 					WARN("Fading up: %f", fade);
 						fade = std::min(fade + FADE_INCREMENT, 1.0);
 					}
 				}
