@@ -297,12 +297,13 @@ struct Ruminate : PositionedModule {
 
 			if (play_state != NO_PLAY && play_state != ADJUSTING) {
 				// Determine values to emit.
-				if (buffer->NearHead(display_position)) {
-					fade = std::max(fade - FADE_INCREMENT, 0.0);
+				double closest_head_distance = buffer->NearHead(display_position);
+				if (closest_head_distance <= FADE_DISTANCE) {
+					// value of fade is simply a measure of how close we are.
+					// Don't let it get above 1.0.
+					fade = std::min(1.0, closest_head_distance / FADE_DISTANCE);
 				} else {
-					if (fade < 1.0) {
-						fade = std::min(fade + FADE_INCREMENT, 1.0);
-					}
+					fade = 1.0;
 				}
 
 				FloatPair gotten;

@@ -73,11 +73,7 @@ struct Embellish : PositionedModule {
 	double seconds = 0.0;
 	int length = 0;
 
-	// To fade volume when near any other recording head.
-	const double FADE_INCREMENT = 0.02;
 	double fade = 1.0f;
-	// Absolute distance to a nearby head, or INT_MAX if none are near.
-	int prev_closest_head_distance = INT_MAX;
 
   // Switching reverse on or off causes a discontinuity we need to smooth out.
 	bool prev_reverse;
@@ -321,16 +317,14 @@ struct Embellish : PositionedModule {
 			if (record_state != NO_RECORD && record_state != ADJUSTING) {  // Still recording.
         // See if we're near any other record heads. Need to fade out the output
 				// if we're near a recording discontinuity.
-				int closest_head_distance = buffer->NearHeadButNotThisModule(display_position, getId());
-				if (closest_head_distance == INT_MAX || closest_head_distance > prev_closest_head_distance) {
-					// Not getting closer to a head; fade up if needed.
-					if (fade < 1.0) {
-						fade = std::min(fade + FADE_INCREMENT, 1.0);
-					}
+				double closest_head_distance = buffer->NearHeadButNotThisModule(display_position, getId());
+				if (closest_head_distance <= FADE_DISTANCE) {
+					// value of fade is simply a measure of how close we are.
+					// Don't let it get above 1.0.
+					fade = std::min(1.0, closest_head_distance / FADE_DISTANCE);
 				} else {
-					fade = std::max(fade - FADE_INCREMENT, 0.0);
+					fade = 1.0;
 				}
-				prev_closest_head_distance = closest_head_distance;
 
         // Switching the reverse button *while recording* causes a discontinuity
 				// that requires smoothing.

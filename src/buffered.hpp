@@ -7,6 +7,10 @@
 
 #include "NoLockQueue.h"  // For Smooth events.
 
+// To fade volume when near any other recording head.
+// TODO: should be related to sample rate? Set by user?
+const double FADE_DISTANCE = 50.0;
+
 // Just to make transmiting data easier, but might not need?
 struct FloatPair {
   float left;
@@ -20,7 +24,7 @@ struct FloatPair {
 // over the path of a Record head.
 struct RecordHeadTrace {
   long long module_id;  // Unique (I think) ID for each module instance.
-  int position;  // Position in the byffer.
+  int position;  // Position in the buffer.
   int age;  // Approximate number of samples since this module_id has recorded.
 
   RecordHeadTrace(long long id, int pos) : module_id{id}, position{pos}, age{0} {}
@@ -112,13 +116,10 @@ struct Buffer {
 
   bool IsValid();
 
-  // Maximum distance two heads can from each other to be considered "Near".
-  const int NEAR_DISTANCE = 105;
-
-  bool NearHead(int position);
-// Returns distance if near a recording head, except for the recording head
-// with 'module_id', or INT_MAX if not considered "near".
-// Typically called for the benefit of recording heads.
+  int NearHead(int position);
+  // Returns distance if near a recording head, except for the recording head
+  // with 'module_id', or INT_MAX if not considered "near".
+  // Typically called for the benefit of recording heads.
   int NearHeadButNotThisModule(int position, long long module_id);
 
   void SetDirty(int position);
