@@ -76,6 +76,11 @@ struct Embellish : PositionedModule {
 	// To fade volume when near any other recording head.
 	const double FADE_INCREMENT = 0.02;
 	double fade = 1.0f;
+	// Absolute distance to a nearby head, or INT_MAX if none are near.
+	int prev_closest_head_distance = INT_MAX;
+
+  // Switching reverse on or off causes a discontinuity we need to smooth out.
+	bool prev_reverse;
 
 	RecordState record_state;
 
@@ -196,7 +201,7 @@ struct Embellish : PositionedModule {
 			// Ending a recording means we need a Smooth.
       if (record_state == FADE_DOWN) {
 				if (buffer->smooths.additions.size() < buffer->smooths.additions.max_size()) {
-					Smooth* new_smooth = new Smooth(display_position + (reverse ? -1 : 1), true);
+					Smooth* new_smooth = new Smooth(display_position + (reverse ? 0 : 1), true);
 					// This isn't strictly kosher, since multiple Embellish modules could be pushing
 					// a Smooth onto the queue at the same time, and the NoLockQueue is rated as safe
 					// for only one writer.
@@ -215,6 +220,9 @@ struct Embellish : PositionedModule {
 			}
 			if (record_state != NO_RECORD) {  // We're still moving, either foward or because user is adjusting.
 				use_initial_position = false;
+				// This module is optimized for recording one sample to one integral position
+				// in array. Later modules can figure out how to do fancier stuff (e.g.,
+				// recording at half-speed).
 				double adjust = reverse ? -1 : 1;
 				if (record_state == ADJUSTING) {
 					// Either the Adjust slider is non-zero or the ABS POSITION input has changed.
@@ -264,7 +272,7 @@ struct Embellish : PositionedModule {
 
 			if (record_state == FADE_UP) {
 				if (buffer->smooths.additions.size() < buffer->smooths.additions.max_size()) {
-					Smooth* new_smooth = new Smooth(display_position, false);
+					Smooth* new_smooth = new Smooth(display_position + (reverse ? 1 : 0), false);
 					buffer->smooths.additions.push(new_smooth);
 				}
 				record_state = RECORDING;
@@ -281,46 +289,62 @@ struct Embellish : PositionedModule {
 					}
 					break;
 					case 1: {  // Bounce.
+					  // When we bounce off the ends, we cause a discontinuity that needs smoothing.
+            if (display_position == length) {
+							// TODO: should I check that I'm actually running before adding this?
+							// When we bounce off the end of Memory.
+							Smooth* new_smooth = new Smooth(display_position, false);
+							buffer->smooths.additions.push(new_smooth);
+						}
+
 						// There might be simpler math for this, it just escapes me now.
 						if (display_position < 2 * length) {
 							display_position = std::max(0, length * 2 - display_position - 1);
 						} else {
 							display_position -= length * 2;
 						}
+
+            if (display_position == 0) {
+							// TODO: should I check that I'm actually running before adding this?
+							// When we bounce off the start of Memory.
+							Smooth* new_smooth = new Smooth(display_position, false);
+							buffer->smooths.additions.push(new_smooth);
+						}
 					}
 					break;
 				}
 			}
 			outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
-			// So Display knows where we are.
+			// So Depict knows where we are.
 			line_record.position = (double) display_position;
 
 			if (record_state != NO_RECORD && record_state != ADJUSTING) {  // Still recording.
         // See if we're near any other record heads. Need to fade out the output
 				// if we're near a recording discontinuity.
-				if (buffer->NearHeadButNotThisModule(display_position, getId())) {
-//					WARN("Fading down: %f", fade);
-					fade = std::max(fade - FADE_INCREMENT, 0.0);
-				} else {
+				int closest_head_distance = buffer->NearHeadButNotThisModule(display_position, getId());
+				if (closest_head_distance == INT_MAX || closest_head_distance > prev_closest_head_distance) {
+					// Not getting closer to a head; fade up if needed.
 					if (fade < 1.0) {
-// 					WARN("Fading up: %f", fade);
 						fade = std::min(fade + FADE_INCREMENT, 1.0);
 					}
+				} else {
+					fade = std::max(fade - FADE_INCREMENT, 0.0);
+				}
+				prev_closest_head_distance = closest_head_distance;
+
+        // Switching the reverse button *while recording* causes a discontinuity
+				// that requires smoothing.
+				if (prev_reverse != reverse) {
+					Smooth* new_smooth = new Smooth(display_position + (reverse ? 1 : 0), false);
+					buffer->smooths.additions.push(new_smooth);
 				}
 
 				FloatPair gotten;
 				buffer->Get(&gotten, display_position);
 
-				// We need to do a fade on outputs if we detect we're
-				// near *another* record head (we're always near this one!).
-				// TODO: does this matter? Try getting rid of the fade here.
-				//outputs[LEFT_OUTPUT].setVoltage(fade * gotten.left);
-				//outputs[RIGHT_OUTPUT].setVoltage(fade * gotten.right);
 				outputs[LEFT_OUTPUT].setVoltage(gotten.left);
 				outputs[RIGHT_OUTPUT].setVoltage(gotten.right);
 
-				// This module is optimized for recording one sample to one integral position
-				// in array. Later modules can figure out how to do fancier stuff.
 				buffer->Set(display_position,
 					fade * inputs[LEFT_INPUT].getVoltage(),
 					fade * inputs[RIGHT_INPUT].getVoltage(),
@@ -335,6 +359,7 @@ struct Embellish : PositionedModule {
 			outputs[RIGHT_OUTPUT].setVoltage(0.0f);
 			lights[RECORD_BUTTON_LIGHT].setBrightness(0.0f);
 		}
+		prev_reverse = reverse;
     lights[REVERSE_LIGHT].setBrightness(reverse);
     lights[BOUNCE_LIGHT].setBrightness(loop_type == 1);
 		lights[CONNECTED_LIGHT].setBrightness(connected ? 1.0f : 0.0f);

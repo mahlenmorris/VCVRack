@@ -39,7 +39,7 @@ void get_smooth_span(float* one_array, int* left_pos, int* right_pos, int positi
       }
       // std::cout << "best_slope = " << best_slope << "\n\n";
     }
-    if (best_slope == 0.0) {  // TODO: consider making this "best_slope < [small number]"?
+    if (best_slope < 0.1) {  // Any slope this small is fine.
       break;
     }
   }

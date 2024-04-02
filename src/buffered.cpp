@@ -25,15 +25,15 @@ bool Buffer::IsValid() {
 bool Buffer::NearHead(int position) {
   // TODO: not sure if correct when near the ends of the buffer.
   for (int i = 0; i < (int) record_heads.size(); ++i) {
-    if (abs(record_heads[i].position - position) < 60) {
+    if (abs(record_heads[i].position - position) <= NEAR_DISTANCE) {
       // WARN("head = %d, pos = %d", record_heads[i].position, position);
       return true;
     }
-    if (abs(record_heads[i].position + length - position) < 60) {
+    if (abs(record_heads[i].position + length - position) <= NEAR_DISTANCE) {
       // WARN("head = %d, pos = %d", record_heads[i].position, position);
       return true;
     }
-    if (abs(record_heads[i].position - (position + length)) < 60) {
+    if (abs(record_heads[i].position - (position + length)) <= NEAR_DISTANCE) {
       // WARN("head = %d, pos = %d", record_heads[i].position, position);
       return true;
     }
@@ -45,29 +45,21 @@ void Buffer::SetDirty(int position) {
   dirty[(int) floor(position / ((double) length / WAVEFORM_SIZE))] = true;
 }
 
-// Returns true if near a recording head, except for module_id.
-// Typically called for the benefit of play heads that are part of recording
-// heads.
-bool Buffer::NearHeadButNotThisModule(int position, long long module_id) {
+// Returns distance if near a recording head, except for the recording head
+// with 'module_id', or INT_MAX if not considered "near".
+// Typically called for the benefit of recording heads.
+int Buffer::NearHeadButNotThisModule(int position, long long module_id) {
   // TODO: not sure if correct when near the ends of the buffer.
+  int nearest = INT_MAX;
   for (int i = 0; i < (int) record_heads.size(); ++i) {
     if (record_heads[i].module_id == module_id) {
       continue;
     }
-    if (abs(record_heads[i].position - position) < 60) {
-      // WARN("head = %d, pos = %d", record_heads[i].position, position);
-      return true;
-    }
-    if (abs(record_heads[i].position + length - position) < 60) {
-      // WARN("head = %d, pos = %d", record_heads[i].position, position);
-      return true;
-    }
-    if (abs(record_heads[i].position - (position + length)) < 60) {
-      // WARN("head = %d, pos = %d", record_heads[i].position, position);
-      return true;
-    }
+    nearest = std::min(nearest, abs(record_heads[i].position - position));
+    nearest = std::min(nearest, abs(record_heads[i].position + length - position));
+    nearest = std::min(nearest, abs(record_heads[i].position - (position + length)));
   }
-  return false;
+  return nearest <= NEAR_DISTANCE ? nearest : INT_MAX;
 }
 
 void Buffer::Get(FloatPair *pair, double position) {

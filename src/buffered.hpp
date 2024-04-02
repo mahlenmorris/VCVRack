@@ -112,14 +112,16 @@ struct Buffer {
 
   bool IsValid();
 
-  bool NearHead(int position);
-  void SetDirty(int position);
+  // Maximum distance two heads can from each other to be considered "Near".
+  const int NEAR_DISTANCE = 105;
 
-  // Returns true if near a recording head, except for module_id.
-  // Typically called for the benefit of play heads that are part of recording
-  // heads.
-  // TODO: Not currently called.
-  bool NearHeadButNotThisModule(int position, long long module_id);
+  bool NearHead(int position);
+// Returns distance if near a recording head, except for the recording head
+// with 'module_id', or INT_MAX if not considered "near".
+// Typically called for the benefit of recording heads.
+  int NearHeadButNotThisModule(int position, long long module_id);
+
+  void SetDirty(int position);
 
   // Caller is responsible for only calling this when IsValid() is true.
   void Get(FloatPair *pair, double position);
