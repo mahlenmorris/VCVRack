@@ -86,20 +86,20 @@ struct Embellish : PositionedModule {
 								 {"Loop around", "Bounce"});
 		configSwitch(REVERSE_PARAM, 0, 1, 0, "Recording Direction",
 								 {"Forward", "Reverse"});
-		configParam(ADJUST_PARAM, -10.f, 10.f, 0.f, "Adjust position");
+		configParam(ADJUST_PARAM, -10.f, 10.f, 0.f, "Slider to manually move this record head within Memory");
 		configSwitch(RECORD_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this record head",
 	               {"Inactive", "Recording"});
-		configParam(INIT_POSITION_PARAM, 0.f, 10.f, 0.f, "Initial position (0-10v) when loading patch");
+		configParam(INIT_POSITION_PARAM, 0.f, 10.f, 0.f, "Initial position (0 - 10V) when loading patch");
 
 		// TODO: fill all of these in!
-		configInput(ABS_POSITION_INPUT, "Slider to move this within Memory.");
+		configInput(ABS_POSITION_INPUT, "Resets position when changed; 0V -> bottom, 10V -> top,");
 		configInput(RECORD_GATE_INPUT, "Gate to start/stop recording");
-		configInput(LEFT_INPUT, "");
-		configInput(RIGHT_INPUT, "");
+		configInput(LEFT_INPUT, "Left");
+		configInput(RIGHT_INPUT, "Right");
 
-		configOutput(LEFT_OUTPUT, "");
-		configOutput(RIGHT_OUTPUT, "");
-		configOutput(NOW_POSITION_OUTPUT, "0 - 10V point in Memory this is now reading/writing");
+		configOutput(LEFT_OUTPUT, "Left");
+		configOutput(RIGHT_OUTPUT, "Right");
+		configOutput(NOW_POSITION_OUTPUT, "Point in Memory (0 - 10V) playback head is currently reading/writing,");
 
 		line_record.position = 0.0;
 		line_record.type = EMBELLISH;

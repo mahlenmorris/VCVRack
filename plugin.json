@@ -60,27 +60,6 @@
       ]
     },
     {
-      "slug": "Memory",
-      "name": "Memory",
-      "description": "TODO: fill this in.",
-      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#memory",
-      "tags": []
-    },
-    {
-      "slug": "Ruminate",
-      "name": "Ruminate",
-      "description": "TODO: fill this in.",
-      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#recall",
-      "tags": []
-    },
-    {
-      "slug": "Embellish",
-      "name": "Embellish",
-      "description": "TODO: fill this in.",
-      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#remember",
-      "tags": []
-    },
-    {
       "slug": "TTY",
       "name": "TTY",
       "description": "Logs values from cables and/or text messages from Tipsy text sources (e.g., BASICally). Makes monitoring of values or logging far easier. TTY is resizable, scrolls, has font and color choices, and more.",
@@ -92,10 +71,41 @@
       ]
     },
     {
+      "slug": "Memory",
+      "name": "Memory",
+      "description": "The root part of a Memory system. This is what Ruminate reads and Embellish writes to.",
+      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#memory",
+      "tags": []
+    },
+    {
+      "slug": "Ruminate",
+      "name": "Ruminate",
+      "description": "A playback head within a Memory system of modules.",
+      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#ruminate",
+      "tags": [
+        "Delay",
+        "Expander"
+      ]
+    },
+    {
+      "slug": "Embellish",
+      "name": "Embellish",
+      "description": "A recording and playback head for a Memory system of modules.",
+      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#embellish",
+      "tags": [
+        "Expander",
+        "Recording" 
+      ]
+    },
+    {
       "slug": "Depict",
       "name": "Depict",
-      "description": "Visualizes activity within the Memory system.",
-      "tags": []
+      "description": "Visualizes activity of other modules within a Memory system.",
+      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#depict",
+      "tags": [
+        "Expander",
+        "Visual"
+      ]
     }
   ]
 }

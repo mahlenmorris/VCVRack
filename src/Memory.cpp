@@ -205,17 +205,16 @@ struct Memory : BufferedModule {
   // Keeps lights on buttons lit long enough to see.
   int wipe_light_countdown = 0;
 
-  // Do some tasks every NN samples. Some UI-related tasks are not as
-  // latency-sensitive as the audio thread, and we don't need to do often.
-  // TODO: consider putting these tasks on a background thread...
+  // We sweep the connected modules every NN samples. Some UI-related tasks are 
+  // not as latency-sensitive as the audio thread, and we don't need to do often.
   int assign_color_countdown = 0;
 
   Memory() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configButton(WIPE_BUTTON_PARAM, "Press to wipe contents to 0.0V");
-    configInput(WIPE_TRIGGER_INPUT, "A trigger wipes contents to 0.0V");
+    configInput(WIPE_TRIGGER_INPUT, "A trigger here wipes contents to 0.0V");
     configParam(SECONDS_PARAM, 1, 1000, 15,
-        "Length of Memory in seconds.");
+        "Length of Memory in seconds; takes effect on next RESET press");
     // This is really an integer.
     getParamQuantity(SECONDS_PARAM)->snapEnabled = true;
     configButton(RESET_BUTTON_PARAM, "Press to reset length and wipe contents to 0.0V");
@@ -251,7 +250,6 @@ struct Memory : BufferedModule {
   void dataFromJson(json_t* rootJ) override {
   }
 
-  // TODO: need something with no limit to the colors.
   static constexpr int COLOR_COUNT = 6;
 	NVGcolor colors[COLOR_COUNT] = {
 		SCHEME_RED,
@@ -294,7 +292,12 @@ struct Memory : BufferedModule {
       }
 
       // Periodically assign colors to each connected module's light.
-      // TODO: Maybe put this into a background thread too?
+      // We also take this opportunity to add any unknown recording heads to
+      // the buffer->record_heads vector.
+      // I'd considered putting these tasks on a background thread, but
+      // getRightExpander() is a method on Module.
+      // And we can't put this in a call to onExpanderChange(), because events
+      // several modules down can affect these results.
       if (--assign_color_countdown <= 0) {
         // One hundredth of a second.
         assign_color_countdown = (int) (args.sampleRate / 100);
@@ -345,9 +348,12 @@ struct Memory : BufferedModule {
           }
           buffer->freshen_waveform = found_depict;
         }
-        // TODO: add a process that eliminates very old RecordHead records.
+        // TODO: add a process that eliminates very old RecordHead modules that
+        // appear to be unused.
         // We are possibly not connected to them any more.
         // Or in some other way, remove them.
+        // Or more likely, replace the record_heads list (removing an item from
+        // a vector is not thread-safe).
       }
 
       // We may be being asked to wipe and/or reset. Both of these take more than one
@@ -380,11 +386,10 @@ struct Memory : BufferedModule {
 
       if (reset) {
         if (buffer_initialized) {
-          buffer_initialized = false;  // Should rerun the code at the top of process()?
-          // TODO: Honestly, probably better to swap in a new Buffer instead...
+          // Rerun the code at the top of process() on next call.
+          buffer_initialized = false;
         }
       } else {
-
         if (wipe) {
           // TODO: Decide (or menu options) to pause all recording and playing
           // during a wipe? Or at least fade the players?

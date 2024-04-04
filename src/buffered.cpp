@@ -57,6 +57,11 @@ int Buffer::NearHeadButNotThisModule(int position, long long module_id) {
 }
 
 void Buffer::Get(FloatPair *pair, double position) {
+  if (!IsValid()) {
+    pair->left = 0.0f;
+    pair->right = 0.0f;
+    return;
+  }
   assert(position >= 0.0);
   assert(position < length);
   int playback_start = trunc(position);
@@ -73,6 +78,9 @@ void Buffer::Get(FloatPair *pair, double position) {
 
 // Caller is responsible for only calling this when IsValid() is true.
 void Buffer::Set(int position, float left, float right, long long module_id) {
+  if (!IsValid()) {
+    return;
+  }
   assert(position >= 0);
   assert(position < length);
   left_array[position] = left;

@@ -85,18 +85,18 @@ struct Ruminate : PositionedModule {
 		configSwitch(BOUNCE_PARAM, 0, 1, 0, "Endpoint Behavior",
 								 {"Loop around", "Bounce"});
 	  configParam(SPEED_PARAM, -10.f, 10.f, 1.f, "Playback speed/direction");
-		configParam(ADJUST_PARAM, -10.f, 10.f, 0.f, "Adjust position");
-		configSwitch(PLAY_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this play head",
+		configParam(ADJUST_PARAM, -10.f, 10.f, 0.f, "Slider to manually move this playback head within Memory");
+		configSwitch(PLAY_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this playback head",
 	               {"Silent", "Playing"});
-		configParam(INIT_POSITION_PARAM, 0.f, 10.f, 0.f, "Initial position (0-10v) when loading patch");
+		configParam(INIT_POSITION_PARAM, 0.f, 10.f, 0.f, "Initial position (0 - 10V) when loading patch");
 
-		configInput(ABS_POSITION_INPUT, "Slider to move this within Memory.");
+		configInput(ABS_POSITION_INPUT, "Resets position when changed; 0V -> bottom, 10V -> top,");
 		configInput(SPEED_INPUT, "Playback speed (added to knob value)");
 		configInput(PLAY_GATE_INPUT, "Gate to start/stop playing");
 	
-		configOutput(NOW_POSITION_OUTPUT, "0 - 10V point in Memory this is now reading");
-		configOutput(LEFT_OUTPUT, "");
-		configOutput(RIGHT_OUTPUT, "");
+		configOutput(NOW_POSITION_OUTPUT, "Point in Memory (0 - 10V) playback head is currently reading,");
+		configOutput(LEFT_OUTPUT, "Left");
+		configOutput(RIGHT_OUTPUT, "Right");
 
     line_record.position = 0.0;
 		line_record.type = RUMINATE;
@@ -384,8 +384,7 @@ struct RuminateWidget : ModuleWidget {
 
     addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6.35, 43.0)),
 		   module, Ruminate::ADJUST_PARAM));
-    // TODO: make this a tiny attenuator knob?
-		addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(19.05, 50.8)),
+  	addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(19.05, 50.8)),
 		   module, Ruminate::INIT_POSITION_PARAM));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 34.396)),
 		   module, Ruminate::ABS_POSITION_INPUT));
