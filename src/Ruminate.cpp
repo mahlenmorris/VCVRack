@@ -106,6 +106,9 @@ struct Ruminate : PositionedModule {
 		playback_position = -1;
     use_initial_position = true;
 	}
+  
+  const float octaves[8] = {-2, -1, -.5, -.25, .25, .5, 1, 2};
+  const float notes[7] = {1, 9.0/8.0, 5.0/4.0, 4.0/3.0, 3.0/2.0, 5.0/3.0, 15.0/8.0};
 
 	// Overriding solely to make sure Adjust isn't left in a non-zero state.
 	// And also, we should randomize the position.
@@ -113,8 +116,13 @@ struct Ruminate : PositionedModule {
 		// Randomize all parameters
 		Module::onRandomize(e);
 
-		// Randomize custom state variables
+		// Randomize custom state variables.
 		params[ADJUST_PARAM].setValue(0.0f);
+		// For fun, instead of picking a completely random speed, let's pick from a just
+		// intonation scale.
+		// Reference: https://en.m.wikipedia.org/wiki/Just_intonation#Diatonic_scale
+    params[SPEED_PARAM].setValue(octaves[(int) (random::uniform() * 8)] * 
+		                             notes[(int) (random::uniform() * 7)]);
 		if (length > 0) {
 			playback_position = (int) (((double) length) * random::uniform());
 		}
