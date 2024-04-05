@@ -1,5 +1,12 @@
 # Release Notes
 
+### 2.0.14
+#### (Fill in date)
+* BASICally no longer creates compilation threads on the audio thread, in hopes of eliminating
+slower-than-expected responsiveness to changes in the text of the program.
+* In BASICally, made '==' and '!=' less prone to the aggravation of floating-point comparison issues by making 'a == b' effectively "abs(a - b) < epsilon", where epsilon scales with larger a and b. I believe this will make equality checking far more intuitive, which in the VCV Rack/amateur programmer context is paramount.
+* Added the first release of [the Memory System](https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md), four interrelated modules for audio recording and playback.
+
 ### 2.0.13
 #### January 3, 2024
 * Fixed bug where on startup, WAIT times for some statements would randomly be zero length
