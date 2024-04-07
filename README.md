@@ -126,6 +126,9 @@ any number by zero, while undefined in *mathematics*, is defined by *BASICally*
 to be 0.0.
 * **"<", "<=", ">" , ">=", "==", "!="** -- comparison operators. Most commonly used
 in IF-THEN[-ELSE] statements.
+* * Technical note: correct testing of equality or inequality in floating point numbers is [notoriously non-obvious to beginners](https://embeddeduse.com/2019/08/26/qt-compare-two-floats/) (and even experts). For example, in previous versions of BASICally, "3.1" does NOT equal "31 * .1"!
+* * As of version 2.0.14, BASICally uses an ever-so-slightly looser definition of equality, as described at the end of the essay linked above. For most uses this will work exactly as before and be less prone to surprises like this example.
+* * But if you find yourself comparing two numbers and you want differences of 0.00001V to matter, I'll suggest that instead of writing "a == b", you use "a <= b AND a >= b", which does not invoke the looser definition. 
 * **"and", "or", "not"** -- Boolean logic operators. For purposes of these, a zero
 value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 
