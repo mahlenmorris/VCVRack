@@ -158,7 +158,13 @@ set to values of a just intonation [diatonic scale](https://en.m.wikipedia.org/w
 ### Bypass Behavior
 If Bypass is enabled, Ruminate will stop playing. However, turning Ruminate on and off by using Bypass while playing will also bypass the module's Click Avoidance behavior, so it's not generally advised; it will almost surely have clicks in the audio it sends out.
 # Click Avoidance
+Having recording heads starting and stopping and playback heads moving past recording heads is a recipe for usually annoying clicks and pops. A math-oriented person (like myself) might think of them as "discontinuities". For the sake of brevity, I'll forego describing all of the ways that the Memory system works to avoid these, and just mention a couple things:
+* A playback head (i.e., Ruminate) will fade its output volume to zero when it passes over a recording head, and then fade the volume back up. This usually happens in less than a millisecond of time, and is, in my experience, not noticable. However, a side effect of this is that if a playback head is moving at the same speed as a recording head and very closely near it (like within 50 samples), it's volume may be reduced or even zero. Setting the INITIAL position knobs to different values can help spread them apart when you start up the patch.
+* Similarly, when two recording heads pass each other (e.g., in opposite directions), they will both fade out the signal they are writing to Memory.
+* Another source of clicks is turing the playback head on and off, so this also fades in and out.
+* Whenever a recording head starts or stops, it will "smooth out" where it that happened.
 
+Again, all of these interventions are quite brief in duration and you can safely forget they are happening; I'm just mentioning it here for completeness.
 
 ### Related Modules
 Any Delay or Sampler module can do some of what the Memory system can do.
