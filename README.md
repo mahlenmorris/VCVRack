@@ -3,6 +3,7 @@ Modules for use with VCV Rack 2.0, with an emphasis on generative and
 self-regulating structure. Exploring the region between random and static.
 
 ![All Modules image](images/TheFamily.png)
+![Memory Modules image](images/MemoryFamilySameHeight.png)
 
 * [BASICally](#basically): A simple, likely familiar procedural programming language within the context of VCV Rack.
 * [Drifter](#drifter): Creates sequences of values that can slowly (or quickly) vary, like a series of points doing random walks connected into a series.
@@ -11,6 +12,7 @@ Stochastic Telegraph-style.
 * [Fuse](#fuse): Block, allow, or attenuate a signal passing through, based on the number of triggers observed in a different signal.
 * [TTY](#tty): A scrolling text window that displays distinct values it gets, and displays Tipsy text messages
 sent by other modules (like BASICally).
+* [Memory System](Memory.md): A set of inter-related recording/playback modules with [their own documentation](Memory.md).
 
 ![Line Break image](images/Separator.png)
 

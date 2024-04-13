@@ -3,7 +3,7 @@ A set of related modules for use with VCV Rack 2.0. They combine to form ensembl
 recording and playback of audio. Forms an inverted tape machine, with a motionless
 recording medium (a Memory) and playback and recording heads that move independently within it.
 
-![Memory Modules image](images/MemoryFamily.png)
+![Memory Modules image](images/MemoryFamilySameHeight.png)
 
 * [Memory](#memory): The module containing the audio. Can be wiped clean
 and resized. *Always* the left-most module in any Memory ensemble.
@@ -18,15 +18,15 @@ A Memory ensemble is a set of at least some of these modules next to each other 
 
 Each non-Memory module has a small light near the top edge of the module; when a module is connected to a Memory (by being in a group of these modules), then it's light will be lit. For some modules, that light will be a color; that color is the same as the color that will be shown for the module in the Depict visualizer.
 
-![Connecting](images/DisconnectConnect.png)
-
-![Line Break image](images/Separator.png)
+![Connecting](images/ConnectedTall.png)
 
 A typical starting place for a Memory Ensemble is one each of:
 * [Memory](#memory) - the storage for the audio data.
 * [Embellish](#embellish) - writes audio to Memory.
 * [Ruminate](#ruminate) - Plays audio from the content of Memory.
 * [Depict](#depict) - Visualizer for the state of Memory and the movement of the Embellish and Ruminate heads. Not required, but helpful. 
+
+![Line Break image](images/Separator.png)
 
 # Memory
 The basis of any Memory ensemble is exactly one Memory module. Whichever Memory module is closest to the left side of the other modules in the ensemble is the one used by the ensemble.
@@ -112,38 +112,56 @@ While running, the Embellish module writes whatever signal is arriving in the IN
 ### Bypass Behavior
 If Bypass is enabled, Embellish will stop writing. However, turning Embellish on and off using Bypass while recording will also bypass the module's Click Avoidance behavior, so it's not generally advised; it will almost surely add clicks to the recording.
 
-![Line Break image](images/Separator.png)
-
 # Ruminate
+Ruminate is used to playback audio from a Memory. Ruminate represents a playback head that can be moved freely over the length of the audio buffer.
 
+More than one Ruminate can be used in the same ensemble.
 ### Uses
-
+* To listen to audio recorded into the Memory, attach the OUT (Left and Right) outputs to a mixer. Or better yet, put a few Ruminates in different locations and/or different speeds and mix them together.
+* Try playing the same audio at different speeds an octave apart. I find that making one Ruminate run at SPEED 1 and others run at, say, 2.0 or 0.5 or .25 works as a nice starting place. 
 ### Controls
 
 #### BOUNCE Button
-
+When unlit, when the head hits the edge of Memory, it will loop around to the other edge and continue.
+WHen lit, the head will "bounce" off the edges of Memory, which will result in it playing in reverse even though the speed is positive.
 #### Position ADJUST Slider
-
+ADJUST is a self-centering slider that allows you to manually move the playback head within the memory. Note that audio output and head movement will stop until the ADJUST slider is released.
 #### Position SET Input
-
+SET is an input that resets the position of the head. It takes values from 0.0V to just under 10.0V. When the input value changes, playback (if happening) will stop, the head will move to the new position, and then playback will continue. 
 #### Position INITIAL Knob
+A value from 0.0v to 10.0 that sets the position of the head ONLY the first time it is turned on.
 
+If there are multiple Ruminates in an ensemble and they are moving at the same speed, it is useful to set this value to something different for each Ruminate, so that when the patch is restarted, both heads aren't playing from the same exact position. Similarly, if a Ruminate is running right alongside an Embellish at the same speed (i.e., "1"), the Ruminate can be ducked to zero volume (see Click Avoidance below for why); setting their Initial positions differently avoids that problem. 
 #### Position CURRENT Output
+An output that emits the position from 0.0V to 10.0V.
 
+Below this is a display showing this position in either:
+* seconds.hundredths - if the Memory size is less than 60 seconds OR
+* minutes:seconds - if the Memory size is at least 60 seconds
 #### PLAY Input and Button
-
+Ruminate will playback audio if either the button has been pressed into the Playing position or a while a positive gate is being received by the PLAY input.
 #### SPEED Input and Knob
+The speed that the playback head is traveling is the *sum* of the SPEED Input and Knob value. If you want the SPEED Input to completely control the speed, set the Knob value to zero.
 
-#### OUT
+As you might expect, playback speed will affect the pitch and tempo of the sounds played:
+* "1" is playback at the speed it was recorded at.
+* "-1" is playback in reverse, although note that if BOUNCE is set, then when a Ruminate hits the beginning of the audio, it will start playing forwards.
+* "0.5" is half speed, pitching the audio down an octave and taking twice as long to play. This is quite possibly the best speed :)
+* "2" is double speed, pitched an octave up.
 
+The knob goes from -10V to 10V.
+#### OUT (Left and Right)
+If Ruminate is playing, the audio output is emitted here.
+### Randomize Behavior
+To make the likelihood of pleasing combinations higher, when the Randomize function on the module menu is chosen, the Speed Knob will be
+set to values of a just intonation [diatonic scale](https://en.m.wikipedia.org/wiki/Just_intonation#Diatonic_scale), where "1V" is the root. When the audio content is a fairly consistant single tone.
 ### Bypass Behavior
-
-
+If Bypass is enabled, Ruminate will stop playing. However, turning Ruminate on and off by using Bypass while playing will also bypass the module's Click Avoidance behavior, so it's not generally advised; it will almost surely have clicks in the audio it sends out.
 # Click Avoidance
-TODO...
+
 
 ### Related Modules
-TODO...
+Any Delay or Sampler module can do some of what the Memory system can do.
 
 ![Line Break image](images/Separator.png)
 
