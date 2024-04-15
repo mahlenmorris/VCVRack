@@ -384,6 +384,7 @@ struct NowEmbellishTimestamp : TimestampField {
 struct AdjustSlider : VCVSlider {
   void onDragEnd(const DragEndEvent& e) override {
     getParamQuantity()->setValue(0.0);
+		VCVSlider::onDragEnd(e);
 	}
 };
 
