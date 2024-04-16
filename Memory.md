@@ -13,6 +13,8 @@ audio signal under the head. This makes sound-on-sound, effects passes, and the 
 sound over time straighforward.
 * [Ruminate](#ruminate): Plays back audio at a large variety of speeds.
 
+(NOTE: The documentation for the other Stochastic Telegraph modules can [be found here](README.md).)
+
 # The Memory Ensemble
 A Memory ensemble is a set of at least some of these modules next to each other (like extensions). The modules in a single ensemble can be in any order from left-to-right, with the exception that the required Memory module is always the left-most module.
 
