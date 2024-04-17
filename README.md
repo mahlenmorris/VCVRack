@@ -1104,6 +1104,8 @@ displaying text messages. Useful for
 debugging or saving sets of values that are of interest. TTY can also track
 streams of unique CV values from modules, noting them only when they change.
 
+[Video of TTY in action.](https://www.youtube.com/watch?v=hDymEax7uEU) 
+
 ### Examples
 
 TTY logs the values being produced by Random.
