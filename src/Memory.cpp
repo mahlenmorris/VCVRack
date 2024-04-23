@@ -250,14 +250,15 @@ struct Memory : BufferedModule {
   void dataFromJson(json_t* rootJ) override {
   }
 
-  static constexpr int COLOR_COUNT = 6;
+  static constexpr int COLOR_COUNT = 7;
 	NVGcolor colors[COLOR_COUNT] = {
 		SCHEME_RED,
 		SCHEME_BLUE,
-		SCHEME_YELLOW,
+		SCHEME_ORANGE,
 		SCHEME_PURPLE,
 		SCHEME_GREEN,
-		SCHEME_ORANGE
+		SCHEME_CYAN,
+    SCHEME_WHITE
 	};
 
   void process(const ProcessArgs& args) override {
