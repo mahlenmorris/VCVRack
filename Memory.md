@@ -13,7 +13,14 @@ audio signal under the head. This makes sound-on-sound, effects passes, and the 
 sound over time straighforward.
 * [Ruminate](#ruminate): Plays back audio at a large variety of speeds.
 
-(NOTE: The documentation for the other Stochastic Telegraph modules can [be found here](README.md).)
+A 15 minute video demonstrating some uses cases [is here](https://youtu.be/EKoMFsSqUo4). It demonstrates some simple patches:
+* [Introduction](examples/Memory%20-%20ensemble%20basics.vcv)
+* [First Guitar Example](examples/Memory%20-%20guitar%20samples.vcv)
+* [Square Wave and Delay](examples/Memory%20-%20Delay%20Pass%20over%20Square%20Wave.vcv)
+* [Guitar Beat](examples/Memory%20-%20guitar%20sample%20beat.vcv)
+* [Live Recording](examples/Memory%20-%20record%20live.vcv)
+
+The documentation for the *other* Stochastic Telegraph modules can [be found here](README.md).
 
 # The Memory Ensemble
 A Memory ensemble is a set of at least some of these modules next to each other (like extensions). The modules in a single ensemble can be in any order from left-to-right, with the exception that the required Memory module is always the left-most module.
