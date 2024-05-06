@@ -227,6 +227,13 @@ bool Expression::is_zero(float value) {
   return std::fabs(value) <= std::numeric_limits<float>::epsilon();
 }
 
+bool Expression::float_equal(float f1, float f2) {
+    static constexpr auto epsilon = 1.0e-05f;
+    if (std::fabs(f1 - f2) <= epsilon)
+        return true;
+    return std::fabs(f1 - f2) <= epsilon * fmax(std::fabs(f1), std::fabs(f2));
+}
+
 float Expression::bool_to_float(bool value) {
   return (value ? 1.0f : 0.0f);
 }
@@ -249,8 +256,8 @@ float Expression::binop_compute() {
       }
     }
     break;
-    case EQUAL: return bool_to_float(lhs == rhs);
-    case NOT_EQUAL: return bool_to_float(lhs != rhs);
+    case EQUAL: return bool_to_float(float_equal(lhs, rhs));
+    case NOT_EQUAL: return bool_to_float(!float_equal(lhs, rhs));
     case GT: return bool_to_float(lhs > rhs);
     case GTE: return bool_to_float(lhs >= rhs);
     case LT: return bool_to_float(lhs < rhs);

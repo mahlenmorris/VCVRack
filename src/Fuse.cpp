@@ -498,32 +498,33 @@ struct FuseWidget : ModuleWidget {
     // Trigger
     addInput(createInputCentered<ThemedPJ301MPort>(
 	      mm2px(Vec(8.024, 48.0)), module, Fuse::TRIGGER_INPUT));
-        // Making this a Button and not a Latch means that it pops back up
-        // when you let go.
-        addParam(createLightParamCentered<VCVLightButton<
-                 MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 48.0)),
-                                                 module, Fuse::TRIGGER_PARAM,
-                                                 Fuse::TRIGGER_LIGHT));
+    // Making this a Button and not a Latch means that it pops back up
+    // when you let go.
+    addParam(createLightParamCentered<VCVLightButton<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 48.0)),
+                                             module, Fuse::TRIGGER_PARAM,
+                                             Fuse::TRIGGER_LIGHT));
 
     // Untrigger
     addInput(createInputCentered<ThemedPJ301MPort>(
 	      mm2px(Vec(8.024, 64.0)), module, Fuse::UNTRIGGER_INPUT));
-        // Making this a Button and not a Latch means that it pops back up
-        // when you let go.
-        addParam(createLightParamCentered<VCVLightButton<
-                 MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 64.0)),
-                                                 module, Fuse::UNTRIGGER_PARAM,
-                                                 Fuse::UNTRIGGER_LIGHT));
+    // Making this a Button and not a Latch means that it pops back up
+    // when you let go.
+    addParam(createLightParamCentered<VCVLightButton<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 64.0)),
+                                             module, Fuse::UNTRIGGER_PARAM,
+                                             Fuse::UNTRIGGER_LIGHT));
 
     // Reset
     addInput(createInputCentered<ThemedPJ301MPort>(
 	      mm2px(Vec(8.024, 80.0)), module, Fuse::RESET_INPUT));
-        // Making this a Button and not a Latch means that it pops back up
-        // when you let go.
-        addParam(createLightParamCentered<VCVLightButton<
-                 MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 80.0)),
-                                                 module, Fuse::RESET_PARAM,
-                                                 Fuse::RESET_LIGHT));
+    // Making this a Button and not a Latch means that it pops back up
+    // when you let go.
+    addParam(createLightParamCentered<VCVLightButton<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 80.0)),
+                                             module, Fuse::RESET_PARAM,
+                                             Fuse::RESET_LIGHT));
+
     // Slew. Not always needed, so making it smaller.
     addParam(createParamCentered<RoundSmallBlackKnob>(
         mm2px(Vec(8.024, 96.0)), module, Fuse::SLEW_PARAM));

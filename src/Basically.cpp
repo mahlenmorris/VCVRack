@@ -311,6 +311,8 @@ struct Basically : Module {
   struct CompilationThread {
     Driver* driver;
     Environment* environment;
+    bool shutdown;
+    bool initiate_compile;
     std::string text;  // Text to compile.
     bool running;  // TRUE if still compiling, false if completed.
     bool useful; // TRUE if last completed compile created something for module to use.
@@ -323,54 +325,71 @@ struct Basically : Module {
         environment{env} {
       running = false;
       useful = false;
+      shutdown = false;
+      initiate_compile = false;
+    }
+
+    void Halt() {
+      shutdown = true;
+      initiate_compile = false;
     }
 
     void SetText(const std::string &new_text) {
       running = true;  // Tells caller not to use previous result.
       text = new_text;
+      initiate_compile = true;
     }
 
     // If compilation succeeds, sets flag saying so and prepares vectors
     // of main_blocks and expression_blocks for module to use later.
     void Compile() {
-      running = true;
-      useful = false;
-      // 'text' might get changed during compilation which would be bad.
-      // Let's copy it and send that.
-      std::string stable_text(text);
-      bool compiles = !driver->parse(stable_text);
-      if (!compiles) {  // Nothing more to do.
-        running = false;
-        return;
-      }
-      PCodeTranslator translator;
-      main_blocks = new std::vector<CodeBlock*>();
-      expression_blocks = new std::vector<std::pair<Expression, CodeBlock*> >();
-      running_expression_blocks = new std::vector<bool>();
-      useful = true;
-      // Wait until 'environment' has a non-zero SampleRate() value. At most five
-      // seconds, in case there are unknown reasons why it would stay zero.
-      for (int waits = 0; waits < 50; ++waits) {
-        if (environment->SampleRate() > 1.0) break;
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      }
-      for (auto ast_block : driver->blocks) {
-        CodeBlock* new_block = new CodeBlock(environment);
-        if (translator.BlockToCodeBlock(new_block, ast_block)) {
-          // Different lists depending on type.
-          if (new_block->type == Block::MAIN) {
-            main_blocks->push_back(new_block);
-          } else if (new_block->type == Block::WHEN &&
-              new_block->condition == Block::EXPRESSION) {
-            expression_blocks->push_back(std::make_pair(ast_block.run_condition, new_block));
-            running_expression_blocks->push_back(false);
-          }
-        } else {
+      while (!shutdown) {
+        if (initiate_compile) {
+          running = true;
           useful = false;
-          // TODO: Report errors via some new mechanism.
+          // 'text' might get changed during compilation which would be bad.
+          // Let's copy it and send that.
+          std::string stable_text(text);
+          bool compiles = !driver->parse(stable_text);
+          if (compiles) {
+            PCodeTranslator translator;
+            main_blocks = new std::vector<CodeBlock*>();
+            expression_blocks = new std::vector<std::pair<Expression, CodeBlock*> >();
+            running_expression_blocks = new std::vector<bool>();
+            useful = true;
+            // Wait until 'environment' has a non-zero SampleRate() value. At most five
+            // seconds, in case there are unknown reasons why it would stay zero.
+            for (int waits = 0; waits < 50; ++waits) {
+              if (environment->SampleRate() > 1.0) break;
+              std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+            for (auto ast_block : driver->blocks) {
+              CodeBlock* new_block = new CodeBlock(environment);
+              if (translator.BlockToCodeBlock(new_block, ast_block)) {
+                // Different lists depending on type.
+                if (new_block->type == Block::MAIN) {
+                  main_blocks->push_back(new_block);
+                } else if (new_block->type == Block::WHEN &&
+                    new_block->condition == Block::EXPRESSION) {
+                  expression_blocks->push_back(std::make_pair(ast_block.run_condition, new_block));
+                  running_expression_blocks->push_back(false);
+                }
+              } else {
+                useful = false;
+                // TODO: Report errors via some new mechanism.
+              }
+            }
+          }
+          initiate_compile = false;
+          running = false;
+        }
+        // It seems like I need a tiny sleep here to allow join() to work
+        // on this thread?
+        // TODO: maybe make this longer, like 10ms?
+        if (!shutdown) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
       }
-      running = false;
     }
   };
 
@@ -439,11 +458,26 @@ struct Basically : Module {
     }
     compile_in_progress = false;
     compiler = new CompilationThread(&drv, (Environment*) environment);
+    compile_thread = new std::thread(&CompilationThread::Compile, compiler);
 
     // Filling in empty values for these until something compiles.
     main_blocks = new std::vector<CodeBlock*>();
     expression_blocks = new std::vector<std::pair<Expression, CodeBlock*> >();
     running_expression_blocks = new std::vector<bool>();
+  }
+
+  ~Basically() {
+    // A LOT of this would be better handled with shared_ptr.
+    if (compiler) {
+      compiler->Halt();
+    }
+    if (compile_thread) {
+      compile_thread->join();
+      delete compile_thread;
+    }
+    if (compiler) {
+      delete compiler;
+    }
   }
 
   json_t* dataToJson() override {
@@ -613,9 +647,6 @@ struct Basically : Module {
         } else {
           compiles = false;
         }
-        // No longer need thread that was running it.
-        compile_thread->join();  // It should be done by now, right?
-        delete compile_thread;
       }
     } else {
       // Do not currently have compile in progress.
@@ -624,7 +655,6 @@ struct Basically : Module {
         module_refresh = false;
         // Start a new compile.
         compiler->SetText(text);
-        compile_thread = new std::thread(&CompilationThread::Compile, compiler);
       }
     }
 

@@ -93,10 +93,14 @@ class Expression {
   // INn or any other volatile source (e.g., a random() function.)
   bool Volatile();
 
+  static bool is_zero(float value);
+
+  // Don't force users to understand that comparing floats is hard.
+  static bool float_equal(float f1, float f2);
+
   // Bison seems to require this; I don't use it.
   friend std::ostream& operator<<(std::ostream& os, const Expression &ex);
   std::string to_string() const;
-  static bool is_zero(float value);
  private:
   float bool_to_float(bool value);
   float binop_compute();

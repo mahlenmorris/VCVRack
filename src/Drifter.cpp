@@ -199,7 +199,7 @@ struct Drifter : Module {
         },
       [](float x, float w, bool uni)
         { float xw = x + w;    // Square.
-          if (xw < 5.0f) {  // Because w is 5.0 for C, <= 5.0 leads to suprious initial peak.
+          if (xw < 5.0f) {  // Because w is 5.0 for C, <= 5.0 leads to spurious initial peak.
             return 10.0f;
           } else if (xw <= 10.f) {
             return 0.0f;
