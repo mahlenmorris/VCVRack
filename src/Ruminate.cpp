@@ -40,11 +40,18 @@ struct Ruminate : PositionedModule {
 		FADE_DOWN		// * Fading out the playing.
 		    				// * And back to not recording at all.
 
-		// When starting and stopping the head, the sequence is:
+		// When starting and stopping the head and fade_on_move is set, the sequence is:
 		// * NO_PLAY -> FADE_UP -> PLAYING -> FADE_DOWN -> NO_PLAY.
 		// If user starts adjusting in FADE_UP or PLAYING, we move to FADE_DOWN and then NO_PLAY.
 		// If user is adjusting when in NO_PLAY, we move to ADJUSTING, and stay there until
 		// user stops adjusting.
+    //
+		// When starting and stopping the head and fade_on_move is clear, the sequence is:
+		// * NO_PLAY -> FADE_UP -> PLAYING -> FADE_DOWN -> NO_PLAY.
+		// If user starts adjusting in FADE_UP or PLAYING, we adjust the position, but keep doing what we're doing.
+		// If user is adjusting when in NO_PLAY, we move the play head accordingly.
+		// Should never be in ADJUSTING.
+    //
 	};
 
 	const double FADE_INCREMENT = 0.02;
@@ -76,9 +83,11 @@ struct Ruminate : PositionedModule {
 
 	// To fade volume when near a recording head.
 	double fade = 1.0f;
+
 	// When fading at the start or end of adjustments.
 	double play_fade = 1.0;
 	PlayState play_state;
+	bool fade_on_move = true;  // Saved in the patch.
 
 	Ruminate() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -110,7 +119,20 @@ struct Ruminate : PositionedModule {
   const float octaves[8] = {-2, -1, -.5, -.25, .25, .5, 1, 2};
   const float notes[7] = {1, 9.0/8.0, 5.0/4.0, 4.0/3.0, 3.0/2.0, 5.0/3.0, 15.0/8.0};
 
-	// Overriding solely to make sure Adjust isn't left in a non-zero state.
+  json_t* dataToJson() override {
+    json_t* rootJ = json_object();
+    json_object_set_new(rootJ, "fade_on_move", json_integer(fade_on_move ? 1 : 0));
+    return rootJ;
+  }
+
+  void dataFromJson(json_t* rootJ) override {
+    json_t* fadeJ = json_object_get(rootJ, "fade_on_move");
+    if (fadeJ) {
+      fade_on_move = json_integer_value(fadeJ) == 1;
+    }
+  }
+
+  // Overriding solely to make sure Adjust isn't left in a non-zero state.
 	// And also, we should randomize the position.
 	void onRandomize(const RandomizeEvent& e) override {
 		// Randomize all parameters
@@ -163,19 +185,29 @@ struct Ruminate : PositionedModule {
 					abs_changed = true;
 				}
 			}
+
+			float slider_value = params[ADJUST_PARAM].getValue();
 			// Is our position being adjusted by the slider and/or the position input?
 			bool adjusting = abs_changed ||
-			    std::fabs(params[ADJUST_PARAM].getValue()) > std::numeric_limits<float>::epsilon(); // i.e., is not zero.
+			    std::fabs(slider_value) > std::numeric_limits<float>::epsilon(); // i.e., is not zero.
 
 			// Are we being told to play?
 			playTrigger.process(rescale(
 					inputs[PLAY_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
-			bool playing = !adjusting && 
+			bool playing = (!adjusting || !fade_on_move) && 
 			               ((params[PLAY_BUTTON_PARAM].getValue() > 0.1f) || playTrigger.isHigh());
+
+			// fade_on_move may have just been changed. Make sure that if it's been cleared, we are not in
+			// ADJUSTING.
+			if (!fade_on_move && play_state == ADJUSTING) {
+				play_state = ((params[PLAY_BUTTON_PARAM].getValue() > 0.1f) || playTrigger.isHigh())
+				    ? PLAYING : NO_PLAY;
+				play_fade = 1.0;
+			} 
 			
       // Now that we understand our inputs, let's determine what PlayState should be.
-			// Take into account when the user starts or stops adjusting.
-			if (play_state == NO_PLAY && adjusting) {
+			// Take into account when the user starts or stops adjusting, and whether or not we fade when adjusting.
+			if (play_state == NO_PLAY && adjusting && fade_on_move) {
 				play_state = ADJUSTING;
 			} else if (play_state == ADJUSTING && !adjusting) {
 				play_state = NO_PLAY;
@@ -184,14 +216,14 @@ struct Ruminate : PositionedModule {
 			switch (play_state) {
 				case NO_PLAY:
 				case FADE_DOWN: {
-					if (playing && !adjusting) {
+					if (playing && (!adjusting || !fade_on_move)) {
 						play_state = FADE_UP;
 					}
 				}
 				break;
 				case FADE_UP:
 				case PLAYING:  {
-					if (!playing || adjusting) {
+					if (!playing || (adjusting && fade_on_move)) {
 						play_state = FADE_DOWN;
 					}
 				}
@@ -221,59 +253,61 @@ struct Ruminate : PositionedModule {
 				// Value of "start playing position indicator".
 				playback_position = (int) (params[INIT_POSITION_PARAM].getValue() * length / 10.0);
 			}
-			if (play_state != NO_PLAY) {
+			// We're still moving, either forward or because user is adjusting.
+			// 'movement' is combination of speed input and speed param.
+			double movement = play_state == NO_PLAY ? 0.0 :
+			    inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
+			if ((play_state == ADJUSTING) || (!fade_on_move && adjusting)) {
+				// Even if we're not playing, we want to show movement caused by POSITION movement,
+				// so user can see where playback will pick up.
+				// 
+				// Either the Adjust slider is non-zero or the ABS POSITION input has changed.
+				// we'll let the human slider override the ABS input.
+				if (std::fabs(slider_value) > std::numeric_limits<float>::epsilon()) {
+					// i.e., is not zero.
+					// zero -> no movement.
+					// 10 -> move entirety of length of buffer in two seconds.
+					movement = (slider_value / 20.0) * length / args.sampleRate;
+				} else {
+					// We'll just move directly to the specified spot.
+					double abs = inputs[ABS_POSITION_INPUT].getVoltage();
+					// Correct for values outside of 0-10.
+					while (abs < 0.0) {
+						abs += 10.0;
+					}
+					while (abs > 10.0) {
+						abs -= 10.0;
+					}
+					playback_position = (abs * length / 10.0);
+					movement = 0.0;
+					abs_changed = false;
+				}
+			}
+			
+			if (use_initial_position && std::fabs(movement >= std::numeric_limits<float>::epsilon())) {
 				use_initial_position = false;
-				// We're still moving, either forward or because user is adjusting.
-				// Combination of speed input and speed param.
-				double movement = inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
-			  if (play_state == ADJUSTING) {
-					// Even if we're not playing, we want to show movement caused by POSITION movement,
-					// so user can see where playback will pick up.
-					// 
-					// Either the Adjust slider is non-zero or the ABS POSITION input has changed.
-					// we'll let the human slider override the ABS input.
-					if (std::fabs(params[ADJUST_PARAM].getValue()) > std::numeric_limits<float>::epsilon()) {
-						// i.e., is not zero.
-						// zero -> no movement.
-						// 10 -> move entirety of length of buffer in two seconds.
-						movement = (params[ADJUST_PARAM].getValue() / 20.0) * length / args.sampleRate;
-					} else {
-						// We'll just move directly to the specified spot.
-						double abs = inputs[ABS_POSITION_INPUT].getVoltage();
-						// Correct for values outside of 0-10.
-						while (abs < 0.0) {
-							abs += 10.0;
-						}
-						while (abs > 10.0) {
-							abs -= 10.0;
-						}
-						playback_position = (abs * length / 10.0);
-						movement = 0.0;
-						abs_changed = false;
+			}
+			playback_position += movement;
+
+			// Fix the position, now that the movement has occured.
+			switch (loop_type) {
+				case 0: {  // Loop around.
+					if (playback_position < 0.0) {
+						playback_position += length;
+					} else if (playback_position >= length) {
+						playback_position -= length;
 					}
 				}
-
-				playback_position += movement;
-
-				// Fix the position, now that the movement has occured.
-				switch (loop_type) {
-					case 0: {  // Loop around.
-						if (playback_position < 0.0) {
-							playback_position += length;
-						} else if (playback_position >= length) {
-							playback_position -= length;
-						}
+				break;
+				case 1: {  // Bounce.
+					if (playback_position < 0.0) {
+						playback_position += 2 * length;
+					} else if (playback_position >= 2 * length) {
+						playback_position -= 2 * length;
 					}
-					break;
-					case 1: {  // Bounce.
-						if (playback_position < 0.0) {
-							playback_position += 2 * length;
-						} else if (playback_position >= 2 * length) {
-							playback_position -= 2 * length;
-						}
-					}
-					break;
 				}
+				break;
+				
 			}
 
 			display_position = playback_position;
@@ -304,6 +338,7 @@ struct Ruminate : PositionedModule {
 			line_record.position = display_position;
 
 			if (play_state != NO_PLAY && play_state != ADJUSTING) {
+				use_initial_position = false;
 				// Determine values to emit.
 				double closest_head_distance = buffer->NearHead(display_position);
 				if (closest_head_distance <= FADE_DISTANCE) {
@@ -365,9 +400,10 @@ struct NowTimestamp : TimestampField {
 	}
 };
 
-struct AdjustSlider : VCVSlider {
-  void onDragEnd(const DragEndEvent& e) override {
-    getParamQuantity()->setValue(0.0);
+struct AdjustSliderRuminate : VCVSlider {
+  
+	void onDragEnd(const DragEndEvent& e) override {
+    getParamQuantity()->setImmediateValue(0.0);
 		VCVSlider::onDragEnd(e);
 	}
 };
@@ -391,7 +427,7 @@ struct RuminateWidget : ModuleWidget {
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 97.087)), module, Ruminate::SPEED_INPUT));
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(19.05, 97.087)), module, Ruminate::SPEED_PARAM));
 
-    addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6.35, 43.0)),
+    addParam(createParamCentered<AdjustSliderRuminate>(mm2px(Vec(6.35, 43.0)),
 		   module, Ruminate::ADJUST_PARAM));
   	addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(19.05, 50.8)),
 		   module, Ruminate::INIT_POSITION_PARAM));
@@ -421,6 +457,14 @@ struct RuminateWidget : ModuleWidget {
     connect_light->pos_module = module;
 		addChild(connect_light);
 	}
+
+  void appendContextMenu(Menu* menu) override {
+    Ruminate* module = dynamic_cast<Ruminate*>(this->module);
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createBoolPtrMenuItem("Fade on Move", "",
+                                          &module->fade_on_move));
+	}
+
 };
 
 Model* modelRuminate = createModel<Ruminate, RuminateWidget>("Ruminate");

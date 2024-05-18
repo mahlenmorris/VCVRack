@@ -381,9 +381,9 @@ struct NowEmbellishTimestamp : TimestampField {
 	}
 };
 
-struct AdjustSlider : VCVSlider {
+struct AdjustSliderEmbellish : VCVSlider {
   void onDragEnd(const DragEndEvent& e) override {
-    getParamQuantity()->setValue(0.0);
+    getParamQuantity()->setImmediateValue(0.0);
 		VCVSlider::onDragEnd(e);
 	}
 };
@@ -411,7 +411,7 @@ struct EmbellishWidget : ModuleWidget {
                                              module, Embellish::REVERSE_PARAM,
                                              Embellish::REVERSE_LIGHT));
 
-    addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6.35, 43.0)),
+    addParam(createParamCentered<AdjustSliderEmbellish>(mm2px(Vec(6.35, 43.0)),
 		   module, Embellish::ADJUST_PARAM));
 
     // TODO: make this a tiny attenuator knob?
