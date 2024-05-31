@@ -1,6 +1,10 @@
 #include <thread>
 
+// VCV.
 #include "plugin.hpp"
+#include "osdialog.h"
+
+// Mine.
 #include "buffered.hpp"
 #include "smoother.h"
 
@@ -28,7 +32,7 @@ struct WorkThread {
   bool initiateFill;
   int seconds;
   bool initiateWipe;
-  bool running;  // TRUE if still compiling, false if completed.
+  bool running;  // TRUE if still wiping or initializing.
 
   explicit WorkThread(BufferHandle* the_handle) : handle{the_handle} {
     running = false;
@@ -96,8 +100,6 @@ struct WorkThread {
     buffer->waveform.normalize_factor = 10.0f / window_size;
   }
 
-  // If compilation succeeds, sets flag saying so and prepares vectors
-  // of main_blocks and expression_blocks for module to use later.
   void Work() {
     while (!shutdown) {
       std::shared_ptr<Buffer> buffer = handle->buffer;
@@ -115,10 +117,6 @@ struct WorkThread {
               break;
             }
 	        }
-        }
-
-        if (buffer->freshen_waveform) {
-          RefreshWaveform(buffer);
         }
 
         if (initiateFill) {
@@ -164,11 +162,83 @@ struct WorkThread {
           buffer->full_scan = true;
           running = false;
         }
+
+        // Keep this after any wipe or major change we do to the buffer.
+        if (buffer->freshen_waveform) {
+          RefreshWaveform(buffer);
+        }
       }
+
       // It seems like I need a tiny sleep here to allow join() to work
-      // on this thread?
+      // on this thread.
       if (!shutdown) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
+    }
+  }
+};
+
+// Class devoted to handling the very lengthy (compared to single sample)
+// process of dealing with file systems.
+// Much of the logic is directly lifted from voxglitch's modules.
+// All mistakes are mine.
+struct FileSystemThread {
+  bool shutdown;
+  std::vector<std::string>* loadable_files = nullptr;
+  std::string load_folder;
+  bool load_folder_initiated = false;
+
+
+  FileSystemThread() {
+    shutdown = false;
+  }
+
+  void Halt() {
+    shutdown = true;
+  }
+
+  void InitiateDirectoryRead(const std::string& load_folder_name,
+                          std::vector<std::string>* the_loadable_files) {
+    loadable_files = the_loadable_files;
+    load_folder = load_folder_name;
+    load_folder_initiated = true;
+  }
+
+  void DoDirectoryRead() {
+    // To make it more obvious that we are reading contents in, we eliminate the current contents.
+    if (!loadable_files->empty()) {
+      loadable_files->clear();
+      // TODO: set something so that menu shows "loading..." indicator.
+    }
+
+		std::vector<std::string> dirList = system::getEntries(load_folder.c_str());
+
+		// "Sort the vector.  This is in response to a user who's samples were being
+		// loaded out of order.  I think it's a mac thing." - Voxglitch.
+		sort(dirList.begin(), dirList.end());
+
+		for (auto path : dirList)	{
+			if ((rack::string::lowercase(system::getExtension(path)) == "wav") ||
+				  (rack::string::lowercase(system::getExtension(path)) == ".wav")) {
+				loadable_files->push_back(system::getFilename(path));
+			}
+		}
+  }
+
+  void Work() {
+    while (!shutdown) {
+
+      if (load_folder_initiated) {
+        DoDirectoryRead();
+
+        loadable_files = nullptr;
+        load_folder_initiated = false;
+      }
+      // It seems like I need a tiny sleep here to allow join() to work
+      // on this thread. I make this sleep longer than for WorkThread, since file system
+      // activity is so slow that we can ease up on the CPU.
+      if (!shutdown) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
 			}
     }
   }
@@ -200,10 +270,18 @@ struct Memory : BufferedModule {
   WorkThread* worker;
   std::thread* work_thread;
 
+  FileSystemThread* file_system_worker;
+  std::thread* file_system_thread;
+
   // For wiping contents.
   dsp::SchmittTrigger wipe_trigger;
   // Keeps lights on buttons lit long enough to see.
   int wipe_light_countdown = 0;
+
+  // For Loading and Saving contents.
+  std::string load_folder_name;
+  bool refresh_loadable_files;
+  std::vector<std::string> loadable_files;
 
   // We sweep the connected modules every NN samples. Some UI-related tasks are 
   // not as latency-sensitive as the audio thread, and we don't need to do often.
@@ -219,12 +297,16 @@ struct Memory : BufferedModule {
     getParamQuantity(SECONDS_PARAM)->snapEnabled = true;
     configButton(RESET_BUTTON_PARAM, "Press to reset length and wipe contents to 0.0V");
 
+    refresh_loadable_files = false;  // Don't refresh until we have a path.
+
     // Setting an initial Buffer object.
     std::shared_ptr<Buffer> temp = std::make_shared<Buffer>();
     (*getHandle()).buffer.swap(temp);
 
     worker = new WorkThread(getHandle());
     work_thread = new std::thread(&WorkThread::Work, worker);
+    file_system_worker = new FileSystemThread();
+    file_system_thread = new std::thread(&FileSystemThread::Work, file_system_worker);
   }
 
   ~Memory() {
@@ -239,15 +321,32 @@ struct Memory : BufferedModule {
       }
       delete worker;
     }
+
+    if (file_system_worker != nullptr) {
+      file_system_worker->Halt();
+      if (file_system_thread != nullptr) {
+        file_system_thread->join();
+        delete file_system_thread;
+      }
+      delete file_system_worker;
+    }
   }
 
   // Save and retrieve menu choice(s).
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
+    if (!load_folder_name.empty()) {
+      json_object_set_new(rootJ, "load_folder", json_string(load_folder_name.c_str()));
+    }
     return rootJ;
   }
 
   void dataFromJson(json_t* rootJ) override {
+     json_t* load_folderJ = json_object_get(rootJ, "load_folder");
+    if (load_folderJ) {
+      load_folder_name.assign(json_string_value(load_folderJ));
+      refresh_loadable_files = true;
+    }
   }
 
   static constexpr int COLOR_COUNT = 7;
@@ -279,7 +378,7 @@ struct Memory : BufferedModule {
         }
       } else {
         if (!worker->running) {
-          // Filling+wiping done.
+          // Filling + wiping done.
           init_in_progress = false;
           buffer_initialized = true;
         }
@@ -290,6 +389,11 @@ struct Memory : BufferedModule {
       // lit long enough to be seen by humans.
       if (wipe_light_countdown > 0) {
         wipe_light_countdown--;
+      }
+
+      if (refresh_loadable_files) {
+        file_system_worker->InitiateDirectoryRead(load_folder_name, &loadable_files);
+        refresh_loadable_files = false;
       }
 
       // Periodically assign colors to each connected module's light.
@@ -403,7 +507,39 @@ struct Memory : BufferedModule {
       lights[RESET_BUTTON_LIGHT].setBrightness(reset ? 1.0f : 0.0f);
     }
   }
+
+  std::string selectFolder() {
+        std::string path_string = "";
+        char *path = osdialog_file(
+          OSDIALOG_OPEN_DIR,
+          load_folder_name.empty() ? NULL : load_folder_name.c_str(),
+          NULL, NULL);
+
+        if (path != NULL) {
+            path_string.assign(path);
+            std::free(path);  // Required by osdialog_file().
+        }
+
+        return (path_string);
+    }
 };
+
+struct MenuItemPickFolder : MenuItem
+{
+  Memory *module;
+
+  void onAction(const event::Action &e) override
+  {
+    std::string filename = module->selectFolder();
+    if (filename != "") {
+        // We set this even if it's the same path as before. This gives the user a gesture to update
+        // the list.
+        module->load_folder_name = filename;
+        module->refresh_loadable_files = true;
+    }
+  }
+};
+
 
 struct MemoryWidget : ModuleWidget {
   MemoryWidget(Memory* module) {
@@ -434,7 +570,25 @@ struct MemoryWidget : ModuleWidget {
   }
 
   void appendContextMenu(Menu* menu) override {
-    // Memory* module = dynamic_cast<Memory*>(this->module);
+    Memory* module = dynamic_cast<Memory*>(this->module);
+      assert(module);
+      menu->addChild(new MenuSeparator);
+      menu->addChild(createMenuLabel("Pick Folder for Loading"));
+
+
+      MenuItemPickFolder *menu_item_load_folder = new MenuItemPickFolder;
+      if (module->load_folder_name.empty()) {
+        menu_item_load_folder->text = "Click here to pick";  
+      } else {
+        menu_item_load_folder->text = module->load_folder_name;
+      }
+      menu_item_load_folder->module = module;
+      menu->addChild(menu_item_load_folder);
+
+      // TODO: pick saving folder.
+
+
+
   }
 };
 
