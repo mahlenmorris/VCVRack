@@ -8,6 +8,9 @@
 #include "buffered.hpp"
 #include "smoother.h"
 
+// WAV/AIFF library.
+#include "AudioFile.h"
+
 // We auto-scale the view of the waveform in Depict, but snap to these values
 // to make it less confusing.
 static const float WIDTHS[] = {
@@ -25,6 +28,8 @@ static const char* TEXTS[] = {
 
 // Class devoted to handling the lengthy (compared to single sample)
 // process of filling or replacing the current Buffer.
+// TODO: honestly, Module should be putting messages onto a queue instead of
+// directly changing internal variables here.
 struct WorkThread {
   BufferHandle* handle;
   float sample_rate;
@@ -33,11 +38,16 @@ struct WorkThread {
   int seconds;
   bool initiateWipe;
   bool running;  // TRUE if still wiping or initializing.
+  
+  // For doing a fill from a file.
+  AudioFile<float>* audio_file;
+  bool initiate_file_load_fill;
 
   explicit WorkThread(BufferHandle* the_handle) : handle{the_handle} {
     running = false;
     initiateFill = false;
     initiateWipe = false;
+    initiate_file_load_fill = false;
     shutdown = false;
   }
 
@@ -52,6 +62,62 @@ struct WorkThread {
   void InitiateFill(int new_seconds) {
     seconds = new_seconds;
     initiateFill = true;
+  }
+
+  void InitiateFileLoadFill(AudioFile<float>* the_audio_file) {
+    audio_file = the_audio_file;
+    initiate_file_load_fill = true;
+  }
+
+  void FileLoadFill(std::shared_ptr<Buffer> buffer) {
+    buffer->length = 0;
+    buffer->seconds = 0;
+
+    int samples = std::round(audio_file->getLengthInSeconds() * sample_rate);
+    float* new_left_array = new float[samples];
+    float* new_right_array = new float[samples];
+
+    // And mark every sector dirty.
+    buffer->full_scan = true;
+
+    // Now fill from the audio_file. Transforms we need to apply are:
+    // * Sample rate may be different from the file and VCV.
+    // * We typically range from -10.0 to 10.0, AudioFile ranges from -1.0 to 1.0.
+    // * File might have been in mono. The norm seems to be to put a mono signal 
+    //   on both channels.
+    bool file_is_mono = audio_file->getNumChannels() == 1;
+    // TODO: put in an optimization if sample rates are the same. Less math to do.
+    double sample_rate_ratio = 1.0 * audio_file->getSampleRate() / sample_rate;
+    for (int i = 0; i < samples; ++i) {
+      // Use the linear interpolation that I also use in Buffer::Get().
+      double position = i * sample_rate_ratio;
+      int playback_start = trunc(position);
+      int playback_end = trunc(playback_start + 1);
+      if (playback_end >= audio_file->getNumSamplesPerChannel()) {
+        playback_end = 0;
+      }
+
+      float start_fraction = position - playback_start;
+      new_left_array[i] = 10.0 * (audio_file->samples[0][playback_start] * (1.0 - start_fraction) +
+        audio_file->samples[0][playback_end] * (start_fraction));
+      if (file_is_mono) {
+        new_right_array[i] = new_left_array[i];
+      } else {
+        new_right_array[i] = 10.0 * (audio_file->samples[1][playback_start] * (1.0 - start_fraction) +
+          audio_file->samples[1][playback_end] * (start_fraction));
+      }
+    }
+    if (buffer->left_array != nullptr) {
+      delete buffer->left_array;
+    }
+    buffer->left_array = new_left_array;
+    if (buffer->right_array != nullptr) {
+      delete buffer->right_array;
+    }
+    buffer->right_array = new_right_array;
+
+    buffer->length = samples;
+    buffer->seconds = audio_file->getLengthInSeconds();
   }
 
   void RefreshWaveform(std::shared_ptr<Buffer> buffer) {
@@ -119,6 +185,14 @@ struct WorkThread {
 	        }
         }
 
+        if (initiate_file_load_fill) {
+          initiate_file_load_fill = false;
+          FileLoadFill(buffer);
+          AudioFile<float>* temp = audio_file;
+          audio_file = nullptr;
+          delete temp;
+        }
+
         if (initiateFill) {
           initiateFill = false;
           running = true;
@@ -178,19 +252,42 @@ struct WorkThread {
   }
 };
 
+enum FileLoadingStatus {
+	NOT_LOADING,
+	LOADING_NOW,
+  LOADED_CORRECTLY,
+  LOAD_FAILED
+};
+
 // Class devoted to handling the very lengthy (compared to single sample)
 // process of dealing with file systems.
 // Much of the logic is directly lifted from voxglitch's modules.
 // All mistakes are mine.
+// TODO: honestly, Module should be putting messages onto a queue instead of
+// directly changing internal variables here.
 struct FileSystemThread {
   bool shutdown;
+
+  // For the loading directory.
   std::vector<std::string>* loadable_files = nullptr;
   std::string load_folder;
   bool load_folder_initiated = false;
 
+  // For loading a file.
+  std::string file_to_load;
+  bool load_file_initiated = false;
+  AudioFile<float>* audio_file;
+
+  // Indicator to UI that File I/O is happening.
+  bool busy;
+  // Indicator to module that the AudioFile has been filled.
+  FileLoadingStatus file_load_status;
 
   FileSystemThread() {
     shutdown = false;
+    busy = false;
+    file_load_status = NOT_LOADING;
+    load_file_initiated = false;
   }
 
   void Halt() {
@@ -225,11 +322,40 @@ struct FileSystemThread {
 		}
   }
 
+  void InitiateFileLoad(const std::string& load_folder_name,
+                        const std::string& loaded_file,
+                        AudioFile<float>* new_audio_file) {
+    if (load_file_initiated) {  // Already loading a file! TODO: find way to cancel it.
+      WARN("InitiateFileLoad() called when already loading file! Ignoring.");
+    } else {
+      audio_file = new_audio_file;
+      file_to_load = system::join(load_folder_name, loaded_file);
+      load_file_initiated = true;
+      file_load_status = LOADING_NOW;
+    }
+  }
+
   void Work() {
     while (!shutdown) {
 
+      if (load_file_initiated) {
+        busy = true;
+        // WARN("Starting load of %s", file_to_load.c_str());
+        audio_file->load(file_to_load);
+        // WARN("Completed load of %s", file_to_load.c_str());
+        
+        // WARN("samples = %d, seconds = %f", audio_file->getNumSamplesPerChannel(), audio_file->getLengthInSeconds());
+        // WARN("sample rate = %d", audio_file->getSampleRate());
+        load_file_initiated = false;
+        busy = false;
+        file_load_status = LOADED_CORRECTLY;
+        // TODO: detect failed load and explain. Try renaming a bogus file to .wav.
+      }
+
       if (load_folder_initiated) {
+        busy = true;
         DoDirectoryRead();
+        busy = false;
 
         loadable_files = nullptr;
         load_folder_initiated = false;
@@ -261,6 +387,7 @@ struct Memory : BufferedModule {
   enum LightId {
     WIPE_BUTTON_LIGHT,
     RESET_BUTTON_LIGHT,
+    FILE_IO_LIGHT,
     LIGHTS_LEN
   };
 
@@ -283,6 +410,10 @@ struct Memory : BufferedModule {
   bool refresh_loadable_files;
   std::vector<std::string> loadable_files;
 
+  std::string loaded_file;
+  bool refresh_load_file;
+  AudioFile<float>* audio_file = nullptr;
+
   // We sweep the connected modules every NN samples. Some UI-related tasks are 
   // not as latency-sensitive as the audio thread, and we don't need to do often.
   int assign_color_countdown = 0;
@@ -298,6 +429,7 @@ struct Memory : BufferedModule {
     configButton(RESET_BUTTON_PARAM, "Press to reset length and wipe contents to 0.0V");
 
     refresh_loadable_files = false;  // Don't refresh until we have a path.
+    refresh_load_file = false;
 
     // Setting an initial Buffer object.
     std::shared_ptr<Buffer> temp = std::make_shared<Buffer>();
@@ -389,6 +521,21 @@ struct Memory : BufferedModule {
       // lit long enough to be seen by humans.
       if (wipe_light_countdown > 0) {
         wipe_light_countdown--;
+      }
+
+      // Make sure we're not dealing with a previous load before starting a new one.
+      if (refresh_load_file && file_system_worker->file_load_status == NOT_LOADING && audio_file == nullptr) {
+        refresh_load_file = false;
+        audio_file = new AudioFile<float>;
+        file_system_worker->InitiateFileLoad(load_folder_name, loaded_file, audio_file);
+      }
+
+      if (file_system_worker->file_load_status == LOADED_CORRECTLY) {
+        // Tell the main worker to replace current contents with audio_file.
+        worker->InitiateFileLoadFill(audio_file);
+        audio_file = nullptr;  // We've passed it to worker, who will delete.
+        // TODO: Should really be a shared_ptr!
+        file_system_worker->file_load_status = NOT_LOADING;
       }
 
       if (refresh_loadable_files) {
@@ -505,6 +652,8 @@ struct Memory : BufferedModule {
       lights[WIPE_BUTTON_LIGHT].setBrightness(
         wipe || wipe_light_countdown > 0 ? 1.0f : 0.0f);
       lights[RESET_BUTTON_LIGHT].setBrightness(reset ? 1.0f : 0.0f);
+      lights[FILE_IO_LIGHT].setBrightness(
+        file_system_worker && file_system_worker->busy ? 1.0f : 0.0f);
     }
   }
 
@@ -567,6 +716,10 @@ struct MemoryWidget : ModuleWidget {
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(10.16, 46.959)),
                                              module, Memory::RESET_BUTTON_PARAM,
                                              Memory::RESET_BUTTON_LIGHT));
+
+    // FILE I/O light.
+   	addChild(createLightCentered<SmallLight<WhiteLight>>(mm2px(Vec(10.16, 121.704)),
+             module, Memory::FILE_IO_LIGHT));
   }
 
   void appendContextMenu(Menu* menu) override {
@@ -584,7 +737,22 @@ struct MemoryWidget : ModuleWidget {
       }
       menu_item_load_folder->module = module;
       menu->addChild(menu_item_load_folder);
-
+      if (module->loadable_files.empty()) {
+        menu->addChild(createMenuLabel("No .wav files seen in Loading directory"));
+      } else {
+        MenuItem* loadable_file_menu = createSubmenuItem("Load File", "",
+          [=](Menu* menu) {
+              for (const std::string& name : module->loadable_files) {
+                menu->addChild(createCheckMenuItem(name, "",
+                  [=]() {return name.compare(module->loaded_file) == 0;},
+                  [=]() {module->loaded_file = name;
+                          module->refresh_load_file = true;}
+                ));
+              }
+          }
+        );
+        menu->addChild(loadable_file_menu);
+      }
       // TODO: pick saving folder.
 
 
