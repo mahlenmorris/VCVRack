@@ -1,4 +1,5 @@
 #include <thread>
+#include <cstdlib> // for strtol
 
 // VCV.
 #include "plugin.hpp"
@@ -7,6 +8,7 @@
 // Mine.
 #include "buffered.hpp"
 #include "smoother.h"
+#include "tipsy_utils.h"
 
 // WAV/AIFF library.
 #include "AudioFile.h"
@@ -25,6 +27,8 @@ static const char* TEXTS[] = {
   "1V", "2V", "5V",
   "10V", "20V", "50V"
 };
+
+static constexpr size_t recvBufferSize{1024 * 64};
 
 // Class devoted to handling the lengthy (compared to single sample)
 // process of filling or replacing the current Buffer.
@@ -70,9 +74,9 @@ struct WorkThread {
   }
 
   void FileLoadFill(std::shared_ptr<Buffer> buffer) {
-    buffer->length = 0;
-    buffer->seconds = 0;
-
+    // One goal is to minimize the amount of downtime for the buffer,
+    // since the AudioFile -> Buffer process is time consuming for large files.
+    // So the conversion happens before we swap in the memory.
     int samples = std::round(audio_file->getLengthInSeconds() * sample_rate);
     float* new_left_array = new float[samples];
     float* new_right_array = new float[samples];
@@ -91,7 +95,8 @@ struct WorkThread {
     for (int i = 0; i < samples; ++i) {
       // Use the linear interpolation that I also use in Buffer::Get().
       double position = i * sample_rate_ratio;
-      int playback_start = trunc(position);
+      // std::min is just to make sure FP math doesn't push us past the end of the buffer.
+      int playback_start = std::min((int) trunc(position), audio_file->getNumSamplesPerChannel() - 1);
       int playback_end = trunc(playback_start + 1);
       if (playback_end >= audio_file->getNumSamplesPerChannel()) {
         playback_end = 0;
@@ -107,6 +112,10 @@ struct WorkThread {
           audio_file->samples[1][playback_end] * (start_fraction));
       }
     }
+    // Buffer is unavailable during this interval.
+    buffer->length = 0;
+    buffer->seconds = 0;
+
     if (buffer->left_array != nullptr) {
       delete buffer->left_array;
     }
@@ -341,14 +350,14 @@ struct FileSystemThread {
       if (load_file_initiated) {
         busy = true;
         // WARN("Starting load of %s", file_to_load.c_str());
-        audio_file->load(file_to_load);
+        bool worked = audio_file->load(file_to_load);
         // WARN("Completed load of %s", file_to_load.c_str());
         
         // WARN("samples = %d, seconds = %f", audio_file->getNumSamplesPerChannel(), audio_file->getLengthInSeconds());
         // WARN("sample rate = %d", audio_file->getSampleRate());
         load_file_initiated = false;
         busy = false;
-        file_load_status = LOADED_CORRECTLY;
+        file_load_status = worked ? LOADED_CORRECTLY : LOAD_FAILED;
         // TODO: detect failed load and explain. Try renaming a bogus file to .wav.
       }
 
@@ -379,9 +388,14 @@ struct Memory : BufferedModule {
   };
   enum InputId {
     WIPE_TRIGGER_INPUT,
+		TIPSY_LOAD_INPUT,
+		TIPSY_SAVE_INPUT,
     INPUTS_LEN
   };
   enum OutputId {
+		LOAD_TRIGGER_OUTPUT,
+		SAVE_TRIGGER_OUTPUT,
+		TIPSY_LOGGING_OUTPUT,
     OUTPUTS_LEN
   };
   enum LightId {
@@ -394,9 +408,11 @@ struct Memory : BufferedModule {
   // Initialization happens on startup, but also during a reset.
   bool buffer_initialized = false;
   bool init_in_progress = false;
+
+  // Threads and workers for doing long tasks
   WorkThread* worker;
   std::thread* work_thread;
-
+  // For tasks that involve the file system.
   FileSystemThread* file_system_worker;
   std::thread* file_system_thread;
 
@@ -414,6 +430,10 @@ struct Memory : BufferedModule {
   bool refresh_load_file;
   AudioFile<float>* audio_file = nullptr;
 
+  // Listening to the Tipsy connection for loading files.
+  unsigned char load_recv_buffer[recvBufferSize];
+  tipsy::ProtocolDecoder load_decoder;
+
   // We sweep the connected modules every NN samples. Some UI-related tasks are 
   // not as latency-sensitive as the audio thread, and we don't need to do often.
   int assign_color_countdown = 0;
@@ -427,6 +447,11 @@ struct Memory : BufferedModule {
     // This is really an integer.
     getParamQuantity(SECONDS_PARAM)->snapEnabled = true;
     configButton(RESET_BUTTON_PARAM, "Press to reset length and wipe contents to 0.0V");
+		configInput(TIPSY_LOAD_INPUT, "Tipsy text input to load named file");
+		configOutput(LOAD_TRIGGER_OUTPUT, "Sends a trigger when file load has completed");
+		configInput(TIPSY_SAVE_INPUT, "Tipsy text input to save contents to named file");
+		configOutput(SAVE_TRIGGER_OUTPUT, "Sends a trigger when file save has completed");
+		configOutput(TIPSY_LOGGING_OUTPUT, "Logging of File events; connect to a TTY TEXT input");
 
     refresh_loadable_files = false;  // Don't refresh until we have a path.
     refresh_load_file = false;
@@ -439,6 +464,8 @@ struct Memory : BufferedModule {
     work_thread = new std::thread(&WorkThread::Work, worker);
     file_system_worker = new FileSystemThread();
     file_system_thread = new std::thread(&FileSystemThread::Work, file_system_worker);
+
+    load_decoder.provideDataBuffer(load_recv_buffer, recvBufferSize);
   }
 
   ~Memory() {
@@ -523,11 +550,67 @@ struct Memory : BufferedModule {
         wipe_light_countdown--;
       }
 
+      if (inputs[TIPSY_LOAD_INPUT].isConnected()) {
+        auto decoder_status = load_decoder.readFloat(
+            inputs[TIPSY_LOAD_INPUT].getVoltage());
+        if (!load_decoder.isError(decoder_status) &&
+            decoder_status == tipsy::DecoderResult::BODY_READY &&
+            std::strcmp(load_decoder.getMimeType(), "text/plain") == 0) {
+          std::string next(std::string((const char *) load_recv_buffer));
+          if (next.size() > 0) {
+            if (next[0] == '#') {
+              // Do special things when of the form #NNNN 
+              size_t start_pos = next.find_first_of("0123456789"); // Find the first digit
+              if (start_pos == std::string::npos && loadable_files.size() > 0) {
+                // Handle the case where no digits are found.
+                // TODO: add this to the logging port.
+                // std::cerr << "Error: No integer found in the string." << std::endl;
+              } else {
+                char* endptr;
+                long parsed_long = strtol(next.c_str() + start_pos, &endptr, 10);
+
+                // Check for conversion errors
+                if (endptr == next.c_str() + start_pos || *endptr != '\0') {
+                  // Handle the case where the conversion failed
+                  // TODO: add this to the logging port.
+                  // std::cerr << "Error: Could not convert substring to integer." << std::endl;
+                } else if (parsed_long > INT_MAX || parsed_long < INT_MIN) {
+                  // Handle overflow if the parsed value is outside int range
+                  // TODO: add this to the logging port.
+                  // std::cerr << "Error: Integer conversion out of range." << std::endl;
+                } else {
+                  int parsed_int = static_cast<int>(parsed_long); // Cast to int if successful
+                  // Now pick the relevant file in the directory.
+                  // First make sure in the range.
+                  parsed_int = parsed_int % loadable_files.size();
+                  loaded_file = loadable_files[parsed_int];
+                  refresh_load_file = true;
+                }
+              }
+            } else {
+            // TODO: ensure that it's in the directory we're reading from,
+            //   as long as this isn't a subpath (e.g., foo/bar.wav).
+            // BUG: should not clear the buffer when file not found.
+              loaded_file = next;
+              refresh_load_file = true;
+            }
+          }
+        }
+      }
+
       // Make sure we're not dealing with a previous load before starting a new one.
       if (refresh_load_file && file_system_worker->file_load_status == NOT_LOADING && audio_file == nullptr) {
         refresh_load_file = false;
         audio_file = new AudioFile<float>;
         file_system_worker->InitiateFileLoad(load_folder_name, loaded_file, audio_file);
+      }
+
+      if (file_system_worker->file_load_status == LOAD_FAILED) {
+        // TODO: send explanation to the output port.
+        file_system_worker->file_load_status = NOT_LOADING;
+        delete audio_file;
+        audio_file = nullptr;
+        file_system_worker->file_load_status = NOT_LOADING;
       }
 
       if (file_system_worker->file_load_status == LOADED_CORRECTLY) {
@@ -536,6 +619,7 @@ struct Memory : BufferedModule {
         audio_file = nullptr;  // We've passed it to worker, who will delete.
         // TODO: Should really be a shared_ptr!
         file_system_worker->file_load_status = NOT_LOADING;
+        // TODO: tell output port we succeeded.
       }
 
       if (refresh_loadable_files) {
@@ -696,7 +780,7 @@ struct MemoryWidget : ModuleWidget {
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Memory.svg"),
                          asset::plugin(pluginInstance, "res/Memory-dark.svg")));
 
-    // So narrow, we only include two screws instead of four.
+    // Module is so narrow that we only include two screws instead of four.
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,
                                            RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
@@ -717,8 +801,20 @@ struct MemoryWidget : ModuleWidget {
                                              module, Memory::RESET_BUTTON_PARAM,
                                              Memory::RESET_BUTTON_LIGHT));
 
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.378, 79.325)),
+             module, Memory::TIPSY_LOAD_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.378, 95.795)),
+             module, Memory::TIPSY_SAVE_INPUT));
+
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(14.886, 79.325)),
+             module, Memory::LOAD_TRIGGER_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(14.886, 95.795)),
+             module, Memory::SAVE_TRIGGER_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.806, 112.537)),
+             module, Memory::TIPSY_LOGGING_OUTPUT));
+
     // FILE I/O light.
-   	addChild(createLightCentered<SmallLight<WhiteLight>>(mm2px(Vec(10.16, 121.704)),
+   	addChild(createLightCentered<SmallLight<WhiteLight>>(mm2px(Vec(17.039, 121.986)),
              module, Memory::FILE_IO_LIGHT));
   }
 
