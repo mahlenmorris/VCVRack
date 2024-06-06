@@ -9,6 +9,7 @@
 #include "buffered.hpp"
 #include "smoother.h"
 #include "tipsy_utils.h"
+#include "NoLockQueue.h"
 
 // WAV/AIFF library.
 #include "AudioFile.h"
@@ -30,12 +31,94 @@ static const char* TEXTS[] = {
 
 static constexpr size_t recvBufferSize{1024 * 64};
 
+///////////////////////////////////////////////////////////////
+//
+// The various threads of a Memory object need to assign tasks to each other.
+// These are the structs for doing that. Each struct corresponds to a single
+// NoLockQueue, with a single writer and reader.
+// All queues are owned by the module.
+
+struct PrepareTask {
+  enum Type {
+    LOAD_DIRECTORY_SET,  // str1 is the directory name.
+    LOAD_FILE            // str1 is the selected file name, str2 is the directory name.
+  };
+  Type type;
+  std::string str1, str2;
+  // TODO: I question the need to put these into this object.
+  AudioFile<float>* audio_file;
+  float* new_left_array;
+  float* new_right_array;
+  
+  PrepareTask(const Type the_type) : type{the_type}, audio_file{nullptr},
+                              new_left_array{nullptr}, new_right_array{nullptr} {}
+
+  ~PrepareTask() {
+    if (audio_file != nullptr) {
+      delete audio_file;
+    }
+  }
+
+  static PrepareTask* LoadFileTask(const std::string& name, const std::string& directory) {
+    PrepareTask* task = new PrepareTask(LOAD_FILE);
+    task->str1 = name;
+    task->str2 = directory;
+    return task;
+  }
+};
+
+struct WidgetToModuleQueue {
+  // Only length 5 because, seriously, the UI can't really add tasks quickly.
+  SpScLockFreeQueue<PrepareTask*, 5> tasks;
+};
+
+struct ModuleToPrepareQueue {
+  // Queue is limited to ten items, just so we cannot get absurdly far behind.
+  SpScLockFreeQueue<PrepareTask*, 10> tasks;
+};
+
+struct BufferTask {
+  enum Type {
+    REPLACE_AUDIO  // new_left_array and new_right_array.
+  };
+  Type type;
+  float* new_left_array;
+  float* new_right_array;
+  int sample_count;
+  double seconds;
+  
+  BufferTask(const Type the_type) : type{the_type},
+                                    new_left_array{nullptr}, new_right_array{nullptr} {}
+
+  ~BufferTask() {
+    // Don't delete new_(left|right)_array, surely pointed to by something else.
+  }
+
+  static BufferTask* ReplaceTask(float* new_left, float* new_right,
+                                 int sample_count, double seconds) {
+    BufferTask* task = new BufferTask(REPLACE_AUDIO);
+    task->new_left_array = new_left;
+    task->new_right_array = new_right;
+    task->sample_count = sample_count;
+    task->seconds = seconds;
+    return task;
+  }
+  
+};
+
+struct PrepareToBufferQueue {
+  // Queue is limited to ten items, just so we cannot get absurdly far behind.
+  SpScLockFreeQueue<BufferTask*, 10> tasks;
+};
+
 // Class devoted to handling the lengthy (compared to single sample)
 // process of filling or replacing the current Buffer.
 // TODO: honestly, Module should be putting messages onto a queue instead of
 // directly changing internal variables here.
-struct WorkThread {
+struct BufferChangeThread {
   BufferHandle* handle;
+  PrepareToBufferQueue* prepare_buffer_queue;
+
   float sample_rate;
   bool shutdown;
   bool initiateFill;
@@ -43,15 +126,11 @@ struct WorkThread {
   bool initiateWipe;
   bool running;  // TRUE if still wiping or initializing.
   
-  // For doing a fill from a file.
-  AudioFile<float>* audio_file;
-  bool initiate_file_load_fill;
-
-  explicit WorkThread(BufferHandle* the_handle) : handle{the_handle} {
+  BufferChangeThread(BufferHandle* the_handle, PrepareToBufferQueue* prepare_buffer_queue) :
+      handle{the_handle}, prepare_buffer_queue{prepare_buffer_queue} {
     running = false;
     initiateFill = false;
     initiateWipe = false;
-    initiate_file_load_fill = false;
     shutdown = false;
   }
 
@@ -66,67 +145,6 @@ struct WorkThread {
   void InitiateFill(int new_seconds) {
     seconds = new_seconds;
     initiateFill = true;
-  }
-
-  void InitiateFileLoadFill(AudioFile<float>* the_audio_file) {
-    audio_file = the_audio_file;
-    initiate_file_load_fill = true;
-  }
-
-  void FileLoadFill(std::shared_ptr<Buffer> buffer) {
-    // One goal is to minimize the amount of downtime for the buffer,
-    // since the AudioFile -> Buffer process is time consuming for large files.
-    // So the conversion happens before we swap in the memory.
-    int samples = std::round(audio_file->getLengthInSeconds() * sample_rate);
-    float* new_left_array = new float[samples];
-    float* new_right_array = new float[samples];
-
-    // And mark every sector dirty.
-    buffer->full_scan = true;
-
-    // Now fill from the audio_file. Transforms we need to apply are:
-    // * Sample rate may be different from the file and VCV.
-    // * We typically range from -10.0 to 10.0, AudioFile ranges from -1.0 to 1.0.
-    // * File might have been in mono. The norm seems to be to put a mono signal 
-    //   on both channels.
-    bool file_is_mono = audio_file->getNumChannels() == 1;
-    // TODO: put in an optimization if sample rates are the same. Less math to do.
-    double sample_rate_ratio = 1.0 * audio_file->getSampleRate() / sample_rate;
-    for (int i = 0; i < samples; ++i) {
-      // Use the linear interpolation that I also use in Buffer::Get().
-      double position = i * sample_rate_ratio;
-      // std::min is just to make sure FP math doesn't push us past the end of the buffer.
-      int playback_start = std::min((int) trunc(position), audio_file->getNumSamplesPerChannel() - 1);
-      int playback_end = trunc(playback_start + 1);
-      if (playback_end >= audio_file->getNumSamplesPerChannel()) {
-        playback_end = 0;
-      }
-
-      float start_fraction = position - playback_start;
-      new_left_array[i] = 10.0 * (audio_file->samples[0][playback_start] * (1.0 - start_fraction) +
-        audio_file->samples[0][playback_end] * (start_fraction));
-      if (file_is_mono) {
-        new_right_array[i] = new_left_array[i];
-      } else {
-        new_right_array[i] = 10.0 * (audio_file->samples[1][playback_start] * (1.0 - start_fraction) +
-          audio_file->samples[1][playback_end] * (start_fraction));
-      }
-    }
-    // Buffer is unavailable during this interval.
-    buffer->length = 0;
-    buffer->seconds = 0;
-
-    if (buffer->left_array != nullptr) {
-      delete buffer->left_array;
-    }
-    buffer->left_array = new_left_array;
-    if (buffer->right_array != nullptr) {
-      delete buffer->right_array;
-    }
-    buffer->right_array = new_right_array;
-
-    buffer->length = samples;
-    buffer->seconds = audio_file->getLengthInSeconds();
   }
 
   void RefreshWaveform(std::shared_ptr<Buffer> buffer) {
@@ -194,13 +212,34 @@ struct WorkThread {
 	        }
         }
 
-        if (initiate_file_load_fill) {
-          initiate_file_load_fill = false;
-          FileLoadFill(buffer);
-          AudioFile<float>* temp = audio_file;
-          audio_file = nullptr;
-          delete temp;
-        }
+        if (prepare_buffer_queue->tasks.size() > 0) {
+          BufferTask* task;
+          while (prepare_buffer_queue->tasks.pop(task) && !shutdown) {
+            switch (task->type) {
+              case BufferTask::REPLACE_AUDIO: {
+                // Buffer is unavailable during this interval.
+                buffer->length = 0;
+                buffer->seconds = 0.0;
+                // And mark every sector dirty.
+                buffer->full_scan = true;
+
+                if (buffer->left_array != nullptr) {
+                  delete buffer->left_array;
+                }
+                buffer->left_array = task->new_left_array;
+                if (buffer->right_array != nullptr) {
+                  delete buffer->right_array;
+                }
+                buffer->right_array = task->new_right_array;
+
+                buffer->length = task->sample_count;
+                buffer->seconds = task->seconds;
+                delete task;
+              }
+              break;
+            }
+          }
+        } 
 
         if (initiateFill) {
           initiateFill = false;
@@ -274,33 +313,38 @@ enum FileLoadingStatus {
 // All mistakes are mine.
 // TODO: honestly, Module should be putting messages onto a queue instead of
 // directly changing internal variables here.
-struct FileSystemThread {
+struct PrepareThread {
   bool shutdown;
+  ModuleToPrepareQueue* module_file_queue;
+  PrepareToBufferQueue* prepare_buffer_queue;
+
+  float sample_rate;
 
   // For the loading directory.
   std::vector<std::string>* loadable_files = nullptr;
   std::string load_folder;
   bool load_folder_initiated = false;
 
-  // For loading a file.
-  std::string file_to_load;
-  bool load_file_initiated = false;
-  AudioFile<float>* audio_file;
-
   // Indicator to UI that File I/O is happening.
   bool busy;
   // Indicator to module that the AudioFile has been filled.
   FileLoadingStatus file_load_status;
 
-  FileSystemThread() {
+  PrepareThread(ModuleToPrepareQueue* module_file_queue,
+                PrepareToBufferQueue* prepare_buffer_queue) {
+    this->module_file_queue = module_file_queue;
+    this->prepare_buffer_queue = prepare_buffer_queue;
     shutdown = false;
     busy = false;
     file_load_status = NOT_LOADING;
-    load_file_initiated = false;
   }
 
   void Halt() {
     shutdown = true;
+  }
+
+  void SetRate(float rate) {
+    sample_rate = rate;
   }
 
   void InitiateDirectoryRead(const std::string& load_folder_name,
@@ -331,35 +375,96 @@ struct FileSystemThread {
 		}
   }
 
-  void InitiateFileLoad(const std::string& load_folder_name,
-                        const std::string& loaded_file,
-                        AudioFile<float>* new_audio_file) {
-    if (load_file_initiated) {  // Already loading a file! TODO: find way to cancel it.
-      WARN("InitiateFileLoad() called when already loading file! Ignoring.");
-    } else {
-      audio_file = new_audio_file;
-      file_to_load = system::join(load_folder_name, loaded_file);
-      load_file_initiated = true;
-      file_load_status = LOADING_NOW;
+  void ConvertFileToSamples(PrepareTask* task) {
+    assert(task->type == PrepareTask::LOAD_FILE);
+    // One goal is to minimize the amount of downtime for the buffer,
+    // since the AudioFile -> Buffer process is time consuming for large files.
+    // So the conversion happens before we swap in the memory.
+    int samples = std::round(task->audio_file->getLengthInSeconds() * sample_rate);
+    int file_samples = task->audio_file->getNumSamplesPerChannel();
+    float* new_left_array = new float[samples];
+    float* new_right_array = new float[samples];
+
+    // Now fill from the audio_file. Transforms we need to apply are:
+    // * Sample rate may be different from the file and VCV.
+    // * We typically range from -10.0 to 10.0, AudioFile ranges from -1.0 to 1.0.
+    // * File might have been in mono. The norm seems to be to put a mono signal 
+    //   on both channels.
+    bool file_is_mono = task->audio_file->getNumChannels() == 1;
+    // TODO: put in an optimization if sample rates are the same. Less math to do.
+    double sample_rate_ratio = 1.0 * task->audio_file->getSampleRate() / sample_rate;
+    // This can take a while; definitely let a Halt() call interrupt it.
+    for (int i = 0; !shutdown && i < samples; ++i) {
+      // Use the linear interpolation that I also use in Buffer::Get().
+      double position = i * sample_rate_ratio;
+      // std::min is just to make sure FP math doesn't push us past the end of the buffer.
+      int playback_start = std::min((int) trunc(position), file_samples - 1);
+      int playback_end = trunc(playback_start + 1);
+      if (playback_end >= file_samples) {
+        playback_end = 0;
+      }
+
+      float start_fraction = position - playback_start;
+      new_left_array[i] = 10.0 *
+       (task->audio_file->samples[0][playback_start] * (1.0 - start_fraction) +
+        task->audio_file->samples[0][playback_end] * (start_fraction));
+      if (file_is_mono) {
+        new_right_array[i] = new_left_array[i];
+      } else {
+        new_right_array[i] = 10.0 * 
+         (task->audio_file->samples[1][playback_start] * (1.0 - start_fraction) +
+          task->audio_file->samples[1][playback_end] * (start_fraction));
+      }
     }
-  }
+    task->new_left_array = new_left_array;
+    task->new_right_array = new_right_array;
+  }  
 
   void Work() {
     while (!shutdown) {
+      if (module_file_queue->tasks.size() > 0) {
+        PrepareTask* task;
+        while (module_file_queue->tasks.pop(task) && !shutdown) {
+          switch (task->type) {
+            case PrepareTask::LOAD_FILE: {
+              // WARN("Starting load of %s", task->str1.c_str());
+              busy = true;
+              // SLOW: this call can take many seconds.
+              bool worked = task->audio_file->load(system::join(task->str2, task->str1));
+              busy = false;
+              // WARN("Completed load of %s", task->str1.c_str());             
+              // WARN("samples = %d, seconds = %f", audio_file->getNumSamplesPerChannel(), audio_file->getLengthInSeconds());
+              // WARN("sample rate = %d", audio_file->getSampleRate());
 
-      if (load_file_initiated) {
-        busy = true;
-        // WARN("Starting load of %s", file_to_load.c_str());
-        bool worked = audio_file->load(file_to_load);
-        // WARN("Completed load of %s", file_to_load.c_str());
-        
-        // WARN("samples = %d, seconds = %f", audio_file->getNumSamplesPerChannel(), audio_file->getLengthInSeconds());
-        // WARN("sample rate = %d", audio_file->getSampleRate());
-        load_file_initiated = false;
-        busy = false;
-        file_load_status = worked ? LOADED_CORRECTLY : LOAD_FAILED;
-        // TODO: detect failed load and explain. Try renaming a bogus file to .wav.
-      }
+              // If worked, need to fill buffer.
+              if (worked) {
+                // This part can also be slow, since it walks over every sample.
+                busy = true;
+                ConvertFileToSamples(task);
+                busy = false;
+                // Done with the audio_file.
+                int sample_count = task->audio_file->getNumSamplesPerChannel();
+                double seconds = task->audio_file->getLengthInSeconds();
+                AudioFile<float>* temp = task->audio_file;
+                task->audio_file = nullptr;
+                delete temp;
+
+                // Send task to BufferChangeThread.
+                BufferTask* replace_task = BufferTask::ReplaceTask(
+                  task->new_left_array, task->new_right_array, sample_count, seconds);  
+                if (!prepare_buffer_queue->tasks.push(replace_task)) {
+                  delete replace_task;  // Queue is full, shed load.
+                }
+
+              } else {
+                // TODO: send text saying why it failed to output port.
+              }
+              delete task;
+            }
+            break;
+          }
+        }
+      } 
 
       if (load_folder_initiated) {
         busy = true;
@@ -370,7 +475,7 @@ struct FileSystemThread {
         load_folder_initiated = false;
       }
       // It seems like I need a tiny sleep here to allow join() to work
-      // on this thread. I make this sleep longer than for WorkThread, since file system
+      // on this thread. I make this sleep longer than for BufferChangeThread, since file system
       // activity is so slow that we can ease up on the CPU.
       if (!shutdown) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -410,11 +515,17 @@ struct Memory : BufferedModule {
   bool init_in_progress = false;
 
   // Threads and workers for doing long tasks
-  WorkThread* worker;
-  std::thread* work_thread;
-  // For tasks that involve the file system.
-  FileSystemThread* file_system_worker;
-  std::thread* file_system_thread;
+  BufferChangeThread* buffer_change_worker;
+  std::thread* buffer_change_thread;
+  // For tasks that don't directly change the Buffer, but might send changes to the
+  // buffer_change_thread. Especially important for changes that take long periods of time.
+  PrepareThread* prepare_worker;
+  std::thread* prepare_thread;
+
+  // lock-free queues for coordinating actions between the threads.
+  WidgetToModuleQueue widget_module_queue;
+  ModuleToPrepareQueue module_prepare_queue;
+  PrepareToBufferQueue prepare_buffer_queue;
 
   // For wiping contents.
   dsp::SchmittTrigger wipe_trigger;
@@ -427,8 +538,6 @@ struct Memory : BufferedModule {
   std::vector<std::string> loadable_files;
 
   std::string loaded_file;
-  bool refresh_load_file;
-  AudioFile<float>* audio_file = nullptr;
 
   // Listening to the Tipsy connection for loading files.
   unsigned char load_recv_buffer[recvBufferSize];
@@ -454,40 +563,39 @@ struct Memory : BufferedModule {
 		configOutput(TIPSY_LOGGING_OUTPUT, "Logging of File events; connect to a TTY TEXT input");
 
     refresh_loadable_files = false;  // Don't refresh until we have a path.
-    refresh_load_file = false;
 
     // Setting an initial Buffer object.
     std::shared_ptr<Buffer> temp = std::make_shared<Buffer>();
     (*getHandle()).buffer.swap(temp);
 
-    worker = new WorkThread(getHandle());
-    work_thread = new std::thread(&WorkThread::Work, worker);
-    file_system_worker = new FileSystemThread();
-    file_system_thread = new std::thread(&FileSystemThread::Work, file_system_worker);
+    buffer_change_worker = new BufferChangeThread(getHandle(), &prepare_buffer_queue);
+    buffer_change_thread = new std::thread(&BufferChangeThread::Work, buffer_change_worker);
+    prepare_worker = new PrepareThread(&module_prepare_queue, &prepare_buffer_queue);
+    prepare_thread = new std::thread(&PrepareThread::Work, prepare_worker);
 
     load_decoder.provideDataBuffer(load_recv_buffer, recvBufferSize);
   }
 
   ~Memory() {
     (*getHandle()).buffer.reset();
-    if (worker != nullptr) {
-      worker->Halt();
-      worker->initiateFill = false;
-      worker->initiateWipe = false;
-      if (work_thread != nullptr) {
-        work_thread->join();
-        delete work_thread;
+    if (buffer_change_worker != nullptr) {
+      buffer_change_worker->Halt();
+      buffer_change_worker->initiateFill = false;
+      buffer_change_worker->initiateWipe = false;
+      if (buffer_change_thread != nullptr) {
+        buffer_change_thread->join();
+        delete buffer_change_thread;
       }
-      delete worker;
+      delete buffer_change_worker;
     }
 
-    if (file_system_worker != nullptr) {
-      file_system_worker->Halt();
-      if (file_system_thread != nullptr) {
-        file_system_thread->join();
-        delete file_system_thread;
+    if (prepare_worker != nullptr) {
+      prepare_worker->Halt();
+      if (prepare_thread != nullptr) {
+        prepare_thread->join();
+        delete prepare_thread;
       }
-      delete file_system_worker;
+      delete prepare_worker;
     }
   }
 
@@ -528,15 +636,17 @@ struct Memory : BufferedModule {
         // Confirm that we can read the sample rate before starting a fill.
         // Sometimes during startup, sampleRate is still zero.
         if (args.sampleRate > 1.0) {
-          worker->SetRate(args.sampleRate);
-          worker->InitiateFill(params[SECONDS_PARAM].getValue());
+          buffer_change_worker->SetRate(args.sampleRate);
+          prepare_worker->SetRate(args.sampleRate);
+
+          buffer_change_worker->InitiateFill(params[SECONDS_PARAM].getValue());
           // TODO: Should the worker thread be part of the Buffer itself?
           // Should it just be waiting for the sample rate to be filled, and then
           // start itself?
           init_in_progress = true;
         }
       } else {
-        if (!worker->running) {
+        if (!buffer_change_worker->running) {
           // Filling + wiping done.
           init_in_progress = false;
           buffer_initialized = true;
@@ -558,7 +668,7 @@ struct Memory : BufferedModule {
             std::strcmp(load_decoder.getMimeType(), "text/plain") == 0) {
           std::string next(std::string((const char *) load_recv_buffer));
           if (next.size() > 0) {
-            if (next[0] == '#') {
+            if (next[0] == '#' && loadable_files.size() > 0) {
               // Do special things when of the form #NNNN 
               size_t start_pos = next.find_first_of("0123456789"); // Find the first digit
               if (start_pos == std::string::npos && loadable_files.size() > 0) {
@@ -583,47 +693,58 @@ struct Memory : BufferedModule {
                   // Now pick the relevant file in the directory.
                   // First make sure in the range.
                   parsed_int = parsed_int % loadable_files.size();
-                  loaded_file = loadable_files[parsed_int];
-                  refresh_load_file = true;
+
+                  // OK, so this isn't the precisely correct queue, but we check it just below,
+                  // so more clean to do this.
+                  PrepareTask* task = PrepareTask::LoadFileTask(loadable_files[parsed_int], load_folder_name);
+                  if (!widget_module_queue.tasks.push(task)) {
+                    delete task;
+                  }
                 }
               }
             } else {
-            // TODO: ensure that it's in the directory we're reading from,
-            //   as long as this isn't a subpath (e.g., foo/bar.wav).
-            // BUG: should not clear the buffer when file not found.
-              loaded_file = next;
-              refresh_load_file = true;
+              // Not a number, just a name.
+              // TODO: ensure that it's in the directory we're reading from,
+              //   as long as this isn't a subpath (e.g., foo/bar.wav).
+              // BUG: should not clear the buffer when file not found.
+              // OK, so this isn't the precisely correct queue, but we check it just below,
+              // so more clean to do this.
+              PrepareTask* task = PrepareTask::LoadFileTask(next, load_folder_name);
+              if (!widget_module_queue.tasks.push(task)) {
+                delete task;
+              }
             }
           }
         }
       }
 
-      // Make sure we're not dealing with a previous load before starting a new one.
-      if (refresh_load_file && file_system_worker->file_load_status == NOT_LOADING && audio_file == nullptr) {
-        refresh_load_file = false;
-        audio_file = new AudioFile<float>;
-        file_system_worker->InitiateFileLoad(load_folder_name, loaded_file, audio_file);
-      }
-
-      if (file_system_worker->file_load_status == LOAD_FAILED) {
-        // TODO: send explanation to the output port.
-        file_system_worker->file_load_status = NOT_LOADING;
-        delete audio_file;
-        audio_file = nullptr;
-        file_system_worker->file_load_status = NOT_LOADING;
-      }
-
-      if (file_system_worker->file_load_status == LOADED_CORRECTLY) {
-        // Tell the main worker to replace current contents with audio_file.
-        worker->InitiateFileLoadFill(audio_file);
-        audio_file = nullptr;  // We've passed it to worker, who will delete.
-        // TODO: Should really be a shared_ptr!
-        file_system_worker->file_load_status = NOT_LOADING;
-        // TODO: tell output port we succeeded.
-      }
+      // Deal with tasks from the Widget (aka, the menu).
+      if (widget_module_queue.tasks.size() > 0) {
+        PrepareTask* task;
+        while (widget_module_queue.tasks.pop(task)) {
+          switch (task->type) {
+            case PrepareTask::LOAD_FILE: {
+              // Make sure we're not dealing with a previous load before starting a new one.
+              // TODO: in tasks system, this check will be unneeded, as we're just adding to a queue.
+              // TODO: though should make sure that we actually can interrupt a file load with a new load,
+              // as the Tipsy automation means we could receive load requests far faster than we
+              // can process them. Best to not get stuck waiting for a really slow network file
+              // to load.
+              // This conception of "loaded_file" makes less sense.
+              // TODO: fix this.
+              loaded_file = task->str1;
+              task->audio_file = new AudioFile<float>;
+              if (!module_prepare_queue.tasks.push(task)) {
+                delete task;
+              }
+            }
+            break;
+          }
+        }
+      } 
 
       if (refresh_loadable_files) {
-        file_system_worker->InitiateDirectoryRead(load_folder_name, &loadable_files);
+        prepare_worker->InitiateDirectoryRead(load_folder_name, &loadable_files);
         refresh_loadable_files = false;
       }
 
@@ -729,7 +850,7 @@ struct Memory : BufferedModule {
         if (wipe) {
           // TODO: Decide (or menu options) to pause all recording and playing
           // during a wipe? Or at least fade the players?
-          worker->initiateWipe = true;
+          buffer_change_worker->initiateWipe = true;
         }
       }
       // Set lights.
@@ -737,7 +858,7 @@ struct Memory : BufferedModule {
         wipe || wipe_light_countdown > 0 ? 1.0f : 0.0f);
       lights[RESET_BUTTON_LIGHT].setBrightness(reset ? 1.0f : 0.0f);
       lights[FILE_IO_LIGHT].setBrightness(
-        file_system_worker && file_system_worker->busy ? 1.0f : 0.0f);
+        prepare_worker && prepare_worker->busy ? 1.0f : 0.0f);
     }
   }
 
@@ -841,8 +962,12 @@ struct MemoryWidget : ModuleWidget {
               for (const std::string& name : module->loadable_files) {
                 menu->addChild(createCheckMenuItem(name, "",
                   [=]() {return name.compare(module->loaded_file) == 0;},
-                  [=]() {module->loaded_file = name;
-                          module->refresh_load_file = true;}
+                  [=]() {
+                    PrepareTask* task = PrepareTask::LoadFileTask(name, module->load_folder_name);
+                    if (!module->widget_module_queue.tasks.push(task)) {
+                      delete task;
+                    }
+                  }
                 ));
               }
           }

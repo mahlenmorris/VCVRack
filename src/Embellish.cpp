@@ -452,16 +452,6 @@ struct EmbellishWidget : ModuleWidget {
 		addChild(connect_light);
 	}
 
-/*
-  void step() override {
-		// Kinda silly to do this every step(), but checking whether or not
-		// we should copy the value would take longer, I suspect.
-		if (module) {
-		  adjust_slider->getLight()->baseColors[0] = dynamic_cast<PositionedModule*>(module)->line_record.color;
-		}
-		ModuleWidget::step();
-	}
-*/
 };
 
 
