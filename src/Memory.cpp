@@ -45,24 +45,26 @@ struct PrepareTask {
   };
   Type type;
   std::string str1, str2;
-  // TODO: I question the need to put these into this object.
-  AudioFile<float>* audio_file;
   float* new_left_array;
   float* new_right_array;
+  std::vector<std::string>* loadable_files;
   
-  PrepareTask(const Type the_type) : type{the_type}, audio_file{nullptr},
-                              new_left_array{nullptr}, new_right_array{nullptr} {}
+  PrepareTask(const Type the_type) : type{the_type},
+      new_left_array{nullptr}, new_right_array{nullptr}, loadable_files{nullptr} {}
 
   ~PrepareTask() {
-    if (audio_file != nullptr) {
-      delete audio_file;
-    }
   }
 
   static PrepareTask* LoadFileTask(const std::string& name, const std::string& directory) {
     PrepareTask* task = new PrepareTask(LOAD_FILE);
     task->str1 = name;
     task->str2 = directory;
+    return task;
+  }
+
+  static PrepareTask* LoadDirectoryTask(const std::string& directory) {
+    PrepareTask* task = new PrepareTask(LOAD_DIRECTORY_SET);
+    task->str1 = directory;
     return task;
   }
 };
@@ -300,13 +302,6 @@ struct BufferChangeThread {
   }
 };
 
-enum FileLoadingStatus {
-	NOT_LOADING,
-	LOADING_NOW,
-  LOADED_CORRECTLY,
-  LOAD_FAILED
-};
-
 // Class devoted to handling the very lengthy (compared to single sample)
 // process of dealing with file systems.
 // Much of the logic is directly lifted from voxglitch's modules.
@@ -320,15 +315,8 @@ struct PrepareThread {
 
   float sample_rate;
 
-  // For the loading directory.
-  std::vector<std::string>* loadable_files = nullptr;
-  std::string load_folder;
-  bool load_folder_initiated = false;
-
   // Indicator to UI that File I/O is happening.
   bool busy;
-  // Indicator to module that the AudioFile has been filled.
-  FileLoadingStatus file_load_status;
 
   PrepareThread(ModuleToPrepareQueue* module_file_queue,
                 PrepareToBufferQueue* prepare_buffer_queue) {
@@ -336,7 +324,6 @@ struct PrepareThread {
     this->prepare_buffer_queue = prepare_buffer_queue;
     shutdown = false;
     busy = false;
-    file_load_status = NOT_LOADING;
   }
 
   void Halt() {
@@ -347,20 +334,13 @@ struct PrepareThread {
     sample_rate = rate;
   }
 
-  void InitiateDirectoryRead(const std::string& load_folder_name,
-                          std::vector<std::string>* the_loadable_files) {
-    loadable_files = the_loadable_files;
-    load_folder = load_folder_name;
-    load_folder_initiated = true;
-  }
-
-  void DoDirectoryRead() {
+  void DoDirectoryRead(const std::string& load_folder, std::vector<std::string>* loadable_files) {
     // To make it more obvious that we are reading contents in, we eliminate the current contents.
     if (!loadable_files->empty()) {
       loadable_files->clear();
-      // TODO: set something so that menu shows "loading..." indicator.
     }
 
+    busy = true;
 		std::vector<std::string> dirList = system::getEntries(load_folder.c_str());
 
 		// "Sort the vector.  This is in response to a user who's samples were being
@@ -373,15 +353,16 @@ struct PrepareThread {
 				loadable_files->push_back(system::getFilename(path));
 			}
 		}
+    busy = false;
   }
 
-  void ConvertFileToSamples(PrepareTask* task) {
+  void ConvertFileToSamples(PrepareTask* task, AudioFile<float>* audio_file) {
     assert(task->type == PrepareTask::LOAD_FILE);
     // One goal is to minimize the amount of downtime for the buffer,
     // since the AudioFile -> Buffer process is time consuming for large files.
     // So the conversion happens before we swap in the memory.
-    int samples = std::round(task->audio_file->getLengthInSeconds() * sample_rate);
-    int file_samples = task->audio_file->getNumSamplesPerChannel();
+    int samples = std::round(audio_file->getLengthInSeconds() * sample_rate);
+    int file_samples = audio_file->getNumSamplesPerChannel();
     float* new_left_array = new float[samples];
     float* new_right_array = new float[samples];
 
@@ -390,9 +371,9 @@ struct PrepareThread {
     // * We typically range from -10.0 to 10.0, AudioFile ranges from -1.0 to 1.0.
     // * File might have been in mono. The norm seems to be to put a mono signal 
     //   on both channels.
-    bool file_is_mono = task->audio_file->getNumChannels() == 1;
+    bool file_is_mono = audio_file->getNumChannels() == 1;
     // TODO: put in an optimization if sample rates are the same. Less math to do.
-    double sample_rate_ratio = 1.0 * task->audio_file->getSampleRate() / sample_rate;
+    double sample_rate_ratio = 1.0 * audio_file->getSampleRate() / sample_rate;
     // This can take a while; definitely let a Halt() call interrupt it.
     for (int i = 0; !shutdown && i < samples; ++i) {
       // Use the linear interpolation that I also use in Buffer::Get().
@@ -406,14 +387,14 @@ struct PrepareThread {
 
       float start_fraction = position - playback_start;
       new_left_array[i] = 10.0 *
-       (task->audio_file->samples[0][playback_start] * (1.0 - start_fraction) +
-        task->audio_file->samples[0][playback_end] * (start_fraction));
+       (audio_file->samples[0][playback_start] * (1.0 - start_fraction) +
+        audio_file->samples[0][playback_end] * (start_fraction));
       if (file_is_mono) {
         new_right_array[i] = new_left_array[i];
       } else {
         new_right_array[i] = 10.0 * 
-         (task->audio_file->samples[1][playback_start] * (1.0 - start_fraction) +
-          task->audio_file->samples[1][playback_end] * (start_fraction));
+         (audio_file->samples[1][playback_start] * (1.0 - start_fraction) +
+          audio_file->samples[1][playback_end] * (start_fraction));
       }
     }
     task->new_left_array = new_left_array;
@@ -429,8 +410,10 @@ struct PrepareThread {
             case PrepareTask::LOAD_FILE: {
               // WARN("Starting load of %s", task->str1.c_str());
               busy = true;
+              AudioFile<float>* audio_file = new AudioFile<float>;
+
               // SLOW: this call can take many seconds.
-              bool worked = task->audio_file->load(system::join(task->str2, task->str1));
+              bool worked = audio_file->load(system::join(task->str2, task->str1));
               busy = false;
               // WARN("Completed load of %s", task->str1.c_str());             
               // WARN("samples = %d, seconds = %f", audio_file->getNumSamplesPerChannel(), audio_file->getLengthInSeconds());
@@ -440,14 +423,12 @@ struct PrepareThread {
               if (worked) {
                 // This part can also be slow, since it walks over every sample.
                 busy = true;
-                ConvertFileToSamples(task);
+                ConvertFileToSamples(task, audio_file);
                 busy = false;
                 // Done with the audio_file.
-                int sample_count = task->audio_file->getNumSamplesPerChannel();
-                double seconds = task->audio_file->getLengthInSeconds();
-                AudioFile<float>* temp = task->audio_file;
-                task->audio_file = nullptr;
-                delete temp;
+                int sample_count = audio_file->getNumSamplesPerChannel();
+                double seconds = audio_file->getLengthInSeconds();
+                delete audio_file;
 
                 // Send task to BufferChangeThread.
                 BufferTask* replace_task = BufferTask::ReplaceTask(
@@ -462,18 +443,18 @@ struct PrepareThread {
               delete task;
             }
             break;
+
+            case PrepareTask::LOAD_DIRECTORY_SET: {
+              busy = true;
+              DoDirectoryRead(task->str1, task->loadable_files);
+              busy = false;
+              delete task;
+            }
+            break;
           }
         }
       } 
 
-      if (load_folder_initiated) {
-        busy = true;
-        DoDirectoryRead();
-        busy = false;
-
-        loadable_files = nullptr;
-        load_folder_initiated = false;
-      }
       // It seems like I need a tiny sleep here to allow join() to work
       // on this thread. I make this sleep longer than for BufferChangeThread, since file system
       // activity is so slow that we can ease up on the CPU.
@@ -534,7 +515,6 @@ struct Memory : BufferedModule {
 
   // For Loading and Saving contents.
   std::string load_folder_name;
-  bool refresh_loadable_files;
   std::vector<std::string> loadable_files;
 
   std::string loaded_file;
@@ -561,8 +541,6 @@ struct Memory : BufferedModule {
 		configInput(TIPSY_SAVE_INPUT, "Tipsy text input to save contents to named file");
 		configOutput(SAVE_TRIGGER_OUTPUT, "Sends a trigger when file save has completed");
 		configOutput(TIPSY_LOGGING_OUTPUT, "Logging of File events; connect to a TTY TEXT input");
-
-    refresh_loadable_files = false;  // Don't refresh until we have a path.
 
     // Setting an initial Buffer object.
     std::shared_ptr<Buffer> temp = std::make_shared<Buffer>();
@@ -612,7 +590,10 @@ struct Memory : BufferedModule {
      json_t* load_folderJ = json_object_get(rootJ, "load_folder");
     if (load_folderJ) {
       load_folder_name.assign(json_string_value(load_folderJ));
-      refresh_loadable_files = true;
+      PrepareTask* task = PrepareTask::LoadDirectoryTask(load_folder_name);
+      if (!widget_module_queue.tasks.push(task)) {
+        delete task;
+      }
     }
   }
 
@@ -733,7 +714,14 @@ struct Memory : BufferedModule {
               // This conception of "loaded_file" makes less sense.
               // TODO: fix this.
               loaded_file = task->str1;
-              task->audio_file = new AudioFile<float>;
+              if (!module_prepare_queue.tasks.push(task)) {
+                delete task;
+              }
+            }
+            break;
+
+            case PrepareTask::LOAD_DIRECTORY_SET: {
+              task->loadable_files = &loadable_files;
               if (!module_prepare_queue.tasks.push(task)) {
                 delete task;
               }
@@ -742,11 +730,6 @@ struct Memory : BufferedModule {
           }
         }
       } 
-
-      if (refresh_loadable_files) {
-        prepare_worker->InitiateDirectoryRead(load_folder_name, &loadable_files);
-        refresh_loadable_files = false;
-      }
 
       // Periodically assign colors to each connected module's light.
       // We also take this opportunity to add any unknown recording heads to
@@ -886,10 +869,12 @@ struct MenuItemPickFolder : MenuItem
   {
     std::string filename = module->selectFolder();
     if (filename != "") {
-        // We set this even if it's the same path as before. This gives the user a gesture to update
-        // the list.
-        module->load_folder_name = filename;
-        module->refresh_loadable_files = true;
+      // We set this even if it's the same path as before. This gives the user a gesture to update
+      // the list.
+      PrepareTask* task = PrepareTask::LoadDirectoryTask(filename);
+      if (!module->widget_module_queue.tasks.push(task)) {
+        delete task;
+      }
     }
   }
 };
