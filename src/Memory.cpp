@@ -33,17 +33,28 @@ static constexpr size_t recvBufferSize{1024 * 64};
 
 ///////////////////////////////////////////////////////////////
 //
-// The various threads of a Memory object need to assign tasks to each other.
+// There are many threads in a Memory object which need to assign tasks to each other.
+// They are:
+// * The module itself (i.e., process()).
+// * The UI Widget (events coming from the user).
+// * The Prepare thread, which does long tasks like preparing audio files.
+// * The BufferUpdate thread, for tasks that require changing the buffer. 
+
 // These are the structs for doing that. Each struct corresponds to a single
 // NoLockQueue, with a single writer and reader.
 // All queues are owned by the module.
 
+// First, the Tasks that get passed from thread to thread.
+
 struct PrepareTask {
   enum Type {
     LOAD_DIRECTORY_SET,  // str1 is the directory name.
-    LOAD_FILE            // str1 is the selected file name, str2 is the directory name.
+    LOAD_FILE,           // str1 is the selected file name, str2 is the directory name.
+    // WIPE and RESET are really only different in how the length is set.
+    MAKE_BLANK           // seconds is length in seconds
   };
   Type type;
+  double seconds;
   std::string str1, str2;
   float* new_left_array;
   float* new_right_array;
@@ -65,6 +76,12 @@ struct PrepareTask {
   static PrepareTask* LoadDirectoryTask(const std::string& directory) {
     PrepareTask* task = new PrepareTask(LOAD_DIRECTORY_SET);
     task->str1 = directory;
+    return task;
+  }
+
+  static PrepareTask* MakeBlank(double seconds) {
+    PrepareTask* task = new PrepareTask(MAKE_BLANK);
+    task->seconds = seconds;
     return task;
   }
 };
@@ -113,26 +130,16 @@ struct PrepareToBufferQueue {
   SpScLockFreeQueue<BufferTask*, 10> tasks;
 };
 
-// Class devoted to handling the lengthy (compared to single sample)
-// process of filling or replacing the current Buffer.
-// TODO: honestly, Module should be putting messages onto a queue instead of
-// directly changing internal variables here.
+// Class devoted to handling things that replace or update the Buffer,
+// apart from simple writes.
 struct BufferChangeThread {
   BufferHandle* handle;
   PrepareToBufferQueue* prepare_buffer_queue;
 
-  float sample_rate;
   bool shutdown;
-  bool initiateFill;
-  int seconds;
-  bool initiateWipe;
-  bool running;  // TRUE if still wiping or initializing.
   
   BufferChangeThread(BufferHandle* the_handle, PrepareToBufferQueue* prepare_buffer_queue) :
       handle{the_handle}, prepare_buffer_queue{prepare_buffer_queue} {
-    running = false;
-    initiateFill = false;
-    initiateWipe = false;
     shutdown = false;
   }
 
@@ -140,15 +147,7 @@ struct BufferChangeThread {
     shutdown = true;
   }
 
-  void SetRate(float rate) {
-    sample_rate = rate;
-  }
-
-  void InitiateFill(int new_seconds) {
-    seconds = new_seconds;
-    initiateFill = true;
-  }
-
+  // Updates the "waveforms" that Depict shows.
   void RefreshWaveform(std::shared_ptr<Buffer> buffer) {
     int sector_size = buffer->length / WAVEFORM_SIZE;
     float peak_value = 0.0f;
@@ -172,7 +171,6 @@ struct BufferChangeThread {
         }
         buffer->waveform.points[p][0] = left_amplitude;
         buffer->waveform.points[p][1] = right_amplitude;
-        // WARN("%d: left = %f, right = %f", p, left_amplitude, right_amplitude);
 
         // Not stricly speaking correct (the sector may have been written
         // to during the scan). But correctness is not critical, and the new
@@ -243,50 +241,6 @@ struct BufferChangeThread {
           }
         } 
 
-        if (initiateFill) {
-          initiateFill = false;
-          running = true;
-          // Invalidate existing contents, if any.
-          buffer->length = 0;
-          buffer->seconds = 0;
-
-          int samples = std::round(seconds * sample_rate);
-          float* new_left_array = new float[samples];
-          float* new_right_array = new float[samples];
-
-          // Note that this data is still random. Needs to be wiped!
-
-          // And mark every sector dirty.
-          buffer->full_scan = true;
-
-          if (buffer->left_array != nullptr) {
-            delete buffer->left_array;
-          }
-          buffer->left_array = new_left_array;
-          if (buffer->right_array != nullptr) {
-            delete buffer->right_array;
-          }
-          buffer->right_array = new_right_array;
-
-          buffer->length = samples;
-          buffer->seconds = seconds;
-          running = false;
-          // A fill always prompts a wipe, let's just do that here.
-          initiateWipe = true;
-        }
-        if (initiateWipe) {
-          running = true;
-          initiateWipe = false;
-          for (int i = 0; i < buffer->length && !shutdown; ++i) {
-            buffer->left_array[i] = 0.0f;
-            buffer->right_array[i] = 0.0f;
-          }
-
-          // And mark every sector dirty.
-          buffer->full_scan = true;
-          running = false;
-        }
-
         // Keep this after any wipe or major change we do to the buffer.
         if (buffer->freshen_waveform) {
           RefreshWaveform(buffer);
@@ -300,14 +254,12 @@ struct BufferChangeThread {
 			}
     }
   }
-};
+};  // BufferChangeThread.
 
 // Class devoted to handling the very lengthy (compared to single sample)
 // process of dealing with file systems.
 // Much of the logic is directly lifted from voxglitch's modules.
 // All mistakes are mine.
-// TODO: honestly, Module should be putting messages onto a queue instead of
-// directly changing internal variables here.
 struct PrepareThread {
   bool shutdown;
   ModuleToPrepareQueue* module_file_queue;
@@ -434,6 +386,8 @@ struct PrepareThread {
                 BufferTask* replace_task = BufferTask::ReplaceTask(
                   task->new_left_array, task->new_right_array, sample_count, seconds);  
                 if (!prepare_buffer_queue->tasks.push(replace_task)) {
+                  delete task->new_left_array;
+                  delete task->new_right_array;
                   delete replace_task;  // Queue is full, shed load.
                 }
 
@@ -451,6 +405,27 @@ struct PrepareThread {
               delete task;
             }
             break;
+
+            case PrepareTask::MAKE_BLANK: {
+              assert(sample_rate > 1.0);
+              int sample_count = std::round(task->seconds * sample_rate);
+              float* new_left_array = new float[sample_count];
+              float* new_right_array = new float[sample_count];
+
+              for (int i = 0; i < sample_count && !shutdown; ++i) {
+                new_left_array[i] = 0.0f;
+                new_right_array[i] = 0.0f;
+              }
+
+              // Send task to BufferChangeThread.
+              BufferTask* replace_task = BufferTask::ReplaceTask(
+                new_left_array, new_right_array, sample_count, task->seconds);  
+              if (!prepare_buffer_queue->tasks.push(replace_task)) {
+                delete replace_task;  // Queue is full, shed load.
+              }
+              delete task;
+            }
+            break;
           }
         }
       } 
@@ -463,7 +438,7 @@ struct PrepareThread {
 			}
     }
   }
-};
+};  // PrepareThread.
 
 struct Memory : BufferedModule {
   enum ParamId {
@@ -491,7 +466,7 @@ struct Memory : BufferedModule {
     LIGHTS_LEN
   };
 
-  // Initialization happens on startup, but also during a reset.
+  // Initialization happens on startup.
   bool buffer_initialized = false;
   bool init_in_progress = false;
 
@@ -510,14 +485,19 @@ struct Memory : BufferedModule {
 
   // For wiping contents.
   dsp::SchmittTrigger wipe_trigger;
-  // Keeps lights on buttons lit long enough to see.
+  bool wipe_button_pressed = false;
+
+   // Keeps lights on buttons lit long enough to see.
   int wipe_light_countdown = 0;
+  int reset_light_countdown = 0;
 
+  // Make sure we only reset once when RESET button is pressed.
+  bool reset_button_pressed = false;
+  
   // For Loading and Saving contents.
-  std::string load_folder_name;
-  std::vector<std::string> loadable_files;
-
-  std::string loaded_file;
+  std::string load_folder_name;  // For menu to display.
+  std::vector<std::string> loadable_files;  // List found in menu.
+  std::string loaded_file;  // Checked item in menu.
 
   // Listening to the Tipsy connection for loading files.
   unsigned char load_recv_buffer[recvBufferSize];
@@ -555,18 +535,7 @@ struct Memory : BufferedModule {
   }
 
   ~Memory() {
-    (*getHandle()).buffer.reset();
-    if (buffer_change_worker != nullptr) {
-      buffer_change_worker->Halt();
-      buffer_change_worker->initiateFill = false;
-      buffer_change_worker->initiateWipe = false;
-      if (buffer_change_thread != nullptr) {
-        buffer_change_thread->join();
-        delete buffer_change_thread;
-      }
-      delete buffer_change_worker;
-    }
-
+    // Stop prepare_worker first, since it sends tasks to buffer_change.
     if (prepare_worker != nullptr) {
       prepare_worker->Halt();
       if (prepare_thread != nullptr) {
@@ -575,6 +544,16 @@ struct Memory : BufferedModule {
       }
       delete prepare_worker;
     }
+    (*getHandle()).buffer.reset();
+    if (buffer_change_worker != nullptr) {
+      buffer_change_worker->Halt();
+      if (buffer_change_thread != nullptr) {
+        buffer_change_thread->join();
+        delete buffer_change_thread;
+      }
+      delete buffer_change_worker;
+    }
+
   }
 
   // Save and retrieve menu choice(s).
@@ -613,34 +592,39 @@ struct Memory : BufferedModule {
     // We can't fill the buffer until process() is called, since we don't know
     // what the sample rate is.
     if (!buffer_initialized) {
+      // We don't pay any attention to the buttons, etc, until the buffer is initialized.
       if (!init_in_progress) {
         // Confirm that we can read the sample rate before starting a fill.
         // Sometimes during startup, sampleRate is still zero.
         if (args.sampleRate > 1.0) {
-          buffer_change_worker->SetRate(args.sampleRate);
           prepare_worker->SetRate(args.sampleRate);
-
-          buffer_change_worker->InitiateFill(params[SECONDS_PARAM].getValue());
-          // TODO: Should the worker thread be part of the Buffer itself?
-          // Should it just be waiting for the sample rate to be filled, and then
-          // start itself?
+          PrepareTask* task = PrepareTask::MakeBlank(params[SECONDS_PARAM].getValue());
+          if (!module_prepare_queue.tasks.push(task)) {
+            delete task;
+          }
           init_in_progress = true;
         }
       } else {
-        if (!buffer_change_worker->running) {
+        std::shared_ptr<Buffer> buffer = getHandle()->buffer;
+        if (buffer && buffer->IsValid()) {
           // Filling + wiping done.
           init_in_progress = false;
-          buffer_initialized = true;
+          buffer_initialized = true;  // Now we will never look at this section again.
         }
       }
     } else {
-      // We don't pay any attention to the buttons, etc, until the buffer is initialized.
-      // Some lights are lit by triggers; these enable them to be
+      // This is the post-initialization part of process().
+
+      // Some lights are lit by triggers or button presses; these enable them to be
       // lit long enough to be seen by humans.
       if (wipe_light_countdown > 0) {
         wipe_light_countdown--;
       }
+      if (reset_light_countdown > 0) {
+        reset_light_countdown--;
+      }
 
+      // Process text coming in via Tipsy ports.
       if (inputs[TIPSY_LOAD_INPUT].isConnected()) {
         auto decoder_status = load_decoder.readFloat(
             inputs[TIPSY_LOAD_INPUT].getVoltage());
@@ -687,7 +671,6 @@ struct Memory : BufferedModule {
               // Not a number, just a name.
               // TODO: ensure that it's in the directory we're reading from,
               //   as long as this isn't a subpath (e.g., foo/bar.wav).
-              // BUG: should not clear the buffer when file not found.
               // OK, so this isn't the precisely correct queue, but we check it just below,
               // so more clean to do this.
               PrepareTask* task = PrepareTask::LoadFileTask(next, load_folder_name);
@@ -699,7 +682,7 @@ struct Memory : BufferedModule {
         }
       }
 
-      // Deal with tasks from the Widget (aka, the menu).
+      // Deal with tasks from the Widget (aka, the menu) and from the Tipsy inputs.
       if (widget_module_queue.tasks.size() > 0) {
         PrepareTask* task;
         while (widget_module_queue.tasks.pop(task)) {
@@ -711,20 +694,28 @@ struct Memory : BufferedModule {
               // as the Tipsy automation means we could receive load requests far faster than we
               // can process them. Best to not get stuck waiting for a really slow network file
               // to load.
-              // This conception of "loaded_file" makes less sense.
-              // TODO: fix this.
-              loaded_file = task->str1;
+              if (!module_prepare_queue.tasks.push(task)) {
+                delete task;
+              } else {
+                // This conception of "loaded_file" makes less sense.
+                // TODO: fix this.
+                loaded_file = task->str1;
+              }
+            }
+            break;
+
+            case PrepareTask::LOAD_DIRECTORY_SET: {
+              load_folder_name = task->str1;
+              task->loadable_files = &loadable_files;
               if (!module_prepare_queue.tasks.push(task)) {
                 delete task;
               }
             }
             break;
 
-            case PrepareTask::LOAD_DIRECTORY_SET: {
-              task->loadable_files = &loadable_files;
-              if (!module_prepare_queue.tasks.push(task)) {
-                delete task;
-              }
+            case PrepareTask::MAKE_BLANK: {
+              WARN("There should not be a MAKE_BLANK task on the widget_module_queue!");
+              delete task;
             }
             break;
           }
@@ -812,53 +803,76 @@ struct Memory : BufferedModule {
       bool wipe_was_low = !wipe_trigger.isHigh();
       wipe_trigger.process(rescale(
           inputs[WIPE_TRIGGER_INPUT].getVoltage(), 0.1f, 2.0f, 0.0f, 1.0f));
-      if (wipe_was_low && wipe_trigger.isHigh()) {
-        // Flash the wpie light for a tenth of second.
+
+      bool wipe_clicked = false;
+      if ((params[WIPE_BUTTON_PARAM].getValue() > 0.1f)) {
+        if (!wipe_button_pressed) { 
+          wipe_button_pressed = true;
+          wipe_clicked = true;
+        }
+      } else {
+        wipe_button_pressed = false;
+      }
+      bool wipe = wipe_clicked || (wipe_was_low && wipe_trigger.isHigh());
+      if (wipe) {
+        // Flash the wipe light for a tenth of second.
         // Compute how many samples to show the light.
         wipe_light_countdown = std::floor(args.sampleRate / 10.0f);
       }
-      bool reset = (params[RESET_BUTTON_PARAM].getValue() > 0.1f);
-      // Note that we don't bother to set wipe_light_countdown when the user
-      // presses the button; we just light up the button while it's
-      // being pressed.
-      bool wipe = (params[WIPE_BUTTON_PARAM].getValue() > 0.1f) ||
-        (wipe_was_low && wipe_trigger.isHigh());
 
-      if (reset) {
-        if (buffer_initialized) {
-          // Rerun the code at the top of process() on next call.
-          buffer_initialized = false;
+      bool reset = false;
+      if ((params[RESET_BUTTON_PARAM].getValue() > 0.1f)) {
+        if (!reset_button_pressed) { 
+          reset_button_pressed = true;
+          reset = true;
+          reset_light_countdown = std::floor(args.sampleRate / 10.0f);
+        }
+      } else {
+        reset_button_pressed = false;
+      }
+
+      // RESET takes precedence over a WIPE.
+      if (reset && args.sampleRate > 1.0) {
+        PrepareTask* task = PrepareTask::MakeBlank(params[SECONDS_PARAM].getValue());
+        if (!module_prepare_queue.tasks.push(task)) {
+          delete task;
         }
       } else {
         if (wipe) {
           // TODO: Decide (or menu options) to pause all recording and playing
           // during a wipe? Or at least fade the players?
-          buffer_change_worker->initiateWipe = true;
+          std::shared_ptr<Buffer> buffer = getHandle()->buffer;
+          if (buffer) {  // It should be, but let's be certain.
+            PrepareTask* task = PrepareTask::MakeBlank(buffer->seconds);
+            if (!module_prepare_queue.tasks.push(task)) {
+              delete task;
+            }
+          }
         }
       }
       // Set lights.
       lights[WIPE_BUTTON_LIGHT].setBrightness(
         wipe || wipe_light_countdown > 0 ? 1.0f : 0.0f);
-      lights[RESET_BUTTON_LIGHT].setBrightness(reset ? 1.0f : 0.0f);
+      lights[RESET_BUTTON_LIGHT].setBrightness(reset_light_countdown ? 1.0f : 0.0f);
       lights[FILE_IO_LIGHT].setBrightness(
         prepare_worker && prepare_worker->busy ? 1.0f : 0.0f);
     }
   }
 
   std::string selectFolder() {
-        std::string path_string = "";
-        char *path = osdialog_file(
-          OSDIALOG_OPEN_DIR,
-          load_folder_name.empty() ? NULL : load_folder_name.c_str(),
-          NULL, NULL);
+    std::string path_string = "";
+    char *path = osdialog_file(
+      OSDIALOG_OPEN_DIR,
+      load_folder_name.empty() ? NULL : load_folder_name.c_str(),
+      NULL, NULL);
 
-        if (path != NULL) {
-            path_string.assign(path);
-            std::free(path);  // Required by osdialog_file().
-        }
-
-        return (path_string);
+    if (path != NULL) {
+        path_string.assign(path);
+        std::free(path);  // Required by osdialog_file().
     }
+
+    return (path_string);
+  }
 };
 
 struct MenuItemPickFolder : MenuItem
