@@ -44,7 +44,22 @@ static constexpr size_t recvBufferSize{1024 * 64};
 // NoLockQueue, with a single writer and reader.
 // All queues are owned by the module.
 
-// First, the Tasks that get passed from thread to thread.
+// First, a data structure for background threads to communicate with the module.
+struct StringQueue {
+  // 30 lines of log messages from File I/O operations.
+  SpScLockFreeQueue<std::string, 30> lines;
+};
+
+// This is less something to DO and more of a channel of communications
+// between two threads.
+struct FileOperationReporting {
+  bool completed;
+  StringQueue log_messages;
+
+  FileOperationReporting() : completed{false} {}
+};
+
+// Second, the Tasks that get passed from thread to thread.
 
 struct PrepareTask {
   enum Type {
@@ -59,15 +74,19 @@ struct PrepareTask {
   float* new_left_array;
   float* new_right_array;
   std::vector<std::string>* loadable_files;
-  
+  FileOperationReporting* status;  // Owned by module.
+
   PrepareTask(const Type the_type) : type{the_type},
       new_left_array{nullptr}, new_right_array{nullptr}, loadable_files{nullptr} {}
 
   ~PrepareTask() {
   }
 
-  static PrepareTask* LoadFileTask(const std::string& name, const std::string& directory) {
+  static PrepareTask* LoadFileTask(FileOperationReporting* reporting,
+                                   const std::string& name,
+                                   const std::string& directory) {
     PrepareTask* task = new PrepareTask(LOAD_FILE);
+    task->status = reporting;
     task->str1 = name;
     task->str2 = directory;
     return task;
@@ -224,6 +243,9 @@ struct BufferChangeThread {
                 buffer->full_scan = true;
 
                 if (buffer->left_array != nullptr) {
+                  // TODO: perhaps better to delay these deletions a bit?
+                  // Might help protect threads unaware that buffer is invalid
+                  // from accessing freed RAM.
                   delete buffer->left_array;
                 }
                 buffer->left_array = task->new_left_array;
@@ -360,7 +382,8 @@ struct PrepareThread {
         while (module_file_queue->tasks.pop(task) && !shutdown) {
           switch (task->type) {
             case PrepareTask::LOAD_FILE: {
-              // WARN("Starting load of %s", task->str1.c_str());
+              task->status->log_messages.lines.push(
+                "Starting to read '" + task->str1 + "'.");
               busy = true;
               AudioFile<float>* audio_file = new AudioFile<float>;
 
@@ -373,6 +396,8 @@ struct PrepareThread {
 
               // If worked, need to fill buffer.
               if (worked) {
+                task->status->log_messages.lines.push(
+                  "Completed read of '" + task->str1 + "'.");
                 // This part can also be slow, since it walks over every sample.
                 busy = true;
                 ConvertFileToSamples(task, audio_file);
@@ -390,10 +415,14 @@ struct PrepareThread {
                   delete task->new_right_array;
                   delete replace_task;  // Queue is full, shed load.
                 }
-
               } else {
                 // TODO: send text saying why it failed to output port.
               }
+
+              // TODO: temporary!
+              task->status->completed = true;
+
+
               delete task;
             }
             break;
@@ -498,10 +527,17 @@ struct Memory : BufferedModule {
   std::string load_folder_name;  // For menu to display.
   std::vector<std::string> loadable_files;  // List found in menu.
   std::string loaded_file;  // Checked item in menu.
+  std::vector<FileOperationReporting*> reporters;
+  // Makes the output trigger for loads and saves when needed.
+  dsp::PulseGenerator load_generator;
+  dsp::PulseGenerator save_generator;
 
   // Listening to the Tipsy connection for loading files.
   unsigned char load_recv_buffer[recvBufferSize];
   tipsy::ProtocolDecoder load_decoder;
+
+  // Mechanism for sending text out.
+  TextSender log_message_sender;
 
   // We sweep the connected modules every NN samples. Some UI-related tasks are 
   // not as latency-sensitive as the audio thread, and we don't need to do often.
@@ -661,8 +697,16 @@ struct Memory : BufferedModule {
 
                   // OK, so this isn't the precisely correct queue, but we check it just below,
                   // so more clean to do this.
-                  PrepareTask* task = PrepareTask::LoadFileTask(loadable_files[parsed_int], load_folder_name);
+                  FileOperationReporting* reporter = new FileOperationReporting();
+                  reporters.push_back(reporter);
+                  PrepareTask* task = PrepareTask::LoadFileTask(
+                    reporter, loadable_files[parsed_int], load_folder_name);
                   if (!widget_module_queue.tasks.push(task)) {
+                    std::string message = "ERROR: Queue is full, cannot load '" +
+                      loadable_files[parsed_int] + "' (which you asked for with '" +
+                      next + "'.";
+                    reporter->log_messages.lines.push(message);
+                    reporter->completed = true;
                     delete task;
                   }
                 }
@@ -673,8 +717,15 @@ struct Memory : BufferedModule {
               //   as long as this isn't a subpath (e.g., foo/bar.wav).
               // OK, so this isn't the precisely correct queue, but we check it just below,
               // so more clean to do this.
-              PrepareTask* task = PrepareTask::LoadFileTask(next, load_folder_name);
+              FileOperationReporting* reporter = new FileOperationReporting();
+              reporters.push_back(reporter);
+              PrepareTask* task = PrepareTask::LoadFileTask(
+                reporter, next, load_folder_name);
               if (!widget_module_queue.tasks.push(task)) {
+                std::string message = "ERROR: Queue is full, cannot load '" +
+                  next + "'.";
+                reporter->log_messages.lines.push(message);
+                reporter->completed = true;
                 delete task;
               }
             }
@@ -688,13 +739,21 @@ struct Memory : BufferedModule {
         while (widget_module_queue.tasks.pop(task)) {
           switch (task->type) {
             case PrepareTask::LOAD_FILE: {
-              // Make sure we're not dealing with a previous load before starting a new one.
-              // TODO: in tasks system, this check will be unneeded, as we're just adding to a queue.
-              // TODO: though should make sure that we actually can interrupt a file load with a new load,
+              // If this came from menu, it needs a reporter.
+              if (task->status == nullptr) {
+                FileOperationReporting* reporter = new FileOperationReporting();
+                reporters.push_back(reporter);
+                task->status = reporter;
+              }
+              // TODO: though it'd be nice if we could actually interrupt a file load with a new load,
               // as the Tipsy automation means we could receive load requests far faster than we
               // can process them. Best to not get stuck waiting for a really slow network file
               // to load.
               if (!module_prepare_queue.tasks.push(task)) {
+                std::string message = "ERROR: Queue is full, cannot load '" +
+                  task->str1 + "'.";
+                task->status->log_messages.lines.push(message);
+                task->status->completed = true;
                 delete task;
               } else {
                 // This conception of "loaded_file" makes less sense.
@@ -730,8 +789,8 @@ struct Memory : BufferedModule {
       // And we can't put this in a call to onExpanderChange(), because events
       // several modules down can affect these results.
       if (--assign_color_countdown <= 0) {
-        // One hundredth of a second.
-        assign_color_countdown = (int) (args.sampleRate / 100);
+        // One sixtieth of a second.
+        assign_color_countdown = (int) (args.sampleRate / 60);
 
         std::shared_ptr<Buffer> buffer = getHandle()->buffer;
         if (buffer) {  // Checks for null.
@@ -850,6 +909,34 @@ struct Memory : BufferedModule {
           }
         }
       }
+
+      // Attend to any reporters, if need be.
+      for (int i = 0; i < (int) reporters.size(); ++i) {
+        FileOperationReporting* reporter = reporters[i];
+        // TODO: add any lines to the log here.
+        if (reporter->log_messages.lines.size() > 0) {
+          std::string line;
+          while (reporter->log_messages.lines.pop(line)) {
+            WARN("Log message '%s'", line.c_str());
+            log_message_sender.AddToQueue(line);  // Need to add a "/n"?
+          }
+        }
+        if (reporter->completed) {
+          // TODO: need to know if this is load or save.
+          load_generator.trigger(1e-3f);
+          delete reporter;
+          reporters.erase(reporters.begin() + i);
+          --i;  // Go back one, since the ith element has changed.
+        }
+      }
+
+      // Set the values for the output triggers.
+      outputs[LOAD_TRIGGER_OUTPUT].setVoltage(
+        load_generator.process(args.sampleTime) ? 10.0f : 0.0f);
+
+      // Output next value for the log.
+      log_message_sender.ProcessEncoder(TIPSY_LOGGING_OUTPUT, &outputs);
+
       // Set lights.
       lights[WIPE_BUTTON_LIGHT].setBrightness(
         wipe || wipe_light_countdown > 0 ? 1.0f : 0.0f);
@@ -962,7 +1049,8 @@ struct MemoryWidget : ModuleWidget {
                 menu->addChild(createCheckMenuItem(name, "",
                   [=]() {return name.compare(module->loaded_file) == 0;},
                   [=]() {
-                    PrepareTask* task = PrepareTask::LoadFileTask(name, module->load_folder_name);
+                    PrepareTask* task = PrepareTask::LoadFileTask(nullptr,
+                     name, module->load_folder_name);
                     if (!module->widget_module_queue.tasks.push(task)) {
                       delete task;
                     }
