@@ -11,6 +11,12 @@
 #include "tipsy_utils.h"
 #include "NoLockQueue.h"
 
+// Here because AudioFile.h uses this.
+struct StringQueue {
+  // 30 lines of log messages from File I/O operations.
+  SpScLockFreeQueue<std::string, 30> lines;
+};
+
 // WAV/AIFF library.
 #include "AudioFile.h"
 
@@ -45,11 +51,6 @@ static constexpr size_t recvBufferSize{1024 * 64};
 // All queues are owned by the module.
 
 // First, a data structure for background threads to communicate with the module.
-struct StringQueue {
-  // 30 lines of log messages from File I/O operations.
-  SpScLockFreeQueue<std::string, 30> lines;
-};
-
 // This is less something to DO and more of a channel of communications
 // between two threads.
 struct FileOperationReporting {
@@ -124,6 +125,7 @@ struct BufferTask {
   float* new_right_array;
   int sample_count;
   double seconds;
+  FileOperationReporting* status;  // Owned by module.
   
   BufferTask(const Type the_type) : type{the_type},
                                     new_left_array{nullptr}, new_right_array{nullptr} {}
@@ -132,11 +134,12 @@ struct BufferTask {
     // Don't delete new_(left|right)_array, surely pointed to by something else.
   }
 
-  static BufferTask* ReplaceTask(float* new_left, float* new_right,
+  static BufferTask* ReplaceTask(float* new_left, float* new_right, FileOperationReporting* status,
                                  int sample_count, double seconds) {
     BufferTask* task = new BufferTask(REPLACE_AUDIO);
     task->new_left_array = new_left;
     task->new_right_array = new_right;
+    task->status = status;
     task->sample_count = sample_count;
     task->seconds = seconds;
     return task;
@@ -256,6 +259,10 @@ struct BufferChangeThread {
 
                 buffer->length = task->sample_count;
                 buffer->seconds = task->seconds;
+                // Tell world we're done, IFF we have a status. WIPE's and RESET's don't.
+                if (task->status != nullptr) {
+                  task->status->completed = true;
+                }
                 delete task;
               }
               break;
@@ -386,7 +393,8 @@ struct PrepareThread {
                 "Starting to read '" + task->str1 + "'.");
               busy = true;
               AudioFile<float>* audio_file = new AudioFile<float>;
-
+              // Let's us collect the logs of any errors.
+              audio_file->setLogQueue(&(task->status->log_messages));
               // SLOW: this call can take many seconds.
               bool worked = audio_file->load(system::join(task->str2, task->str1));
               busy = false;
@@ -409,20 +417,18 @@ struct PrepareThread {
 
                 // Send task to BufferChangeThread.
                 BufferTask* replace_task = BufferTask::ReplaceTask(
-                  task->new_left_array, task->new_right_array, sample_count, seconds);  
+                  task->new_left_array, task->new_right_array, task->status,
+                  sample_count, seconds);  
                 if (!prepare_buffer_queue->tasks.push(replace_task)) {
                   delete task->new_left_array;
                   delete task->new_right_array;
                   delete replace_task;  // Queue is full, shed load.
                 }
               } else {
-                // TODO: send text saying why it failed to output port.
+                task->status->log_messages.lines.push(
+                  "Failed to read '" + task->str1 + "'.");
+                task->status->completed = true;
               }
-
-              // TODO: temporary!
-              task->status->completed = true;
-
-
               delete task;
             }
             break;
@@ -448,7 +454,7 @@ struct PrepareThread {
 
               // Send task to BufferChangeThread.
               BufferTask* replace_task = BufferTask::ReplaceTask(
-                new_left_array, new_right_array, sample_count, task->seconds);  
+                new_left_array, new_right_array, nullptr, sample_count, task->seconds);  
               if (!prepare_buffer_queue->tasks.push(replace_task)) {
                 delete replace_task;  // Queue is full, shed load.
               }
@@ -917,7 +923,6 @@ struct Memory : BufferedModule {
         if (reporter->log_messages.lines.size() > 0) {
           std::string line;
           while (reporter->log_messages.lines.pop(line)) {
-            WARN("Log message '%s'", line.c_str());
             log_message_sender.AddToQueue(line);  // Need to add a "/n"?
           }
         }

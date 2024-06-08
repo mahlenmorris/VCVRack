@@ -28,8 +28,9 @@
  */
 //=======================================================================
 
-// This is the version of AudioFile.h that voxglitch uses:
+// This started as the version of AudioFile.h that voxglitch uses:
 // https://github.com/clone45/voxglitch/blob/91b61f7477a2721f16870ff0442892335cd927c1/src/vgLib-1.0/AudioFile.h
+// I've since modified it to use the logging mechanism I need.
 
 #ifndef _AS_AudioFile_h
 #define _AS_AudioFile_h
@@ -94,6 +95,11 @@ public:
     
     /** Constructor, using a given file path to load a file */
     AudioFile (std::string filePath);
+
+    /** Set the StringQueue to log messages to. */
+    void setLogQueue(StringQueue* string_queue) {
+      message_log = string_queue;
+    }
         
     //=============================================================
     /** Loads an audio file from a given file path.
@@ -234,6 +240,8 @@ private:
     uint32_t sampleRate;
     int bitDepth;
     bool logErrorsToConsole {true};
+
+    StringQueue* message_log = nullptr;
 };
 
 
@@ -756,7 +764,7 @@ bool AudioFile<T>::decodeAiffFile (std::vector<uint8_t>& fileData)
     // sanity check the data
     if ((soundDataChunkSize - 8) != totalNumAudioSampleBytes || totalNumAudioSampleBytes > static_cast<long>(fileData.size() - samplesStartIndex))
     {
-        reportError ("ERROR: the metadatafor this file doesn't seem right");
+        reportError ("ERROR: the metadata for this file doesn't seem right");
         return false;
     }
     
@@ -1345,8 +1353,13 @@ T AudioFile<T>::clamp (T value, T minValue, T maxValue)
 template <class T>
 void AudioFile<T>::reportError (std::string errorMessage)
 {
-    if (logErrorsToConsole)
-        std::cout << errorMessage << std::endl;
+    if (logErrorsToConsole) {
+        if (message_log != nullptr) {
+            message_log->lines.push(errorMessage);
+        } else {
+            std::cout << errorMessage << std::endl;
+        }
+    }
 }
 
 #if defined (_MSC_VER)
