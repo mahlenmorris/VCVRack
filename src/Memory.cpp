@@ -53,11 +53,18 @@ static constexpr size_t recvBufferSize{1024 * 64};
 // First, a data structure for background threads to communicate with the module.
 // This is less something to DO and more of a channel of communications
 // between two threads.
+enum FileIOCompleted {
+  IN_PROGRESS,
+  LOAD_COMPLETED,
+  SAVE_COMPLETED
+};
+
+
 struct FileOperationReporting {
-  bool completed;
+  FileIOCompleted completed;
   StringQueue log_messages;
 
-  FileOperationReporting() : completed{false} {}
+  FileOperationReporting() : completed{IN_PROGRESS} {}
 };
 
 // Second, the Tasks that get passed from thread to thread.
@@ -67,7 +74,8 @@ struct PrepareTask {
     LOAD_DIRECTORY_SET,  // str1 is the directory name.
     LOAD_FILE,           // str1 is the selected file name, str2 is the directory name.
     // WIPE and RESET are really only different in how the length is set.
-    MAKE_BLANK           // seconds is length in seconds
+    MAKE_BLANK,          // seconds is length in seconds
+    SAVE_FILE            // str1 is the full path and name.
   };
   Type type;
   double seconds;
@@ -78,7 +86,8 @@ struct PrepareTask {
   FileOperationReporting* status;  // Owned by module.
 
   PrepareTask(const Type the_type) : type{the_type},
-      new_left_array{nullptr}, new_right_array{nullptr}, loadable_files{nullptr} {}
+      new_left_array{nullptr}, new_right_array{nullptr},
+      loadable_files{nullptr}, status{nullptr} {}
 
   ~PrepareTask() {
   }
@@ -96,6 +105,12 @@ struct PrepareTask {
   static PrepareTask* LoadDirectoryTask(const std::string& directory) {
     PrepareTask* task = new PrepareTask(LOAD_DIRECTORY_SET);
     task->str1 = directory;
+    return task;
+  }
+
+  static PrepareTask* SaveFileTask(const std::string& file_path) {
+    PrepareTask* task = new PrepareTask(SAVE_FILE);
+    task->str1 = file_path;
     return task;
   }
 
@@ -118,9 +133,12 @@ struct ModuleToPrepareQueue {
 
 struct BufferTask {
   enum Type {
+    SAVE_FILE,     // str1 is the full path and name. For this queue so as to prevent 
+                   // REPLACE_AUDIO happening while saving.
     REPLACE_AUDIO  // new_left_array and new_right_array.
   };
   Type type;
+  std::string str1;
   float* new_left_array;
   float* new_right_array;
   int sample_count;
@@ -128,10 +146,18 @@ struct BufferTask {
   FileOperationReporting* status;  // Owned by module.
   
   BufferTask(const Type the_type) : type{the_type},
-                                    new_left_array{nullptr}, new_right_array{nullptr} {}
+                                    new_left_array{nullptr}, new_right_array{nullptr},
+                                    status{nullptr} {}
 
   ~BufferTask() {
     // Don't delete new_(left|right)_array, surely pointed to by something else.
+  }
+
+  static BufferTask* SaveFileTask(FileOperationReporting* status, const std::string& file_path) {
+    BufferTask* task = new BufferTask(SAVE_FILE);
+    task->status = status;
+    task->str1 = file_path;
+    return task;
   }
 
   static BufferTask* ReplaceTask(float* new_left, float* new_right, FileOperationReporting* status,
@@ -152,21 +178,34 @@ struct PrepareToBufferQueue {
   SpScLockFreeQueue<BufferTask*, 10> tasks;
 };
 
+struct ModuleToBufferQueue {
+  // Queue is limited to five items, just so we cannot get absurdly far behind.
+  SpScLockFreeQueue<BufferTask*, 5> tasks;
+};
+
 // Class devoted to handling things that replace or update the Buffer,
-// apart from simple writes.
+// apart from simple writes, or require that the buffer not be changing.
 struct BufferChangeThread {
   BufferHandle* handle;
   PrepareToBufferQueue* prepare_buffer_queue;
+  ModuleToBufferQueue* module_buffer_queue;
+  float sample_rate;
 
   bool shutdown;
-  
-  BufferChangeThread(BufferHandle* the_handle, PrepareToBufferQueue* prepare_buffer_queue) :
-      handle{the_handle}, prepare_buffer_queue{prepare_buffer_queue} {
-    shutdown = false;
-  }
+  // Indicator to UI that File I/O is happening.
+  bool busy = false;
+
+  BufferChangeThread(BufferHandle* the_handle, PrepareToBufferQueue* prepare_buffer_queue,
+                     ModuleToBufferQueue* module_buffer_queue) :
+      handle{the_handle}, prepare_buffer_queue{prepare_buffer_queue},
+      module_buffer_queue{module_buffer_queue}, shutdown{false} {}
 
   void Halt() {
     shutdown = true;
+  }
+
+  void SetRate(float rate) {
+    sample_rate = rate;
   }
 
   // Updates the "waveforms" that Depict shows.
@@ -234,6 +273,57 @@ struct BufferChangeThread {
 	        }
         }
 
+        if (module_buffer_queue->tasks.size() > 0) {
+          BufferTask* task;
+          while (module_buffer_queue->tasks.pop(task) && !shutdown) {
+            switch (task->type) {
+              case BufferTask::REPLACE_AUDIO: {
+                WARN("There should not be a REPLACE_AUDIO task on the module_buffer_queue!");
+                delete task;
+              }
+              break;
+              case BufferTask::SAVE_FILE: {
+                task->status->log_messages.lines.push(
+                  "Starting to save '" + task->str1 + "'.");
+                busy = true;
+                AudioFile<float> audio_file;
+                // Let's us collect the logs of any errors.
+                audio_file.setLogQueue(&(task->status->log_messages));
+                // This will tell AudioFile not use the internal buffer. Much faster to
+                // not have to build a new buffer and copy to it, and less RAM-intensive.
+                audio_file.setMemoryBuffer(buffer);
+
+                // Do a fair bit of setup, so it can save properly.
+                // Set both the number of channels and number of samples per channel
+                audio_file.setAudioBufferSize(2, buffer->length);
+
+                // Set the number of samples per channel
+                audio_file.setNumSamplesPerChannel(buffer->length);
+
+                // Set the number of channels. Memory is always stereo.
+                audio_file.setNumChannels(2);
+                audio_file.setBitDepth(32);  // This is what Audacity produces.
+                audio_file.setSampleRate(sample_rate);
+
+                // SLOW: this call can take many seconds.
+                // Wave file (implicit)
+                bool worked = audio_file.save(task->str1);
+                busy = false;
+                if (worked) {
+                  task->status->log_messages.lines.push(
+                    "Completed save of '" + task->str1 + "'.");
+                } else {
+                  task->status->log_messages.lines.push(
+                    "Unable to save '" + task->str1 + "'.");
+                }               
+                task->status->completed = SAVE_COMPLETED;
+                delete task;
+              }
+              break;
+            }
+          }
+        } 
+
         if (prepare_buffer_queue->tasks.size() > 0) {
           BufferTask* task;
           while (prepare_buffer_queue->tasks.pop(task) && !shutdown) {
@@ -261,8 +351,13 @@ struct BufferChangeThread {
                 buffer->seconds = task->seconds;
                 // Tell world we're done, IFF we have a status. WIPE's and RESET's don't.
                 if (task->status != nullptr) {
-                  task->status->completed = true;
+                  task->status->completed = LOAD_COMPLETED;
                 }
+                delete task;
+              }
+              break;
+              case BufferTask::SAVE_FILE: {
+                WARN("There should not be a SAVE_FILE task on the prepare_buffer_queue!");
                 delete task;
               }
               break;
@@ -337,13 +432,13 @@ struct PrepareThread {
     busy = false;
   }
 
-  void ConvertFileToSamples(PrepareTask* task, AudioFile<float>* audio_file) {
+  void ConvertFileToSamples(PrepareTask* task, const AudioFile<float>& audio_file) {
     assert(task->type == PrepareTask::LOAD_FILE);
     // One goal is to minimize the amount of downtime for the buffer,
     // since the AudioFile -> Buffer process is time consuming for large files.
     // So the conversion happens before we swap in the memory.
-    int samples = std::round(audio_file->getLengthInSeconds() * sample_rate);
-    int file_samples = audio_file->getNumSamplesPerChannel();
+    int samples = std::round(audio_file.getLengthInSeconds() * sample_rate);
+    int file_samples = audio_file.getNumSamplesPerChannel();
     float* new_left_array = new float[samples];
     float* new_right_array = new float[samples];
 
@@ -352,9 +447,9 @@ struct PrepareThread {
     // * We typically range from -10.0 to 10.0, AudioFile ranges from -1.0 to 1.0.
     // * File might have been in mono. The norm seems to be to put a mono signal 
     //   on both channels.
-    bool file_is_mono = audio_file->getNumChannels() == 1;
+    bool file_is_mono = audio_file.getNumChannels() == 1;
     // TODO: put in an optimization if sample rates are the same. Less math to do.
-    double sample_rate_ratio = 1.0 * audio_file->getSampleRate() / sample_rate;
+    double sample_rate_ratio = 1.0 * audio_file.getSampleRate() / sample_rate;
     // This can take a while; definitely let a Halt() call interrupt it.
     for (int i = 0; !shutdown && i < samples; ++i) {
       // Use the linear interpolation that I also use in Buffer::Get().
@@ -368,14 +463,14 @@ struct PrepareThread {
 
       float start_fraction = position - playback_start;
       new_left_array[i] = 10.0 *
-       (audio_file->samples[0][playback_start] * (1.0 - start_fraction) +
-        audio_file->samples[0][playback_end] * (start_fraction));
+       (audio_file.samples[0][playback_start] * (1.0 - start_fraction) +
+        audio_file.samples[0][playback_end] * (start_fraction));
       if (file_is_mono) {
         new_right_array[i] = new_left_array[i];
       } else {
         new_right_array[i] = 10.0 * 
-         (audio_file->samples[1][playback_start] * (1.0 - start_fraction) +
-          audio_file->samples[1][playback_end] * (start_fraction));
+         (audio_file.samples[1][playback_start] * (1.0 - start_fraction) +
+          audio_file.samples[1][playback_end] * (start_fraction));
       }
     }
     task->new_left_array = new_left_array;
@@ -392,15 +487,16 @@ struct PrepareThread {
               task->status->log_messages.lines.push(
                 "Starting to read '" + task->str1 + "'.");
               busy = true;
-              AudioFile<float>* audio_file = new AudioFile<float>;
+              AudioFile<float> audio_file;
               // Let's us collect the logs of any errors.
-              audio_file->setLogQueue(&(task->status->log_messages));
+              audio_file.setLogQueue(&(task->status->log_messages));
               // SLOW: this call can take many seconds.
-              bool worked = audio_file->load(system::join(task->str2, task->str1));
+              bool worked = audio_file.load(system::join(task->str2, task->str1));
               busy = false;
               // WARN("Completed load of %s", task->str1.c_str());             
-              // WARN("samples = %d, seconds = %f", audio_file->getNumSamplesPerChannel(), audio_file->getLengthInSeconds());
-              // WARN("sample rate = %d", audio_file->getSampleRate());
+              // WARN("samples = %d, seconds = %f", audio_file.getNumSamplesPerChannel(), audio_file.getLengthInSeconds());
+              // WARN("sample rate = %d", audio_file.getSampleRate());
+              // WARN("bit depth = %d", audio_file.getBitDepth());
 
               // If worked, need to fill buffer.
               if (worked) {
@@ -411,9 +507,8 @@ struct PrepareThread {
                 ConvertFileToSamples(task, audio_file);
                 busy = false;
                 // Done with the audio_file.
-                int sample_count = audio_file->getNumSamplesPerChannel();
-                double seconds = audio_file->getLengthInSeconds();
-                delete audio_file;
+                int sample_count = audio_file.getNumSamplesPerChannel();
+                double seconds = audio_file.getLengthInSeconds();
 
                 // Send task to BufferChangeThread.
                 BufferTask* replace_task = BufferTask::ReplaceTask(
@@ -427,7 +522,7 @@ struct PrepareThread {
               } else {
                 task->status->log_messages.lines.push(
                   "Failed to read '" + task->str1 + "'.");
-                task->status->completed = true;
+                task->status->completed = LOAD_COMPLETED;
               }
               delete task;
             }
@@ -458,6 +553,11 @@ struct PrepareThread {
               if (!prepare_buffer_queue->tasks.push(replace_task)) {
                 delete replace_task;  // Queue is full, shed load.
               }
+              delete task;
+            }
+            break;
+            case PrepareTask::SAVE_FILE: {
+              WARN("There should not be a SAVE_FILE task on the module_file_queue!");
               delete task;
             }
             break;
@@ -517,6 +617,7 @@ struct Memory : BufferedModule {
   WidgetToModuleQueue widget_module_queue;
   ModuleToPrepareQueue module_prepare_queue;
   PrepareToBufferQueue prepare_buffer_queue;
+  ModuleToBufferQueue module_buffer_queue;
 
   // For wiping contents.
   dsp::SchmittTrigger wipe_trigger;
@@ -568,7 +669,8 @@ struct Memory : BufferedModule {
     std::shared_ptr<Buffer> temp = std::make_shared<Buffer>();
     (*getHandle()).buffer.swap(temp);
 
-    buffer_change_worker = new BufferChangeThread(getHandle(), &prepare_buffer_queue);
+    buffer_change_worker = new BufferChangeThread(getHandle(), &prepare_buffer_queue,
+                                                  &module_buffer_queue);
     buffer_change_thread = new std::thread(&BufferChangeThread::Work, buffer_change_worker);
     prepare_worker = new PrepareThread(&module_prepare_queue, &prepare_buffer_queue);
     prepare_thread = new std::thread(&PrepareThread::Work, prepare_worker);
@@ -639,6 +741,7 @@ struct Memory : BufferedModule {
         // Confirm that we can read the sample rate before starting a fill.
         // Sometimes during startup, sampleRate is still zero.
         if (args.sampleRate > 1.0) {
+          buffer_change_worker->SetRate(args.sampleRate);
           prepare_worker->SetRate(args.sampleRate);
           PrepareTask* task = PrepareTask::MakeBlank(params[SECONDS_PARAM].getValue());
           if (!module_prepare_queue.tasks.push(task)) {
@@ -712,7 +815,7 @@ struct Memory : BufferedModule {
                       loadable_files[parsed_int] + "' (which you asked for with '" +
                       next + "'.";
                     reporter->log_messages.lines.push(message);
-                    reporter->completed = true;
+                    reporter->completed = LOAD_COMPLETED;
                     delete task;
                   }
                 }
@@ -731,7 +834,7 @@ struct Memory : BufferedModule {
                 std::string message = "ERROR: Queue is full, cannot load '" +
                   next + "'.";
                 reporter->log_messages.lines.push(message);
-                reporter->completed = true;
+                reporter->completed = LOAD_COMPLETED;
                 delete task;
               }
             }
@@ -759,13 +862,41 @@ struct Memory : BufferedModule {
                 std::string message = "ERROR: Queue is full, cannot load '" +
                   task->str1 + "'.";
                 task->status->log_messages.lines.push(message);
-                task->status->completed = true;
+                task->status->completed = LOAD_COMPLETED;
                 delete task;
               } else {
                 // This conception of "loaded_file" makes less sense.
                 // TODO: fix this.
                 loaded_file = task->str1;
               }
+            }
+            break;
+
+            case PrepareTask::SAVE_FILE: {
+              // Reformat this task to send it to the BufferChangeThread.
+              // Because we want to ensure that the buffer does NOT get exchanged while we are saving it.
+              FileOperationReporting* reporter = task->status;
+              // If this came from menu, it needs a reporter.
+              if (reporter == nullptr) {
+                reporter = new FileOperationReporting();
+                reporters.push_back(reporter);
+              }
+              BufferTask* save_task = BufferTask::SaveFileTask(reporter, task->str1);
+              delete task;
+              if (!module_buffer_queue.tasks.push(save_task)) {
+                std::string message = "ERROR: Queue is full, cannot save '" +
+                  save_task->str1 + "'.";
+                save_task->status->log_messages.lines.push(message);
+                save_task->status->completed = SAVE_COMPLETED;
+                delete save_task;
+              }
+              /*
+               else {
+                // This conception of "loaded_file" makes less sense.
+                // TODO: fix this.
+                loaded_file = task->str1;
+              }
+              */
             }
             break;
 
@@ -926,9 +1057,12 @@ struct Memory : BufferedModule {
             log_message_sender.AddToQueue(line);  // Need to add a "/n"?
           }
         }
-        if (reporter->completed) {
-          // TODO: need to know if this is load or save.
-          load_generator.trigger(1e-3f);
+        if (reporter->completed > IN_PROGRESS) {
+          if (reporter->completed == LOAD_COMPLETED) {
+            load_generator.trigger(1e-3f);
+          } else if (reporter->completed == SAVE_COMPLETED) {
+            save_generator.trigger(1e-3f);
+          }
           delete reporter;
           reporters.erase(reporters.begin() + i);
           --i;  // Go back one, since the ith element has changed.
@@ -938,6 +1072,8 @@ struct Memory : BufferedModule {
       // Set the values for the output triggers.
       outputs[LOAD_TRIGGER_OUTPUT].setVoltage(
         load_generator.process(args.sampleTime) ? 10.0f : 0.0f);
+      outputs[SAVE_TRIGGER_OUTPUT].setVoltage(
+        save_generator.process(args.sampleTime) ? 10.0f : 0.0f);
 
       // Output next value for the log.
       log_message_sender.ProcessEncoder(TIPSY_LOGGING_OUTPUT, &outputs);
@@ -947,11 +1083,12 @@ struct Memory : BufferedModule {
         wipe || wipe_light_countdown > 0 ? 1.0f : 0.0f);
       lights[RESET_BUTTON_LIGHT].setBrightness(reset_light_countdown ? 1.0f : 0.0f);
       lights[FILE_IO_LIGHT].setBrightness(
-        prepare_worker && prepare_worker->busy ? 1.0f : 0.0f);
+        (prepare_worker && prepare_worker->busy) ||
+        (buffer_change_worker && buffer_change_worker->busy) ? 1.0f : 0.0f);
     }
   }
 
-  std::string selectFolder() {
+  std::string selectLoadFolder() {
     std::string path_string = "";
     char *path = osdialog_file(
       OSDIALOG_OPEN_DIR,
@@ -965,19 +1102,51 @@ struct Memory : BufferedModule {
 
     return (path_string);
   }
+
+  std::string selectSaveFile() {
+    std::string path_string = "";
+    // TODO: Pick a more interesting default file name.
+    char *path = osdialog_file(
+      OSDIALOG_SAVE,
+      load_folder_name.empty() ? NULL : load_folder_name.c_str(),
+      "memory.wav", osdialog_filters_parse("Wav:wav"));
+
+    if (path != NULL) {
+        path_string.assign(path);
+        std::free(path);  // Required by osdialog_file().
+    }
+
+    return (path_string);
+  }
+
+
 };
 
-struct MenuItemPickFolder : MenuItem
-{
+struct MenuItemPickFolder : MenuItem {
   Memory *module;
 
-  void onAction(const event::Action &e) override
-  {
-    std::string filename = module->selectFolder();
+  void onAction(const event::Action &e) override {
+    std::string filename = module->selectLoadFolder();
     if (filename != "") {
       // We set this even if it's the same path as before. This gives the user a gesture to update
       // the list.
       PrepareTask* task = PrepareTask::LoadDirectoryTask(filename);
+      if (!module->widget_module_queue.tasks.push(task)) {
+        delete task;
+      }
+    }
+  }
+};
+
+struct MenuItemPickSaveFile : MenuItem {
+  Memory *module;
+
+  void onAction(const event::Action &e) override {
+    std::string file_path = module->selectSaveFile();
+    if (file_path != "") {
+      // We set this even if it's the same path as before. This gives the user a gesture to update
+      // the list.
+      PrepareTask* task = PrepareTask::SaveFileTask(file_path);
       if (!module->widget_module_queue.tasks.push(task)) {
         delete task;
       }
@@ -1036,8 +1205,7 @@ struct MemoryWidget : ModuleWidget {
       menu->addChild(new MenuSeparator);
       menu->addChild(createMenuLabel("Pick Folder for Loading"));
 
-
-      MenuItemPickFolder *menu_item_load_folder = new MenuItemPickFolder;
+      MenuItemPickFolder* menu_item_load_folder = new MenuItemPickFolder;
       if (module->load_folder_name.empty()) {
         menu_item_load_folder->text = "Click here to pick";  
       } else {
@@ -1066,7 +1234,13 @@ struct MemoryWidget : ModuleWidget {
         );
         menu->addChild(loadable_file_menu);
       }
-      // TODO: pick saving folder.
+
+      MenuItemPickSaveFile* menu_item_save_file = new MenuItemPickSaveFile;
+      menu_item_save_file->text = "Save to File...";  
+      menu_item_save_file->module = module;
+      menu->addChild(menu_item_save_file);
+
+      // TODO: pick saving folder?
 
 
 
