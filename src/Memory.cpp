@@ -126,6 +126,11 @@ struct WidgetToModuleQueue {
   SpScLockFreeQueue<PrepareTask*, 5> tasks;
 };
 
+struct BufferToModuleQueue {
+  // Only length 5 because there should be very few of these.
+  SpScLockFreeQueue<PrepareTask*, 5> tasks;
+};
+
 struct ModuleToPrepareQueue {
   // Queue is limited to ten items, just so we cannot get absurdly far behind.
   SpScLockFreeQueue<PrepareTask*, 10> tasks;
@@ -189,6 +194,7 @@ struct BufferChangeThread {
   BufferHandle* handle;
   PrepareToBufferQueue* prepare_buffer_queue;
   ModuleToBufferQueue* module_buffer_queue;
+  BufferToModuleQueue* buffer_module_queue;
   float sample_rate;
 
   bool shutdown;
@@ -196,9 +202,11 @@ struct BufferChangeThread {
   bool busy = false;
 
   BufferChangeThread(BufferHandle* the_handle, PrepareToBufferQueue* prepare_buffer_queue,
-                     ModuleToBufferQueue* module_buffer_queue) :
+                     ModuleToBufferQueue* module_buffer_queue,
+                     BufferToModuleQueue* buffer_module_queue) :
       handle{the_handle}, prepare_buffer_queue{prepare_buffer_queue},
-      module_buffer_queue{module_buffer_queue}, shutdown{false} {}
+      module_buffer_queue{module_buffer_queue},
+      buffer_module_queue{buffer_module_queue}, sample_rate{0.0f}, shutdown{false} {}
 
   void Halt() {
     shutdown = true;
@@ -318,6 +326,13 @@ struct BufferChangeThread {
                 }               
                 task->status->completed = SAVE_COMPLETED;
                 delete task;
+
+                // We may have added a file to the Load directory, so we tell the module
+                // to rescan the load directory just in case.
+                PrepareTask* rescan_task = PrepareTask::LoadDirectoryTask("");
+                if (!buffer_module_queue->tasks.push(rescan_task)) {
+                  delete rescan_task;
+                }
               }
               break;
             }
@@ -616,8 +631,9 @@ struct Memory : BufferedModule {
   // lock-free queues for coordinating actions between the threads.
   WidgetToModuleQueue widget_module_queue;
   ModuleToPrepareQueue module_prepare_queue;
-  PrepareToBufferQueue prepare_buffer_queue;
   ModuleToBufferQueue module_buffer_queue;
+  PrepareToBufferQueue prepare_buffer_queue;
+  BufferToModuleQueue buffer_module_queue;
 
   // For wiping contents.
   dsp::SchmittTrigger wipe_trigger;
@@ -670,7 +686,7 @@ struct Memory : BufferedModule {
     (*getHandle()).buffer.swap(temp);
 
     buffer_change_worker = new BufferChangeThread(getHandle(), &prepare_buffer_queue,
-                                                  &module_buffer_queue);
+                                                  &module_buffer_queue, &buffer_module_queue);
     buffer_change_thread = new std::thread(&BufferChangeThread::Work, buffer_change_worker);
     prepare_worker = new PrepareThread(&module_prepare_queue, &prepare_buffer_queue);
     prepare_thread = new std::thread(&PrepareThread::Work, prepare_worker);
@@ -841,6 +857,45 @@ struct Memory : BufferedModule {
           }
         }
       }
+
+      // Deal with tasks from the Buffer thread.
+      if (buffer_module_queue.tasks.size() > 0) {
+        PrepareTask* task;
+        while (buffer_module_queue.tasks.pop(task)) {
+          switch (task->type) {
+            case PrepareTask::LOAD_FILE: {
+              WARN("There should not be a LOAD_FILE task on the buffer_module_queue!");
+              delete task;
+            }
+            break;
+
+            case PrepareTask::SAVE_FILE: {
+              WARN("There should not be a SAVE_FILE task on the buffer_module_queue!");
+              delete task;
+            }
+            break;
+
+            case PrepareTask::LOAD_DIRECTORY_SET: {
+              if (!load_folder_name.empty()) {
+                task->str1 = load_folder_name;
+                task->loadable_files = &loadable_files;
+                if (!module_prepare_queue.tasks.push(task)) {
+                  delete task;
+                }
+              } else {
+                delete task;
+              }
+            }
+            break;
+
+            case PrepareTask::MAKE_BLANK: {
+              WARN("There should not be a MAKE_BLANK task on the buffer_module_queue!");
+              delete task;
+            }
+            break;
+          }
+        }
+      } 
 
       // Deal with tasks from the Widget (aka, the menu) and from the Tipsy inputs.
       if (widget_module_queue.tasks.size() > 0) {
