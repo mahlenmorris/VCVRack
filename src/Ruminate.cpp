@@ -88,6 +88,7 @@ struct Ruminate : PositionedModule {
 	double play_fade = 1.0;
 	PlayState play_state;
 	bool fade_on_move = true;  // Saved in the patch.
+	bool speed_is_voct = false;  // Saved in the patch.
 
 	Ruminate() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -122,6 +123,7 @@ struct Ruminate : PositionedModule {
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "fade_on_move", json_integer(fade_on_move ? 1 : 0));
+    json_object_set_new(rootJ, "speed_is_voct", json_integer(speed_is_voct ? 1 : 0));
     return rootJ;
   }
 
@@ -129,6 +131,10 @@ struct Ruminate : PositionedModule {
     json_t* fadeJ = json_object_get(rootJ, "fade_on_move");
     if (fadeJ) {
       fade_on_move = json_integer_value(fadeJ) == 1;
+    }
+    json_t* speedJ = json_object_get(rootJ, "speed_is_voct");
+    if (speedJ) {
+      speed_is_voct = json_integer_value(speedJ) == 1;
     }
   }
 
@@ -255,8 +261,11 @@ struct Ruminate : PositionedModule {
 			}
 			// We're still moving, either forward or because user is adjusting.
 			// 'movement' is combination of speed input and speed param.
-			double movement = play_state == NO_PLAY ? 0.0 :
-			    inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
+			// NB: in v/oct case, we subtract the default 1.0 value for SPEED_PARAM.
+			double speed = speed_is_voct ?
+			    std::pow(2.0, inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue() - 1.0) :
+					inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
+			double movement = play_state == NO_PLAY ? 0.0 : speed;
 			if ((play_state == ADJUSTING) || (!fade_on_move && adjusting)) {
 				// Even if we're not playing, we want to show movement caused by POSITION movement,
 				// so user can see where playback will pick up.
@@ -463,6 +472,8 @@ struct RuminateWidget : ModuleWidget {
     menu->addChild(new MenuSeparator);
     menu->addChild(createBoolPtrMenuItem("Fade on Move", "",
                                           &module->fade_on_move));
+    menu->addChild(createBoolPtrMenuItem("Use Speed as V/Oct", "",
+                                          &module->speed_is_voct));
 	}
 
 };
