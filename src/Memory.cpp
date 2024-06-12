@@ -747,6 +747,80 @@ struct Memory : BufferedModule {
     SCHEME_WHITE
 	};
 
+  // Both process() and processBypass() call this.
+  void HandleLights(const ProcessArgs& args) {
+    // Periodically assign colors to each connected module's light.
+    // We also take this opportunity to add any unknown recording heads to
+    // the buffer->record_heads vector.
+    // I'd considered putting these tasks on a background thread, but
+    // getRightExpander() is a method on Module.
+    // And we can't put this in a call to onExpanderChange(), because events
+    // several modules down can affect these results.
+    if (--assign_color_countdown <= 0) {
+      // One sixtieth of a second.
+      assign_color_countdown = (int) (args.sampleRate / 60);
+
+      std::shared_ptr<Buffer> buffer = getHandle()->buffer;
+      if (buffer) {  // Checks for null.
+        Module* next_module = getRightExpander().module;
+        int color_index = -1;
+        int distance = 0;
+        bool found_depict = false;
+        while (next_module) {
+          if ((next_module->model == modelRuminate) ||
+              (next_module->model == modelEmbellish)) {
+            // Assign a Color.
+            distance++;
+            color_index = (color_index + 1) % COLOR_COUNT;
+            PositionedModule* pos_module = dynamic_cast<PositionedModule*>(next_module);
+            pos_module->line_record.color = colors[color_index];
+            pos_module->line_record.distance = distance;
+            if (next_module->model == modelEmbellish) {
+              // Make sure it's on the list of record heads.
+              bool found = false;
+              for (int i = 0; i < (int) buffer->record_heads.size(); ++i) {
+                if (buffer->record_heads[i].module_id == next_module->getId()) {
+                  found = true;
+                  break;
+                }
+              }
+              if (!found) {
+                buffer->record_heads.push_back(RecordHeadTrace(next_module->getId(),
+                                                    pos_module->line_record.position));
+              }
+            }
+          }
+          // If we are still in our module list, move to the right.
+          auto m = next_module->model;
+          if (m == modelDepict) {
+            // If there is a Depict, then make sure the waveform is being updated.
+            found_depict = true;
+          }
+          if ((m == modelRuminate) ||
+              (m == modelEmbellish) ||
+              (m == modelDepict)) {  // This will be a list soon...
+            next_module = next_module->getRightExpander().module;
+          } else {
+            break;
+          }
+        }
+        buffer->freshen_waveform = found_depict;
+      }
+      // TODO: add a process that eliminates very old RecordHead modules that
+      // appear to be unused.
+      // We are possibly not connected to them any more.
+      // Or in some other way, remove them.
+      // Or more likely, replace the record_heads list (removing an item from
+      // a vector is not thread-safe).
+    }
+  }
+
+  // Yes, it's little weird to bypass a Memory, but, eh, if you want it to stop loading
+  // new files based on Tipsy input...sure, people might do it.
+  void processBypass(const ProcessArgs& args) override {
+    HandleLights(args);  // It really looks like a bug if the lights don't get assigned right.
+  }
+
   void process(const ProcessArgs& args) override {
     // This is just for the initial creation of the buffer.
     // We can't fill the buffer until process() is called, since we don't know
@@ -973,70 +1047,7 @@ struct Memory : BufferedModule {
         }
       } 
 
-      // Periodically assign colors to each connected module's light.
-      // We also take this opportunity to add any unknown recording heads to
-      // the buffer->record_heads vector.
-      // I'd considered putting these tasks on a background thread, but
-      // getRightExpander() is a method on Module.
-      // And we can't put this in a call to onExpanderChange(), because events
-      // several modules down can affect these results.
-      if (--assign_color_countdown <= 0) {
-        // One sixtieth of a second.
-        assign_color_countdown = (int) (args.sampleRate / 60);
-
-        std::shared_ptr<Buffer> buffer = getHandle()->buffer;
-        if (buffer) {  // Checks for null.
-          Module* next_module = getRightExpander().module;
-          int color_index = -1;
-          int distance = 0;
-          bool found_depict = false;
-          while (next_module) {
-            if ((next_module->model == modelRuminate) ||
-                (next_module->model == modelEmbellish)) {
-              // Assign a Color.
-              distance++;
-              color_index = (color_index + 1) % COLOR_COUNT;
-              PositionedModule* pos_module = dynamic_cast<PositionedModule*>(next_module);
-              pos_module->line_record.color = colors[color_index];
-              pos_module->line_record.distance = distance;
-              if (next_module->model == modelEmbellish) {
-                // Make sure it's on the list of record heads.
-                bool found = false;
-                for (int i = 0; i < (int) buffer->record_heads.size(); ++i) {
-                  if (buffer->record_heads[i].module_id == next_module->getId()) {
-                    found = true;
-                    break;
-                  }
-                }
-                if (!found) {
-                  buffer->record_heads.push_back(RecordHeadTrace(next_module->getId(),
-                                                      pos_module->line_record.position));
-                }
-              }
-            }
-            // If we are still in our module list, move to the right.
-            auto m = next_module->model;
-            if (m == modelDepict) {
-              // If there is a Depict, then make sure the waveform is being updated.
-              found_depict = true;
-            }
-            if ((m == modelRuminate) ||
-                (m == modelEmbellish) ||
-                (m == modelDepict)) {  // This will be a list soon...
-              next_module = next_module->getRightExpander().module;
-            } else {
-              break;
-            }
-          }
-          buffer->freshen_waveform = found_depict;
-        }
-        // TODO: add a process that eliminates very old RecordHead modules that
-        // appear to be unused.
-        // We are possibly not connected to them any more.
-        // Or in some other way, remove them.
-        // Or more likely, replace the record_heads list (removing an item from
-        // a vector is not thread-safe).
-      }
+      HandleLights(args);
 
       // We may be being asked to wipe and/or reset. Both of these take more than one
       // process() call to complete.
