@@ -23,9 +23,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.4142136"
-     inkscape:cx="-17.677669"
-     inkscape:cy="268.70057"
+     inkscape:zoom="5.6568544"
+     inkscape:cx="15.998291"
+     inkscape:cy="363.09932"
      inkscape:document-units="mm"
      inkscape:current-layer="g1684"
      showgrid="false"
@@ -34,11 +34,11 @@
      inkscape:snap-page="true"
      inkscape:bbox-nodes="false"
      inkscape:snap-bbox-edge-midpoints="false"
-     inkscape:window-width="1181"
-     inkscape:window-height="993"
-     inkscape:window-x="426"
-     inkscape:window-y="23"
-     inkscape:window-maximized="1"
+     inkscape:window-width="1108"
+     inkscape:window-height="1295"
+     inkscape:window-x="398"
+     inkscape:window-y="79"
+     inkscape:window-maximized="0"
      inkscape:snap-bbox-midpoints="true"
      inkscape:snap-nodes="false"
      inkscape:document-rotation="0"
@@ -203,11 +203,12 @@
     <g
        aria-label="T"
        id="text1225-8"
-       style="font-size:14.1111px;line-height:1.25;word-spacing:0px;display:inline;stroke-width:0.264583"
+       style="font-size:14.1111px;line-height:1.25;word-spacing:0px;display:inline;stroke-width:0.264583;fill:#000000;fill-opacity:1"
        transform="translate(21.913642,-21.945844)">
       <path
          d="m -12.187768,265.85345 h -3.665579 v 9.04682 h -1.364257 v -9.04682 h -3.665579 v -1.21267 h 8.695415 z"
-         id="path1227-8" />
+         id="path1227-8"
+         style="fill:#000000;fill-opacity:1" />
     </g>
     <g
        aria-label="LOAD"
@@ -228,7 +229,7 @@
          id="path705" />
     </g>
     <rect
-       style="display:inline;fill:#000000;fill-opacity:0.88755;stroke-width:0.238931"
+       style="display:inline;fill:#000000;fill-opacity:1;stroke-width:0.238931"
        id="rect652"
        width="12.668575"
        height="12.967006"
@@ -246,7 +247,7 @@
          style="fill:#e8f1f2;fill-opacity:1" />
     </g>
     <rect
-       style="display:inline;fill:#000000;fill-opacity:0.88755;stroke-width:0.187101"
+       style="display:inline;fill:#000000;fill-opacity:1;stroke-width:0.187101"
        id="rect652-5"
        width="10.287325"
        height="9.7920055"
@@ -255,7 +256,7 @@
        ry="3.854296"
        transform="translate(0,168.49998)" />
     <rect
-       style="display:inline;fill:#000000;fill-opacity:0.88755;stroke-width:0.187101"
+       style="display:inline;fill:#000000;fill-opacity:1;stroke-width:0.187101"
        id="rect652-5-0"
        width="10.287325"
        height="9.7920055"

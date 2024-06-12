@@ -1,3 +1,5 @@
+#include <ctime>
+#include <iomanip>
 #include <thread>
 #include <cstdlib> // for strtol
 
@@ -873,8 +875,9 @@ struct Memory : BufferedModule {
               size_t start_pos = next.find_first_of("0123456789"); // Find the first digit
               if (start_pos == std::string::npos && loadable_files.size() > 0) {
                 // Handle the case where no digits are found.
-                // TODO: add this to the logging port.
-                // std::cerr << "Error: No integer found in the string." << std::endl;
+                std::string message = "ERROR: no number found in '" + next + "', expecting " +
+                  "a string like '#3'.";
+                log_message_sender.AddToQueue(message);
               } else {
                 char* endptr;
                 long parsed_long = strtol(next.c_str() + start_pos, &endptr, 10);
@@ -882,12 +885,14 @@ struct Memory : BufferedModule {
                 // Check for conversion errors
                 if (endptr == next.c_str() + start_pos || *endptr != '\0') {
                   // Handle the case where the conversion failed
-                  // TODO: add this to the logging port.
-                  // std::cerr << "Error: Could not convert substring to integer." << std::endl;
+                  std::string message = "ERROR: couldn't understand '" + next + "', expecting " +
+                    "a string like '#3'.";
+                  log_message_sender.AddToQueue(message);
                 } else if (parsed_long > INT_MAX || parsed_long < INT_MIN) {
                   // Handle overflow if the parsed value is outside int range
-                  // TODO: add this to the logging port.
-                  // std::cerr << "Error: Integer conversion out of range." << std::endl;
+                  std::string message = "ERROR: the number found in '" + next + "' is too large, " +
+                    "expecting a string like '#3'.";
+                  log_message_sender.AddToQueue(message);
                 } else {
                   int parsed_int = static_cast<int>(parsed_long); // Cast to int if successful
                   // Now pick the relevant file in the directory.
@@ -912,10 +917,8 @@ struct Memory : BufferedModule {
               }
             } else {
               // Not a number, just a name.
-              // TODO: ensure that it's in the directory we're reading from,
-              //   as long as this isn't a subpath (e.g., foo/bar.wav).
-              // OK, so this isn't the precisely correct queue, but we check it just below,
-              // so more clean to do this.
+              // No, this isn't the precisely correct queue, but we check it just below,
+              // so simpler to do this.
               FileOperationReporting* reporter = new FileOperationReporting();
               reporters.push_back(reporter);
               PrepareTask* task = PrepareTask::LoadFileTask(
@@ -983,7 +986,7 @@ struct Memory : BufferedModule {
                 reporters.push_back(reporter);
                 task->status = reporter;
               }
-              // TODO: though it'd be nice if we could actually interrupt a file load with a new load,
+              // TODO: it'd be nice if we could actually interrupt a file load with a new load,
               // as the Tipsy automation means we could receive load requests far faster than we
               // can process them. Best to not get stuck waiting for a really slow network file
               // to load.
@@ -1019,13 +1022,6 @@ struct Memory : BufferedModule {
                 save_task->status->completed = SAVE_COMPLETED;
                 delete save_task;
               }
-              /*
-               else {
-                // This conception of "loaded_file" makes less sense.
-                // TODO: fix this.
-                loaded_file = task->str1;
-              }
-              */
             }
             break;
 
@@ -1101,8 +1097,6 @@ struct Memory : BufferedModule {
         }
       } else {
         if (wipe) {
-          // TODO: Decide (or menu options) to pause all recording and playing
-          // during a wipe? Or at least fade the players?
           std::shared_ptr<Buffer> buffer = getHandle()->buffer;
           if (buffer) {  // It should be, but let's be certain.
             PrepareTask* task = PrepareTask::MakeBlank(buffer->seconds);
@@ -1116,11 +1110,11 @@ struct Memory : BufferedModule {
       // Attend to any reporters, if need be.
       for (int i = 0; i < (int) reporters.size(); ++i) {
         FileOperationReporting* reporter = reporters[i];
-        // TODO: add any lines to the log here.
+        // Add all lines in the report to the log here.
         if (reporter->log_messages.lines.size() > 0) {
           std::string line;
           while (reporter->log_messages.lines.pop(line)) {
-            log_message_sender.AddToQueue(line);  // Need to add a "/n"?
+            log_message_sender.AddToQueue(line);  // Need to add a "/n"? No.
           }
         }
         if (reporter->completed > IN_PROGRESS) {
@@ -1171,21 +1165,25 @@ struct Memory : BufferedModule {
 
   std::string selectSaveFile() {
     std::string path_string = "";
-    // TODO: Pick a more interesting default file name.
+     // I like things that default file names to a time stamp. 
+    char date_buffer[80];
+
+    // Convert unix time to local time structure.
+    time_t unixTime = static_cast<time_t>(system::getUnixTime());
+    struct tm* localTime = localtime(&unixTime);
+    strftime(date_buffer, sizeof(date_buffer), "Memory %Y-%m-%d %H-%M-%S.wav", localTime);
+
     char *path = osdialog_file(
       OSDIALOG_SAVE,
       load_folder_name.empty() ? NULL : load_folder_name.c_str(),
-      "memory.wav", osdialog_filters_parse("Wav:wav"));
+      date_buffer, osdialog_filters_parse("Wav:wav"));
 
     if (path != NULL) {
         path_string.assign(path);
         std::free(path);  // Required by osdialog_file().
     }
-
     return (path_string);
   }
-
-
 };
 
 struct MenuItemPickFolder : MenuItem {

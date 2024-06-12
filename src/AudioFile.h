@@ -32,6 +32,13 @@
 // https://github.com/clone45/voxglitch/blob/91b61f7477a2721f16870ff0442892335cd927c1/src/vgLib-1.0/AudioFile.h
 // I've since modified it to use the logging mechanism I need.
 
+// TODO: Consider replacing this with https://github.com/sportdeath/audiorw,
+// which can read and write a broader range of files.
+
+// Also, I cannot seem to read .aif files (at least the ones I get from the OP-1 and other sources)
+// correctly. If they load at all, they sound like massively hissy versions of
+// themselves, clipping terribly?
+
 #ifndef _AS_AudioFile_h
 #define _AS_AudioFile_h
 
