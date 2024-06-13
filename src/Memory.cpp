@@ -652,14 +652,17 @@ struct Memory : BufferedModule {
   std::string load_folder_name;  // For menu to display.
   std::vector<std::string> loadable_files;  // List found in menu.
   std::string loaded_file;  // Checked item in menu.
+  std::string save_folder_name;  // For menu to display.
   std::vector<FileOperationReporting*> reporters;
   // Makes the output trigger for loads and saves when needed.
   dsp::PulseGenerator load_generator;
   dsp::PulseGenerator save_generator;
 
-  // Listening to the Tipsy connection for loading files.
+  // Listening to the Tipsy connection for loading/saving files.
   unsigned char load_recv_buffer[recvBufferSize];
   tipsy::ProtocolDecoder load_decoder;
+  unsigned char save_recv_buffer[recvBufferSize];
+  tipsy::ProtocolDecoder save_decoder;
 
   // Mechanism for sending text out.
   TextSender log_message_sender;
@@ -694,6 +697,7 @@ struct Memory : BufferedModule {
     prepare_thread = new std::thread(&PrepareThread::Work, prepare_worker);
 
     load_decoder.provideDataBuffer(load_recv_buffer, recvBufferSize);
+    save_decoder.provideDataBuffer(save_recv_buffer, recvBufferSize);
   }
 
   ~Memory() {
@@ -724,17 +728,24 @@ struct Memory : BufferedModule {
     if (!load_folder_name.empty()) {
       json_object_set_new(rootJ, "load_folder", json_string(load_folder_name.c_str()));
     }
+    if (!save_folder_name.empty()) {
+      json_object_set_new(rootJ, "save_folder", json_string(save_folder_name.c_str()));
+    }
     return rootJ;
   }
 
   void dataFromJson(json_t* rootJ) override {
-     json_t* load_folderJ = json_object_get(rootJ, "load_folder");
+    json_t* load_folderJ = json_object_get(rootJ, "load_folder");
     if (load_folderJ) {
       load_folder_name.assign(json_string_value(load_folderJ));
       PrepareTask* task = PrepareTask::LoadDirectoryTask(load_folder_name);
       if (!widget_module_queue.tasks.push(task)) {
         delete task;
       }
+    }
+    json_t* save_folderJ = json_object_get(rootJ, "save_folder");
+    if (save_folderJ) {
+      save_folder_name.assign(json_string_value(save_folderJ));
     }
   }
 
@@ -897,6 +908,7 @@ struct Memory : BufferedModule {
                   int parsed_int = static_cast<int>(parsed_long); // Cast to int if successful
                   // Now pick the relevant file in the directory.
                   // First make sure in the range.
+                  // Yes, we're zero-indexed for reading this list.
                   parsed_int = parsed_int % loadable_files.size();
 
                   // OK, so this isn't the precisely correct queue, but we check it just below,
@@ -930,6 +942,32 @@ struct Memory : BufferedModule {
                 reporter->completed = LOAD_COMPLETED;
                 delete task;
               }
+            }
+          }
+        }
+      }
+      // The SAVE file case is simpler, since there's no #NNN syntax.
+      // TODO: should there be a text gesture that saves using the default name? Not certain
+      // I see that being useful.
+      if (inputs[TIPSY_SAVE_INPUT].isConnected()) {
+        auto decoder_status = save_decoder.readFloat(
+            inputs[TIPSY_SAVE_INPUT].getVoltage());
+        if (!save_decoder.isError(decoder_status) &&
+            decoder_status == tipsy::DecoderResult::BODY_READY &&
+            std::strcmp(save_decoder.getMimeType(), "text/plain") == 0) {
+          std::string next(std::string((const char *) save_recv_buffer));
+          if (next.size() > 0) {
+            FileOperationReporting* reporter = new FileOperationReporting();
+            reporters.push_back(reporter);
+
+            BufferTask* task = BufferTask::SaveFileTask(
+              reporter, system::join(save_folder_name, next));
+            if (!module_buffer_queue.tasks.push(task)) {
+              std::string message = "ERROR: Queue is full, cannot save '" +
+                next + "'.";
+              reporter->log_messages.lines.push(message);
+              reporter->completed = SAVE_COMPLETED;
+              delete task;
             }
           }
         }
@@ -1152,7 +1190,26 @@ struct Memory : BufferedModule {
     std::string path_string = "";
     char *path = osdialog_file(
       OSDIALOG_OPEN_DIR,
-      load_folder_name.empty() ? NULL : load_folder_name.c_str(),
+      load_folder_name.empty() ?
+        (save_folder_name.empty() ? NULL : save_folder_name.c_str()) :
+        load_folder_name.c_str(),
+      NULL, NULL);
+
+    if (path != NULL) {
+        path_string.assign(path);
+        std::free(path);  // Required by osdialog_file().
+    }
+
+    return (path_string);
+  }
+
+  std::string selectSaveFolder() {
+    std::string path_string = "";
+    char *path = osdialog_file(
+      OSDIALOG_OPEN_DIR,
+      save_folder_name.empty() ?
+        (load_folder_name.empty() ? NULL : load_folder_name.c_str()) :
+        save_folder_name.c_str(),
       NULL, NULL);
 
     if (path != NULL) {
@@ -1173,9 +1230,12 @@ struct Memory : BufferedModule {
     struct tm* localTime = localtime(&unixTime);
     strftime(date_buffer, sizeof(date_buffer), "Memory %Y-%m-%d %H-%M-%S.wav", localTime);
 
+    // Default to save folder. If not set, default to load_folder.
     char *path = osdialog_file(
       OSDIALOG_SAVE,
-      load_folder_name.empty() ? NULL : load_folder_name.c_str(),
+      save_folder_name.empty() ?
+        (load_folder_name.empty() ? NULL : load_folder_name.c_str()) :
+        save_folder_name.c_str(),
       date_buffer, osdialog_filters_parse("Wav:wav"));
 
     if (path != NULL) {
@@ -1186,7 +1246,7 @@ struct Memory : BufferedModule {
   }
 };
 
-struct MenuItemPickFolder : MenuItem {
+struct MenuItemPickLoadFolder : MenuItem {
   Memory *module;
 
   void onAction(const event::Action &e) override {
@@ -1198,6 +1258,17 @@ struct MenuItemPickFolder : MenuItem {
       if (!module->widget_module_queue.tasks.push(task)) {
         delete task;
       }
+    }
+  }
+};
+
+struct MenuItemPickSaveFolder : MenuItem {
+  Memory *module;
+
+  void onAction(const event::Action &e) override {
+    std::string filename = module->selectSaveFolder();
+    if (filename != "") {
+      module->save_folder_name = filename;
     }
   }
 };
@@ -1269,7 +1340,7 @@ struct MemoryWidget : ModuleWidget {
       menu->addChild(new MenuSeparator);
       menu->addChild(createMenuLabel("Pick Folder for Loading"));
 
-      MenuItemPickFolder* menu_item_load_folder = new MenuItemPickFolder;
+      MenuItemPickLoadFolder* menu_item_load_folder = new MenuItemPickLoadFolder;
       if (module->load_folder_name.empty()) {
         menu_item_load_folder->text = "Click here to pick";  
       } else {
@@ -1299,15 +1370,21 @@ struct MemoryWidget : ModuleWidget {
         menu->addChild(loadable_file_menu);
       }
 
+      menu->addChild(new MenuSeparator);
+      menu->addChild(createMenuLabel("Pick Folder for Saving"));
+
+      MenuItemPickSaveFolder* menu_item_save_folder = new MenuItemPickSaveFolder;
+      if (module->save_folder_name.empty()) {
+        menu_item_save_folder->text = "Click here to pick";  
+      } else {
+        menu_item_save_folder->text = module->save_folder_name;
+      }
+      menu_item_save_folder->module = module;
+      menu->addChild(menu_item_save_folder);
       MenuItemPickSaveFile* menu_item_save_file = new MenuItemPickSaveFile;
       menu_item_save_file->text = "Save to File...";  
       menu_item_save_file->module = module;
       menu->addChild(menu_item_save_file);
-
-      // TODO: pick saving folder?
-
-
-
   }
 };
 
