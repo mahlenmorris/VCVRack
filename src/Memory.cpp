@@ -519,6 +519,10 @@ struct PrepareThread {
               if (worked) {
                 task->status->log_messages.lines.push(
                   "Completed read of '" + task->str1 + "'.");
+                task->status->log_messages.lines.push(
+                  "It is " + std::to_string(audio_file.getLengthInSeconds()) +
+                  " seconds long.");
+                
                 // This part can also be slow, since it walks over every sample.
                 busy = true;
                 ConvertFileToSamples(task, audio_file);
