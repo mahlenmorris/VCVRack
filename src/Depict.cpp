@@ -47,8 +47,8 @@ struct Depict : Module {
 		//   MemoryDepict (below) can draw the results.
 		// Note that Memory is responsible for telling each module what color it is.
 		if (--get_line_record_countdown <= 0) {
-      // One hundredth of a second.
-      get_line_record_countdown = (int) (args.sampleRate / 100);
+      // One sixtieth of a second.
+      get_line_record_countdown = (int) (args.sampleRate / 60);
 
 			bool connected = false;
 			max_distance = 0;

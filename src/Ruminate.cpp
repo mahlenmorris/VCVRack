@@ -162,8 +162,8 @@ struct Ruminate : PositionedModule {
 		// The number of modules it needs to go through does seem to increase the
 		// CPU consummed by the module.
 		if (--find_memory_countdown <= 0) {
-      // One hundredth of a second.
-      find_memory_countdown = (int) (args.sampleRate / 100);
+      // One sixtieth of a second.
+      find_memory_countdown = (int) (args.sampleRate / 60);
 
 			buffer = findClosestMemory(getLeftExpander().module);
 		}
