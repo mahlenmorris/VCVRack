@@ -1117,6 +1117,9 @@ TTY logs the values being produced by Random.
 TTY logging the text being sent by BASICally.
 ![TTYBasic](images/TTYBasic.png)
 
+TTY logging the text being sent by Memory when it loads or saves files.
+![TTYLogging](images/TTYLogging.png)
+
 More examples in [this patch](examples/TTYExamples.vcv).
 
 ### Uses
@@ -1125,9 +1128,8 @@ some cases, this is more precise, more fine-grained, and easier to read than
 a scope trace, especially when monitoring over a long period of time.
 * Logging text messages from modules that produce them using the [Tipsy
 protocol](https://github.com/baconpaul/tipsy-encoder). As of this writing
-in August 2023,
-the only such module is my [BASICally](#basically) module, but more
-are coming.
+in June 2024, the only such modules that I know of are my [BASICally](#basically)
+and [Memory](Memory.md#memory) modules.
 
 ### Features
 * **Note that navigation works much better when the Pause button is lit**.
