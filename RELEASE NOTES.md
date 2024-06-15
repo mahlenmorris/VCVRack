@@ -12,6 +12,7 @@ when you have the LOG output of Memory cabled to a TEXTn input on a TTY module, 
 * Ruminate now has two new menu options:
 * * Fade on Move - affects the behavior when the slider or SET moves the position of the head.
 If checked (the default), the L&R outputs will be silent until the position stops changing. If not checked, then the playback will continue as it's being moved.
+See [example video](https://www.youtube.com/watch?v=dOsupn0-Mxw).
 * * Use Speed as V/Oct - affects how the SPEED is interpreted. When unchecked (the default),
 the sum of the SPEED input and control is how many samples the playhead moves forward per sample emitted, so 1 is normal speed, .5 is half-speed. When checked, this sum will be interpreted the way that V/Oct is interpreted in most modules. See [example video](https://www.youtube.com/watch?v=kGKmS2WjqIs).
 * When the sliders on Ruminate and Embellish are released, they now resume normal operation more quickly.
