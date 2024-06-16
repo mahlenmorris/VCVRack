@@ -331,11 +331,19 @@ struct FuseDisplay : Widget {
   }
 
   void drawLayer(const DrawArgs& args, int layer) override {
-    if ((layer == 1) && module) {
+    if (layer == 1) {
+      // Set some default values, in case this is in browser or library page.
+      float completion = 0.4;
+      int style = 2;
+      // I think this is not seen, but in case I change things later.
+      std::string count_text("4");
+      if (module) {
+        completion = module->getCompletion();
+        style = module->getStyle();
+        count_text.assign(std::to_string(module->count));
+      }
       Rect r = box.zeroPos();
       Vec bounding_box = r.getBottomRight();
-      float completion = module->getCompletion();
-      int style = module->getStyle();
 
       // Draw the completed part in green/yellow/red.
       // We track this color, in case there will be text on top of it.
@@ -445,11 +453,10 @@ struct FuseDisplay : Widget {
           nvgFontFaceId(args.vg, font->handle);
           nvgTextLetterSpacing(args.vg, -2);
 
-          std::string text = std::to_string(module->count);
           // Place on the line just off the left edge.
-          nvgText(args.vg, 1, bounding_box.y / 2.0 + 4, text.c_str(), NULL);
+          nvgText(args.vg, 1, bounding_box.y / 2.0 + 4, count_text.c_str(), NULL);
 
-          text = std::to_string(static_cast<int>(
+          std::string text = std::to_string(static_cast<int>(
             floor(completion * 100))) + "%";
           // Place on the line just off the left edge.
           float backspace = text.length() * 4.5f + 2;
