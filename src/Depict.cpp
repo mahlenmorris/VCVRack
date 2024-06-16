@@ -116,106 +116,182 @@ struct Depict : Module {
 struct MemoryDepict : Widget {
   Depict* module;
 
+	// Only used when generating an image for the module browser.
+  std::vector<LineRecord> dummy_lines = {
+    {2.34, SCHEME_RED, RUMINATE, 1},
+    {7.9, SCHEME_BLUE, RUMINATE, 2},
+    {5.5, SCHEME_ORANGE, EMBELLISH, 3},
+    {0.3, SCHEME_PURPLE, EMBELLISH, 4}
+	};
+
   MemoryDepict() {}
+
+	// Only used when making an image for the module browser.
+	void FillDummyWaveform(PointBuffer* waveform, bool dummy_data) {
+		if (dummy_data) {
+			waveform->normalize_factor = 1.0;  // 10.0V maximum.
+			waveform->text_factor.assign("10V");
+		} else {
+			waveform->normalize_factor = 1000;  // 0.01V maximum.
+			waveform->text_factor.assign("0.01V");
+		}
+		// This is just some silly way to make an interesting waveform I came up with.
+		double z = 1.0, z2 = 1.0;
+		double in2 = 1.133, in3 = 2.024;
+		double out = 0.0, out_l, out_r;
+		for (int i = 0; i < WAVEFORM_SIZE; ++i) {
+			if (dummy_data) {
+				z *= .98;
+				z2 *= .91;
+				if (z < 0.0001) z = 1.0;
+				if (z2 < 0.0001) z2 = 1.0;
+				out = (sin(out * 5) * in2 * in3 + 0.1) * 3;
+
+				// Make it vary a bit left-to-right, so it doesn't look too symmetrical.
+				double bias = sin(6.28318 * i / WAVEFORM_SIZE);  // -1 -> 1
+				out_l = (out + bias) * std::max(z, z2);
+				out_r = (out - bias) * std::max(z, z2);
+
+				waveform->points[i][0] = abs(out_l);
+				waveform->points[i][1] = abs(out_r);
+			} else {
+				waveform->points[i][0] = 0.0;
+				waveform->points[i][1] = 0.0;
+			}
+		}
+	}
 
 	// By using drawLayer() instead of draw(), this becomes a glowing Depict
 	// when the "room lights" are turned down. That seems correct to me.
   void drawLayer(const DrawArgs& args, int layer) override {
-    if ((layer == 1) && module) {
-			std::shared_ptr<Buffer> buffer = module->buffer;  // In case it gets reset by another action.
-			if (buffer && buffer->IsValid()) {
+    if (layer == 1) {
+			int max_distance;
+			int line_record_size;
+			int buffer_length;
+			PointBuffer* waveform;
+		  // True iff point_buffer was allocated just for this call.
+			bool free_point_buffer = false;
 
-				// just in case max_distance is zero somehow, I don't want to divide by it.
-				int max_distance = std::max(1, module->max_distance + 1);
-				Rect r = box.zeroPos();
-				Vec bounding_box = r.getBottomRight();
-
-				double x_per_volt = (bounding_box.x - 1.0) / 20.0;
-				double zero_volt_left = bounding_box.x / 2 - 0.5;
-				double zero_volt_right = bounding_box.x / 2 + 0.5;
-				double y_per_point = bounding_box.y / WAVEFORM_SIZE;
-
-				// Draw the wave forms.
-				// In one shape we:
-				// * Draw the left side side from bottom to top.
-				// * Draw the right side line from top to bottom.
-				// * Join them. Draw that shape.
-				// Then draw a white line down the middle to suggest that these are
-				// two separate channels.
-
-				// Make half-white.
-				nvgFillColor(args.vg, nvgRGBA(140, 140, 140, 255));
-
-				nvgSave(args.vg);
-				nvgScissor(args.vg, RECT_ARGS(r));  // Not sure this is right?
-				nvgBeginPath(args.vg);
-
-				// Draw left points on the left of the mid.
-				double normalize = buffer->waveform.normalize_factor;
-				for (int i = 0; i < WAVEFORM_SIZE; i++) {
-					float max = buffer->waveform.points[i][0] * normalize;
-					// We'll say the x position ranges from -10V to 10V.
-					float x = zero_volt_left - (max * x_per_volt);
-					float y = (WAVEFORM_SIZE - i) * y_per_point;
-					if (i == 0) {
-						nvgMoveTo(args.vg, x, y);
-					} else {
-						nvgLineTo(args.vg, x, y);
-					}
+			if (module) {
+				max_distance = std::max(1, module->max_distance + 1);
+				line_record_size = (int) module->line_records.size();
+				std::shared_ptr<Buffer> buffer = module->buffer;  // In case it gets reset by another action.
+				if (buffer && buffer->IsValid()) {
+					waveform = &(buffer->waveform);
+					buffer_length = buffer->length;
+				} else {
+					waveform = new PointBuffer();
+					FillDummyWaveform(waveform, false);
+					buffer_length = 100000;
+					free_point_buffer = true;
 				}
+			} else {
+				// Dummy data for the module browser.
+				max_distance = 5;  // I'll have four heads.
+				line_record_size = 4;
+				waveform = new PointBuffer();
+				FillDummyWaveform(waveform, true);
+				free_point_buffer = true;
+				buffer_length = 10;
+			}
+		 	
+			// just in case max_distance is zero somehow, I don't want to divide by it.
+			Rect r = box.zeroPos();
+			Vec bounding_box = r.getBottomRight();
 
-				// Now do the right channel.
-				for (int i = WAVEFORM_SIZE - 1; i >= 0; i--) {
-					float max = buffer->waveform.points[i][1] * normalize;
-					float x = zero_volt_right + (max * x_per_volt);
-					float y = (WAVEFORM_SIZE - 1 - i) * y_per_point;
+			double x_per_volt = (bounding_box.x - 1.0) / 20.0;
+			double zero_volt_left = bounding_box.x / 2 - 0.5;
+			double zero_volt_right = bounding_box.x / 2 + 0.5;
+			double y_per_point = bounding_box.y / WAVEFORM_SIZE;
+
+			// Draw the wave forms.
+			// In one shape we:
+			// * Draw the left side side from bottom to top.
+			// * Draw the right side line from top to bottom.
+			// * Join them. Draw that shape.
+			// Then draw a white line down the middle to suggest that these are
+			// two separate channels.
+
+			// Make half-white.
+			nvgFillColor(args.vg, nvgRGBA(140, 140, 140, 255));
+
+			nvgSave(args.vg);
+			nvgScissor(args.vg, RECT_ARGS(r));  // Not sure this is right?
+			nvgBeginPath(args.vg);
+
+			// Draw left points on the left of the mid.
+			for (int i = 0; i < WAVEFORM_SIZE; i++) {
+				float max = waveform->points[i][0] * waveform->normalize_factor;
+				// We'll say the x position ranges from -10V to 10V.
+				float x = zero_volt_left - (max * x_per_volt);
+				float y = (WAVEFORM_SIZE - i) * y_per_point;
+				if (i == 0) {
+					nvgMoveTo(args.vg, x, y);
+				} else {
 					nvgLineTo(args.vg, x, y);
 				}
+			}
 
-				nvgClosePath(args.vg);
-				nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
-				nvgFill(args.vg);
+			// Now do the right channel.
+			for (int i = WAVEFORM_SIZE - 1; i >= 0; i--) {
+				float max = waveform->points[i][1] * waveform->normalize_factor;
+				float x = zero_volt_right + (max * x_per_volt);
+				float y = (WAVEFORM_SIZE - 1 - i) * y_per_point;
+				nvgLineTo(args.vg, x, y);
+			}
 
-				// Draw line.
-	      nvgBeginPath(args.vg);
-				nvgRect(args.vg, zero_volt_left, 0, 0.5f, bounding_box.y);
-				nvgFillColor(args.vg, SCHEME_WHITE);
-				nvgFill(args.vg);
+			nvgClosePath(args.vg);
+			nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
+			nvgFill(args.vg);
 
-				// Add text to indicate the largest value we currently display.
+			// Draw line.
+			nvgBeginPath(args.vg);
+			nvgRect(args.vg, zero_volt_left, 0, 0.5f, bounding_box.y);
+			nvgFillColor(args.vg, SCHEME_WHITE);
+			nvgFill(args.vg);
+
+			// Add text to indicate the largest value we currently display.
+			nvgBeginPath(args.vg);
+			nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
+			nvgFillColor(args.vg, SCHEME_BLUE);
+			nvgFontSize(args.vg, 11);
+			// Do I need this? nvgFontFaceId(args.vg, font->handle);
+			nvgTextLetterSpacing(args.vg, -1);
+
+			// Place on the line just off the left edge.
+			nvgText(args.vg, 4, 10, waveform->text_factor.c_str(), NULL);
+
+			// Restore previous state.
+			nvgResetScissor(args.vg);
+			nvgRestore(args.vg);
+
+			// Then draw the recording heads on top.
+			for (int i = 0; i < line_record_size; i++) {
+				LineRecord line;
+				if (module) {
+					line = module->line_records[i];
+				} else {
+					line = dummy_lines[i];
+				}
 				nvgBeginPath(args.vg);
-				nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
-				nvgFillColor(args.vg, SCHEME_BLUE);
-				nvgFontSize(args.vg, 11);
-				// Do I need this? nvgFontFaceId(args.vg, font->handle);
-				nvgTextLetterSpacing(args.vg, -1);
+				// I picture 0.0 at the bottom. TODO: is that a good idea?
+				double y_pos = bounding_box.y *
+												(1 - ((double) line.position / buffer_length));
+				// Line is changed by distance and type.
+				if (line.type == RUMINATE) {
+					// Endpoint of line suggests which module it is.
+					double len = bounding_box.x * line.distance / max_distance;
+					nvgRect(args.vg, 0.0, y_pos, len, 1);
+				} else {
+					double len = bounding_box.x * (max_distance - line.distance) / max_distance;
+					nvgRect(args.vg, bounding_box.x - len, y_pos, len, 2);
+				}
+				nvgFillColor(args.vg, line.color);
+				nvgFill(args.vg);
+			}
 
-				// Place on the line just off the left edge.
-				nvgText(args.vg, 4, 10, buffer->waveform.text_factor.c_str(), NULL);
-
-				// Restore previous state.
-				nvgResetScissor(args.vg);
-				nvgRestore(args.vg);
-
-				// Then draw the recording heads on top.
-				for (int i = 0; i < (int) module->line_records.size(); i++) {
-					LineRecord line = module->line_records[i];
-					nvgBeginPath(args.vg);
-					// I picture 0.0 at the bottom. TODO: is that a good idea?
-					double y_pos = bounding_box.y *
-					               (1 - ((double) line.position / buffer->length));
-					// Line is changed by distance and type.
-					if (line.type == RUMINATE) {
-						// Endpoint of line suggests which module it is.
-						double len = bounding_box.x * line.distance / max_distance;
-						nvgRect(args.vg, 0.0, y_pos, len, 1);
-					} else {
-						double len = bounding_box.x * (max_distance - line.distance) / max_distance;
-						nvgRect(args.vg, bounding_box.x - len, y_pos, len, 2);
-					}
-					nvgFillColor(args.vg, line.color);
-					nvgFill(args.vg);
-		    }
+			if (free_point_buffer) {
+				delete waveform;
 			}
 		}
     Widget::drawLayer(args, layer);

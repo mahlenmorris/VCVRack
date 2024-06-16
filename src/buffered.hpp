@@ -78,7 +78,7 @@ struct Buffer {
   int length = 0;
   double seconds;
 
-  // For marking blocks of the waveform that Display shows as needing to be updated.
+  // For marking blocks of the waveform that Depict shows as needing to be updated.
   bool dirty[WAVEFORM_SIZE];
   // Shortcut to mark all blocks dirty.
   bool full_scan;
@@ -154,16 +154,21 @@ enum ModuleType {
 };
 
 struct LineRecord {
-	double position;  // Set by module. Read by Display.
-	NVGcolor color;  // Set by Memory. Read by Display and the module.
-	ModuleType type;  // Set by module class. Read by Display.
+	double position;  // Set by module. Read by Depict.
+	NVGcolor color;  // Set by Memory. Read by Depict and the module.
+	ModuleType type;  // Set by module class. Read by Depict.
   // Number of modules away from Memory this is. One-indexed.
-  int distance;  // Set by Memory, Read by Display.
+  int distance;  // Set by Memory, Read by Depict.
 
   LineRecord() {
     // A color the system should never set. Indicates something is wrong.
     color = nvgRGBA(255, 0, 255, 255);
   }
+
+  LineRecord(double the_position, NVGcolor the_color,
+             ModuleType the_type, int the_distance) :
+    position{the_position}, color{the_color}, type(the_type), distance{the_distance}
+  {}
 };
 
 struct PositionedModule : Module {
