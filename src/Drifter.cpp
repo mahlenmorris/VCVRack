@@ -596,6 +596,9 @@ struct DrifterDisplay : LedDisplay {
   // We just use this to get the scope colors.
   ModuleWidget* moduleWidget;
   std::string fontPath;
+  // Only used for module browser. I'm making it an instance variable
+  // so that it doesn't get allocated every time drawLayer() is called.
+  point demo_display_points[DISPLAY_POINT_COUNT];
 
   DrifterDisplay() {
     fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
@@ -616,8 +619,6 @@ struct DrifterDisplay : LedDisplay {
       NVGcolor outputColor, inputColor;
       bool input_connected;
       float domain_value;
-      // Only used for module browser. TODO: is this costing me a lot during normal display?
-      point demo_display_points[DISPLAY_POINT_COUNT];
 
       if (module && module->initialized && moduleWidget) {
         unipolar = module->getOffsetUnipolar();
