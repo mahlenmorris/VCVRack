@@ -9,6 +9,7 @@
 * * You can load and save files from the menu, or you can use BASICally to send text messages to Memory to tell it to load or save a file.
 * * Since surprising things can happen when loading or saving files, instead of silently failing,
 when you have the LOG output of Memory cabled to a TEXTn input on a TTY module, you can read the log of what happened on the TTY.
+* * Videos about these features are [here](https://www.youtube.com/watch?v=MvuQLtUkY4w) and [here](https://www.youtube.com/watch?v=fw6dk4pGn1s).
 * Ruminate now has two new menu options:
 * * Fade on Move - affects the behavior when the slider or SET moves the position of the head.
 If checked (the default), the L&R outputs will be silent until the position stops changing. If not checked, then the playback will continue as it's being moved.
