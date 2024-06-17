@@ -57,6 +57,7 @@ Memory buffers can be quite a bit larger than 10 seconds, I decided to just map 
 * Memory modules can consume *a lot* of your computer's RAM when running. The higher the LENGTH, the more data Memory will be storing. The larger the VCV Sample Rate, the more data Memory will be storing. A single Memory set to 1000 seconds (i.e., 16m 40s) at a Sample Rate of 48 kHz is using 366 Mb of RAM.
 
 ### Controls
+**There are videos about file loading and saving [here](https://www.youtube.com/watch?v=MvuQLtUkY4w) and [here](https://www.youtube.com/watch?v=fw6dk4pGn1s).**
 #### WIPE Input and Button
 Pressing the button or sending a trigger to the WIPE input will keep the length of the Memory the same, but reset all of the values within it to 0.0V.
 #### LENGTH Knob
@@ -76,8 +77,8 @@ replace the Memory's contents with the audio from ``/my sounds/drums/snare.wav``
 * ``#N``, where N is some integer number
 * * For example, ``#0``, ``#12``, ``#776``
 * * In this case, the Nth file (zero-indexed) in the Load Folder will be loaded, wrapping around to the beginning if N is larger than the number of files.
-So if your Load Folder conatined the three files, ``apple.wav``, ``banana.wav``, and ``chocolate.wav``, then ``#0``, ``#3``, and ``#6`` would refer to ``apple.wav``.
-* * This means that a BASICally program like this will load a random file in the Load Folder every time IN1 sees a trigger.
+So if your Load Folder conatined the three files, ``apple.wav``, ``banana.wav``, and ``chocolate.wav``, then ``#0``, ``#3``, and ``#6`` would all refer to ``apple.wav``.
+* * This means that a BASICally program like the following will load a random file in the Load Folder every time IN1 sees a trigger.
 ![Memory Example - Load Random File](images/LoadRandomFile.png)
 #### LOAD Completion Output
 Loading a file takes an amount of time that is hard to predict, since the file can be on an SSD, a spinning hard drive, or a network or cloud drive. And larger
@@ -102,6 +103,9 @@ files take longer to save than shorter ones. To help synchronize events that nee
 
 Any time that a file save is completed, no matter how it was started (via the menu or the Tipsy input) and no matter if it succeeds or fails (like if the named
 folder doesn't exist or can't be written to), when it has completed, a trigger will come out of this output. 
+#### LOG Tipsy Output
+If you want to see a human-readable log of load and save events, a cable from this output to one of the TEXTn inputs of the TTY module will show you
+any messages it has, including the length of files it reads in. This is especially useful if files aren't loading or saving as you expect.
 
 ### Menu Options
 #### Pick Folder for Loading
