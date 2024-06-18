@@ -90,6 +90,7 @@
   LBRACKET "["
   RBRACKET "]"
   COMMA   ","
+  DOLLAR  "$"
 ;
 
 %token <std::string> IDENTIFIER "identifier"
@@ -173,6 +174,8 @@ assignment:
   "identifier" "=" exp  { $$ = Line::Assignment($1, $3, &drv); }
 | "in_port" "=" exp     { $$ = Line::Assignment($1, $3, &drv); }
 | "out_port" "=" exp    { $$ = Line::Assignment($1, $3, &drv); }
+| "identifier" "$" "=" exp  { $$ = Line::StringAssignment($1, $4, &drv); }
+| "identifier" "$" "=" string_exp  { $$ = Line::StringAssignment($1, $4, &drv); }
 
 clear_statement:
   "clear" "all"         { $$ = Line::ClearAll(); }

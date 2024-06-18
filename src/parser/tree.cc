@@ -547,6 +547,20 @@ Line Line::Assignment(const std::string &variable_name, const Expression &expr,
   return line;
 }
 
+// expr could be a math expression or a string_exp.
+Line Line::StringAssignment(const std::string &str_variable_name,
+                            const Expression &expr, Driver* driver) {
+  Line line;
+  line.type = STRING_ASSIGNMENT;
+  std::string lower;
+  ToLower(str_variable_name, &lower);
+  line.str1 = lower;
+  line.str_variable_ptr = driver->GetStringVarFromName(lower);
+  line.expr1 = expr;
+  return line;
+}
+
+
 Line Line::ClearAll() {
   Line line;
   line.type = CLEAR;

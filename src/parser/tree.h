@@ -176,24 +176,26 @@ struct Statements;
 
 struct Line {
   enum Type {
-    ARRAY_ASSIGNMENT, // array_ptr[expr1] = expr2
-    ASSIGNMENT,  // str1 = expr1
-    CLEAR,       // Set variables to initial state (0.0f).
-    CONTINUE,    // continue str1
-    ELSEIF,      // elseif expr1 then state1
-    EXIT,        // exit str1
-    FORNEXT,     // for str1 = expr1 to expr2 state1 next
-    IFTHEN,      // if expr1 then state1 [elseifs - state2] end if
-    IFTHENELSE,  // if expr1 then state1 [elseifs - state3] else state2 end if
-    PRINT,       // print(out1, )
-    RESET,       // Start all blocks from the top, as if newly compiled.
-    WAIT         // wait expr1
+    ARRAY_ASSIGNMENT,  // array_ptr[expr1] = expr2
+    ASSIGNMENT,        // str1 = expr1
+    STRING_ASSIGNMENT, // str1$ = expr1
+    CLEAR,             // Set variables to initial state (0.0f).
+    CONTINUE,          // continue str1
+    ELSEIF,            // elseif expr1 then state1
+    EXIT,              // exit str1
+    FORNEXT,           // for str1 = expr1 to expr2 state1 next
+    IFTHEN,            // if expr1 then state1 [elseifs - state2] end if
+    IFTHENELSE,        // if expr1 then state1 [elseifs - state3] else state2 end if
+    PRINT,             // print(out1, )
+    RESET,             // Start all blocks from the top, as if newly compiled.
+    WAIT               // wait expr1
   };
   Type type;
   std::string str1;
 
-  // When assigning to a variable/port/array.
+  // When assigning to a variable/string variable/port/array.
   float* variable_ptr;
+  std::string* str_variable_ptr;
   PortPointer assign_port;
   std::vector<float>* array_ptr;
 
@@ -214,6 +216,12 @@ struct Line {
   // the name out of it.
   static Line Assignment(const std::string &variable_name,
                          const Expression &expr, Driver* driver);
+
+  // str_variable_name does NOT contain the $. I'm going to leave the '$'s
+  // out of the names; string and float variables live in completely separate namespaces,
+  // which the parser has sufficient information to determine. I hope.
+  static Line StringAssignment(const std::string &str_variable_name,
+                               const Expression &expr, Driver* driver);
 
   static Line ClearAll();
 

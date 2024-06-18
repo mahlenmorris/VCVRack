@@ -66,6 +66,12 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
         current_line++;
       }
       break;
+      case PCode::STRING_ASSIGNMENT: {
+        std::string rhs = pcode->expr1.ComputeString();
+        pcode->str_variable_ptr->assign(rhs);
+        current_line++;
+      }
+      break;
       case PCode::CLEAR: {
         environment->Clear();
         current_line++;

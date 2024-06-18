@@ -69,6 +69,16 @@ PCode PCodeTranslator::Assignment(const std::string str1, float* variable_ptr,
   return assign;
 }
 
+PCode PCodeTranslator::StringAssignment(const std::string str1,
+  std::string* str_variable_ptr, const Expression &expr1) {
+  PCode assign;
+  assign.type = PCode::STRING_ASSIGNMENT;
+  assign.str1 = str1;
+  assign.str_variable_ptr = str_variable_ptr;
+  assign.expr1 = expr1;
+  return assign;
+}
+
 // Note; caller should _probably_ reset the line position after this.
 // And should definitely NOT access 'pcodes' while this is running.
 void PCodeTranslator::LinesToPCode(const std::vector<Line> &lines,
@@ -138,6 +148,11 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
     case Line::ASSIGNMENT: {
       pcodes->push_back(Assignment(
           line.str1, line.variable_ptr, line.assign_port, line.expr1));
+    }
+    break;
+    case Line::STRING_ASSIGNMENT: {
+      pcodes->push_back(StringAssignment(
+          line.str1, line.str_variable_ptr, line.expr1));
     }
     break;
     case Line::CLEAR: {

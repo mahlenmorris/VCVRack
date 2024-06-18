@@ -70,6 +70,8 @@ public:
   yy::location location;
   // Maps the name of a variable to a pointer to it.
   std::unordered_map<std::string, float*> symbol_floats;
+  // Maps the name of a string variable to a pointer to it.
+  std::unordered_map<std::string, std::string*> symbol_strings;
   // Maps the name of a variable to the Port it refers to, if any.
   std::unordered_map<std::string, PortPointer> symbol_ports;
   // Maps the name of an array variable to a pointer to it.
@@ -83,6 +85,7 @@ public:
 
   bool VarHasPort(const std::string &name);
   float* GetVarFromName(const std::string &name);
+  std::string* GetStringVarFromName(const std::string &name);
   void AddPortForName(const std::string &name, bool is_input, int number);
   PortPointer GetPortFromName(const std::string &name);
   STArray* GetArrayFromName(const std::string &name);
@@ -95,6 +98,9 @@ public:
   void Clear() {
     for (const auto &element : symbol_floats) {
       *(element.second) = 0.0f;
+    }
+    for (const auto &element : symbol_strings) {
+      element.second->clear();
     }
     for (const auto &element : symbol_arrays) {
       element.second->clear();
