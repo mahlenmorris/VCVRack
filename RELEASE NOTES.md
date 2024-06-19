@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.14
-#### (Fill in date)
+#### May 6, 2024
 * BASICally no longer creates compilation threads on the audio thread, in hopes of eliminating
 slower-than-expected responsiveness to changes in the text of the program.
 * In BASICally, made '==' and '!=' less prone to the aggravation of floating-point comparison issues by making 'a == b' effectively "abs(a - b) < epsilon", where epsilon scales with larger a and b. I believe this will make equality checking far more intuitive, which in the VCV Rack/amateur programmer context is paramount.
