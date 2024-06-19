@@ -21,6 +21,7 @@ class Expression {
     STRING,  // "hello, world"
     BINOP,   // plus, times
     VARIABLE, // in1, out1, foo
+    STRING_VARIABLE, // foo$
     ARRAY_VARIABLE, // array[subexpressions[0]]
     NOT,      // not bool
     ZEROARGFUNC, // operation
@@ -71,6 +72,8 @@ class Expression {
   std::string string_value;
   // Some variables are just pointers to a float (e.g., i, foo, etc.).
   float* variable_ptr;
+  // Some variables are just pointers to a string (e.g., i$, foo$, etc.).
+  std::string* str_variable_ptr;
   // But other variables are Input or Output ports in the UI. We can avoid
   // always updating them by pointing to their location in the Environment.
   PortPointer port;
@@ -82,7 +85,7 @@ class Expression {
   std::vector<Expression> subexpressions;
 
   static std::unordered_map<std::string, float> note_to_volt_octave_4;
-  Expression() {}
+  Expression() : variable_ptr{nullptr}, str_variable_ptr{nullptr}, array_ptr{nullptr} {}
 
   // Compute the float numeric result of this Expression.
   float Compute();
@@ -134,7 +137,10 @@ class ExpressionFactory {
   // The parser seems to need many variants of Variable.
   Expression Variable(const std::string &expr, Driver* driver);
   Expression Variable(char * var_name, Driver* driver);
+  Expression StringVariable(const std::string& var_name, Driver* driver);
   Expression DebugId(const std::string &var_name, Driver* driver);
+  // For String variables.
+  Expression DebugIdString(const std::string &var_name, Driver* driver);
   Expression DebugId(const std::string &var_name, const Expression &start,
                      const Expression &end, Driver* driver);
  private:

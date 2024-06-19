@@ -115,6 +115,7 @@ float Expression::Compute() {
                              subexpressions[1].Compute());
     }
     break;
+    case STRING_VARIABLE:
     case STRINGFUNC: {
       // This should never happen, compiler should prevent this.
       return -987.654;
@@ -135,6 +136,8 @@ std::string ShortPrint(float value) {
 std::string Expression::ComputeString() {
   if (type == STRING) {
     return string_value;
+  } else if (type == STRING_VARIABLE) {
+    return *str_variable_ptr;
   } else if (type == STRINGFUNC) {
     if (operation == DEBUG) {
       if (subexpressions.size() == 2) {  // An array.
@@ -165,8 +168,14 @@ std::string Expression::ComputeString() {
         return str_value;
       } else {
         std::string str_value(name);
-        str_value.append(" = ");
-        str_value.append(subexpressions[0].ComputeString());
+        if (variable_ptr != nullptr) {
+          str_value.append(" = ");
+          str_value.append(ShortPrint(*variable_ptr));
+        } else {
+          str_value.append("$ = \"");
+          str_value.append(*str_variable_ptr);
+          str_value.append("\"");
+        }
         return str_value;
       }
     } else {  // Compiler shouldn't allow this.
@@ -187,19 +196,18 @@ bool Expression::Volatile() {
       bool rhs = subexpressions[1].Volatile();
       return lhs || rhs;
     }
-    break;
     case ARRAY_VARIABLE: return subexpressions[0].Volatile();
     case VARIABLE: {
       return port.port_type == PortPointer::INPUT;
     }
-    break;
+    case STRING_VARIABLE: return false;
     case NOT: return subexpressions[0].Volatile();
     // sample_rate() doesn't seem to change immediately? But that might be
     // a bug or Windows-specific. And Start() is volatile.
     // And the time funcs are.
     case ZEROARGFUNC: return true;
     case ONEARGFUNC: return subexpressions[0].Volatile();
-    // Yes, both conneted() and trigger are volatile.
+    // Yes, both connected() and trigger are volatile.
     case ONEPORTFUNC: return true;
     default: return false;
   }
@@ -475,14 +483,32 @@ Expression ExpressionFactory::Variable(char* var_name, Driver* driver) {
   return Variable(std::string(var_name).c_str(), driver);
 }
 
+Expression ExpressionFactory::StringVariable(const std::string& var_name, Driver* driver) {
+  Expression ex;
+  ex.type = Expression::STRING_VARIABLE;
+  // Intentionally copying the name.
+  std::string copied(var_name);
+  ToLower(copied, &(ex.name));
+  ex.str_variable_ptr = driver->GetStringVarFromName(ex.name);
+  return ex;
+}
+
+
 Expression ExpressionFactory::DebugId(const std::string &var_name, Driver* driver) {
   Expression ex;
   ex.type = Expression::STRINGFUNC;
   ex.operation = Expression::DEBUG;
   ex.name = var_name;
-  // TODO: maybe set variable_ptr instead? Except that string variables are
-  // coming.
-  ex.subexpressions.push_back(Variable(var_name, driver));
+  ex.variable_ptr = driver->GetVarFromName(var_name);
+  return ex;
+}
+
+Expression ExpressionFactory::DebugIdString(const std::string &var_name, Driver* driver) {
+  Expression ex;
+  ex.type = Expression::STRINGFUNC;
+  ex.operation = Expression::DEBUG;
+  ex.name = var_name;
+  ex.str_variable_ptr = driver->GetStringVarFromName(var_name);
   return ex;
 }
 

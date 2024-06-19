@@ -126,6 +126,17 @@ TEST(ParserTest, StringVariableTest)
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ("f", lines->at(0).str1);
     EXPECT_EQ("foo", lines->at(0).expr1.ComputeString());
+
+    EXPECT_EQ(0, drv.parse("a$ = bar$"));
+    lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("a", lines->at(0).str1);
+    EXPECT_EQ("", lines->at(0).expr1.ComputeString());
+
+    // These should fail. Cannot assign a string to a float.
+    EXPECT_EQ(1, drv.parse("a = bar$"));
+    EXPECT_EQ(1, drv.parse("a = 2 * bar$"));
+    EXPECT_EQ(1, drv.parse("a = \"foo\""));
 }
 
 TEST(ParserTest, SimpleTest)
@@ -689,6 +700,20 @@ TEST(RunTest, StringAssignment) {
   EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
   EXPECT_EQ(22, *(drv.GetVarFromName("b")));
   EXPECT_EQ("b = 22", *(drv.GetStringVarFromName("b")));
+
+  EXPECT_EQ(0, drv.parse("c$ = \"apple\"   d$ = c$"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ("apple", *(drv.GetStringVarFromName("c")));
+  EXPECT_EQ("apple", *(drv.GetStringVarFromName("d")));
+
+  EXPECT_EQ(0, drv.parse("e$ = \"banana\"   f$ = debug(e$)"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ("banana", *(drv.GetStringVarFromName("e")));
+  EXPECT_EQ("e$ = \"banana\"", *(drv.GetStringVarFromName("f")));
 }
 
 TEST(RunTest, RunsPrint) {
@@ -699,6 +724,25 @@ TEST(RunTest, RunsPrint) {
   CodeBlock block(&test_env);
 
   EXPECT_EQ(0, drv.parse("print(out1, 7, \" \", sin(6), \" hello, world \")"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  ASSERT_EQ(0, test_env.text_sent.size());
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  ASSERT_EQ(1, test_env.text_sent.size());
+  EXPECT_EQ("7 -0.279415 hello, world ", test_env.text_sent[0]);
+}
+
+TEST(RunTest, RunsPrintWithStringVar) {
+  Driver drv;
+  PCodeTranslator translator;
+  TestEnvironment test_env;
+  drv.SetEnvironment(&test_env);
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse(
+    "space$ = \" \"\n"
+    "msg$ = \"hello, world\"\n"
+    "print(out1, 7, space$, sin(6), space$, msg$, space$)"));
   ASSERT_EQ(1, drv.blocks.size());
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
   ASSERT_EQ(0, test_env.text_sent.size());
@@ -762,7 +806,10 @@ TEST(RunTest, RunsStringFunctions2) {
   drv.SetEnvironment(&test_env);
   CodeBlock block(&test_env);
 
-  EXPECT_EQ(0, drv.parse("a[0] = { 5, 4, 3, 2, 1}\n a[2] = 8.8\n print(out1, debug(a[], 0, 5))"));
+  EXPECT_EQ(0, drv.parse(
+    "a[0] = { 5, 4, 3, 2, 1}\n"
+    "a[2] = 8.8\n"
+    "print(out1, debug(a[], 0, 5))"));
   ASSERT_EQ(1, drv.blocks.size());
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
   ASSERT_EQ(0, test_env.text_sent.size());
@@ -796,7 +843,10 @@ TEST(RunTest, RunsStringFunctions4) {
   CodeBlock block(&test_env);
 
   // Make sure works even when debug() is first mention of the variable.
-  EXPECT_EQ(0, drv.parse("print(OUT3, debug(foo))\nfoo = 4\nprint(OUT3, debug(foo))"));
+  EXPECT_EQ(0, drv.parse(
+    "print(OUT3, debug(foo))\n"
+    "foo = 4\n"
+    "print(OUT3, debug(foo))"));
   ASSERT_EQ(1, drv.blocks.size());
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
   ASSERT_EQ(0, test_env.text_sent.size());
