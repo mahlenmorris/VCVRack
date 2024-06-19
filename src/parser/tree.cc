@@ -556,6 +556,34 @@ Line Line::ArrayAssignment(const std::string &variable_name,
   return line;
 }
 
+Line Line::StringArrayAssignment(const std::string &variable_name,
+                     const Expression &index,
+                     const Expression &value, Driver* driver) {
+  Line line;
+  line.type = STRING_ARRAY_ASSIGNMENT;
+  std::string lower;
+  ToLower(variable_name, &lower);
+  line.str1 = lower;  // Not required, but handy for troubleshooting.
+  line.str_array_ptr = driver->GetStringArrayFromName(lower);
+  line.expr1 = index;
+  line.expr2 = value;
+  return line;
+}
+
+Line Line::StringArrayAssignment(const std::string &variable_name,
+                     const Expression &index,
+                     const ExpressionList &values, Driver* driver) {
+  Line line;
+  line.type = STRING_ARRAY_ASSIGNMENT;
+  std::string lower;
+  ToLower(variable_name, &lower);
+  line.str1 = lower;  // Not required, but handy for troubleshooting.
+  line.str_array_ptr = driver->GetStringArrayFromName(lower);
+  line.expr1 = index;
+  line.expr_list = values;
+  return line;
+}
+
 Line Line::Assignment(const std::string &variable_name, const Expression &expr,
                       Driver* driver) {
   Line line;

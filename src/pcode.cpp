@@ -50,6 +50,39 @@ void PCode::DoArrayAssignment() {
   }
 }
 
+// Just different types than the float version.
+void PCode::DoStringArrayAssignment() {
+  int index = (int) floor(expr1.Compute());
+  // Nothing we can do when index is negative, and we have no runtime
+  // error mechanism.
+  if (index < 0) return;
+  // The logic is different if we are assigning a single value vs. a list.
+  // With a list, we want to ensure that _all_ of the positions we will add to
+  // are available before we start.
+  int required_size = index + 1;
+  if (expr_list.size() > 0) {
+    // foo$[1] = { 6, 5, 4, 3} -> foo[1] = 6, foo[2] = 5, ...
+    required_size = index + expr_list.size() + 1;
+  }
+  if (required_size > (int) str_array_ptr->size()) {
+    // Need to build out the vector until we reach the point before we can add
+    // this value. NB: this has potential to wreck responsiveness.
+    // TODO: should i ALSO be testing capacity()?
+    // Note that adding this call to reserve() had very bad CPU results.
+    // str_array_ptr->reserve(required_size);
+    str_array_ptr->resize(required_size, "");
+  }
+
+  // Go ahead and assign.
+  if (expr_list.size() > 0) {
+    for (int i = 0; i < expr_list.size(); i++) {
+      str_array_ptr->at(index + i) = expr_list.expressions[i].ComputeString();
+    }
+  } else {
+    str_array_ptr->at(index) = expr2.ComputeString();
+  }
+}
+
 bool PCodeTranslator::BlockToCodeBlock(CodeBlock* dest, const Block &source) {
   LinesToPCode(source.lines, &(dest->pcodes));
   dest->type = source.type;
@@ -139,6 +172,16 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       PCode assign;
       assign.type = PCode::ARRAY_ASSIGNMENT;
       assign.array_ptr = line.array_ptr;
+      assign.expr1 = line.expr1;
+      assign.expr2 = line.expr2;
+      assign.expr_list = line.expr_list;
+      pcodes->push_back(assign);
+    }
+    break;
+    case Line::STRING_ARRAY_ASSIGNMENT: {
+      PCode assign;
+      assign.type = PCode::STRING_ARRAY_ASSIGNMENT;
+      assign.str_array_ptr = line.str_array_ptr;
       assign.expr1 = line.expr1;
       assign.expr2 = line.expr2;
       assign.expr_list = line.expr_list;

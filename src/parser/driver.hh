@@ -74,8 +74,10 @@ public:
   std::unordered_map<std::string, std::string*> symbol_strings;
   // Maps the name of a variable to the Port it refers to, if any.
   std::unordered_map<std::string, PortPointer> symbol_ports;
-  // Maps the name of an array variable to a pointer to it.
+  // Maps the name of a float array variable to a pointer to it.
   std::unordered_map<std::string, FloatArray* > symbol_arrays;
+  // Maps the name of a string array variable to a pointer to it.
+  std::unordered_map<std::string, StringArray* > symbol_string_arrays;
   // List of INn port indexes that need trigger() to be maintained
   // for the current program. Cleared with every attempted compile.
   std::unordered_set<int> trigger_port_indexes;
@@ -89,6 +91,7 @@ public:
   void AddPortForName(const std::string &name, bool is_input, int number);
   PortPointer GetPortFromName(const std::string &name);
   FloatArray* GetArrayFromName(const std::string &name);
+  StringArray* GetStringArrayFromName(const std::string &name);
 
   void SetEnvironment(Environment* env) {
     factory.SetEnvironment(env);

@@ -10,6 +10,7 @@
 #include "environment.h"
 
 typedef std::vector<float> FloatArray;
+typedef std::vector<std::string> StringArray;
 
 class Expression;
 class Driver;
@@ -183,6 +184,7 @@ struct Statements;
 struct Line {
   enum Type {
     ARRAY_ASSIGNMENT,  // array_ptr[expr1] = expr2
+    STRING_ARRAY_ASSIGNMENT,  // str_array_ptr[expr1] = expr2
     ASSIGNMENT,        // str1 = expr1
     STRING_ASSIGNMENT, // str1$ = expr1
     CLEAR,             // Set variables to initial state (0.0f).
@@ -203,7 +205,8 @@ struct Line {
   float* variable_ptr;
   std::string* str_variable_ptr;
   PortPointer assign_port;
-  std::vector<float>* array_ptr;
+  FloatArray* array_ptr;
+  StringArray* str_array_ptr;
 
   Expression expr1, expr2, expr3;
   ExpressionList expr_list;
@@ -216,6 +219,14 @@ struct Line {
   static Line ArrayAssignment(const std::string &variable_name,
                               const Expression &index,
                               const ExpressionList &values, Driver* driver);
+
+  static Line StringArrayAssignment(const std::string &variable_name,
+                                    const Expression &index,
+                                    const Expression &value, Driver* driver);
+
+  static Line StringArrayAssignment(const std::string &variable_name,
+                                    const Expression &index,
+                                    const ExpressionList &values, Driver* driver);
 
   // identifiers on both right hand and left hand side of = look the same.
   // So the lhs will get turned into a VariableExpression. We need to pull

@@ -104,17 +104,35 @@ TEST(ParserTest, Arrays)
     EXPECT_EQ(6, lines->at(0).expr2.Compute());
 
     EXPECT_EQ(0, drv.parse("b = a[4]"));
+    lines = &(drv.blocks[0].lines);
     ASSERT_EQ(1, lines->size());
 
     EXPECT_EQ(0, drv.parse("b = a[-3]"));
+    lines = &(drv.blocks[0].lines);
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(0, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("a[4] = {1, 0, 1, sin(in1)}"));
+    lines = &(drv.blocks[0].lines);
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ("a", lines->at(0).str1);
     EXPECT_EQ(4, lines->at(0).expr1.Compute());
     EXPECT_EQ(4, lines->at(0).expr_list.size());
+
+    // String arrays.
+    EXPECT_EQ(0, drv.parse("foo$[4] = \"bar\""));
+    lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+
+    EXPECT_EQ(0, drv.parse(
+      "g$ = \"boo!\"\n"
+      "a$[4] = {1, \"---\", debug(b), g$}"));
+    lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(2, lines->size());
+
+    EXPECT_EQ(0, drv.parse("foo$[4] = sin(3)"));
+    lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
 }
 
 TEST(ParserTest, StringVariableTest)
