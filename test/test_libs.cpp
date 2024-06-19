@@ -118,21 +118,6 @@ TEST(ParserTest, Arrays)
     EXPECT_EQ("a", lines->at(0).str1);
     EXPECT_EQ(4, lines->at(0).expr1.Compute());
     EXPECT_EQ(4, lines->at(0).expr_list.size());
-
-    // String arrays.
-    EXPECT_EQ(0, drv.parse("foo$[4] = \"bar\""));
-    lines = &(drv.blocks[0].lines);
-    ASSERT_EQ(1, lines->size());
-
-    EXPECT_EQ(0, drv.parse(
-      "g$ = \"boo!\"\n"
-      "a$[4] = {1, \"---\", debug(b), g$}"));
-    lines = &(drv.blocks[0].lines);
-    ASSERT_EQ(2, lines->size());
-
-    EXPECT_EQ(0, drv.parse("foo$[4] = sin(3)"));
-    lines = &(drv.blocks[0].lines);
-    ASSERT_EQ(1, lines->size());
 }
 
 TEST(ParserTest, StringVariableTest)
@@ -732,6 +717,26 @@ TEST(RunTest, StringAssignment) {
   EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
   EXPECT_EQ("banana", *(drv.GetStringVarFromName("e")));
   EXPECT_EQ("e$ = \"banana\"", *(drv.GetStringVarFromName("f")));
+
+  // String arrays.
+  EXPECT_EQ(0, drv.parse(
+    "foo$[4] = \"bar\"\n"
+    "ploop$ = foo$[4]"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ("bar", *(drv.GetStringVarFromName("ploop")));
+
+  EXPECT_EQ(0, drv.parse(
+    "g$ = \"boo!\"\n"
+    "a$[2] = {1, \"---\", debug(bb), g$}\n"
+    "a$[2] = 3\n"
+    "result$ = debug(a$[], 0, 6)"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ("a$[0] = {\"\", \"\", \"3\", \"---\", \"bb = 0\", \"boo!\", \"\"}",
+    *(drv.GetStringVarFromName("result")));
 }
 
 TEST(RunTest, RunsPrint) {

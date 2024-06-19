@@ -262,9 +262,11 @@ string_list:
 string_exp:
   "quoted_string"                  { $$ = drv.factory.Quoted($1); }
 | "identifier" "$"                 { $$ = drv.factory.StringVariable($1, &drv); }
+| "identifier" "$" "[" exp "]"     { $$ = drv.factory.StringArrayVariable($1, $4, &drv); }
 | "debug" "(" "identifier" ")"     { $$ = drv.factory.DebugId($3, &drv); }
 | "debug" "(" "identifier" "$" ")" { $$ = drv.factory.DebugIdString($3, &drv); }
 | "debug" "(" "identifier" "[" "]" "," exp "," exp ")" { $$ = drv.factory.DebugId($3, $7, $9, &drv); }
+| "debug" "(" "identifier" "$" "[" "]" "," exp "," exp ")" { $$ = drv.factory.DebugIdString($3, $8, $10, &drv); }
 
 %%
 

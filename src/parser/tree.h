@@ -24,6 +24,7 @@ class Expression {
     VARIABLE, // in1, out1, foo
     STRING_VARIABLE, // foo$
     ARRAY_VARIABLE, // array[subexpressions[0]]
+    STRING_ARRAY_VARIABLE, // array$[subexpressions[0]]
     NOT,      // not bool
     ZEROARGFUNC, // operation
     ONEARGFUNC, // operation (subexpressions[0])
@@ -80,13 +81,15 @@ class Expression {
   PortPointer port;
   // And ARRAY_VARIABLE has a pointer to the array it getting data from.
   FloatArray* array_ptr;
+  StringArray* str_array_ptr;
   Environment* env = nullptr;
 
   std::string name;
   std::vector<Expression> subexpressions;
 
   static std::unordered_map<std::string, float> note_to_volt_octave_4;
-  Expression() : variable_ptr{nullptr}, str_variable_ptr{nullptr}, array_ptr{nullptr} {}
+  Expression() : variable_ptr{nullptr}, str_variable_ptr{nullptr}, array_ptr{nullptr},
+                 str_array_ptr{nullptr} {}
 
   // Compute the float numeric result of this Expression.
   float Compute();
@@ -134,16 +137,21 @@ class ExpressionFactory {
   Expression ArrayVariable(const std::string &array_name,
                            const Expression &arg1,
                            Driver* driver);
+  Expression StringArrayVariable(const std::string &array_name,
+                                 const Expression &arg1,
+                                 Driver* driver);
   Expression Variable(const char *var_name, Driver* driver);
   // The parser seems to need many variants of Variable.
   Expression Variable(const std::string &expr, Driver* driver);
   Expression Variable(char * var_name, Driver* driver);
   Expression StringVariable(const std::string& var_name, Driver* driver);
   Expression DebugId(const std::string &var_name, Driver* driver);
-  // For String variables.
-  Expression DebugIdString(const std::string &var_name, Driver* driver);
   Expression DebugId(const std::string &var_name, const Expression &start,
                      const Expression &end, Driver* driver);
+  // For String variables.
+  Expression DebugIdString(const std::string &var_name, Driver* driver);
+  Expression DebugIdString(const std::string &var_name, const Expression &start,
+                           const Expression &end, Driver* driver);
  private:
   static std::unordered_map<std::string, Expression::Operation> string_to_operation;
 };
