@@ -46,7 +46,7 @@ struct PCode {
   float* variable_ptr;
   std::string* str_variable_ptr;
   PortPointer assign_port;
-  STArray* array_ptr;
+  FloatArray* array_ptr;
   Expression expr1, expr2;
   ExpressionList expr_list;
   int jump_count;

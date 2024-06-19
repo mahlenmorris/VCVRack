@@ -9,7 +9,7 @@
 
 #include "environment.h"
 
-typedef std::vector<float> STArray;
+typedef std::vector<float> FloatArray;
 
 class Expression;
 class Driver;
@@ -78,7 +78,7 @@ class Expression {
   // always updating them by pointing to their location in the Environment.
   PortPointer port;
   // And ARRAY_VARIABLE has a pointer to the array it getting data from.
-  STArray* array_ptr;
+  FloatArray* array_ptr;
   Environment* env = nullptr;
 
   std::string name;

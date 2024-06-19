@@ -68,12 +68,12 @@ std::string* Driver::GetStringVarFromName(const std::string &name) {
   }
 }
 
-STArray* Driver::GetArrayFromName(const std::string &name) {
+FloatArray* Driver::GetArrayFromName(const std::string &name) {
   auto found = symbol_arrays.find(name);
   if (found != symbol_arrays.end()) {
     return found->second;
   } else {
-    STArray* pointer = new std::vector<float>();
+    FloatArray* pointer = new std::vector<float>();
     symbol_arrays[name] = pointer;
     return pointer;
   }
