@@ -10,7 +10,7 @@ self-regulating structure. Exploring the region between random and static.
 * [Fermata](#fermata): A text editor and labeling module. Write much longer text notes. Resizable, scrolls, font choices, and more. Or just add some visual emphasis,
 Stochastic Telegraph-style.
 * [Fuse](#fuse): Block, allow, or attenuate a signal passing through, based on the number of triggers observed in a different signal.
-* [TTY](#tty): A scrolling text window that displays distinct values it gets, and displays Tipsy text messages
+* [TTY](#tty): A scrolling text window that displays distinct values it gets, and displays [Tipsy](https://github.com/baconpaul/tipsy-encoder) text messages
 sent by other modules (like BASICally).
 * [Memory System](Memory.md): A set of inter-related recording/playback modules with [their own documentation](Memory.md).
 
@@ -1217,9 +1217,11 @@ willingness to help and advise me as I've been learning this new domain.
 Many thanks to [Marc Weidenbaum](https://disquiet.com/) for his
 encouragement and enthusiasm for my module-making efforts.
 
-Thanks to both @baconpaul and @pachde of the VCV Rack community for greatly
-extending my silly idea to send text over a VCV cable and seeing far more
-value in it then I did. And also for doing the actual work of implementing it.
+Thanks to both [BaconPaul](https://baconpaul.org/) and
+[pachde](https://library.vcvrack.com/?query=&brand=pachde&tag=&license=) of the VCV Rack 
+community for greatly extending my silly idea to send text over a VCV cable and
+seeing far more value in it then I did. And for then doing the actual work of
+implementing it.
 
 And my deepest gratitude to Diane LeVan, for letting me ignore her and/or
 the world for periods of time just to craft these things. I apologize for
