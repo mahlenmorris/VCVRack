@@ -476,45 +476,35 @@ static std::string module_browser_text =
   "If you shrink the module enough, the title becomes a large label on "
   "the front.";
 
-struct FermataDisplay : LedDisplay {
-  FermataTextField* textField;
-
+struct FermataDisplay : FermataTextField {
 	void setModule(Fermata* module) {
-		textField = createWidget<FermataTextField>(Vec(0, 0));
-		textField->box.size = box.size;
-		textField->module = module;
+		this->module = module;
     // If this is the module browser, 'module' will be null!
     if (module != nullptr) {
-      textField->text = &(module->text);
+      this->text = &(module->text);
     } else {
       // Show something inviting when being shown in the module browser.
-      textField->text = &module_browser_text;
+      this->text = &module_browser_text;
     }
-    textField->textUpdated();
-		addChild(textField);
+    textUpdated();
 	}
 
   // The FermataWidget changes size, so we have to reflect that.
   void step() override {
     // At smaller sizes, hide the screen.
-    if (textField->module && textField->module->width <= 8) {
+    if (module && module->width <= 8) {
       hide();
     } else {
       show();
     }
-    textField->box.size = box.size;
-    LedDisplay::step();
+    // textField->box.size = box.size;
+    FermataTextField::step();
 	}
-  
-  // Text insertions from the menu.
-  void insertText(const std::string &fragment) {
-    textField->insertText(fragment);
-  }
 
   // Setting the font.
   void setFontPath() {
-    if (textField && textField->module) {
-      textField->fontPath = textField->module->getFontPath();
+    if (module) {
+      fontPath = module->getFontPath();
     }
   }
 };
