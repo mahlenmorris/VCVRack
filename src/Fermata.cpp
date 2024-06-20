@@ -368,7 +368,7 @@ struct ClosedTitleTextField : LightWidget {
         }
       }
     }
-    Widget::drawLayer(args, layer);
+    LightWidget::drawLayer(args, layer);
     nvgResetScissor(args.vg);
   }
 };
@@ -400,7 +400,7 @@ struct FermataTextField : STTextField {
   }
 
   // bgColor seems to have no effect if I don't do this. Drawing a background
-  // and then letting LedDisplayTextField draw the rest will fixes that.
+  // and then letting LedDisplayTextField draw the rest fixes that.
   void drawLayer(const DrawArgs& args, int layer) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 
@@ -505,7 +505,7 @@ struct FermataDisplay : LedDisplay {
     textField->box.size = box.size;
     LedDisplay::step();
 	}
-
+  
   // Text insertions from the menu.
   void insertText(const std::string &fragment) {
     textField->insertText(fragment);

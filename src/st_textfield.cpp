@@ -174,7 +174,9 @@ void STTextField::drawLayer(const DrawArgs& args, int layer) {
 	static int count = 0;
 	static long long int micros = 0;
 	auto start = std::chrono::high_resolution_clock::now();
-	*/
+	static auto overall_start = std::chrono::high_resolution_clock::now();
+  */
+ 
 	if (args.vg != extended.latest_nvg_context) {
 		extended.setNvgContext(args.vg);
 	}
@@ -226,11 +228,18 @@ void STTextField::drawLayer(const DrawArgs& args, int layer) {
 	micros += std::chrono::duration_cast<std::chrono::microseconds>(
 	        elapsed).count();
 	++count;
-	if (count >= 100) {
+	if (count >= 500) {
+		auto overall_elapsed = std::chrono::high_resolution_clock::now() - overall_start;
+		std::chrono::duration<float, std::milli> overall_millis = overall_elapsed;
+		double overall_seconds = overall_millis.count() / 1000.0;
+		WARN("** elapsed seconds = %f", overall_seconds);
 		WARN("** micros/call = %lld", micros / count);
-		WARN("*** VisibleTextLength = %d", extended.VisibleTextLength());
+		WARN("** micros/second = %f", micros / overall_seconds);
+		WARN("** calls/second = %f", count / overall_seconds);
+		//WARN("*** VisibleTextLength = %d", extended.VisibleTextLength());
 		micros = 0;
 		count = 0;
+		overall_start = std::chrono::high_resolution_clock::now();
 	}
 	*/
 }
