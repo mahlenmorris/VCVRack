@@ -390,6 +390,19 @@ struct FermataProgramNameMenuItem : FermataTextFieldMenuItem {
   }
 };
 
+// The text that gets show in the module browser and the library.
+static std::string module_browser_text =
+  "Write your text here! For example:\n"
+  "* Instructions for playing the patch.\n"
+  "* Notes/reminders on how this part of the patch works.\n"
+  "* TODO's or ideas.\n"
+  "* A short story you're writing while listening to your patch.\n\n"
+  "You can also set the title (below) in the module menu, as well as a pick "
+  "a font and screen colors. And you can resize the module by dragging the "
+  "right edge (over there -->).\n"
+  "If you shrink the module enough, the title becomes a large label on "
+  "the front.";
+
 // Class for the editor.
 struct FermataTextField : STTextField {
 	Fermata* module;
@@ -399,8 +412,28 @@ struct FermataTextField : STTextField {
     return nvgRGB(color >> 16, (color & 0xff00) >> 8, color & 0xff);
   }
 
+  // Setting the font. Need to have a method for this, since it can be
+  // changed by the menu.
+  void setFontPath() {
+    if (module) {
+      fontPath = module->getFontPath();
+    }
+  }
+
+	void setModule(Fermata* module) {
+		this->module = module;
+    // If this is the module browser, 'module' will be null!
+    if (module != nullptr) {
+      this->text = &(module->text);
+    } else {
+      // Show something inviting when being shown in the module browser.
+      this->text = &module_browser_text;
+    }
+    textUpdated();
+	}
+
   // bgColor seems to have no effect if I don't do this. Drawing a background
-  // and then letting LedDisplayTextField draw the rest fixes that.
+  // and then letting STTextField draw the rest fixes that.
   void drawLayer(const DrawArgs& args, int layer) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 
@@ -428,7 +461,13 @@ struct FermataTextField : STTextField {
   }
 
 	void step() override {
-		STTextField::step();
+    // At smaller sizes, hide the screen.
+    // User can resize the window, so we need to keep checking for this.
+    if (module && module->width <= 8) {
+      hide();
+    } else {
+      show();
+    }
     if (module && (color_scheme != module->screen_colors ||
                    module->editor_refresh)) {
       // Note: this doesn't actully care about editor_refresh. But this cleared
@@ -445,6 +484,7 @@ struct FermataTextField : STTextField {
 			textUpdated();
 			module->editor_refresh = false;
 		}
+		STTextField::step();
 	}
 
   // User has updated the text.
@@ -464,51 +504,6 @@ struct FermataTextField : STTextField {
 	}
 };
 
-static std::string module_browser_text =
-  "Write your text here! For example:\n"
-  "* Instructions for playing the patch.\n"
-  "* Notes/reminders on how this part of the patch works.\n"
-  "* TODO's or ideas.\n"
-  "* A short story you're writing while listening to your patch.\n\n"
-  "You can also set the title (below) in the module menu, as well as a pick "
-  "a font and screen colors. And you can resize the module by dragging the "
-  "right edge (over there -->).\n"
-  "If you shrink the module enough, the title becomes a large label on "
-  "the front.";
-
-struct FermataDisplay : FermataTextField {
-	void setModule(Fermata* module) {
-		this->module = module;
-    // If this is the module browser, 'module' will be null!
-    if (module != nullptr) {
-      this->text = &(module->text);
-    } else {
-      // Show something inviting when being shown in the module browser.
-      this->text = &module_browser_text;
-    }
-    textUpdated();
-	}
-
-  // The FermataWidget changes size, so we have to reflect that.
-  void step() override {
-    // At smaller sizes, hide the screen.
-    if (module && module->width <= 8) {
-      hide();
-    } else {
-      show();
-    }
-    // textField->box.size = box.size;
-    FermataTextField::step();
-	}
-
-  // Setting the font.
-  void setFontPath() {
-    if (module) {
-      fontPath = module->getFontPath();
-    }
-  }
-};
-
 const float NON_SCREEN_WIDTH = 2.0f;
 const float NON_TITLE_WIDTH = 4.6f;
 
@@ -516,7 +511,7 @@ struct FermataWidget : ModuleWidget {
   Widget* topRightScrew;
 	Widget* bottomRightScrew;
 	FermataModuleResizeHandle* rightHandle;
-	FermataDisplay* textDisplay;
+	FermataTextField* textField;
   FermataTitleTextField* title;
   ClosedTitleTextField* closed_title;
 
@@ -559,13 +554,13 @@ struct FermataWidget : ModuleWidget {
     closed_title->hide();  // Only shown when at smallest size.
     addChild(closed_title);
 
-    textDisplay = createWidget<FermataDisplay>(
+    // The actual widget that shows and edits text.
+    textField = createWidget<FermataTextField>(
       mm2px(Vec(5.08, 5.9)));  // 5.08 == RACK_GRID_WIDTH in mm.
-		textDisplay->box.size = mm2px(Vec(60.0, 117.0));
-    textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
-		textDisplay->setModule(module);
-
-		addChild(textDisplay);
+		textField->box.size = mm2px(Vec(60.0, 117.0));
+    textField->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
+		textField->setModule(module);
+		addChild(textField);
 
     // Resize bar on left.
     FermataModuleResizeHandle* leftHandle = new FermataModuleResizeHandle;
@@ -586,7 +581,7 @@ struct FermataWidget : ModuleWidget {
     addChild(rightHandle);
 
     // Update the font in the code window to be the one chosen in the menu.
-    textDisplay->setFontPath();
+    textField->setFontPath();
   }
 
   void step() override {
@@ -621,7 +616,7 @@ struct FermataWidget : ModuleWidget {
     }
     // Adjust size of area we display text in; it's a function of the size
     // of the module minus some set width.
-		textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
+		textField->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
     // Adjust size of area we display title in.
 		title->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_TITLE_WIDTH;
     // Move the right side screws to follow.
@@ -669,7 +664,7 @@ struct FermataWidget : ModuleWidget {
       {"RobotoSlab Bold", "fonts/RobotoSlab-Bold.ttf"},
       {"RobotoSlab Light", "fonts/RobotoSlab-Light.ttf"},
       {"RobotoSlab Regular", "fonts/RobotoSlab-Regular.ttf"}
-  };
+    };
 
     MenuItem* font_menu = createSubmenuItem("Font", "",
       [=](Menu* menu) {
@@ -677,7 +672,7 @@ struct FermataWidget : ModuleWidget {
             menu->addChild(createCheckMenuItem(line.first, "",
                 [=]() {return line.second == module->font_choice;},
                 [=]() {module->font_choice = line.second;
-                       textDisplay->setFontPath();}
+                       textField->setFontPath();}
             ));
           }
       }
