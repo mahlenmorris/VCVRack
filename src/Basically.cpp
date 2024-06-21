@@ -771,6 +771,9 @@ struct Basically : Module {
   int cursor_override = -1;
   // Can be overriden by saved menu choice.
   std::string font_choice = "fonts/RobotoMono-Regular.ttf";
+  // Many actions mean we need to force the buffer to recalculate the
+  // text appearance, so we keep the FramebufferWidget available.
+  FramebufferWidget* main_text_framebuffer = nullptr;
 };
 
 // Adds support for undo/redo in the text field where people type programs.
@@ -807,6 +810,7 @@ struct TextEditAction : history::ModuleAction {
       } else {
         module->width = this->old_width;
       }
+      module->main_text_framebuffer->setDirty();
     }
   }
 
@@ -823,6 +827,7 @@ struct TextEditAction : history::ModuleAction {
       } else {
         module->width = this->new_width;
       }
+      module->main_text_framebuffer->setDirty();
     }
   }
 };
@@ -876,6 +881,9 @@ struct ModuleResizeHandle : OpaqueWidget {
       // module's move will cause them to overlap.
       APP->history->push(
         new TextEditAction(module->id, original_width, module->width));
+      // Also need to tell FramebufferWidget to update the appearance,
+      // since the width has changed,
+      module->main_text_framebuffer->setDirty();
     }
 	}
 
@@ -967,6 +975,8 @@ static std::string module_browser_text =
 // Class for the editor.
 struct BasicallyTextField : STTextField {
 	Basically* module;
+  FramebufferWidget* frame_buffer;
+  bool was_selected;
   long long int color_scheme;
 
   NVGcolor int_to_color(int color) {
@@ -980,8 +990,9 @@ struct BasicallyTextField : STTextField {
     }
   }
 
-	void setModule(Basically* module) {
+	void setModule(Basically* module, FramebufferWidget* fb_widget) {
 		this->module = module;
+    frame_buffer = fb_widget;
     // If this is the module browser, 'module' will be null!
     if (module != nullptr) {
       this->text = &(module->text);
@@ -994,42 +1005,40 @@ struct BasicallyTextField : STTextField {
   
   // bgColor seems to have no effect if I don't do this. Drawing a background
   // and then letting LedDisplayTextField draw the rest will fixes that.
-  void drawLayer(const DrawArgs& args, int layer) override {
+  void draw(const DrawArgs& args) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 
-    if (layer == 1) {
-  		// background only
-      nvgBeginPath(args.vg);
-      nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
-      nvgFillColor(args.vg, bgColor);
-      nvgFill(args.vg);
+    // background only
+    nvgBeginPath(args.vg);
+    nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
+    nvgFillColor(args.vg, bgColor);
+    nvgFill(args.vg);
 
-      // Let's try highlighting a line, though, if needed and allowed to.
-      if (module && module->allow_error_highlight) {
-        // Highlight the line with an error, if any.
-        if (module->drv.errors.size() > 0) {
-          int line_number = module->drv.errors[0].line - extended.lines_above;
-          nvgBeginPath(args.vg);
-          int topFudge = textOffset.y + 5;  // I'm just trying things until they work.
-          // textOffset is in ledDisplayTextField.
-          nvgRect(args.vg, 0, topFudge + 12 * (line_number - 1), box.size.x, 12);
-          nvgFillColor(args.vg,
-              module->blue_orange_light ? SCHEME_ORANGE : nvgRGB(128, 0, 0));
-          nvgFill(args.vg);
-        }
+    // Let's try highlighting a line, though, if needed and allowed to.
+    if (module && module->allow_error_highlight) {
+      // Highlight the line with an error, if any.
+      if (module->drv.errors.size() > 0) {
+        int line_number = module->drv.errors[0].line - extended.lines_above;
+        nvgBeginPath(args.vg);
+        int topFudge = textOffset.y + 5;  // I'm just trying things until they work.
+        // textOffset is in ledDisplayTextField.
+        nvgRect(args.vg, 0, topFudge + 12 * (line_number - 1), box.size.x, 12);
+        nvgFillColor(args.vg,
+            module->blue_orange_light ? SCHEME_ORANGE : nvgRGB(128, 0, 0));
+        nvgFill(args.vg);
       }
-      if (module && module->cursor_override >= 0) {
-        // Undo/redo must have just happened.
-        // Move cursor (with no selection) to where the cursor was when we
-        // did edit.
-        cursor = module->cursor_override;
-        selection = module->cursor_override;
-        module->cursor_override = -1;
-        // Since we just forcibly moved the cursor, need to reposition window
-        // to show it.
-        extended.RepositionWindow(cursor);
-      }
-  	}
+    }
+    if (module && module->cursor_override >= 0) {
+      // Undo/redo must have just happened.
+      // Move cursor (with no selection) to where the cursor was when we
+      // did edit.
+      cursor = module->cursor_override;
+      selection = module->cursor_override;
+      module->cursor_override = -1;
+      // Since we just forcibly moved the cursor, need to reposition window
+      // to show it.
+      extended.RepositionWindow(cursor);
+    }
   	STTextField::draw(args);  // Draw text.
   	nvgResetScissor(args.vg);
   }
@@ -1037,9 +1046,9 @@ struct BasicallyTextField : STTextField {
 	void step() override {
     // At smallest size, hide the screen.
     if (module && module->width <= 7) {
-      hide();
+      frame_buffer->hide();
     } else {
-      show();
+      frame_buffer->show();
     }
     if (module && (color_scheme != module->screen_colors ||
                    module->editor_refresh)) {
@@ -1055,9 +1064,22 @@ struct BasicallyTextField : STTextField {
       // Text has been changed, editor needs to update itself.
       // This happens when the module loads, and on undo/redo.
 			textUpdated();
+      frame_buffer->setDirty();
 			module->editor_refresh = false;
 		}
 		STTextField::step();
+
+    // Need to notice when the text window has become (or no longer is)
+    // the focus, since that determines if we show the cursor or not.
+    bool is_selected = (this == APP->event->selectedWidget);
+    if (is_selected != was_selected) {
+      was_selected = is_selected;
+      is_dirty = true;
+    }   
+    // If ANYTHING thinks we should redraw, this makes it happen.
+    if (is_dirty) {
+      frame_buffer->setDirty();
+    }
 	}
 
   // User has updated the text.
@@ -1075,6 +1097,7 @@ struct BasicallyTextField : STTextField {
       }
       module->previous_cursor = cursor;
     }
+    frame_buffer->setDirty();
 	}
 };
 
@@ -1225,6 +1248,7 @@ struct BasicallyWidget : ModuleWidget {
 	Widget* bottomRightScrew;
 	Widget* rightHandle;
 	BasicallyTextField* codeDisplay;
+  FramebufferWidget* main_text_framebuffer;
 
   BasicallyWidget(Basically* module) {
     setModule(module);
@@ -1253,13 +1277,19 @@ struct BasicallyWidget : ModuleWidget {
             RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
     addChild(bottomRightScrew);
 
+    // The FramebufferWidget that caches the appearence of the text, so we
+    // don't have to keep redrawing it (and wasting UI CPU to do it).
+    main_text_framebuffer = new FramebufferWidget();
     codeDisplay = createWidget<BasicallyTextField>(
       mm2px(Vec(31.149, 5.9)));
 		codeDisplay->box.size = mm2px(Vec(60.0, 117.0));
     codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 7.1;
-		codeDisplay->setModule(module);
-
-		addChild(codeDisplay);
+		codeDisplay->setModule(module, main_text_framebuffer);
+		addChild(main_text_framebuffer);
+    main_text_framebuffer->addChild(codeDisplay);
+    if (module) {
+      module->main_text_framebuffer = main_text_framebuffer;
+    }
 
     // Controls.
     // Run button/trigger/gate.
@@ -1386,7 +1416,8 @@ struct BasicallyWidget : ModuleWidget {
          for (auto line : colors) {
            menu->addChild(createCheckMenuItem(line.first, "",
            [=]() {return line.second == module->screen_colors;},
-           [=]() {module->screen_colors = line.second;}
+           [=]() {module->screen_colors = line.second;
+                  module->main_text_framebuffer->setDirty(); }
            ));
          }
      }
@@ -1410,7 +1441,8 @@ struct BasicallyWidget : ModuleWidget {
             menu->addChild(createCheckMenuItem(line.first, "",
                 [=]() {return line.second == module->font_choice;},
                 [=]() {module->font_choice = line.second;
-                       codeDisplay->setFontPath();}
+                       codeDisplay->setFontPath();
+                       module->main_text_framebuffer->setDirty(); }
             ));
           }
       }
@@ -1418,8 +1450,10 @@ struct BasicallyWidget : ModuleWidget {
     menu->addChild(font_menu);
 
     // Options
-    menu->addChild(createBoolPtrMenuItem("Highlight error line", "",
-                                          &module->allow_error_highlight));
+    menu->addChild(createBoolMenuItem("Highlight error line", "",
+                                      [=]() { return module->allow_error_highlight; },
+                                      [=](bool state) {module->allow_error_highlight = state;
+                                                       module->main_text_framebuffer->setDirty();}));
     menu->addChild(createBoolPtrMenuItem("Colorblind-friendly status light", "",
                                           &module->blue_orange_light));
     menu->addChild(new MenuSeparator);
