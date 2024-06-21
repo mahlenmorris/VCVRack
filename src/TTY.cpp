@@ -424,8 +424,8 @@ struct TTYTextField : STTextField {
         // to show it.
         extended.RepositionWindow(cursor);
       }
+    	STTextField::draw(args);  // Draw text.
   	}
-  	STTextField::drawLayer(args, layer);  // Draw text.
   	nvgResetScissor(args.vg);
   }
 

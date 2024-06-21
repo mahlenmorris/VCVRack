@@ -960,6 +960,10 @@ struct TitleTextField : LightWidget {
   }
 };
 
+static std::string module_browser_text =
+  "' Write simple code here.\n' For example:\nfor i = 1 to 5 step 0.2\n"
+  "  out1 = i * in2 * 0.4\n  wait 100\nnext";
+
 // Class for the editor.
 struct BasicallyTextField : STTextField {
 	Basically* module;
@@ -969,6 +973,25 @@ struct BasicallyTextField : STTextField {
     return nvgRGB(color >> 16, (color & 0xff00) >> 8, color & 0xff);
   }
 
+  // Setting the font.
+  void setFontPath() {
+    if (module) {
+      fontPath = module->getFontPath();
+    }
+  }
+
+	void setModule(Basically* module) {
+		this->module = module;
+    // If this is the module browser, 'module' will be null!
+    if (module != nullptr) {
+      this->text = &(module->text);
+    } else {
+      // Show something inviting when being shown in the module browser.
+      this->text = &module_browser_text;
+    }
+    textUpdated();
+	}
+  
   // bgColor seems to have no effect if I don't do this. Drawing a background
   // and then letting LedDisplayTextField draw the rest will fixes that.
   void drawLayer(const DrawArgs& args, int layer) override {
@@ -1007,12 +1030,17 @@ struct BasicallyTextField : STTextField {
         extended.RepositionWindow(cursor);
       }
   	}
-  	STTextField::drawLayer(args, layer);  // Draw text.
+  	STTextField::draw(args);  // Draw text.
   	nvgResetScissor(args.vg);
   }
 
 	void step() override {
-		STTextField::step();
+    // At smallest size, hide the screen.
+    if (module && module->width <= 7) {
+      hide();
+    } else {
+      show();
+    }
     if (module && (color_scheme != module->screen_colors ||
                    module->editor_refresh)) {
       // Note: this doesn't actully care about editor_refresh. But this cleared
@@ -1029,6 +1057,7 @@ struct BasicallyTextField : STTextField {
 			textUpdated();
 			module->editor_refresh = false;
 		}
+		STTextField::step();
 	}
 
   // User has updated the text.
@@ -1047,52 +1076,6 @@ struct BasicallyTextField : STTextField {
       module->previous_cursor = cursor;
     }
 	}
-};
-
-static std::string module_browser_text =
-  "' Write simple code here.\n' For example:\nfor i = 1 to 5 step 0.2\n"
-  "  out1 = i * in2 * 0.4\n  wait 100\nnext";
-
-struct BasicallyDisplay : LedDisplay {
-  BasicallyTextField* textField;
-
-	void setModule(Basically* module) {
-		textField = createWidget<BasicallyTextField>(Vec(0, 0));
-		textField->box.size = box.size;
-		textField->module = module;
-    // If this is the module browser, 'module' will be null!
-    if (module != nullptr) {
-      textField->text = &(module->text);
-    } else {
-      // Show something inviting when being shown in the module browser.
-      textField->text = &module_browser_text;
-    }
-    textField->textUpdated();
-		addChild(textField);
-	}
-  // The BasicallyWidget changes size, so we have to reflect that.
-  void step() override {
-    // At smallest size, hide the screen.
-    if (textField->module && textField->module->width <= 7) {
-      hide();
-    } else {
-      show();
-    }
-    textField->box.size = box.size;
-    LedDisplay::step();
-	}
-
-  // Text insertions from the menu.
-  void insertText(const std::string &fragment) {
-    textField->insertText(fragment);
-  }
-
-  // Setting the font.
-  void setFontPath() {
-    if (textField && textField->module) {
-      textField->fontPath = textField->module->getFontPath();
-    }
-  }
 };
 
 struct ErrorWidget;
@@ -1241,7 +1224,7 @@ struct BasicallyWidget : ModuleWidget {
   Widget* topRightScrew;
 	Widget* bottomRightScrew;
 	Widget* rightHandle;
-	BasicallyDisplay* codeDisplay;
+	BasicallyTextField* codeDisplay;
 
   BasicallyWidget(Basically* module) {
     setModule(module);
@@ -1270,7 +1253,7 @@ struct BasicallyWidget : ModuleWidget {
             RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
     addChild(bottomRightScrew);
 
-    codeDisplay = createWidget<BasicallyDisplay>(
+    codeDisplay = createWidget<BasicallyTextField>(
       mm2px(Vec(31.149, 5.9)));
 		codeDisplay->box.size = mm2px(Vec(60.0, 117.0));
     codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 7.1;

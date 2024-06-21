@@ -45,6 +45,13 @@ struct STTextField : OpaqueWidget {
 	// Some uses (e.g., TTY) don't allow the user to type text into window.
 	bool allow_text_entry;
 
+  // Many of the actions that require a redraw in the FramebufferWidget are only known
+	// to the internals of this class.
+	// So anytime something changes the visible surface, we set this to true.
+	// Some higher class checks it in step() and lets FramebufferWidget know.
+	// draw() clears this flag, since that's a signal that the dirt has been seen.
+  bool is_dirty;
+
 	STTextField();
 
   // Pulled in from oui-blendish code.
@@ -53,7 +60,7 @@ struct STTextField : OpaqueWidget {
 	    NVGcolor color, float fontsize, int font_handle, const char *label,
 	    NVGcolor caretcolor, int cbegin, int cend);
 
-	void drawLayer(const DrawArgs& args, int layer) override;
+	void draw(const DrawArgs& args) override;
 
 	void onDragHover(const DragHoverEvent& e) override;
 	void onButton(const ButtonEvent& e) override;

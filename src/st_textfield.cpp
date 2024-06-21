@@ -52,6 +52,7 @@ STTextField::STTextField() {
 	box.size.y = BND_WIDGET_HEIGHT;
   text = &placeholder;  // must be correctly set by caller!
 	extended.Initialize(28, 1);
+	is_dirty = true;
 }
 
 // I think I need this (copied from blendish.h) because it's a static function
@@ -168,20 +169,24 @@ void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
   nvgTextBox(ctx, x, y, w, label, label + extended.VisibleTextLength());
 }
 
-void STTextField::drawLayer(const DrawArgs& args, int layer) {
+void STTextField::draw(const DrawArgs& args) {
 	// Code for measuring UI thread performance.
-	/*
+  /*
 	static int count = 0;
 	static long long int micros = 0;
 	auto start = std::chrono::high_resolution_clock::now();
 	static auto overall_start = std::chrono::high_resolution_clock::now();
   */
+
+  // We'll clear this right away, in case some other event in the system
+	// sets it while I'm drawing it.
+  is_dirty = false;
  
 	if (args.vg != extended.latest_nvg_context) {
 		extended.setNvgContext(args.vg);
 	}
 	nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-	if (layer == 1) {
+	if (true) {
     // If the width of the box changed, we need to reindex the line structure.
 		if ((box.size.x != previous_box_size_x) ||
 			(previous_font_path.compare(fontPath) != 0) ||
@@ -219,7 +224,7 @@ void STTextField::drawLayer(const DrawArgs& args, int layer) {
 		}
 	}
 
-	Widget::drawLayer(args, layer);
+	OpaqueWidget::draw(args);
 	nvgResetScissor(args.vg);
 
 	// Code for measuring UI thread performance.
@@ -228,7 +233,7 @@ void STTextField::drawLayer(const DrawArgs& args, int layer) {
 	micros += std::chrono::duration_cast<std::chrono::microseconds>(
 	        elapsed).count();
 	++count;
-	if (count >= 500) {
+	if (count >= 50) {
 		auto overall_elapsed = std::chrono::high_resolution_clock::now() - overall_start;
 		std::chrono::duration<float, std::milli> overall_millis = overall_elapsed;
 		double overall_seconds = overall_millis.count() / 1000.0;
@@ -251,6 +256,9 @@ void STTextField::onDragHover(const DragHoverEvent& e) {
 		int pos = getTextPosition(e.pos);
 		cursor = pos;
 	}
+	// Draging anywhere on the widget could change the selection or cursor
+	// position.
+	is_dirty = true;
 }
 
 void STTextField::onButton(const ButtonEvent& e) {
@@ -264,6 +272,9 @@ void STTextField::onButton(const ButtonEvent& e) {
 		createContextMenu();
 		e.consume(this);
 	}
+	// Clicking anywhere on the widget could change the selection or cursor
+	// position.
+	is_dirty = true;
 }
 
 void STTextField::onSelectText(const SelectTextEvent& e) {
@@ -439,6 +450,9 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
 			// Moved, may need to reposition window.
 			extended.RepositionWindow(cursor);
 		}
+
+		// If the keyboard is being touched, odds are the text looks different now.
+		is_dirty = true;
 
 		assert(0 <= cursor);
 		assert(cursor <= (int) text->size());
