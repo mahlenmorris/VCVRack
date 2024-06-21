@@ -116,7 +116,7 @@ void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
 		// past the end of the line, and the cursor cannot ever get to the first
 		// few characters of the following line.
 		// Look forward a goodly amount, but not past the end of the string.
-		// However, if we want to cursor to show up on the next line when the
+		// However, if we want the cursor to show up on the next line when the
 		// last character is a newline, we need to go at least one char past the
 		// end.
 		const char * break_end = label + cend +
@@ -159,6 +159,17 @@ void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
     }
     nvgFill(ctx);
   }
+
+/*
+  // A silly experiment in changing text colors.
+	// When it looks correct, it's not bad...
+	for (int line = 0; line < std::min(nrows, 28); ++line) {
+    nvgBeginPath(ctx);
+    nvgFillColor(ctx, line % 2 ? SCHEME_RED : SCHEME_GREEN);
+    nvgTextBox(ctx, x, y + line * lh, w, rows[line].start, rows[line].end);
+
+	}
+*/
 
   nvgBeginPath(ctx);
   nvgFillColor(ctx, color);
