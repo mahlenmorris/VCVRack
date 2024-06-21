@@ -578,7 +578,7 @@ struct Basically : Module {
       } else {
         compile_in_progress = false;
         if (compiler->useful) {
-          // Got something we can use. First, clean upi the old ones.
+          // Got something we can use. First, clean up the old ones.
           if (main_blocks) {
             for (auto block : *main_blocks) {
               delete block;
@@ -610,6 +610,8 @@ struct Basically : Module {
         } else {
           compiles = false;
         }
+        // Either way, we need to update the screen.
+        main_text_framebuffer->setDirty();
       }
     } else {
       // Do not currently have compile in progress.

@@ -230,6 +230,7 @@ struct TTY : Module {
     processTextInput(paused, &ti3);
     if (clear_command_received) {
       clear_light_countdown = std::floor(args.sampleRate / 10.0f);
+      main_text_framebuffer->setDirty();
     }
 
     was_paused = paused;
@@ -297,6 +298,9 @@ struct TTY : Module {
   int cursor_override = -1;
   // Can be overriden by saved menu choice.
   std::string font_choice = "fonts/RobotoMono-Regular.ttf";
+  // Many actions mean we need to force the buffer to recalculate the
+  // text appearance, so we keep the FramebufferWidget available.
+  FramebufferWidget* main_text_framebuffer = nullptr;
 };
 
 // Adds support for undo/redo in the text field where people type programs.
@@ -312,6 +316,7 @@ struct TTYUndoRedoAction : history::ModuleAction {
     TTY *module = dynamic_cast<TTY*>(APP->engine->getModule(moduleId));
     if (module) {
       module->width = this->old_width;
+      module->main_text_framebuffer->setDirty();
     }
   }
 
@@ -319,6 +324,7 @@ struct TTYUndoRedoAction : history::ModuleAction {
     TTY *module = dynamic_cast<TTY*>(APP->engine->getModule(moduleId));
     if (module) {
       module->width = this->new_width;
+      module->main_text_framebuffer->setDirty();
     }
   }
 };
@@ -375,6 +381,9 @@ struct TTYModuleResizeHandle : OpaqueWidget {
       // transporter malfunction).
       APP->history->push(
         new TTYUndoRedoAction(module->id, original_width, module->width));
+      // Also need to tell FramebufferWidget to update the appearance,
+      // since the width has changed,
+      module->main_text_framebuffer->setDirty();
     }
 	}
 
@@ -402,6 +411,8 @@ static std::string module_browser_text =
 // Class for the editor.
 struct TTYTextField : STTextField {
 	TTY* module;
+  FramebufferWidget* frame_buffer;
+  bool was_selected;
   long long int color_scheme;
 
   NVGcolor int_to_color(int color) {
@@ -415,8 +426,9 @@ struct TTYTextField : STTextField {
     }
   }
 
-	void setModule(TTY* module) {
+	void setModule(TTY* module, FramebufferWidget* fb_widget) {
 		this->module = module;
+    frame_buffer = fb_widget;
     // If this is the module browser, 'module' will be null!
     if (module != nullptr) {
       this->text = &(module->text);
@@ -429,26 +441,24 @@ struct TTYTextField : STTextField {
 
   // bgColor seems to have no effect if I don't do this. Drawing a background
   // and then letting LedDisplayTextField draw the rest will fixes that.
-  void drawLayer(const DrawArgs& args, int layer) override {
+  void draw(const DrawArgs& args) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 
-    if (layer == 1) {
-  		// background only
-      nvgBeginPath(args.vg);
-      nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
-      nvgFillColor(args.vg, bgColor);
-      nvgFill(args.vg);
+    // background only
+    nvgBeginPath(args.vg);
+    nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
+    nvgFillColor(args.vg, bgColor);
+    nvgFill(args.vg);
 
-      if (module && module->cursor_override >= 0) {
-        cursor = std::min(module->cursor_override, (int) module->text.size());
-        selection = module->cursor_override;
-        module->cursor_override = -1;
-        // Since we just forcibly moved the cursor, need to reposition window
-        // to show it.
-        extended.RepositionWindow(cursor);
-      }
-    	STTextField::draw(args);  // Draw text.
-  	}
+    if (module && module->cursor_override >= 0) {
+      cursor = std::min(module->cursor_override, (int) module->text.size());
+      selection = module->cursor_override;
+      module->cursor_override = -1;
+      // Since we just forcibly moved the cursor, need to reposition window
+      // to show it.
+      extended.RepositionWindow(cursor);
+    }
+    STTextField::draw(args);  // Draw text.
   	nvgResetScissor(args.vg);
   }
 
@@ -457,9 +467,9 @@ struct TTYTextField : STTextField {
     if (module) {
       // At smaller sizes, hide the screen.
       if (module->width <= 4) {
-        hide();
+        frame_buffer->hide();
       } else {
-        show();
+        frame_buffer->show();
       }
       if (module->additions.text_additions.size() > 0) {
         make_additions(&(module->additions));
@@ -481,6 +491,17 @@ struct TTYTextField : STTextField {
   			module->editor_refresh = false;
   		}
     }
+    // Need to notice when the text window has become (or no longer is)
+    // the focus, since that determines if we show the cursor or not.
+    bool is_selected = (this == APP->event->selectedWidget);
+    if (is_selected != was_selected) {
+      was_selected = is_selected;
+      is_dirty = true;
+    }   
+    // If ANYTHING thinks we should redraw, this makes it happen.
+    if (is_dirty) {
+      frame_buffer->setDirty();
+    }
 	}
 };
 
@@ -492,6 +513,7 @@ struct TTYWidget : ModuleWidget {
 	Widget* bottomRightScrew;
 	TTYModuleResizeHandle* rightHandle;
 	TTYTextField* textDisplay;
+  FramebufferWidget* main_text_framebuffer;
 
   TTYWidget(TTY* module) {
     setModule(module);
@@ -542,12 +564,18 @@ struct TTYWidget : ModuleWidget {
     addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 118.0)), module,
         TTY::TEXT3_INPUT));
 
+    // The FramebufferWidget that caches the appearence of the text, so we
+    // don't have to keep redrawing it (and wasting UI CPU to do it).
+    main_text_framebuffer = new FramebufferWidget();
     textDisplay = createWidget<TTYTextField>(mm2px(Vec(18.08, 5.9)));
 		textDisplay->box.size = mm2px(Vec(60.0, 117.0));
     textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH - mm2px(CONTROL_WIDTH);
-		textDisplay->setModule(module);
-
-		addChild(textDisplay);
+		textDisplay->setModule(module, main_text_framebuffer);
+		addChild(main_text_framebuffer);
+    main_text_framebuffer->addChild(textDisplay);
+    if (module) {
+      module->main_text_framebuffer = main_text_framebuffer;
+    }
 
     // Resize bar on right.
     rightHandle = new TTYModuleResizeHandle;
@@ -596,8 +624,11 @@ struct TTYWidget : ModuleWidget {
     menu->addChild(new MenuSeparator);
 
     // Some functionality choices.
-    menu->addChild(createBoolPtrMenuItem("Preface lines with source port", "",
-                                          &module->preface_outputs));
+    menu->addChild(createBoolMenuItem("Preface lines with source port", "",
+                                      [=]() {return module->preface_outputs;},
+                                      [=](bool state) {module->preface_outputs = state;
+                                                       module->main_text_framebuffer->setDirty();}
+                                      ));
     menu->addChild(createBoolPtrMenuItem("Keep recent output when patch is saved", "",
                                           &module->preserve_output));
 
@@ -618,7 +649,8 @@ struct TTYWidget : ModuleWidget {
          for (auto line : colors) {
            menu->addChild(createCheckMenuItem(line.first, "",
            [=]() {return line.second == module->screen_colors;},
-           [=]() {module->screen_colors = line.second;}
+           [=]() {module->screen_colors = line.second;
+                  module->main_text_framebuffer->setDirty();}
            ));
          }
      }
@@ -643,7 +675,8 @@ struct TTYWidget : ModuleWidget {
             menu->addChild(createCheckMenuItem(line.first, "",
                 [=]() {return line.second == module->font_choice;},
                 [=]() {module->font_choice = line.second;
-                       textDisplay->setFontPath();}
+                       textDisplay->setFontPath();
+                       module->main_text_framebuffer->setDirty();}
             ));
           }
       }

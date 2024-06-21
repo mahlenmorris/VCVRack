@@ -491,6 +491,7 @@ void STTextField::textUpdated() {
   cursor = std::min(cursor, (int) text->size());
 	selection = cursor;  // Nothing should be selected now.
 	extended.RepositionWindow(cursor);
+	is_dirty = true;
 }
 
 void STTextField::selectAll() {
