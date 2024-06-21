@@ -395,6 +395,10 @@ struct TTYModuleResizeHandle : OpaqueWidget {
 	}
 };
 
+static std::string module_browser_text =
+  "Logs DISTINCT values coming in through V1 or V2.\n"
+  "And logs Tipsy text messages sent to TEXT1/2/3\n";
+
 // Class for the editor.
 struct TTYTextField : STTextField {
 	TTY* module;
@@ -403,6 +407,25 @@ struct TTYTextField : STTextField {
   NVGcolor int_to_color(int color) {
     return nvgRGB(color >> 16, (color & 0xff00) >> 8, color & 0xff);
   }
+
+  // Setting the font.
+  void setFontPath() {
+    if (module) {
+      fontPath = module->getFontPath();
+    }
+  }
+
+	void setModule(TTY* module) {
+		this->module = module;
+    // If this is the module browser, 'module' will be null!
+    if (module != nullptr) {
+      this->text = &(module->text);
+    } else {
+      // Show something inviting when being shown in the module browser.
+      this->text = &module_browser_text;
+    }
+    textUpdated();
+	}
 
   // bgColor seems to have no effect if I don't do this. Drawing a background
   // and then letting LedDisplayTextField draw the rest will fixes that.
@@ -432,6 +455,12 @@ struct TTYTextField : STTextField {
 	void step() override {
 		STTextField::step();
     if (module) {
+      // At smaller sizes, hide the screen.
+      if (module->width <= 4) {
+        hide();
+      } else {
+        show();
+      }
       if (module->additions.text_additions.size() > 0) {
         make_additions(&(module->additions));
         module->editor_refresh = true;
@@ -455,54 +484,6 @@ struct TTYTextField : STTextField {
 	}
 };
 
-static std::string module_browser_text =
-  "Logs DISTINCT values coming in through V1 or V2.\n"
-  "And logs Tipsy text messages sent to TEXT1/2/3\n";
-
-struct TTYDisplay : LedDisplay {
-  TTYTextField* textField;
-
-	void setModule(TTY* module) {
-		textField = createWidget<TTYTextField>(Vec(0, 0));
-    textField->allow_text_entry = false;  // Don't let user type text here.
-		textField->box.size = box.size;
-		textField->module = module;
-    // If this is the module browser, 'module' will be null!
-    if (module != nullptr) {
-      textField->text = &(module->text);
-    } else {
-      // Show something inviting when being shown in the module browser.
-      textField->text = &module_browser_text;
-    }
-    textField->textUpdated();
-		addChild(textField);
-	}
-
-  // The TTYWidget changes size, so we have to reflect that.
-  void step() override {
-    // At smaller sizes, hide the screen.
-    if (textField->module && textField->module->width <= 4) {
-      hide();
-    } else {
-      show();
-    }
-    textField->box.size = box.size;
-    LedDisplay::step();
-	}
-
-  // Text insertions from the menu.
-  void insertText(const std::string &fragment) {
-    textField->insertText(fragment);
-  }
-
-  // Setting the font.
-  void setFontPath() {
-    if (textField && textField->module) {
-      textField->fontPath = textField->module->getFontPath();
-    }
-  }
-};
-
 const float NON_SCREEN_WIDTH = 2.0f;
 const float CONTROL_WIDTH = 13.0f;
 
@@ -510,7 +491,7 @@ struct TTYWidget : ModuleWidget {
   Widget* topRightScrew;
 	Widget* bottomRightScrew;
 	TTYModuleResizeHandle* rightHandle;
-	TTYDisplay* textDisplay;
+	TTYTextField* textDisplay;
 
   TTYWidget(TTY* module) {
     setModule(module);
@@ -561,7 +542,7 @@ struct TTYWidget : ModuleWidget {
     addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 118.0)), module,
         TTY::TEXT3_INPUT));
 
-    textDisplay = createWidget<TTYDisplay>(mm2px(Vec(18.08, 5.9)));
+    textDisplay = createWidget<TTYTextField>(mm2px(Vec(18.08, 5.9)));
 		textDisplay->box.size = mm2px(Vec(60.0, 117.0));
     textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH - mm2px(CONTROL_WIDTH);
 		textDisplay->setModule(module);
