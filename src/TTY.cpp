@@ -230,7 +230,6 @@ struct TTY : Module {
     processTextInput(paused, &ti3);
     if (clear_command_received) {
       clear_light_countdown = std::floor(args.sampleRate / 10.0f);
-      main_text_framebuffer->setDirty();
     }
 
     was_paused = paused;
@@ -243,6 +242,7 @@ struct TTY : Module {
 
     if (clear) {
       text.clear();
+      main_text_framebuffer->setDirty();
     }
 
     // Lights.
