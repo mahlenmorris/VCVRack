@@ -78,6 +78,12 @@ struct TTY : Module {
     ti3.init(TEXT3_INPUT, "TEXT3");
   }
 
+  void RedrawText() {
+    if (main_text_framebuffer != nullptr) {
+      main_text_framebuffer->setDirty();
+    }
+  }
+
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "width", json_integer(width));
@@ -242,7 +248,7 @@ struct TTY : Module {
 
     if (clear) {
       text.clear();
-      main_text_framebuffer->setDirty();
+      RedrawText();
     }
 
     // Lights.
@@ -316,7 +322,7 @@ struct TTYUndoRedoAction : history::ModuleAction {
     TTY *module = dynamic_cast<TTY*>(APP->engine->getModule(moduleId));
     if (module) {
       module->width = this->old_width;
-      module->main_text_framebuffer->setDirty();
+      module->RedrawText();
     }
   }
 
@@ -324,7 +330,7 @@ struct TTYUndoRedoAction : history::ModuleAction {
     TTY *module = dynamic_cast<TTY*>(APP->engine->getModule(moduleId));
     if (module) {
       module->width = this->new_width;
-      module->main_text_framebuffer->setDirty();
+      module->RedrawText();
     }
   }
 };
@@ -382,8 +388,8 @@ struct TTYModuleResizeHandle : OpaqueWidget {
       APP->history->push(
         new TTYUndoRedoAction(module->id, original_width, module->width));
       // Also need to tell FramebufferWidget to update the appearance,
-      // since the width has changed,
-      module->main_text_framebuffer->setDirty();
+      // since the width has changed.
+      module->RedrawText();
     }
 	}
 
@@ -499,7 +505,7 @@ struct TTYTextField : STTextField {
       is_dirty = true;
     }   
     // If ANYTHING thinks we should redraw, this makes it happen.
-    if (is_dirty) {
+    if (is_dirty && frame_buffer) {
       frame_buffer->setDirty();
     }
 	}
@@ -627,7 +633,7 @@ struct TTYWidget : ModuleWidget {
     menu->addChild(createBoolMenuItem("Preface lines with source port", "",
                                       [=]() {return module->preface_outputs;},
                                       [=](bool state) {module->preface_outputs = state;
-                                                       module->main_text_framebuffer->setDirty();}
+                                                       module->RedrawText();}
                                       ));
     menu->addChild(createBoolPtrMenuItem("Keep recent output when patch is saved", "",
                                           &module->preserve_output));
@@ -650,7 +656,7 @@ struct TTYWidget : ModuleWidget {
            menu->addChild(createCheckMenuItem(line.first, "",
            [=]() {return line.second == module->screen_colors;},
            [=]() {module->screen_colors = line.second;
-                  module->main_text_framebuffer->setDirty();}
+                  module->RedrawText();}
            ));
          }
      }
@@ -676,7 +682,7 @@ struct TTYWidget : ModuleWidget {
                 [=]() {return line.second == module->font_choice;},
                 [=]() {module->font_choice = line.second;
                        textDisplay->setFontPath();
-                       module->main_text_framebuffer->setDirty();}
+                       module->RedrawText();}
             ));
           }
       }

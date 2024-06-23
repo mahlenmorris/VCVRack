@@ -17,6 +17,12 @@ struct Fermata : Module {
   Fermata() {
   }
 
+  void RedrawText() {
+    if (main_text_framebuffer != nullptr) {
+      main_text_framebuffer->setDirty();
+    }
+  }
+
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "text", json_stringn(text.c_str(), text.size()));
@@ -138,7 +144,7 @@ struct FermataUndoRedoAction : history::ModuleAction {
         module->box_pos_x = this->old_posx;  // Used by FermataWidget::step.
         module->update_pos = true;
       }
-      module->main_text_framebuffer->setDirty();
+      module->RedrawText();
     }
   }
 
@@ -155,7 +161,7 @@ struct FermataUndoRedoAction : history::ModuleAction {
         module->box_pos_x = this->new_posx;
         module->update_pos = true;
       }
-      module->main_text_framebuffer->setDirty();
+      module->RedrawText();
     }
   }
 };
@@ -223,7 +229,7 @@ struct FermataModuleResizeHandle : OpaqueWidget {
         new FermataUndoRedoAction(module->id, original_width, module->width,
                                   oldBox.pos.x, mw->box.pos.x));
       // Also need to tell FramebufferWidget to update the appearance.
-      module->main_text_framebuffer->setDirty();
+      module->RedrawText();
     }
 	}
 
@@ -679,7 +685,7 @@ struct FermataWidget : ModuleWidget {
            menu->addChild(createCheckMenuItem(line.first, "",
            [=]() {return line.second == module->screen_colors;},
            [=]() {module->screen_colors = line.second;
-                  module->main_text_framebuffer->setDirty(); }
+                  module->RedrawText(); }
            ));
          }
      }
@@ -704,7 +710,7 @@ struct FermataWidget : ModuleWidget {
                 [=]() {return line.second == module->font_choice;},
                 [=]() {module->font_choice = line.second;
                        textField->setFontPath();
-                       module->main_text_framebuffer->setDirty(); }
+                       module->RedrawText(); }
             ));
           }
       }

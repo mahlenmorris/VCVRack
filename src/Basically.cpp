@@ -443,6 +443,12 @@ struct Basically : Module {
     }
   }
 
+  void RedrawText() {
+    if (main_text_framebuffer != nullptr) {
+      main_text_framebuffer->setDirty();
+    }
+  }
+
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "text", json_stringn(text.c_str(), text.size()));
@@ -611,7 +617,7 @@ struct Basically : Module {
           compiles = false;
         }
         // Either way, we need to update the screen.
-        main_text_framebuffer->setDirty();
+        RedrawText();
       }
     } else {
       // Do not currently have compile in progress.
@@ -812,7 +818,7 @@ struct TextEditAction : history::ModuleAction {
       } else {
         module->width = this->old_width;
       }
-      module->main_text_framebuffer->setDirty();
+      module->RedrawText();
     }
   }
 
@@ -829,7 +835,7 @@ struct TextEditAction : history::ModuleAction {
       } else {
         module->width = this->new_width;
       }
-      module->main_text_framebuffer->setDirty();
+      module->RedrawText();
     }
   }
 };
@@ -885,7 +891,7 @@ struct ModuleResizeHandle : OpaqueWidget {
         new TextEditAction(module->id, original_width, module->width));
       // Also need to tell FramebufferWidget to update the appearance,
       // since the width has changed,
-      module->main_text_framebuffer->setDirty();
+      module->RedrawText();
     }
 	}
 
@@ -1419,7 +1425,7 @@ struct BasicallyWidget : ModuleWidget {
            menu->addChild(createCheckMenuItem(line.first, "",
            [=]() {return line.second == module->screen_colors;},
            [=]() {module->screen_colors = line.second;
-                  module->main_text_framebuffer->setDirty(); }
+                  module->RedrawText(); }
            ));
          }
      }
@@ -1444,7 +1450,7 @@ struct BasicallyWidget : ModuleWidget {
                 [=]() {return line.second == module->font_choice;},
                 [=]() {module->font_choice = line.second;
                        codeDisplay->setFontPath();
-                       module->main_text_framebuffer->setDirty(); }
+                       module->RedrawText(); }
             ));
           }
       }
@@ -1455,7 +1461,7 @@ struct BasicallyWidget : ModuleWidget {
     menu->addChild(createBoolMenuItem("Highlight error line", "",
                                       [=]() { return module->allow_error_highlight; },
                                       [=](bool state) {module->allow_error_highlight = state;
-                                                       module->main_text_framebuffer->setDirty();}));
+                                                       module->RedrawText();}));
     menu->addChild(createBoolPtrMenuItem("Colorblind-friendly status light", "",
                                           &module->blue_orange_light));
     menu->addChild(new MenuSeparator);
