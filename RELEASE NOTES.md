@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.15
-#### Date TBD
+#### June 24, 2024
 * Memory gained access to the file system:
 * * Memory can now load .WAV files into itself, replacing the entire contents of the Memory and resizing it.
 * * Memory can save .WAV files as well.
