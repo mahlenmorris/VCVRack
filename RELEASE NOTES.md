@@ -1,5 +1,25 @@
 # Release Notes
 
+### 2.0.15
+#### June 24, 2024
+* Memory gained access to the file system:
+* * Memory can now load .WAV files into itself, replacing the entire contents of the Memory and resizing it.
+* * Memory can save .WAV files as well.
+* * Since file operations can take a widely varying amount of time, Memory sends out a trigger when those operations complete.
+* * You can load and save files from the menu, or you can use BASICally to send [Tipsy](https://github.com/baconpaul/tipsy-encoder) text messages to Memory to tell it to load or save a file.
+* * Since surprising things can happen when loading or saving files, instead of silently failing,
+when you have the LOG output of Memory cabled to a TEXTn input on a TTY module, you can read the log of what happened on the TTY.
+* * Videos about these features are [here](https://www.youtube.com/watch?v=MvuQLtUkY4w) and [here](https://www.youtube.com/watch?v=fw6dk4pGn1s).
+* Ruminate now has two new menu options:
+* * Fade on Move - affects the behavior when the slider or SET moves the position of the head.
+If checked (the default), the L&R outputs will be silent until the position stops changing. If not checked, then the playback will continue as it's being moved.
+See [example video](https://www.youtube.com/watch?v=dOsupn0-Mxw).
+* * Use Speed as V/Oct - affects how the SPEED is interpreted. When unchecked (the default),
+the sum of the SPEED input and control is how many samples the playhead moves forward per sample emitted, so 1 is normal speed, .5 is half-speed. When checked, this sum will be interpreted the way that V/Oct is interpreted in most modules. See [example video](https://www.youtube.com/watch?v=kGKmS2WjqIs).
+* When the sliders on Ruminate and Embellish are released, they now resume normal operation more quickly.
+* Put a big "T" behind ports only input or output Tispy text messages. Put a less solid "T"
+on the BASICally OUTn ports, to suggest that they can emit both Tipsy and regular values. 
+
 ### 2.0.14
 #### May 6, 2024
 * BASICally no longer creates compilation threads on the audio thread, in hopes of eliminating

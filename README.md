@@ -10,7 +10,7 @@ self-regulating structure. Exploring the region between random and static.
 * [Fermata](#fermata): A text editor and labeling module. Write much longer text notes. Resizable, scrolls, font choices, and more. Or just add some visual emphasis,
 Stochastic Telegraph-style.
 * [Fuse](#fuse): Block, allow, or attenuate a signal passing through, based on the number of triggers observed in a different signal.
-* [TTY](#tty): A scrolling text window that displays distinct values it gets, and displays Tipsy text messages
+* [TTY](#tty): A scrolling text window that displays distinct values it gets, and displays [Tipsy](https://github.com/baconpaul/tipsy-encoder) text messages
 sent by other modules (like BASICally).
 * [Memory System](Memory.md): A set of inter-related recording/playback modules with [their own documentation](Memory.md).
 
@@ -1119,6 +1119,9 @@ TTY logs the values being produced by Random.
 TTY logging the text being sent by BASICally.
 ![TTYBasic](images/TTYBasic.png)
 
+TTY logging the text being sent by Memory when it loads or saves files.
+![TTYLogging](images/TTYLogging.png)
+
 More examples in [this patch](examples/TTYExamples.vcv).
 
 ### Uses
@@ -1127,9 +1130,8 @@ some cases, this is more precise, more fine-grained, and easier to read than
 a scope trace, especially when monitoring over a long period of time.
 * Logging text messages from modules that produce them using the [Tipsy
 protocol](https://github.com/baconpaul/tipsy-encoder). As of this writing
-in August 2023,
-the only such module is my [BASICally](#basically) module, but more
-are coming.
+in June 2024, the only such modules that I know of are my [BASICally](#basically)
+and [Memory](Memory.md#memory) modules.
 
 ### Features
 * **Note that navigation works much better when the Pause button is lit**.
@@ -1217,9 +1219,11 @@ willingness to help and advise me as I've been learning this new domain.
 Many thanks to [Marc Weidenbaum](https://disquiet.com/) for his
 encouragement and enthusiasm for my module-making efforts.
 
-Thanks to both @baconpaul and @pachde of the VCV Rack community for greatly
-extending my silly idea to send text over a VCV cable and seeing far more
-value in it then I did. And also for doing the actual work of implementing it.
+Thanks to both [BaconPaul](https://baconpaul.org/) and
+[pachde](https://library.vcvrack.com/?query=&brand=pachde&tag=&license=) of the VCV Rack 
+community for greatly extending my silly idea to send text over a VCV cable and
+seeing far more value in it then I did. And for then doing the actual work of
+implementing it.
 
 And my deepest gratitude to Diane LeVan, for letting me ignore her and/or
 the world for periods of time just to craft these things. I apologize for

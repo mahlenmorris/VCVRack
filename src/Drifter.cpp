@@ -8,6 +8,11 @@
 struct point {
   float x;
   float y;
+
+  point() : x{0.0f}, y{0.0f} {}
+
+  // TODO: see if I can use this ctor in other parts of the code.
+  point(float the_x, float the_y) : x{the_x}, y{the_y} {}
 };
 
 enum LineType {
@@ -23,6 +28,102 @@ LineType LINES[] = {
 };
 
 const int DISPLAY_POINT_COUNT = 100;
+///////////////////////////////////////////////////////////
+// Pulling these functions out of the Module so that we can use them to display a
+// default graph in the module browser/library.
+
+// Given two points that define a line, find y for the given x.
+float find_y(point point_0, point point_1, float x) {
+  // Need to be careful if x1 == x0.
+  float x_diff = std::max(point_1.x - point_0.x, 0.00001f);
+  float a = (point_1.y - point_0.y) / x_diff;
+  float b = point_0.y - a * point_0.x;
+  return a * x + b;
+}
+
+// Given two points that define a line, find y for the given x.
+// Uses Smoothstep (https://en.wikipedia.org/wiki/Smoothstep) to smooth
+// out the lines.
+float find_smooth_y(point point_0, point point_1, float x) {
+  // Need to be careful if x1 == x0.
+  float x_diff = std::max(point_1.x - point_0.x, 0.00001f);
+  float a = (point_1.y - point_0.y) / x_diff;
+  float b = point_0.y - a * point_0.x;
+  float raw_y = a * x + b;
+
+  // Scale so that the lower y value is zero and the higher y value is one.
+  // Remember the scaling factor, so you can transform back.
+  float low_y = std::min(point_0.y, point_1.y);
+  float high_y = std::max(point_0.y, point_1.y);
+  if (std::abs(high_y - low_y) < 0.001f) {
+    // Avoid divide by zero error.
+    return raw_y;
+  }
+  float cooked_y = (raw_y - low_y) * (1.0f / (high_y - low_y));
+  float smooth_y = (3.0f * cooked_y * cooked_y) -
+    (2.0f * cooked_y * cooked_y * cooked_y);
+  // Return to original coordinate space.
+  return smooth_y * (high_y - low_y) + low_y;
+}
+
+float compute_y_for_x(float domain, LineType line_type, const point& start_point,
+                      const point& end_point, std::vector<point>& points) {
+  // Figure out which segment we are in.
+  point prev = start_point, start, end;
+  bool found_end = false;
+  // For performance sake, make this a binary search?
+  // Seems not, didn't look faster.
+
+  // FYI: How much CPU is saved if I don't actually send output?
+  // Surprisingly, it only goes from 0.7-8% -> 0.4-5%.
+  for (std::vector<point>::iterator it = points.begin();
+        it != points.end(); ++it) {
+    if (domain < it->x) {
+      start = prev;
+      end = *it;
+      found_end = true;
+      break;
+    } else {
+      prev = *it;
+    }
+  }
+  if (!found_end) {
+    start = prev;
+    end = end_point;
+  }
+
+  switch (line_type) {
+  case LINES_LINETYPE:
+    // Straight lines.
+    return find_y(start, end, domain);
+  case SMOOTHSTEP_LINETYPE:
+    // Smoothed version of LINES.
+    return find_smooth_y(start, end, domain);
+  case STEPS_LINETYPE:
+    // Steps.
+    return start.y;
+  default:
+    // Something broken, should not happen!
+    return 0.0f;
+  }
+}
+
+void compute_display_points(int type_knob, const point& start_point,
+                            const point& end_point, std::vector<point>& points,
+                            point (&display_points)[DISPLAY_POINT_COUNT]) {
+  // Fill in display_points with the desired number of points to draw in the
+  // display. We do this separately from the actual drawing, since this is
+  // expensive and only needs to happen when the function actually changes.
+  // We fill in in unipolar mode; the draw part can shift as needed.
+  LineType line_type = LINES[type_knob];
+  for (int i = 0; i < DISPLAY_POINT_COUNT; i++) {
+    // "- 1" because need both ends.
+    float x = i * (10.0f / (DISPLAY_POINT_COUNT - 1));
+    float y = compute_y_for_x(x, line_type, start_point, end_point, points);
+    display_points[i].x = x;
+    display_points[i].y = y;
+  }
+}
 
 struct Drifter : Module {
   enum ParamId {
@@ -241,41 +342,6 @@ struct Drifter : Module {
     }
   }
 
-  // Given two points that define a line, find y for the given x.
-  float find_y(point point_0, point point_1, float x) {
-    // Need to be careful if x1 == x0.
-    float x_diff = std::max(point_1.x - point_0.x, 0.00001f);
-    float a = (point_1.y - point_0.y) / x_diff;
-    float b = point_0.y - a * point_0.x;
-    return a * x + b;
-  }
-
-  // Given two points that define a line, find y for the given x.
-  // Uses Smoothstep (https://en.wikipedia.org/wiki/Smoothstep) to smooth
-  // out the lines.
-  float find_smooth_y(point point_0, point point_1, float x) {
-    // Need to be careful if x1 == x0.
-    float x_diff = std::max(point_1.x - point_0.x, 0.00001f);
-    float a = (point_1.y - point_0.y) / x_diff;
-    float b = point_0.y - a * point_0.x;
-    float raw_y = a * x + b;
-
-
-    // Scale so that the lower y value is zero and the higher y value is one.
-    // Remember the scaling factor, so you can transform back.
-    float low_y = std::min(point_0.y, point_1.y);
-    float high_y = std::max(point_0.y, point_1.y);
-    if (std::abs(high_y - low_y) < 0.001f) {
-      // Avoid divide by zero error.
-      return raw_y;
-    }
-    float cooked_y = (raw_y - low_y) * (1.0f / (high_y - low_y));
-    float smooth_y = (3.0f * cooked_y * cooked_y) -
-      (2.0f * cooked_y * cooked_y * cooked_y);
-    // Return to original coordinate space.
-    return smooth_y * (high_y - low_y) + low_y;
-  }
-
   // Given the two drift scales, current point, and a min and max point that
   // bounds the region, return a point in that region that is no more than
   // 'total drift' away from the current point and whose delta along the x_axis
@@ -325,63 +391,6 @@ struct Drifter : Module {
     max.x = high_x - 0.001f;
     max.y = 10.0f;
     points[i] = uniform_region_value(total_drift, x_drift, this_point, min, max);
-  }
-
-  float compute_y_for_x(float domain, LineType line_type) {
-    // Figure out which segment we are in.
-    point prev = start_point, start, end;
-    bool found_end = false;
-    // For performance sake, make this a binary search?
-    // Seems not, didn't look faster.
-
-    // FYI: How much CPU is saved if I don't actually send output?
-    // Surprisingly, it only goes from 0.7-8% -> 0.4-5%.
-    for (std::vector<point>::iterator it = points.begin();
-         it != points.end(); ++it) {
-      if (domain < it->x) {
-        start = prev;
-        end = *it;
-        found_end = true;
-        break;
-      } else {
-        prev = *it;
-      }
-    }
-    if (!found_end) {
-      start = prev;
-      end = end_point;
-    }
-
-    switch (line_type) {
-    case LINES_LINETYPE:
-      // Straight lines.
-      return find_y(start, end, domain);
-    case SMOOTHSTEP_LINETYPE:
-      // Smoothed version of LINES.
-      return find_smooth_y(start, end, domain);
-    case STEPS_LINETYPE:
-      // Steps.
-      return start.y;
-    default:
-      // Something broken, should not happen!
-      return 0.0f;
-    }
-  }
-
-  void compute_display_points() {
-    // Fill in display_points with the desired number of points to draw in the
-    // display. We do this separately from the actual drawing, since this is
-    // expensive and only needs to happen when the funtion actually changes.
-    // We fill in in unipolar mode; the draw part can shift as needed.
-    int type_knob = params[LINETYPE_PARAM].getValue();
-    LineType line_type = LINES[type_knob];
-    for (int i = 0; i < DISPLAY_POINT_COUNT; i++) {
-      // "- 1" because need both ends.
-      float x = i * (10.0f / (DISPLAY_POINT_COUNT - 1));
-      float y = compute_y_for_x(x, line_type);
-      display_points[i].x = x;
-      display_points[i].y = y;
-    }
   }
 
   bool getOffsetUnipolar() {
@@ -506,9 +515,7 @@ struct Drifter : Module {
         }
       }
       if (endpoints_drift) {
-        point min, max;
-        min = {0.0f, 0.0f};
-        max = {0.0f, 10.0f};
+        point min(0.0f, 0.0f), max(0.0f, 10.0f);
         point result = uniform_region_value(total_drift, 0.0f, start_point, min, max);
         start_point.y = result.y;
 
@@ -530,7 +537,7 @@ struct Drifter : Module {
         outputs[RANGE_OUTPUT].isConnected()) {
       // Only need to compute the output if input and output are connected!
       float domain = getDomain();
-      float range = compute_y_for_x(domain, line_type);
+      float range = compute_y_for_x(domain, line_type, start_point, end_point, points);
       if (!offset_unipolar) {
         range -= 5.0f;
       }
@@ -539,7 +546,9 @@ struct Drifter : Module {
 
     // All the reasons we might need to recompute the display graph.
     if (need_to_update_graph) {
-      compute_display_points();
+      compute_display_points(params[LINETYPE_PARAM].getValue(),
+                             start_point, end_point, points,
+                             display_points);
     }
 
     // Lights.
@@ -587,6 +596,9 @@ struct DrifterDisplay : LedDisplay {
   // We just use this to get the scope colors.
   ModuleWidget* moduleWidget;
   std::string fontPath;
+  // Only used for module browser. I'm making it an instance variable
+  // so that it doesn't get allocated every time drawLayer() is called.
+  point demo_display_points[DISPLAY_POINT_COUNT];
 
   DrifterDisplay() {
     fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
@@ -601,10 +613,51 @@ struct DrifterDisplay : LedDisplay {
   }
 
   void drawLayer(const DrawArgs& args, int layer) override {
-    if ((layer == 1) && (module) && (moduleWidget) && module->initialized) {
+    if (layer == 1) {
+      // Data we need to get (or invent) in order to create display.
+      bool unipolar;
+      NVGcolor outputColor, inputColor;
+      bool input_connected;
+      float domain_value;
+
+      if (module && module->initialized && moduleWidget) {
+        unipolar = module->getOffsetUnipolar();
+        // Get line color from the OUT cable color, or white if not connected.
+        PortWidget* output = moduleWidget->getOutput(Drifter::RANGE_OUTPUT);
+        CableWidget* outputCable = APP->scene->rack->getTopCable(output);
+        outputColor = outputCable ? outputCable->color : color::WHITE;
+
+        input_connected = module->inputs[Drifter::DOMAIN_INPUT].isConnected();
+        if (input_connected) {
+          // Get line color from the IN cable color.
+          PortWidget* input = moduleWidget->getInput(Drifter::DOMAIN_INPUT);
+          CableWidget* inputCable = APP->scene->rack->getTopCable(input);
+          inputColor = inputCable ? inputCable->color : color::WHITE;
+          domain_value = module->getDomain();
+        }
+      } else {
+        // Default values to show in module browser and library.
+        unipolar = false;
+        outputColor = SCHEME_BLUE;  // A real cable color.
+        inputColor = SCHEME_RED;   // A real cable color.
+        input_connected = true;
+        domain_value = 4.2f;
+        
+        // Ugh, well, a bit of work to create the fake display_points, but rarely happens.
+        point start_point(0.0f, 4.2f), end_point(10.0f, 8.4f);
+        std::vector<point> demo_points;
+        for (int demo = 1; demo < 15; demo++) {
+          float x = demo * 10.0f / 16;
+          point demo_point(x, 3.0 + sin(x) + x * .2);
+          demo_points.push_back(demo_point);
+        }
+        compute_display_points(1, start_point, end_point, demo_points, demo_display_points);
+      }
+
       Rect r = box.zeroPos(); // .shrink(Vec(4, 5));  // TODO: ???
       Vec bounding_box = r.getBottomRight();
-      Vec p0 = transform(module->display_points[0], bounding_box);
+      Vec p0 = transform((module && module->initialized) ? module->display_points[0] : demo_display_points[0],
+                         bounding_box);
 
       // Draw middle line.
       nvgBeginPath(args.vg);
@@ -623,31 +676,27 @@ struct DrifterDisplay : LedDisplay {
         nvgFontFaceId(args.vg, font->handle);
         nvgTextLetterSpacing(args.vg, -2);
 
-        std::string text = module->getOffsetUnipolar() ? "5" : "0";
+        std::string text = unipolar ? "5" : "0";
         // Place on the line just off the left edge.
         nvgText(args.vg, 1, bounding_box.y / 2.0 + 4, text.c_str(), NULL);
 
-        text = module->getOffsetUnipolar() ? "0" : "-5";
+        text = unipolar ? "0" : "-5";
         // Place a little above the bottom just off the left edge.
         nvgText(args.vg, 1, bounding_box.y - 5, text.c_str(), NULL);
 
-        text = module->getOffsetUnipolar() ? "10" : "5";
+        text = unipolar ? "10" : "5";
         // Place a little above the bottom just off the right edge.
         nvgText(args.vg, bounding_box.x - 12, bounding_box.y - 5, text.c_str(), NULL);
         // Place a little below the top just off the left edge.
         nvgText(args.vg, 1, 12, text.c_str(), NULL);
       }
 
-      // Get line color from the OUT cable color, or white if not connected.
-      PortWidget* output = moduleWidget->getOutput(Drifter::RANGE_OUTPUT);
-      CableWidget* outputCable = APP->scene->rack->getTopCable(output);
-      NVGcolor outputColor = outputCable ? outputCable->color : color::WHITE;
-
       // The graph of the output function.
       nvgBeginPath(args.vg);
       nvgMoveTo(args.vg, p0.x, p0.y);
       for (int i = 1; i < DISPLAY_POINT_COUNT; i++) {
-        Vec next = transform(module->display_points[i], bounding_box);
+        Vec next = transform((module && module->initialized) ? module->display_points[i] : demo_display_points[i],
+                             bounding_box);
         nvgLineTo(args.vg, next.x, next.y);
       }
       nvgLineCap(args.vg, NVG_ROUND);
@@ -657,12 +706,8 @@ struct DrifterDisplay : LedDisplay {
       nvgStroke(args.vg);
 
       // And a short vertical line indicating the position of IN.
-      if (module->inputs[Drifter::DOMAIN_INPUT].isConnected()) {
-        // Get line color from the IN cable color.
-        PortWidget* input = moduleWidget->getInput(Drifter::DOMAIN_INPUT);
-        CableWidget* inputCable = APP->scene->rack->getTopCable(input);
-        NVGcolor inputColor = inputCable ? inputCable->color : color::WHITE;
-        float x = module->getDomain() * bounding_box.x * 0.1f;
+      if (input_connected) {
+        float x = domain_value * bounding_box.x * 0.1f;
         nvgBeginPath(args.vg);
         nvgMoveTo(args.vg, x, bounding_box.y);
         nvgLineTo(args.vg, x, bounding_box.y * 0.8);

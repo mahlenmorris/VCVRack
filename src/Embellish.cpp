@@ -129,8 +129,8 @@ struct Embellish : PositionedModule {
 		// The number of modules it needs to go through does seem to increase the
 		// CPU consummed by the module.
 		if (--find_memory_countdown <= 0) {
-      // One hundredth of a second.
-      find_memory_countdown = (int) (args.sampleRate / 100);
+      // One sixtieth of a second.
+      find_memory_countdown = (int) (args.sampleRate / 60);
 
 			buffer = findClosestMemory(getLeftExpander().module);
 		}
@@ -381,9 +381,9 @@ struct NowEmbellishTimestamp : TimestampField {
 	}
 };
 
-struct AdjustSlider : VCVSlider {
+struct AdjustSliderEmbellish : VCVSlider {
   void onDragEnd(const DragEndEvent& e) override {
-    getParamQuantity()->setValue(0.0);
+    getParamQuantity()->setImmediateValue(0.0);
 		VCVSlider::onDragEnd(e);
 	}
 };
@@ -411,7 +411,7 @@ struct EmbellishWidget : ModuleWidget {
                                              module, Embellish::REVERSE_PARAM,
                                              Embellish::REVERSE_LIGHT));
 
-    addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6.35, 43.0)),
+    addParam(createParamCentered<AdjustSliderEmbellish>(mm2px(Vec(6.35, 43.0)),
 		   module, Embellish::ADJUST_PARAM));
 
     // TODO: make this a tiny attenuator knob?
@@ -452,16 +452,6 @@ struct EmbellishWidget : ModuleWidget {
 		addChild(connect_light);
 	}
 
-/*
-  void step() override {
-		// Kinda silly to do this every step(), but checking whether or not
-		// we should copy the value would take longer, I suspect.
-		if (module) {
-		  adjust_slider->getLight()->baseColors[0] = dynamic_cast<PositionedModule*>(module)->line_record.color;
-		}
-		ModuleWidget::step();
-	}
-*/
 };
 
 
