@@ -6,7 +6,7 @@
 * * Memory can now load .WAV files into itself, replacing the entire contents of the Memory and resizing it.
 * * Memory can save .WAV files as well.
 * * Since file operations can take a widely varying amount of time, Memory sends out a trigger when those operations complete.
-* * You can load and save files from the menu, or you can use BASICally to send text messages to Memory to tell it to load or save a file.
+* * You can load and save files from the menu, or you can use BASICally to send [Tipsy](https://github.com/baconpaul/tipsy-encoder) text messages to Memory to tell it to load or save a file.
 * * Since surprising things can happen when loading or saving files, instead of silently failing,
 when you have the LOG output of Memory cabled to a TEXTn input on a TTY module, you can read the log of what happened on the TTY.
 * * Videos about these features are [here](https://www.youtube.com/watch?v=MvuQLtUkY4w) and [here](https://www.youtube.com/watch?v=fw6dk4pGn1s).
