@@ -149,7 +149,8 @@ struct BufferedModule : Module {
 
 enum ModuleType {
 	RUMINATE,
-	EMBELLISH
+	EMBELLISH,
+  FIXATION
 	// More later.
 };
 
@@ -175,6 +176,8 @@ struct PositionedModule : Module {
   LineRecord line_record;
 };
 
+bool ModelHasColor(Model* model);
+bool IsNonMemoryEnsembleModel(Model* model);
 std::shared_ptr<Buffer> findClosestMemory(Module* leftModule);
 
 struct TimestampField : OpaqueWidget {

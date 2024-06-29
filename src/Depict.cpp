@@ -59,17 +59,13 @@ struct Depict : Module {
 			// First head to the right.
 			Module* next_module = getRightExpander().module;
 			while (next_module) {
-				if ((next_module->model == modelRuminate) ||
-				    (next_module->model == modelEmbellish)) {
+				if (ModelHasColor(next_module->model)) {
 					// Add to line_records.
 					line_records.push_back(dynamic_cast<PositionedModule*>(next_module)->line_record);
 					max_distance = std::max(max_distance, line_records.back().distance);
 				}
 				// If we are still in our module list, move to the right.
-				auto m = next_module->model;
-				if ((m == modelRuminate) ||
-						(m == modelEmbellish) ||
-						(m == modelDepict)) {  // This will be a list soon...
+				if (IsNonMemoryEnsembleModel(next_module->model)) {
 					next_module = next_module->getRightExpander().module;
 				} else {
 					break;
@@ -78,8 +74,7 @@ struct Depict : Module {
 			// Now move to the left.
 			next_module = getLeftExpander().module;
 			while (next_module) {
-				if ((next_module->model == modelRuminate) ||
-				    (next_module->model == modelEmbellish)) {
+				if (ModelHasColor(next_module->model)) {
 					// Add to line_records.
 					line_records.push_back(dynamic_cast<PositionedModule*>(next_module)->line_record);
           // The largest one might actually be to the left of us! Like if were
@@ -97,9 +92,7 @@ struct Depict : Module {
 					// Memory marks the end of the left side anyway.
 					break;
 				}
-				if ((m == modelRuminate) ||
-						(m == modelEmbellish) ||
-						(m == modelDepict)) {  // This will be a list soon...
+				if (IsNonMemoryEnsembleModel(m)) {
 					next_module = next_module->getLeftExpander().module;
 				} else {
 					break;

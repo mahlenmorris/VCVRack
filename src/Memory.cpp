@@ -784,8 +784,7 @@ struct Memory : BufferedModule {
         int distance = 0;
         bool found_depict = false;
         while (next_module) {
-          if ((next_module->model == modelRuminate) ||
-              (next_module->model == modelEmbellish)) {
+          if (ModelHasColor(next_module->model)) {
             // Assign a Color.
             distance++;
             color_index = (color_index + 1) % COLOR_COUNT;
@@ -813,9 +812,7 @@ struct Memory : BufferedModule {
             // If there is a Depict, then make sure the waveform is being updated.
             found_depict = true;
           }
-          if ((m == modelRuminate) ||
-              (m == modelEmbellish) ||
-              (m == modelDepict)) {  // This will be a list soon...
+          if (IsNonMemoryEnsembleModel(m)) {  // This will be a list soon...
             next_module = next_module->getRightExpander().module;
           } else {
             break;

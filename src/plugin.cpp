@@ -11,6 +11,7 @@ void init(Plugin* p) {
 	p->addModel(modelDrifter);
   p->addModel(modelEmbellish);
 	p->addModel(modelFermata);
+	p->addModel(modelFixation);
 	p->addModel(modelFuse);
 	p->addModel(modelMemory);
 	p->addModel(modelRuminate);

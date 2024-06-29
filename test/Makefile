@@ -70,6 +70,7 @@ gtest_main.a : gtest-all.o gtest_main.o
 # Mahlen's additions.
 
 VPATH = .:../src/parser
+CXXFLAGS += -I../../Rack-SDK/include
 
 # A test should link with either gtest.a or
 # gtest_main.a, depending on whether it defines its own main()
@@ -92,10 +93,10 @@ test_libs.o : $(USER_DIR)/test_libs.cpp ../src/parser/parser.o ../src/parser/sca
 test_libs : test_libs.o ../src/parser/driver.o ../src/parser/parser.o ../src/parser/scanner.o ../src/parser/tree.o ../src/code_block.o ../src/pcode.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
-text_field.o : $(USER_DIR)/text_field.cpp ../src/extended_text.h $(GTEST_HEADERS)
+text_field.o : $(USER_DIR)/text_field.cpp ../src/extended_text.o $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/text_field.cpp
 
-text_field : text_field.o gtest_main.a
+text_field : text_field.o ../src/extended_text.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
 test_smooth.o : $(USER_DIR)/test_smooth.cpp ../src/smoother.h $(GTEST_HEADERS)

@@ -1,24 +1,27 @@
+#include "plugin.hpp"
 #include "../src/extended_text.h"
 
 #include "gtest/gtest.h"
 #include <stdexcept>
 
-
 TEST(TextFieldTest, ProcessTest)
 {
   ExtendedText et;
-  et.ProcessUpdatedText(std::string("one line"));
+  et.ProcessUpdatedText(std::string("one line"), std::string("not a font"),
+    200.0f);
   ASSERT_EQ(1, et.line_map.size());
   TextLine a(0, 0, 8);
   EXPECT_TRUE(a == et.line_map[0]);
 
-  et.ProcessUpdatedText(std::string("a line\nanother"));
+  et.ProcessUpdatedText(std::string("a line\nanother"), std::string("not a font"),
+    200.0f);
   ASSERT_EQ(2, et.line_map.size());
   TextLine b(0, 0, 6), c(1, 7, 7);
   EXPECT_TRUE(b == et.line_map[0]);
   EXPECT_TRUE(c == et.line_map[1]);
 
-  et.ProcessUpdatedText(std::string("a line\nanother\n"));
+  et.ProcessUpdatedText(std::string("a line\nanother\n"), std::string("not a font"),
+    200.0f);
   ASSERT_EQ(3, et.line_map.size());
   TextLine d(2, 15, 0);
   EXPECT_TRUE(b == et.line_map[0]);
@@ -29,7 +32,8 @@ TEST(TextFieldTest, ProcessTest)
 TEST(TextFieldTest, ColumnTest)
 {
   ExtendedText et;
-  et.ProcessUpdatedText(std::string("a line\nanother\n"));
+  et.ProcessUpdatedText(std::string("a line\nanother\n"), std::string("not a font"),
+    200.0f);
   ASSERT_EQ(3, et.line_map.size());
   LineColumn a(0, 0);
   EXPECT_TRUE(a == et.GetCurrentLineColumn(0));
@@ -57,7 +61,8 @@ TEST(TextFieldTest, MovementTest)
   ExtendedText et;
   et.Initialize(4, 1);
   std::string full_text = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n";
-  et.ProcessUpdatedText(full_text);
+  et.ProcessUpdatedText(full_text, std::string("not a font"),
+    200.0f);
   EXPECT_EQ(11, et.line_map.size());
 
   std::string window_text;
