@@ -275,9 +275,13 @@ struct MemoryDepict : Widget {
 					// Endpoint of line suggests which module it is.
 					double len = bounding_box.x * line.distance / max_distance;
 					nvgRect(args.vg, 0.0, y_pos, len, 1);
-				} else {
+				} else if (line.type == EMBELLISH) {
 					double len = bounding_box.x * (max_distance - line.distance) / max_distance;
 					nvgRect(args.vg, bounding_box.x - len, y_pos, len, 2);
+				} else if (line.type == FIXATION) {
+					double center = bounding_box.x * line.distance / max_distance;
+					double len = bounding_box.x * 0.2;
+					nvgRect(args.vg, center - len / 2.0, y_pos, len, 2);
 				}
 				nvgFillColor(args.vg, line.color);
 				nvgFill(args.vg);

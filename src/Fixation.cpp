@@ -4,9 +4,6 @@
 #include "buffered.hpp"
 
 // Design questions (TODO: resolve).
-// Do we need PLAY gate and button? isn't absence of the CLOCK sufficient?
-
-
 
 struct Fixation : PositionedModule {
 	enum ParamId {
@@ -36,7 +33,6 @@ struct Fixation : PositionedModule {
 
   enum PlayState {
     // We have a few states we could be in.
-		ADJUSTING,  // * Not playing, but actively moving.
 		NO_PLAY,  	// * Not playing at all.
 		FADE_UP,  	// * Starting to play.
 		PLAYING,   	// * Continuing to play.
@@ -71,7 +67,8 @@ struct Fixation : PositionedModule {
   // Where we are in memory (for the timestamp indicator).
   double display_position;
 
-  dsp::SchmittTrigger playTrigger;
+  dsp::SchmittTrigger play_trigger;
+  dsp::SchmittTrigger clock_trigger;
 
   // To display timestamps correctly.
 	double seconds = 0.0;
@@ -87,16 +84,17 @@ struct Fixation : PositionedModule {
 
 	Fixation() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		configParam(POSITION_ATTN_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(POSITION_KNOB_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(PLAY_BUTTON_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(SPEED_PARAM, 0.f, 1.f, 0.f, "");
-		configInput(CLOCK_INPUT, "");
-		configInput(POSITION_INPUT, "");
-		configInput(PLAY_GATE_INPUT, "");
-		configInput(SPEED_INPUT, "");
-		configOutput(LEFT_OUTPUT, "");
-		configOutput(RIGHT_OUTPUT, "");
+		configParam(POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.f, "Attenuverter on POSITION input.");
+		configParam(POSITION_KNOB_PARAM, 0.f, 10.f, 0.f, "Position where playback will start on each CLOCK trigger.");
+		configInput(POSITION_INPUT, "Multiplied by the attenuverter, added to the POSITION know value.");
+		configSwitch(PLAY_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this playback head",
+	               {"Silent", "Playing"});
+		configParam(SPEED_PARAM, -10.0f, 10.0f, 1.0f, "Playback speed/direction");
+		configInput(CLOCK_INPUT, "Resets playback to the location specified by the combination of POSITION values.");
+		configInput(PLAY_GATE_INPUT, "Gate to start/stop playing");
+		configInput(SPEED_INPUT, "Playback speed (added to knob value)");
+		configOutput(LEFT_OUTPUT, "Left");
+		configOutput(RIGHT_OUTPUT, "Right");
 
     line_record.position = 0.0;
 		line_record.type = FIXATION;
@@ -160,16 +158,14 @@ struct Fixation : PositionedModule {
 			length = std::max(buffer->length, 10);
 			seconds = std::max(buffer->seconds, 0.1);
 
-			// Are we being told to play?
-			playTrigger.process(rescale(
-					inputs[PLAY_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
-			bool playing = ((params[PLAY_BUTTON_PARAM].getValue() > 0.1f) || playTrigger.isHigh());
+			bool clock_was_high = clock_trigger.isHigh();
+			clock_trigger.process(rescale(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+			bool clock_event = !clock_was_high && clock_trigger.isHigh();
 
-			if (play_state == ADJUSTING) {
-				play_state = ((params[PLAY_BUTTON_PARAM].getValue() > 0.1f) || playTrigger.isHigh())
-				    ? PLAYING : NO_PLAY;
-				play_fade = 1.0;
-			} 
+			// Are we being told to play?
+			play_trigger.process(rescale(
+					inputs[PLAY_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+			bool playing = ((params[PLAY_BUTTON_PARAM].getValue() > 0.1f) || play_trigger.isHigh());
 			
 			switch (play_state) {
 				case NO_PLAY:
@@ -186,11 +182,9 @@ struct Fixation : PositionedModule {
 					}
 				}
 				break;
-				case ADJUSTING:
-				break;
 			}
 
-			// Now set the record_fade value appropriately, which may also affect the state.
+			// Now set the play_fade value appropriately, which may also affect the state.
 			if (play_state == FADE_UP) {
 				if (play_fade < 1.0) {
 					play_fade = std::min(play_fade + FADE_INCREMENT, 1.0);
@@ -205,16 +199,24 @@ struct Fixation : PositionedModule {
 				}
 			}
 
-			// We're still moving, either forward or because user is adjusting.
+			// We're probably still moving.
 			// 'movement' is combination of speed input and speed param.
 			// NB: in v/oct case, we subtract the default 1.0 value for SPEED_PARAM.
-			double speed = speed_is_voct ?
-			    std::pow(2.0, inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue() - 1.0) :
-					inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
-			double movement = play_state == NO_PLAY ? 0.0 : speed;
-			
-			playback_position += movement;
-
+			if (!clock_event) {
+				double speed = speed_is_voct ?
+						std::pow(2.0, inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue() - 1.0) :
+						inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
+				double movement = play_state == NO_PLAY ? 0.0 : speed;
+				
+				playback_position += movement;
+			} else {
+				// Just got a clock trigger, completely reset the location.
+				playback_position = (params[POSITION_KNOB_PARAM].getValue() * length / 10.0);
+				if (params[POSITION_ATTN_PARAM].getValue() != 0.0f) {
+					playback_position += params[POSITION_ATTN_PARAM].getValue() *
+					  inputs[POSITION_INPUT].getVoltage() * length / 10.0;
+				}
+			}
 			// Fix the position, now that the movement has occured.
 			if (playback_position < 0.0) {
 				playback_position += length;
@@ -224,17 +226,16 @@ struct Fixation : PositionedModule {
 
 			display_position = playback_position;
 
-			while (display_position > 2 * length) {
-				display_position -= 2 * length;
+			while (display_position >= length) {
+				display_position -= length;
 			}
-
-			if (display_position >= length) {
-    		display_position -= length;
+			while (display_position < 0.0) {
+				display_position += length;
 			}
 
 			line_record.position = display_position;
 
-			if (play_state != NO_PLAY && play_state != ADJUSTING) {
+			if (play_state != NO_PLAY) {
 				// Determine values to emit.
 				double closest_head_distance = buffer->NearHead(display_position);
 				if (closest_head_distance <= FADE_DISTANCE) {
@@ -287,8 +288,8 @@ struct FixationWidget : ModuleWidget {
 
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 15.743)), module, Fixation::CLOCK_INPUT));
 
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 30.839)), module, Fixation::POSITION_KNOB_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(12.7, 30.654)), module, Fixation::POSITION_ATTN_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 30.654)), module, Fixation::POSITION_KNOB_PARAM));
+		addParam(createParamCentered<Trimpot>(mm2px(Vec(12.7, 30.654)), module, Fixation::POSITION_ATTN_PARAM));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 30.654)), module, Fixation::POSITION_INPUT));
 
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 97.087)), module, Fixation::SPEED_INPUT));
