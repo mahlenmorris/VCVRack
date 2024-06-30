@@ -280,6 +280,9 @@ struct MemoryDepict : Widget {
 					nvgRect(args.vg, bounding_box.x - len, y_pos, len, 2);
 				} else if (line.type == FIXATION) {
 					double center = bounding_box.x * line.distance / max_distance;
+					// Make these lines one fifth of the way across. Sure they'll overlap sometimes,
+					// but they typically don't travel the whole vertical length of the buffer, and
+					// they have to show up againt the white waveform.
 					double len = bounding_box.x * 0.2;
 					nvgRect(args.vg, center - len / 2.0, y_pos, len, 2);
 				}

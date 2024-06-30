@@ -36,15 +36,18 @@ struct Fixation : PositionedModule {
 		NO_PLAY,  	// * Not playing at all.
 		FADE_UP,  	// * Starting to play.
 		PLAYING,   	// * Continuing to play.
-		FADE_DOWN		// * Fading out the playing.
-		    				// * And back to not recording at all.
+		FADE_DOWN,		// * Fading out the playing -> to not playing at all.
+		FADE_DOWN_TO_RESTART // * Fading out in order to transition to a new starting place.
+
+    // TODO: do we need a FADE_UP_TO_RESTART?
 
 		// When starting and stopping the head and fade_on_move is set, the sequence is:
-		// * NO_PLAY -> FADE_UP -> PLAYING -> FADE_DOWN -> NO_PLAY.
-		// If user starts adjusting in FADE_UP or PLAYING, we move to FADE_DOWN and then NO_PLAY.
-		// If user is adjusting when in NO_PLAY, we move to ADJUSTING, and stay there until
-		// user stops adjusting.
-    //
+		// NO_PLAY -> FADE_UP -> PLAYING -> FADE_DOWN -> NO_PLAY.
+
+    // When playing and a CLOCK event is observed, the sequence is:
+   	// PLAYING -> FADE_DOWN_TO_RESTART -> (move head) -> FADE_UP -> PLAYING.
+
+    // TODO: does fade_on_move really make sense once we get envelopes working?
 		// When starting and stopping the head and fade_on_move is clear, the sequence is:
 		// * NO_PLAY -> FADE_UP -> PLAYING -> FADE_DOWN -> NO_PLAY.
 		// If user starts adjusting in FADE_UP or PLAYING, we adjust the position, but keep doing what we're doing.
@@ -66,6 +69,9 @@ struct Fixation : PositionedModule {
 
   // Where we are in memory (for the timestamp indicator).
   double display_position;
+
+  // When we complete the FADE_DOWN_TO_RESTART, this is where we should pick up from.
+	double position_at_clock_event;
 
   dsp::SchmittTrigger play_trigger;
   dsp::SchmittTrigger clock_trigger;
@@ -162,6 +168,16 @@ struct Fixation : PositionedModule {
 			clock_trigger.process(rescale(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
 			bool clock_event = !clock_was_high && clock_trigger.isHigh();
 
+			if (clock_event) {
+				// Save the desired position at this precise instant; we'll go there once
+				// we've faded down.
+				position_at_clock_event = (params[POSITION_KNOB_PARAM].getValue() * length / 10.0);
+				if (params[POSITION_ATTN_PARAM].getValue() != 0.0f) {
+					position_at_clock_event += params[POSITION_ATTN_PARAM].getValue() *
+					  inputs[POSITION_INPUT].getVoltage() * length / 10.0;
+				}
+			}
+
 			// Are we being told to play?
 			play_trigger.process(rescale(
 					inputs[PLAY_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
@@ -178,6 +194,14 @@ struct Fixation : PositionedModule {
 				case FADE_UP:
 				case PLAYING:  {
 					if (!playing) {
+						play_state = FADE_DOWN;
+					} else if (clock_event) {
+						play_state = FADE_DOWN_TO_RESTART;
+					}
+				}
+				break;
+				case FADE_DOWN_TO_RESTART: {
+				  if (!playing) {
 						play_state = FADE_DOWN;
 					}
 				}
@@ -197,26 +221,24 @@ struct Fixation : PositionedModule {
 				} else {
 					play_state = NO_PLAY;
 				}
+			} else if (play_state == FADE_DOWN_TO_RESTART) {
+				if (play_fade > 0.0) {
+					play_fade = std::max(play_fade - FADE_INCREMENT, 0.0);
+				} else {
+					playback_position = position_at_clock_event;
+					play_state = FADE_UP;
+				}
 			}
 
 			// We're probably still moving.
 			// 'movement' is combination of speed input and speed param.
 			// NB: in v/oct case, we subtract the default 1.0 value for SPEED_PARAM.
-			if (!clock_event) {
-				double speed = speed_is_voct ?
-						std::pow(2.0, inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue() - 1.0) :
-						inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
-				double movement = play_state == NO_PLAY ? 0.0 : speed;
-				
-				playback_position += movement;
-			} else {
-				// Just got a clock trigger, completely reset the location.
-				playback_position = (params[POSITION_KNOB_PARAM].getValue() * length / 10.0);
-				if (params[POSITION_ATTN_PARAM].getValue() != 0.0f) {
-					playback_position += params[POSITION_ATTN_PARAM].getValue() *
-					  inputs[POSITION_INPUT].getVoltage() * length / 10.0;
-				}
-			}
+			double speed = speed_is_voct ?
+					std::pow(2.0, inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue() - 1.0) :
+					inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
+			double movement = play_state == NO_PLAY ? 0.0 : speed;
+			
+			playback_position += movement;
 			// Fix the position, now that the movement has occured.
 			if (playback_position < 0.0) {
 				playback_position += length;
@@ -257,6 +279,13 @@ struct Fixation : PositionedModule {
 					play_state = NO_PLAY;
 					play_fade = 0.0;
 				}
+				if (play_state == FADE_DOWN_TO_RESTART && fabs(left) < 0.1 && fabs(right) < 0.1) {
+					// Doing this can make the timing slightly off? Is that bad?
+					// If we're playing to length, but we keep shortening, then that could throw off beat!
+					// But I think it's good when the CLOCK induces the change.
+					// Logic above will change us to FADE_UP and change position.
+					play_fade = 0.0;
+				}
 				// Sadly, no simple equivalent for FADE_UP -> PLAYING transition.
 
 				outputs[LEFT_OUTPUT].setVoltage(left);
@@ -289,7 +318,7 @@ struct FixationWidget : ModuleWidget {
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 15.743)), module, Fixation::CLOCK_INPUT));
 
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 30.654)), module, Fixation::POSITION_KNOB_PARAM));
-		addParam(createParamCentered<Trimpot>(mm2px(Vec(12.7, 30.654)), module, Fixation::POSITION_ATTN_PARAM));
+		addParam(createParamCentered<Trimpot>(mm2px(Vec(12.7, 36.654)), module, Fixation::POSITION_ATTN_PARAM));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 30.654)), module, Fixation::POSITION_INPUT));
 
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 97.087)), module, Fixation::SPEED_INPUT));
