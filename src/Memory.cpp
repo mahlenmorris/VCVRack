@@ -371,6 +371,15 @@ struct BufferChangeThread {
                   task->status->completed = LOAD_COMPLETED;
                 }
                 delete task;
+
+                // There's no reason I can come up with to let there be a click between
+                // the end and the beginning of the buffer.
+                // So if I suspect there will be one, add a Smooth to get rid of it.
+                if (abs(buffer->left_array[0] - buffer->left_array[buffer->length - 1]) > 0.1 &&
+                    abs(buffer->right_array[0] - buffer->right_array[buffer->length - 1]) > 0.1) {
+        					Smooth* new_smooth = new Smooth(0, true);
+				         	buffer->smooths.additions.push(new_smooth);
+                }
               }
               break;
               case BufferTask::SAVE_FILE: {
