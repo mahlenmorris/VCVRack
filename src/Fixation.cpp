@@ -11,6 +11,8 @@ struct Fixation : PositionedModule {
 		POSITION_KNOB_PARAM,
 		PLAY_BUTTON_PARAM,
 		SPEED_PARAM,
+		LENGTH_KNOB_PARAM,
+		LENGTH_ATTN_PARAM,
 		PARAMS_LEN
 	};
 	enum InputId {
@@ -18,6 +20,7 @@ struct Fixation : PositionedModule {
 		POSITION_INPUT,
 		PLAY_GATE_INPUT,
 		SPEED_INPUT,
+		LENGTH_INPUT,
 		INPUTS_LEN
 	};
 	enum OutputId {
@@ -92,7 +95,12 @@ struct Fixation : PositionedModule {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configParam(POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.f, "Attenuverter on POSITION input.");
 		configParam(POSITION_KNOB_PARAM, 0.f, 10.f, 0.f, "Position where playback will start on each CLOCK trigger.");
-		configInput(POSITION_INPUT, "Multiplied by the attenuverter, added to the POSITION know value.");
+		configInput(POSITION_INPUT, "Multiplied by the attenuverter, added to the POSITION value.");
+
+		configParam(LENGTH_ATTN_PARAM, -1.0f, 1.0f, 0.f, "Attenuverter on LENGTH input.");
+		configParam(LENGTH_KNOB_PARAM, 0.f, 10.f, 0.f, "Maximum LENGTH of playback.");
+		configInput(LENGTH_INPUT, "Multiplied by the attenuverter, added to the LENGTH value.");
+
 		configSwitch(PLAY_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this playback head",
 	               {"Silent", "Playing"});
 		configParam(SPEED_PARAM, -10.0f, 10.0f, 1.0f, "Playback speed/direction");
@@ -315,27 +323,31 @@ struct FixationWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 15.743)), module, Fixation::CLOCK_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(21.166, 15.743)), module, Fixation::CLOCK_INPUT));
 
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 30.654)), module, Fixation::POSITION_KNOB_PARAM));
-		addParam(createParamCentered<Trimpot>(mm2px(Vec(12.7, 36.654)), module, Fixation::POSITION_ATTN_PARAM));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 30.654)), module, Fixation::POSITION_INPUT));
+		addParam(createParamCentered<Trimpot>(mm2px(Vec(15.24, 30.654)), module, Fixation::POSITION_ATTN_PARAM));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.236, 30.654)), module, Fixation::POSITION_INPUT));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 97.087)), module, Fixation::SPEED_INPUT));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(19.05, 97.087)), module, Fixation::SPEED_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 45.643)), module, Fixation::LENGTH_KNOB_PARAM));
+		addParam(createParamCentered<Trimpot>(mm2px(Vec(15.24, 45.643)), module, Fixation::LENGTH_ATTN_PARAM));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.236, 45.643)), module, Fixation::LENGTH_INPUT));
+
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 100.792)), module, Fixation::SPEED_INPUT));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(21.59, 100.792)), module, Fixation::SPEED_PARAM));
 
 		// Play button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(19.05, 80.0)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(21.59, 87.938)),
                                              module, Fixation::PLAY_BUTTON_PARAM,
                                              Fixation::PLAY_BUTTON_LIGHT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 80.0)), module, Fixation::PLAY_GATE_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 87.938)), module, Fixation::PLAY_GATE_INPUT));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.035, 112.0)), module, Fixation::LEFT_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(19.05, 112.0)), module, Fixation::RIGHT_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.575, 112.0)), module, Fixation::LEFT_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 112.0)), module, Fixation::RIGHT_OUTPUT));
 
 		ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
-			mm2px(Vec(12.7, 3.2)), module, Fixation::CONNECTED_LIGHT);
+			mm2px(Vec(15.24, 3.0)), module, Fixation::CONNECTED_LIGHT);
     connect_light->pos_module = module;
 		addChild(connect_light);
 	}
