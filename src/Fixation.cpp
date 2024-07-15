@@ -13,6 +13,8 @@ struct Fixation : PositionedModule {
 		SPEED_PARAM,
 		LENGTH_KNOB_PARAM,
 		LENGTH_ATTN_PARAM,
+		COUNT_KNOB_PARAM,
+		STYLE_KNOB_PARAM,
 		PARAMS_LEN
 	};
 	enum InputId {
@@ -26,6 +28,7 @@ struct Fixation : PositionedModule {
 	enum OutputId {
 		LEFT_OUTPUT,
 		RIGHT_OUTPUT,
+		TRIG_OUT_OUTPUT,
 		OUTPUTS_LEN
 	};
 	enum LightId {
@@ -34,13 +37,18 @@ struct Fixation : PositionedModule {
 		LIGHTS_LEN
 	};
 
+	static constexpr float MIN_TIME = 1e-3f;
+	static constexpr float MAX_TIME = 10.f;
+	static constexpr float LAMBDA_BASE = MAX_TIME / MIN_TIME;
+
   enum PlayState {
     // We have a few states we could be in.
 		NO_PLAY,  	// * Not playing at all.
 		FADE_UP,  	// * Starting to play.
 		PLAYING,   	// * Continuing to play.
 		FADE_DOWN,		// * Fading out the playing -> to not playing at all.
-		FADE_DOWN_TO_RESTART // * Fading out in order to transition to a new starting place.
+		FADE_DOWN_TO_RESTART, // * Fading out in order to transition to a new starting place.
+		FADE_DOWN_TO_STOP    // We've hit our repeat limit.
 
     // TODO: do we need a FADE_UP_TO_RESTART?
 
@@ -74,7 +82,7 @@ struct Fixation : PositionedModule {
   double display_position;
 
   // When we complete the FADE_DOWN_TO_RESTART, this is where we should pick up from.
-	double position_at_clock_event;
+	double position_for_restart;
 
   dsp::SchmittTrigger play_trigger;
   dsp::SchmittTrigger clock_trigger;
@@ -91,15 +99,40 @@ struct Fixation : PositionedModule {
 	PlayState play_state;
 	bool speed_is_voct = false;  // Saved in the patch.
 
+	// Timer to track the position within the envelope.
+	int length_countdown = -1;
+  // Total length as of last enquiry.
+	int length_in_samples;
+
+  // Only used for STYLE 2 - number of repeats so far completed.
+	int repeat_count;
+
+	// Makes the output trigger at TRIG when needed.
+  dsp::PulseGenerator trig_generator;
+
+
 	Fixation() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		configParam(POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.f, "Attenuverter on POSITION input.");
+		configParam(POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.f, "Attenuverter on POSITION input.", "%", 0, 100);
 		configParam(POSITION_KNOB_PARAM, 0.f, 10.f, 0.f, "Position where playback will start on each CLOCK trigger.");
 		configInput(POSITION_INPUT, "Multiplied by the attenuverter, added to the POSITION value.");
 
-		configParam(LENGTH_ATTN_PARAM, -1.0f, 1.0f, 0.f, "Attenuverter on LENGTH input.");
-		configParam(LENGTH_KNOB_PARAM, 0.f, 10.f, 0.f, "Maximum LENGTH of playback.");
+		configParam(LENGTH_ATTN_PARAM, -1.0f, 1.0f, 0.f, "Attenuverter on LENGTH input.", "%", 0, 100);
+		configParam(LENGTH_KNOB_PARAM, 0.f, 1.f, 0.5f, "Maximum LENGTH of playback.",
+		            " ms", LAMBDA_BASE, MIN_TIME * 1000);
 		configInput(LENGTH_INPUT, "Multiplied by the attenuverter, added to the LENGTH value.");
+
+		configParam(COUNT_KNOB_PARAM, 1, 128, 1,
+		  "Number of repetitions per CLOCK (in STYLE 'CLOCK starts COUNT repeats...')");
+    getParamQuantity(COUNT_KNOB_PARAM)->snapEnabled = true;
+		configSwitch(STYLE_KNOB_PARAM, 0, 2, 0, "Play Style",
+		             {"CLOCK only: LENGTH and COUNT ignored",
+								  "Always plays LENGTH: CLOCK and COUNT ignored",
+									"CLOCK starts COUNT repeats of size LENGTH"});
+    // This has distinct values.
+    getParamQuantity(STYLE_KNOB_PARAM)->snapEnabled = true;
+
+		configOutput(TRIG_OUT_OUTPUT, "Raises a trigger at the start of each play");
 
 		configSwitch(PLAY_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this playback head",
 	               {"Silent", "Playing"});
@@ -148,6 +181,24 @@ struct Fixation : PositionedModule {
 		}
 	}
 
+  double GetPosition() {
+		double position = (params[POSITION_KNOB_PARAM].getValue() * length / 10.0);
+		if (params[POSITION_ATTN_PARAM].getValue() != 0.0f) {
+			position += params[POSITION_ATTN_PARAM].getValue() *
+				inputs[POSITION_INPUT].getVoltage() * length / 10.0;
+		}
+		return position;
+	}
+
+	int GetLength(const ProcessArgs& args) {
+		float length_exp = params[LENGTH_KNOB_PARAM].getValue() +
+		  (params[LENGTH_ATTN_PARAM].getValue() * inputs[LENGTH_INPUT].getVoltage() / 10.0);
+		length_exp = rack::math::clamp(length_exp, 0.0f, 1.0f);
+		double length = pow(LAMBDA_BASE, length_exp) * args.sampleRate / 1000;
+	  // Counting samples goes wonky if we get below one sample of length.
+	  return std::max((int) floor(length), 1);
+	}
+
 	void process(const ProcessArgs& args) override {
 		// Only call this only every N samples, since the vast majority of
 		// the time this won't change.
@@ -172,18 +223,66 @@ struct Fixation : PositionedModule {
 			length = std::max(buffer->length, 10);
 			seconds = std::max(buffer->seconds, 0.1);
 
+			// This affects behavior, so let's get it up front.
+			int style = params[STYLE_KNOB_PARAM].getValue();
+
 			bool clock_was_high = clock_trigger.isHigh();
 			clock_trigger.process(rescale(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
 			bool clock_event = !clock_was_high && clock_trigger.isHigh();
 
-			if (clock_event) {
-				// Save the desired position at this precise instant; we'll go there once
-				// we've faded down.
-				position_at_clock_event = (params[POSITION_KNOB_PARAM].getValue() * length / 10.0);
-				if (params[POSITION_ATTN_PARAM].getValue() != 0.0f) {
-					position_at_clock_event += params[POSITION_ATTN_PARAM].getValue() *
-					  inputs[POSITION_INPUT].getVoltage() * length / 10.0;
+			bool length_event = false;
+			if (length_countdown > 0) {
+				--length_countdown;
+				if (length_countdown == 0) {
+					// TODO: Behavior choice here - restart at position, or just stop playing.
+					// to start, we'll go to restart.
+					length_event = true;
 				}
+			}
+
+			bool prepare_to_restart = false;
+
+			switch (style) {
+				case 0: // CLOCK only: LENGTH and COUNT ignored.
+				{
+					if (clock_event) {
+						// Save the desired position at this precise instant; we'll go there once
+						// we've faded down.
+						position_for_restart = GetPosition();
+						prepare_to_restart = true;
+					}
+					length_countdown = -1;
+				}
+				break;
+				case 1: // Always plays LENGTH: CLOCK and COUNT ignored.
+				{
+					// length_countdown < 0 -> we just switched to this STYLE.
+					if (length_event || length_countdown < 0) {
+						position_for_restart = GetPosition();
+						length_in_samples	= GetLength(args);
+						length_countdown = length_in_samples;
+						prepare_to_restart = true;
+					}
+				}
+				break;
+				case 2: // CLOCK starts COUNT repeats of size LENGTH.
+				{
+					if (clock_event) {
+						// TODO: does LENGTH count only from when CLOCK happened, or is it continuously compared?
+						position_for_restart = GetPosition();
+						length_in_samples	= GetLength(args);
+						length_countdown = length_in_samples;
+						prepare_to_restart = true;
+						repeat_count = 0;
+					} else if (length_event) {
+						repeat_count++;
+						position_for_restart = GetPosition();
+						prepare_to_restart = true;
+						length_in_samples	= GetLength(args);
+						length_countdown = length_in_samples;
+					}
+				}
+				break;
 			}
 
 			// Are we being told to play?
@@ -192,9 +291,20 @@ struct Fixation : PositionedModule {
 			bool playing = ((params[PLAY_BUTTON_PARAM].getValue() > 0.1f) || play_trigger.isHigh());
 			
 			switch (play_state) {
-				case NO_PLAY:
+				case NO_PLAY: {
+					if (prepare_to_restart) {
+						playback_position = position_for_restart;
+						trig_generator.trigger(1e-3f);
+						play_state = FADE_UP;
+					} else {
+						// Even when not playing, POSITION is probably changing,
+						// and we should reflect that.
+						playback_position = GetPosition();
+					}
+				}
+				break;
 				case FADE_DOWN: {
-					if (playing) {
+					if (prepare_to_restart) {
 						play_state = FADE_UP;
 					}
 				}
@@ -203,12 +313,19 @@ struct Fixation : PositionedModule {
 				case PLAYING:  {
 					if (!playing) {
 						play_state = FADE_DOWN;
-					} else if (clock_event) {
-						play_state = FADE_DOWN_TO_RESTART;
+					} else if (prepare_to_restart) {
+						if (style == 2 && repeat_count >= params[COUNT_KNOB_PARAM].getValue()) {
+							play_state = FADE_DOWN_TO_STOP;
+							length_countdown = -1;
+						} else {
+							play_state = FADE_DOWN_TO_RESTART;
+						}
 					}
 				}
 				break;
-				case FADE_DOWN_TO_RESTART: {
+				case FADE_DOWN_TO_RESTART:
+				case FADE_DOWN_TO_STOP:
+				{
 				  if (!playing) {
 						play_state = FADE_DOWN;
 					}
@@ -233,10 +350,18 @@ struct Fixation : PositionedModule {
 				if (play_fade > 0.0) {
 					play_fade = std::max(play_fade - FADE_INCREMENT, 0.0);
 				} else {
-					playback_position = position_at_clock_event;
+					playback_position = position_for_restart;
+					trig_generator.trigger(1e-3f);
 					play_state = FADE_UP;
 				}
+  		} else if (play_state == FADE_DOWN_TO_STOP) {
+				if (play_fade > 0.0) {
+					play_fade = std::max(play_fade - FADE_INCREMENT, 0.0);
+				} else {
+					play_state = NO_PLAY;
+				}
 			}
+
 
 			// We're probably still moving.
 			// 'movement' is combination of speed input and speed param.
@@ -304,6 +429,8 @@ struct Fixation : PositionedModule {
 				outputs[RIGHT_OUTPUT].setVoltage(0.0f);
 				lights[PLAY_BUTTON_LIGHT].setBrightness(0.0f);
 			}
+			outputs[TRIG_OUT_OUTPUT].setVoltage(
+				trig_generator.process(args.sampleTime) ? 10.0 : 0.0f);
 		} else {
 			// Can only be playing if connected.
 			lights[PLAY_BUTTON_LIGHT].setBrightness(0.0f);
@@ -332,6 +459,15 @@ struct FixationWidget : ModuleWidget {
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 45.643)), module, Fixation::LENGTH_KNOB_PARAM));
 		addParam(createParamCentered<Trimpot>(mm2px(Vec(15.24, 45.643)), module, Fixation::LENGTH_ATTN_PARAM));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.236, 45.643)), module, Fixation::LENGTH_INPUT));
+
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(8.575, 59.842)), module, Fixation::COUNT_KNOB_PARAM));
+		RoundBlackSnapKnob* style_knob = createParamCentered<RoundBlackSnapKnob>(mm2px(Vec(21.59, 59.842)),
+		    module, Fixation::STYLE_KNOB_PARAM);
+		style_knob->minAngle = -0.28f * M_PI;
+    style_knob->maxAngle = 0.28f * M_PI;
+    addParam(style_knob);
+
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 73.025)), module, Fixation::TRIG_OUT_OUTPUT));
 
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 100.792)), module, Fixation::SPEED_INPUT));
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(21.59, 100.792)), module, Fixation::SPEED_PARAM));
