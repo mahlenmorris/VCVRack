@@ -452,32 +452,32 @@ struct FixationWidget : ModuleWidget {
 
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(21.166, 15.743)), module, Fixation::CLOCK_INPUT));
 
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 30.654)), module, Fixation::POSITION_KNOB_PARAM));
-		addParam(createParamCentered<Trimpot>(mm2px(Vec(15.24, 30.654)), module, Fixation::POSITION_ATTN_PARAM));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.236, 30.654)), module, Fixation::POSITION_INPUT));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 25.737)), module, Fixation::POSITION_KNOB_PARAM));
+		addParam(createParamCentered<Trimpot>(mm2px(Vec(15.24, 25.737)), module, Fixation::POSITION_ATTN_PARAM));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.236, 25.737)), module, Fixation::POSITION_INPUT));
 
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 45.643)), module, Fixation::LENGTH_KNOB_PARAM));
-		addParam(createParamCentered<Trimpot>(mm2px(Vec(15.24, 45.643)), module, Fixation::LENGTH_ATTN_PARAM));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.236, 45.643)), module, Fixation::LENGTH_INPUT));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 40.188)), module, Fixation::LENGTH_KNOB_PARAM));
+		addParam(createParamCentered<Trimpot>(mm2px(Vec(15.24, 40.188)), module, Fixation::LENGTH_ATTN_PARAM));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.236, 40.188)), module, Fixation::LENGTH_INPUT));
 
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(8.575, 59.842)), module, Fixation::COUNT_KNOB_PARAM));
-		RoundBlackSnapKnob* style_knob = createParamCentered<RoundBlackSnapKnob>(mm2px(Vec(21.59, 59.842)),
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(8.575, 56.279)), module, Fixation::COUNT_KNOB_PARAM));
+		RoundBlackSnapKnob* style_knob = createParamCentered<RoundBlackSnapKnob>(mm2px(Vec(21.59, 56.279)),
 		    module, Fixation::STYLE_KNOB_PARAM);
 		style_knob->minAngle = -0.28f * M_PI;
     style_knob->maxAngle = 0.28f * M_PI;
     addParam(style_knob);
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 73.025)), module, Fixation::TRIG_OUT_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 70.509)), module, Fixation::TRIG_OUT_OUTPUT));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 100.792)), module, Fixation::SPEED_INPUT));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(21.59, 100.792)), module, Fixation::SPEED_PARAM));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 97.087)), module, Fixation::SPEED_INPUT));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(21.59, 97.087)), module, Fixation::SPEED_PARAM));
 
 		// Play button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(21.59, 87.938)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(21.59, 84.36)),
                                              module, Fixation::PLAY_BUTTON_PARAM,
                                              Fixation::PLAY_BUTTON_LIGHT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 87.938)), module, Fixation::PLAY_GATE_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 84.36)), module, Fixation::PLAY_GATE_INPUT));
 
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.575, 112.0)), module, Fixation::LEFT_OUTPUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 112.0)), module, Fixation::RIGHT_OUTPUT));
