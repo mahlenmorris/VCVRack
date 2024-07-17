@@ -442,7 +442,8 @@ struct Fixation : PositionedModule {
 struct FixationWidget : ModuleWidget {
 	FixationWidget(Fixation* module) {
 		setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/Fixation.svg")));
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/Fixation.svg"),
+		                     asset::plugin(pluginInstance, "res/Fixation-dark.svg")));
 		// TODO: add dark panel once layout is final.
 
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
