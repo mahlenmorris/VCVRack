@@ -42,30 +42,68 @@ struct Fixation : PositionedModule {
 	static constexpr float LAMBDA_BASE = MAX_TIME / MIN_TIME;
 
   enum PlayState {
-    // We have a few states we could be in.
+    // We have several states we could be in.
 		NO_PLAY,  	// * Not playing at all.
+		WAITING,    // * Playing, but not told to start yet.
 		FADE_UP,  	// * Starting to play.
 		PLAYING,   	// * Continuing to play.
 		FADE_DOWN,		// * Fading out the playing -> to not playing at all.
 		FADE_DOWN_TO_RESTART, // * Fading out in order to transition to a new starting place.
-		FADE_DOWN_TO_STOP    // We've hit our repeat limit.
+		FADE_DOWN_TO_WAIT    // * We've hit our repeat limit.
 
     // TODO: do we need a FADE_UP_TO_RESTART?
 
-		// When starting and stopping the head and fade_on_move is set, the sequence is:
-		// NO_PLAY -> FADE_UP -> PLAYING -> FADE_DOWN -> NO_PLAY.
+		// Assertions:
+		// Can never move from playing <--> not_playing without a fade.
+		// Can never move positions without a fade.
+		// Can't be in WAITING and STYLE == 1.
+		// Should start TRIG when move to FADE_UP.
+		// clock_event should set the position and length.
 
-    // When playing and a CLOCK event is observed, the sequence is:
-   	// PLAYING -> FADE_DOWN_TO_RESTART -> (move head) -> FADE_UP -> PLAYING.
+		// start_play == transition from "play off" -> "play on"
+		// stop_play == transition from "play on" -> "play off"
+    // CLOCK == CLOCK input sees a trigger.
+		// length_event == we have played for as long as we were told to.
+		// fade_ended == the fade (up or down) has completed.
+		// count_reached == the count of repeats has hit the limit.
+		// style_changed == just starting, or style has changed.
 
-    // TODO: does fade_on_move really make sense once we get envelopes working?
-		// When starting and stopping the head and fade_on_move is clear, the sequence is:
-		// * NO_PLAY -> FADE_UP -> PLAYING -> FADE_DOWN -> NO_PLAY.
-		// If user starts adjusting in FADE_UP or PLAYING, we adjust the position, but keep doing what we're doing.
-		// If user is adjusting when in NO_PLAY, we move the play head accordingly.
-		// Should never be in ADJUSTING.
+    // NO_PLAY -> WAITING on [start_play] && STYLE (0, 2)
+    // NO_PLAY -> FADE_UP on [start_play] && STYLE (1)
+		// 
+    // WAITING -> FADE_UP on [CLOCK] && STYLE (0, 2)
+		// WAITING -> FADE_UP on [style_changed && STYLE (1)]  -- if user changed STYLE from 0 -> 1
+		// WAITING -> NO_PLAY on [stop_play]
+    // 
+    // FADE_UP -> PLAYING on fade_ended
+		// FADE_UP -> FADE_DOWN on [stop_play]
+		// FADE_UP -> FADE_DOWN_TO_RESTART on [CLOCK] && STYLE (0, 2)
+		// 
+		// PLAYING -> FADE_DOWN on [stop_play]
+		// PLAYING -> FADE_DOWN_TO_RESTART on [CLOCK] && STYLE (0, 2) 
+		// PLAYING -> FADE_DOWN_TO_RESTART on [length_event] && STYLE (1)
+		// PLAYING -> FADE_DOWN_TO_RESTART on [length_event] && STYLE (2) && not count_reached
+		// PLAYING -> FADE_DOWN_TO_WAIT on [length_event] && STYLE (2) && count_reached
+		// PLAYING -> FADE_DOWN_TO_WAIT on [style_changed && STYLE (0, 2)]
+		// PLAYING -> FADE_DOWN_TO_RESTART on [style_changed && STYLE (1)]
+    //
+    // FADE_DOWN -> NO_PLAY on [fade_ended] and play is off
+		// FADE_DOWN -> FADE_DOWN_TO_RESTART on [CLOCK event] && STYLE (0, 2)
+    // FADE_DOWN -> WAITING on [start_play] && STYLE (0, 2)
+    // FADE_DOWN -> WAITING on [fade_ended] && STYLE (0, 2)
+    // FADE_DOWN -> FADE_UP on [start_play] && STYLE (1)
+		//
+		// FADE_DOWN_TO_RESTART -> FADE_DOWN on [stop_play]
+		// FADE_DOWN_TO_RESTART -> FADE_UP on [fade_ended]
+    //
+    // FADE_DOWN_TO_WAIT -> WAITING on [fade_ended]
+		// FADE_DOWN_TO_WAIT -> FADE_DOWN on [stop_play]
     //
 	};
+
+  // DO NOT SUBMIT!
+  // PlayState prev_play_state = NO_PLAY;
+
 
 	const double FADE_INCREMENT = 0.02;
 
@@ -84,11 +122,12 @@ struct Fixation : PositionedModule {
   // When we complete the FADE_DOWN_TO_RESTART, this is where we should pick up from.
 	double position_for_restart;
 
+  bool playing;
+	int previous_style;
   dsp::SchmittTrigger play_trigger;
   dsp::SchmittTrigger clock_trigger;
 
-  // To display timestamps correctly.
-	double seconds = 0.0;
+  // Cache the buffer length locally.
 	int length = 0;
 
 	// To fade volume when near a recording head.
@@ -109,7 +148,6 @@ struct Fixation : PositionedModule {
 
 	// Makes the output trigger at TRIG when needed.
   dsp::PulseGenerator trig_generator;
-
 
 	Fixation() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -145,8 +183,10 @@ struct Fixation : PositionedModule {
 
     line_record.position = 0.0;
 		line_record.type = FIXATION;
+		playing = false;
 		play_state = NO_PLAY;
 		playback_position = -1;
+		previous_style = -1;
 	}
   
   const float octaves[8] = {-2, -1, -.5, -.25, .25, .5, 1, 2};
@@ -215,87 +255,84 @@ struct Fixation : PositionedModule {
 
 		// If connected and buffer isn't empty.
 		if (connected) {
-			// These help the Timestamps UI widgets on this module.
-			// While we could have Timestamp only pick these up from the Buffer,
-			// This means that disconnecting the module doesn't zero-out the
-			// Timestamp displays.
-			// Bad things happen if these are zero, which sometimes happens on startup.
+			// Bad things happen if this are zero, which sometimes happens on startup.
 			length = std::max(buffer->length, 10);
-			seconds = std::max(buffer->seconds, 0.1);
 
-			// This affects behavior, so let's get it up front.
+			// This affects all behavior, so let's get it up front.
 			int style = params[STYLE_KNOB_PARAM].getValue();
+      bool style_clock = (style == 0 || style == 2);
 
+      // Assemble all of the events that can change our state.
+			// * CLOCK.
 			bool clock_was_high = clock_trigger.isHigh();
 			clock_trigger.process(rescale(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
 			bool clock_event = !clock_was_high && clock_trigger.isHigh();
 
+      // * length_event.
 			bool length_event = false;
 			if (length_countdown > 0) {
 				--length_countdown;
 				if (length_countdown == 0) {
-					// TODO: Behavior choice here - restart at position, or just stop playing.
-					// to start, we'll go to restart.
 					length_event = true;
 				}
 			}
 
-			bool prepare_to_restart = false;
-
-			switch (style) {
-				case 0: // CLOCK only: LENGTH and COUNT ignored.
-				{
-					if (clock_event) {
-						// Save the desired position at this precise instant; we'll go there once
-						// we've faded down.
-						position_for_restart = GetPosition();
-						prepare_to_restart = true;
-					}
-					length_countdown = -1;
-				}
-				break;
-				case 1: // Always plays LENGTH: CLOCK and COUNT ignored.
-				{
-					// length_countdown < 0 -> we just switched to this STYLE.
-					if (length_event || length_countdown < 0) {
-						position_for_restart = GetPosition();
-						length_in_samples	= GetLength(args);
-						length_countdown = length_in_samples;
-						prepare_to_restart = true;
-					}
-				}
-				break;
-				case 2: // CLOCK starts COUNT repeats of size LENGTH.
-				{
-					if (clock_event) {
-						// TODO: does LENGTH count only from when CLOCK happened, or is it continuously compared?
-						position_for_restart = GetPosition();
-						length_in_samples	= GetLength(args);
-						length_countdown = length_in_samples;
-						prepare_to_restart = true;
-						repeat_count = 0;
-					} else if (length_event) {
-						repeat_count++;
-						position_for_restart = GetPosition();
-						prepare_to_restart = true;
-						length_in_samples	= GetLength(args);
-						length_countdown = length_in_samples;
-					}
-				}
-				break;
-			}
-
-			// Are we being told to play?
+			// * start_play and stop_play
 			play_trigger.process(rescale(
 					inputs[PLAY_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
-			bool playing = ((params[PLAY_BUTTON_PARAM].getValue() > 0.1f) || play_trigger.isHigh());
-			
+			bool now_playing = ((params[PLAY_BUTTON_PARAM].getValue() > 0.1f) || play_trigger.isHigh());
+			bool start_play = !playing && now_playing;
+			bool stop_play = playing && !now_playing;
+			playing = now_playing;
+
+      // * fade_ended
+      bool fade_ended = false;
+			if (play_state == FADE_UP) {
+				if (play_fade < 1.0) {
+					play_fade = std::min(play_fade + FADE_INCREMENT, 1.0);
+				}
+				if (play_fade > 0.99) {
+					play_fade = 1.0;
+					fade_ended = true;
+				}
+			} else if (play_state == FADE_DOWN ||
+			           play_state == FADE_DOWN_TO_RESTART ||
+								 play_state == FADE_DOWN_TO_WAIT) {
+				if (play_fade > 0.0) {
+					play_fade = std::max(play_fade - FADE_INCREMENT, 0.0);
+				}
+				if (play_fade < 0.01) {
+					play_fade = 0.0;
+					fade_ended = true;
+				}
+			}
+
+			bool style_changed = previous_style != style;
+			previous_style = style;
+
+      // TODO: simplify opportunities:
+			// * if clock then get position and length.
+
+			if (style == 1) {  // Always plays LENGTH: CLOCK and COUNT ignored.
+					// length_countdown < 0 -> we just switched to this STYLE.
+				if (length_event || length_countdown < 0) {
+					position_for_restart = GetPosition();
+					length_in_samples	= GetLength(args);
+					length_countdown = length_in_samples;
+				}
+			}
+
 			switch (play_state) {
 				case NO_PLAY: {
-					if (prepare_to_restart) {
-						playback_position = position_for_restart;
-						trig_generator.trigger(1e-3f);
-						play_state = FADE_UP;
+					if (start_play) {
+						if (style == 1) {
+							playback_position = GetPosition();
+							trig_generator.trigger(1e-3f);
+							play_state = FADE_UP;
+  						length_countdown = GetLength(args);
+						} else {
+							play_state = WAITING;
+						}
 					} else {
 						// Even when not playing, POSITION is probably changing,
 						// and we should reflect that.
@@ -303,65 +340,111 @@ struct Fixation : PositionedModule {
 					}
 				}
 				break;
-				case FADE_DOWN: {
-					if (prepare_to_restart) {
-						play_state = FADE_UP;
+
+				case WAITING: {
+					if (stop_play) {
+						play_state = NO_PLAY;
+					} else if (style == 1) {  // user changed STYLE from 0 -> 1, I'm fairly sure.
+						trig_generator.trigger(1e-3f);
+					  play_state = FADE_UP;
+						playback_position = GetPosition();
+						length_countdown	= GetLength(args);
+				  } else if (clock_event && style_clock) {
+					  // Since we don't need to fade down, we can TRIG now.
+						trig_generator.trigger(1e-3f);
+					  play_state = FADE_UP;
+						playback_position = GetPosition();
+						length_in_samples	= GetLength(args);
+						length_countdown = length_in_samples;
+						repeat_count = 0;
 					}
 				}
 				break;
-				case FADE_UP:
-				case PLAYING:  {
-					if (!playing) {
+
+				case FADE_UP: {
+					if (stop_play) {
 						play_state = FADE_DOWN;
-					} else if (prepare_to_restart) {
-						if (style == 2 && repeat_count >= params[COUNT_KNOB_PARAM].getValue()) {
-							play_state = FADE_DOWN_TO_STOP;
+					} else if (fade_ended) {
+						play_state = PLAYING;
+					} else if (clock_event && style_clock) {
+						play_state = FADE_DOWN_TO_RESTART;
+						position_for_restart = GetPosition();
+						length_in_samples	= GetLength(args);
+					}
+				}
+				break;
+
+				case PLAYING: {
+					if (stop_play) {
+						play_state = FADE_DOWN;
+					} else if (style_changed) {
+					  if (style_clock) {
+							// Wait for next CLOCK before playing again.
+							play_state = FADE_DOWN_TO_WAIT;
+						} else {
+							// Go back to position and run for length.
+							play_state = FADE_DOWN_TO_RESTART;
+						}
+					} else if (clock_event && style_clock) {
+						play_state = FADE_DOWN_TO_RESTART;
+						position_for_restart = GetPosition();
+						length_in_samples	= GetLength(args);
+					} else if (length_event && style == 1) {
+						play_state = FADE_DOWN_TO_RESTART;
+						length_in_samples	= GetLength(args);
+					} else if (length_event && style == 2) {
+						++repeat_count;
+						if (repeat_count >= params[COUNT_KNOB_PARAM].getValue()) {
+							play_state = FADE_DOWN_TO_WAIT;
 							length_countdown = -1;
 						} else {
 							play_state = FADE_DOWN_TO_RESTART;
+							length_countdown = GetLength(args);
 						}
 					}
 				}
 				break;
-				case FADE_DOWN_TO_RESTART:
-				case FADE_DOWN_TO_STOP:
-				{
-				  if (!playing) {
+
+				case FADE_DOWN: {
+					if (fade_ended && !playing) {
+						play_state = NO_PLAY;
+					} else if (clock_event && style_clock) {
+						play_state = FADE_DOWN_TO_RESTART;
+						position_for_restart = GetPosition();
+						length_in_samples	= GetLength(args);
+					} else if (start_play && style_clock) {
+						play_state = WAITING;
+					} else if (fade_ended && style_clock) {
+						play_state = WAITING;
+					} else if (start_play && style == 1) {
+						play_state = FADE_UP;
+					}
+				}
+				break;
+
+				case FADE_DOWN_TO_RESTART: {
+					if (stop_play) {
 						play_state = FADE_DOWN;
+					} else if (fade_ended) {
+						trig_generator.trigger(1e-3f);
+						playback_position = GetPosition();
+						play_state = FADE_UP;
+						if (style == 1 || style == 2) {
+							length_countdown = GetLength(args);
+						}
+					}
+				}
+				break;
+
+				case FADE_DOWN_TO_WAIT: {
+					if (stop_play) {
+						play_state = FADE_DOWN;
+					} else if (fade_ended) {
+						play_state = WAITING;
 					}
 				}
 				break;
 			}
-
-			// Now set the play_fade value appropriately, which may also affect the state.
-			if (play_state == FADE_UP) {
-				if (play_fade < 1.0) {
-					play_fade = std::min(play_fade + FADE_INCREMENT, 1.0);
-				} else {
-					play_state = PLAYING;
-				}
-			} else if (play_state == FADE_DOWN) {
-				if (play_fade > 0.0) {
-					play_fade = std::max(play_fade - FADE_INCREMENT, 0.0);
-				} else {
-					play_state = NO_PLAY;
-				}
-			} else if (play_state == FADE_DOWN_TO_RESTART) {
-				if (play_fade > 0.0) {
-					play_fade = std::max(play_fade - FADE_INCREMENT, 0.0);
-				} else {
-					playback_position = position_for_restart;
-					trig_generator.trigger(1e-3f);
-					play_state = FADE_UP;
-				}
-  		} else if (play_state == FADE_DOWN_TO_STOP) {
-				if (play_fade > 0.0) {
-					play_fade = std::max(play_fade - FADE_INCREMENT, 0.0);
-				} else {
-					play_state = NO_PLAY;
-				}
-			}
-
 
 			// We're probably still moving.
 			// 'movement' is combination of speed input and speed param.
@@ -369,7 +452,7 @@ struct Fixation : PositionedModule {
 			double speed = speed_is_voct ?
 					std::pow(2.0, inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue() - 1.0) :
 					inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
-			double movement = play_state == NO_PLAY ? 0.0 : speed;
+			double movement = (play_state == NO_PLAY || play_state == WAITING) ? 0.0 : speed;
 			
 			playback_position += movement;
 			// Fix the position, now that the movement has occured.
@@ -390,7 +473,7 @@ struct Fixation : PositionedModule {
 
 			line_record.position = display_position;
 
-			if (play_state != NO_PLAY) {
+			if (play_state != NO_PLAY && play_state != WAITING) {  // These states are silent.
 				// Determine values to emit.
 				double closest_head_distance = buffer->NearHead(display_position);
 				if (closest_head_distance <= FADE_DISTANCE) {
@@ -408,6 +491,8 @@ struct Fixation : PositionedModule {
 				// we could end a fade_out immediately. 
 				double left = fade * play_fade * gotten.left;
 				double right = fade * play_fade * gotten.right;
+				/*
+				// TODO: see if we can turn this back on?
 				if (play_state == FADE_DOWN && fabs(left) < 0.1 && fabs(right) < 0.1) {
 					play_state = NO_PLAY;
 					play_fade = 0.0;
@@ -419,7 +504,9 @@ struct Fixation : PositionedModule {
 					// Logic above will change us to FADE_UP and change position.
 					play_fade = 0.0;
 				}
-				// Sadly, no simple equivalent for FADE_UP -> PLAYING transition.
+				*/
+				// Sadly, no simple equivalent for FADE_UP -> PLAYING transition. Or is there?
+				// What if the distance between the faded and unfaded values is < 0.1?
 
 				outputs[LEFT_OUTPUT].setVoltage(left);
 				outputs[RIGHT_OUTPUT].setVoltage(right);
@@ -436,6 +523,26 @@ struct Fixation : PositionedModule {
 			lights[PLAY_BUTTON_LIGHT].setBrightness(0.0f);
 		}
 		lights[CONNECTED_LIGHT].setBrightness(connected ? 1.0f : 0.0f);
+
+  /*
+	if (play_state != prev_play_state) {
+		constexpr const char* state_names[] = {
+			"NO_PLAY",  	// * Not playing at all.
+			"WAITING",
+		  "FADE_UP",  	// * Starting to play.
+		  "PLAYING",   	// * Continuing to play.
+		  "FADE_DOWN",		// * Fading out the playing -> to not playing at all.
+		  "FADE_DOWN_TO_RESTART", // * Fading out in order to transition to a new starting place.
+		  "FADE_DOWN_TO_WAIT"    // We've hit our repeat limit.
+		};
+
+		prev_play_state = play_state;
+		WARN("New state: %s", state_names[play_state]);
+		WARN("length_countdown: %d", length_countdown);
+		WARN("length_in_samples: %d", length_in_samples);
+		WARN("playback_position: %f", playback_position);
+	}
+	*/
 	}
 };
 
@@ -444,7 +551,6 @@ struct FixationWidget : ModuleWidget {
 		setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Fixation.svg"),
 		                     asset::plugin(pluginInstance, "res/Fixation-dark.svg")));
-		// TODO: add dark panel once layout is final.
 
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
