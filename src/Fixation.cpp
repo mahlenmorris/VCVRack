@@ -487,25 +487,23 @@ struct Fixation : PositionedModule {
 				FloatPair gotten;
 				buffer->Get(&gotten, display_position);
 
-				// If the values we're outputting here are at or very close to zero,
-				// we could end a fade_out immediately. 
 				double left = fade * play_fade * gotten.left;
 				double right = fade * play_fade * gotten.right;
-				/*
-				// TODO: see if we can turn this back on?
-				if (play_state == FADE_DOWN && fabs(left) < 0.1 && fabs(right) < 0.1) {
-					play_state = NO_PLAY;
-					play_fade = 0.0;
-				}
-				if (play_state == FADE_DOWN_TO_RESTART && fabs(left) < 0.1 && fabs(right) < 0.1) {
+
+				// If the values we're outputting here are at or very close to zero,
+				// we can end a FADE_DOWN_* immediately. 
+				if ((play_state == FADE_DOWN ||
+				     play_state == FADE_DOWN_TO_RESTART ||
+				     play_state == FADE_DOWN_TO_WAIT) &&
+						fabs(left) < 0.1 &&
+						fabs(right) < 0.1) {
 					// Doing this can make the timing slightly off? Is that bad?
 					// If we're playing to length, but we keep shortening, then that could throw off beat!
 					// But I think it's good when the CLOCK induces the change.
 					// Logic above will change us to FADE_UP and change position.
 					play_fade = 0.0;
 				}
-				*/
-				// Sadly, no simple equivalent for FADE_UP -> PLAYING transition. Or is there?
+				// TODO: Sadly, no simple equivalent for FADE_UP -> PLAYING transition. Or is there?
 				// What if the distance between the faded and unfaded values is < 0.1?
 
 				outputs[LEFT_OUTPUT].setVoltage(left);
