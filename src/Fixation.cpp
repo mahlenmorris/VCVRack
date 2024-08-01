@@ -324,6 +324,9 @@ struct Fixation : PositionedModule {
 
 			switch (play_state) {
 				case NO_PLAY: {
+					// Even when not playing, POSITION is probably changing,
+					// and we should reflect that.
+					playback_position = GetPosition();
 					if (start_play) {
 						if (style == 1) {
 							playback_position = GetPosition();
@@ -333,15 +336,14 @@ struct Fixation : PositionedModule {
 						} else {
 							play_state = WAITING;
 						}
-					} else {
-						// Even when not playing, POSITION is probably changing,
-						// and we should reflect that.
-						playback_position = GetPosition();
 					}
 				}
 				break;
 
 				case WAITING: {
+					// Even when not playing, POSITION might be changing,
+					// and we should reflect that.
+					playback_position = GetPosition();
 					if (stop_play) {
 						play_state = NO_PLAY;
 					} else if (style == 1) {  // user changed STYLE from 0 -> 1, I'm fairly sure.
@@ -503,8 +505,13 @@ struct Fixation : PositionedModule {
 					// Logic above will change us to FADE_UP and change position.
 					play_fade = 0.0;
 				}
-				// TODO: Sadly, no simple equivalent for FADE_UP -> PLAYING transition. Or is there?
-				// What if the distance between the faded and unfaded values is < 0.1?
+				// The equivalent for FADE_UP -> PLAYING transition.
+				// Happens if the distance between the faded and unfaded values is < 0.1.
+        if (play_state == FADE_UP &&
+				    fabs(left - gotten.left) < 0.1 &&
+				    fabs(right - gotten.right) < 0.1) {
+					play_fade = 1.0;		
+				}
 
 				outputs[LEFT_OUTPUT].setVoltage(left);
 				outputs[RIGHT_OUTPUT].setVoltage(right);
