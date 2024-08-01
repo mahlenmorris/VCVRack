@@ -11,7 +11,8 @@ and resized. *Always* the left-most module in any Memory ensemble.
 * [Embellish](#embellish): Records stereo signals sent to it, but simultaneously plays back the 
 audio signal under the head. This makes sound-on-sound, effects passes, and the building up of 
 sound over time straighforward.
-* [Ruminate](#ruminate): Plays back audio at a large variety of speeds.
+* [Ruminate](#ruminate): Plays back audio buffer at a large variety of speeds, most easily over the whole Memory.
+* [Fixation](#fixation): Also plays back audio from the Memory, but with an emphasis on playing smaller sections and with repetition.
 
 A 15 minute video demonstrating some uses cases [is here](https://youtu.be/EKoMFsSqUo4). It demonstrates some simple patches:
 * [Introduction](examples/Memory%20-%20ensemble%20basics.vcv)
@@ -19,6 +20,9 @@ A 15 minute video demonstrating some uses cases [is here](https://youtu.be/EKoMF
 * [Square Wave and Delay](examples/Memory%20-%20Delay%20Pass%20over%20Square%20Wave.vcv)
 * [Guitar Beat](examples/Memory%20-%20guitar%20sample%20beat.vcv)
 * [Live Recording](examples/Memory%20-%20record%20live.vcv)
+
+Note that this video was made before the Fixation module existed; there are other videos on the same channel that specifically
+describe Fixation.
 
 The documentation for the *other* Stochastic Telegraph modules can [be found here](README.md).
 
@@ -31,9 +35,9 @@ Each non-Memory module has a small light near the top edge of the module; when a
 
 A typical starting place for a Memory Ensemble is one each of:
 * [Memory](#memory) - the storage for the audio data.
-* [Embellish](#embellish) - writes audio to Memory.
-* [Ruminate](#ruminate) - Plays audio from the content of Memory.
-* [Depict](#depict) - Visualizer for the state of Memory and the movement of the Embellish and Ruminate heads. Not required, but helpful. 
+* [Embellish](#embellish) - writes audio to Memory. But a Memory can load audio from a .WAV file, so not strictly required.
+* [Ruminate](#ruminate) or [Fixation](#fixation) - Plays audio from the content of Memory.
+* [Depict](#depict) - Visualizer for the state of Memory and the movement of the Embellish, Ruminate, and Fixation heads. Not required, but really helpful to understand what's happening. 
 
 ![Line Break image](images/Separator.png)
 
@@ -130,9 +134,10 @@ Depict's display has a few parts to it, shown here:
 * The grey center spine shows the peak amplitudes for both the left and right channels of audio data
 within the Memory, with the left channel extending from the white centerline to the left, and the white channel extending from the white centerline to the right. 
 * The number at the top left displays the current scaling level; in this case, indicating that a line reaching all the way to the edge would be at 5V. This display autoscales up and down to ensure that the highest value in the data is visible (up to 50V).
-* The waveform is drawn from beginning (the 0.0V position voltage at the bottom) to end (the 10.0V position voltage at the top). These position voltages are meaningful to the SET, INITIAL, and CURRENT values in Embellish and Ruminate.
-* Playback heads (Ruminate) start from the left-hand edge and are drawn to the right, in the color of the light on its corresponding module. The left-to-right position of the line suggests the position within the ensemble that Ruminate can be found. Note how the end point of the red Ruminate line is to the left part, much as the red Ruminate is on the left edge of the ensemble. The end point of the purple Ruminate line is a bit past the centerline, much as the purple Ruminate is just to left of the middle of the ensemble.
-* Recording heads (Embellish) start from the right-hand edge and are drawn to the left, in the color of the light on its corresponding module. Again, the left-to-right position of the line suggests the position within the ensemble that Embellish can be found. The end point of the green Embellish line is to the left of the yellow Embellish line, and note that the green Embellish is to the left of the yellow Embellish.
+* The waveform is drawn from beginning (the 0.0V position voltage at the bottom) to end (the 10.0V position voltage at the top). These position voltages are meaningful to the SET, INITIAL, and CURRENT values in Embellish and Ruminate, and the POSITION in Fixation.
+* **Ruminate** playback heads start from the left-hand edge and are drawn to the right, in the color of the light on its corresponding module. The left-to-right position of the line suggests the position within the ensemble where Ruminate is located. Note how the end point of the blue Ruminate line is in the middle, much as the blue Ruminate is in the middle of the ensemble.
+* **Fixation** playback heads are short lines not connected to either edge, in the color of the light on its corresponding module. The left-to-right position of the line suggests the position within the ensemble where Fixation is located. Note how the position of the yellow Fixation line is to the right, much as the yellow Fixation is the right-most module in the ensemble.
+* **Embellish** recording heads start from the right-hand edge and are drawn to the left, in the color of the light on its corresponding module. Again, the left-to-right position of the line suggests the position within the ensemble where Embellish is located. The end point of the red Embellish line is to the left of the other endpoints, as it is the left-most module.
 
 # Embellish
 Embellish is used to record audio onto a Memory. Embellish represents a playback and record head that can be moved freely over the length of the audio buffer.
@@ -241,7 +246,7 @@ Having recording heads starting and stopping and playback heads moving past reco
 * A playback head (i.e., Ruminate) will fade its output volume to zero when it passes over a recording head, and then fade the volume back up. This usually happens in less than a millisecond of time, and is, in my experience, not noticable. However, a side effect of this is that if a playback head is moving at the same speed as a recording head and very closely near it (like within 50 samples), it's volume may be reduced or even zero. Setting the INITIAL position knobs to different values can help spread them apart when you start up the patch.
 * Similarly, when two recording heads pass each other (e.g., in opposite directions), they will both fade out the signal they are writing to Memory.
 * Another source of clicks is turing the playback head on and off, so this also fades in and out.
-* Whenever a recording head starts or stops, it will "smooth out" where it that happened.
+* Whenever a recording head starts or stops, it will "smooth out" where that happened.
 
 Again, all of these interventions are quite brief in duration and you can safely forget they are happening; I'm just mentioning it here for completeness.
 
