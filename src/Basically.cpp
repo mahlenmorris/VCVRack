@@ -1487,6 +1487,7 @@ struct BasicallyWidget : ModuleWidget {
       "Language hints (selecting inserts code)"));
     std::pair<std::string, std::string> syntax[] = {
       {"OUT1 = IN1 + offset[n]", "OUT1 = IN1 + offset[n]\n"},
+      {"offset[0] = {2, 0.2, foo, 100*4.5}", "offset[0] = {2, 0.2, foo, 100*4.5}\n"},
       {"WAIT 200", "WAIT 200\n"},
       {"' I'm a comment!", "' I'm a comment! Only humans read me.\n"},
       {"IF IN1 == 0 THEN OUT1 = IN2 * IN2 END IF\n",
@@ -1568,6 +1569,10 @@ struct BasicallyWidget : ModuleWidget {
     // Now add text functions.
     // description, inserted text.
     std::pair<std::string, std::string> text_funcs[] = {
+      {"var_name$ - variable that hold a character string 'print(OUT6, name$)'",
+       "name$ = \"Bob\""},
+      {"array_name$[] - variable that holds many strings 'print(OUT6, messages$[3])'",
+       "names$[0] = {\"Bob\", \"Jo\", \"Clark\", \"Diane\"}"},
       {"debug(var_name) - text of the form 'var_name = (current value of var_name)'",
        "debug(foo)"},
       {"debug(array_name[], startpos, lastpos) - "
