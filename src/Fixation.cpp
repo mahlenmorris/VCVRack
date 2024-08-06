@@ -163,6 +163,9 @@ struct Fixation : PositionedModule {
 		configParam(COUNT_KNOB_PARAM, 1, 128, 1,
 		  "Number of repetitions per CLOCK (in STYLE 'CLOCK starts COUNT repeats...')");
     getParamQuantity(COUNT_KNOB_PARAM)->snapEnabled = true;
+		// TODO: Perhaps a fourth style like style 2, but treats CLOCK like a GATE, and keeps playing
+		// until the gate closes?
+		// Maybe this is a behavior on all of them? Or is that really the same as a gate to the PLAY input?
 		configSwitch(STYLE_KNOB_PARAM, 0, 2, 0, "Play Style",
 		             {"CLOCK only: LENGTH and COUNT ignored",
 								  "Always plays LENGTH: CLOCK and COUNT ignored",
