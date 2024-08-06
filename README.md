@@ -128,11 +128,9 @@ any number by zero, while undefined in *mathematics*, is defined by *BASICally*
 to be 0.0.
 * **"<", "<=", ">" , ">=", "==", "!="** -- comparison operators. Most commonly used
 in IF-THEN[-ELSE] statements.
-* * Technical note: correct testing of equality or inequality in floating point numbers is [notoriously non-obvious to beginners](https://embeddeduse.com/2019/08/26/qt-compare-two-floats/) (and even experts). For example, in previous versions of BASICally, "3.1" does NOT equal "31 * .1"!
-* * As of version 2.0.14, BASICally uses an ever-so-slightly looser definition of equality, as described at the end of the essay linked above. For most uses this will work exactly as before and be less prone to surprises like this example.
-* * But if you find yourself comparing two numbers and you want differences of 0.00001V to matter, I'll suggest that instead of writing "a == b", you use "a <= b AND a >= b", which does not invoke the looser definition. 
 * **"and", "or", "not"** -- Boolean logic operators. For purposes of these, a zero
 value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
+* Technical note: correct testing of equality or inequality in floating point numbers is [notoriously non-obvious to beginners](https://embeddeduse.com/2019/08/26/qt-compare-two-floats/) (and even experts). For example, in previous versions of BASICally, "3.1" does NOT equal "31 * .1"! As of version 2.0.14, BASICally uses an ever-so-slightly looser definition of equality, as described at the end of the essay linked above. For most uses this will work exactly as before and be less prone to surprises like this example. But if you find yourself comparing two numbers and you want differences of 0.00001V to matter, I'll suggest that instead of writing "a == b", you use "a <= b AND a >= b", which does not invoke the looser definition. 
 
 ### Math Functions
 
@@ -167,14 +165,22 @@ unsuitable for making, say, consistent 40Hz signals.
 ### Text functions
 
 BASICally can create text messages and send them in the Tipsy encoding to
-modules that can use them or display them (for example, [TTY](#tty)). Unlike
-most other languages, BASICally does *not* (yet) have variables or arrays that
-can store text, so the only way these get used is via **print()**.
+modules that can use them or display them (for example, [TTY](#tty) or [Memory](https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#memory)).
+
+As of version 2.0.16, BASICally has variables and arrays that can store text. These are distinguished
+from other variables by the name ending in a "\$". For example:
+
+    hey$ = "hello, "
+    you$[0] = {"world", "planet", "Earth", "universe"}
+    pick = random(0, 4)   ' A number from 0 -> 3.99999..., 
+    print(OUT6, hey$, you$[pick], "!")
+
 
 | Function | Meaning       | Examples |
 | -------- | ------------- | -------- |
 | **debug(foo)** | returns text of the form 'foo = (current value of var_name)' | debug(foo) -> "foo = 3.14159" |
 | **debug(bar[], start, end)** | returns text of the form 'bar[start] = { (values in bar[]) }' | debug(bar[], 0, 3) -> "bar[0] = {2, 3.11, 0, -4}" |
+| **debug(you$[], start, end)** | returns text of the form 'you[start] = { (string values in you$[]) }' | debug(you$[], 0, 3) -> "you$[0] = {"world", "planet", "Earth", "universe"}" |
 | **print(OUTn, text, text, ...)** | Joins the computed text and sends it out the port. | print(OUT6, "note = ", sin(IN1)) -> Sends "note = 0.5" via OUT6 port. |
 
 ### WAIT Statements
@@ -237,6 +243,8 @@ a value of 0.0.
 
 Unlike BASIC and many other languages, there is no need to set the size of
 the array before using it (i.e, there is no DIM() statement.)
+
+There are also arrays of strings, see [Text Functions](#text-functions) for details.
 
 ### IF Statements (Conditional Behavior)
 There are four kinds of IF statements:

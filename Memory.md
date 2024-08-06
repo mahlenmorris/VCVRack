@@ -124,7 +124,7 @@ Select a folder to Save .wav files to. Once this is done, any inputs to the SAVE
 A standard dialog box to save files with will appear. The entire current contents of the Memory buffer will be saved as a WAV file.
 
 # Depict
-A module for displaying both a representation of the audio data in Memory and showing the positions of the Embellish and Ruminate heads.
+A module for displaying both a representation of the audio data in Memory and showing the positions of the Embellish, Fixation, and Ruminate heads.
 
 You can have multiple Depict modules in the same ensemble; they will show identical information.
 ### Example
@@ -182,9 +182,10 @@ While running, the Embellish module writes whatever signal is arriving in the IN
 If Bypass is enabled, Embellish will stop writing. However, turning Embellish on and off using Bypass while recording will also bypass the module's Click Avoidance behavior, so it's not generally advised; it will almost surely add clicks to the recording.
 
 # Ruminate
-Ruminate is used to playback audio from a Memory. Ruminate represents a playback head that can be moved freely over the length of the audio buffer.
+Ruminate, like Fixation, is used to playback audio from a Memory. Ruminate represents a playback head that can be moved freely over the length of the audio buffer.
 
-More than one Ruminate can be used in the same ensemble.
+More than one Ruminate can be used in the same ensemble. On a Depict, each Ruminate will appear as a
+line connected to the left edge of the Depict screen.
 ### Uses
 * To listen to audio recorded into the Memory, attach the OUT (Left and Right) outputs to a mixer. Or better yet, put a few Ruminates in different locations and/or different speeds and mix them together.
 * Try playing the same audio at different speeds an octave apart. I find that making one Ruminate run at SPEED 1 and others run at, say, 2.0 or 0.5 or .25 works as a nice starting place. 
@@ -241,9 +242,99 @@ the audio content is a fairly consistant single tone.
 ### Bypass Behavior
 If Bypass is enabled, Ruminate will stop playing. However, turning Ruminate on and off by using Bypass while playing will also bypass the module's Click Avoidance behavior, so it's not generally advised; it will almost surely have clicks in the audio it sends out.
 
+# Fixation
+Fixation, like Ruminate, is used to playback audio from a Memory. Fixation has abilities that let it excell at playing short bits of a Memory repeatedly. It's ideal for looping for set lengths of time or for restarting based on a clock signal.
+
+More than one Fixation can be used in the same ensemble. On a Depict, each Fixation will appear as a
+short line, not connected to either edge.
+### Controls
+
+The STYLE control is key to understanding how Fixation will behave. Note that some controls will have no effect if particular STYLE's are selected.
+
+#### CLOCK Input
+
+Two of the STYLE's initiate and restart playback by triggers received by this input.
+
+#### POSITION Knob, Attenuverter, and Input
+
+When a position to play from is needed (see the STYLE section below), the value of the POSITION Input (if present) is multiplied by the Attenuverter value, and this product is added to the value of the POSITION knob. That value is wrapped around into a value from 0V-10V, and that position within the buffer be used.
+
+#### LENGTH Knob, Attenuverter, and Input
+
+When a length of audio to play is needed (see the STYLE section below), the value of the LENGTH Input (if present) is multiplied by the Attenuverter value, and this product is added to the value of the LENGTH knob. That value is limited to a value from 1 ms to 10 seconds, and that length of audio within the buffer will be played.
+
+#### COUNT Knob
+
+The third STYLE uses this count from 1 - 128 to determine how many repetitions to play (at most) for each CLOCK input.
+
+#### STYLE Knob
+There are three possible settings for STYLE:
+* **CLOCK only: LENGTH and COUNT ignored**
+* Every time a trigger is received by the CLOCK input:
+* * playback quickly fades out and stops (if already in progress)
+* * the playhead moves to POSITION
+* * a trigger is output at TRIG
+* * the playback quickly fades up and plays until the next CLOCK.
+* **Always plays LENGTH: CLOCK and COUNT ignored**:
+* Playback starts at POSITION for LENGTH milliseconds; LENGTH is read every time the loop restarts. Once that playback is complete:
+* * playback quickly fades out and stops (if already in progress)
+* * the playhead moves to POSITION
+* * a trigger is output at TRIG
+* * the playback quickly fades up and plays until length is reached.
+* **CLOCK starts COUNT repeats of size LENGTH**:
+* Every time a trigger is received by the CLOCK input:
+* * the LENGTH is read, and a repeat counter is set to zero.
+* * the playhead moves to POSITION
+* * a trigger is output at TRIG
+* * playback quickly fades up and plays for LENGTH milliseconds.
+* * the counter is incremented by one. If that counter is now greater than or equal to COUNT, then
+playback stops, otherwise we move to POSITION and play again for LENGTH (which is reread) milliseconds.
+
+#### TRIG Output
+
+This will output a short trigger whenever the play head starts playing from a POSITION. This can be useful for starting an envelope around the sound that Fixation outputs.
+
+Note that this will likely NOT be precisely the same as when a CLOCK is received (in STYLE's that use CLOCK), because Fixation will quickly fade down the audio it's currently playing before starting the next playback. See the Click Avoidance section for more detail.
+
+#### PLAY Input and Button
+Fixation will playback audio if either the button has been pressed into the Playing position or a while a positive gate is being received by the PLAY input.
+
+The button will be lit only if the playhead is actively playing back audio. For example, it will be unlit when 
+#### SPEED Input and Knob
+The speed that the playback head is traveling is the *sum* of the SPEED Input and Knob value. If you want the SPEED Input to completely control the speed, set the Knob value to zero.
+
+As you might expect, playback speed will affect the pitch and tempo of the sounds played (the following assumes that the "Use Speed as V/Oct" menu option is unchecked):
+* "1" is playback at the speed it was recorded at.
+* "-1" is playback in reverse, although note that if BOUNCE is set, then when a Fixation hits the beginning of the audio, it will start playing forwards.
+* "0.5" is half speed, pitching the audio down an octave and taking twice as long to play. This is quite possibly the best speed :)
+* "2" is double speed, pitched an octave up.
+
+If the "Use Speed as V/Oct" menu option is checked, then the sum of the SPEED input and knob are treated like a V/Oct signal, as seen in
+many other modules. More precisely, when SPEED input + knob == 1, then Fixation will playback at the speed it was recorded at.
+
+The knob goes from -10V to 10V.
+#### OUT (Left and Right)
+If Fixation is playing, the audio output is emitted here.
+
+### Menu Options
+#### Fade on Move
+Affects the behavior when the slider or SET moves the position of the head.
+If checked (the default), the L&R outputs will be silent until the position stops changing. If not checked, then the playback will continue as it's being moved.
+See [example video](https://www.youtube.com/watch?v=dOsupn0-Mxw).
+#### Use Speed as V/Oct
+Affects how the SPEED is interpreted. When unchecked (the default),
+the sum of the SPEED input and control is how many samples the playhead moves forward per sample emitted, so 1 is normal speed, .5 is half-speed. When checked, this sum will be interpreted the way that V/Oct is interpreted in most modules. See [example video](https://www.youtube.com/watch?v=kGKmS2WjqIs).
+### Randomize Behavior
+To make the likelihood of pleasing combinations higher, when the Randomize function on the module menu is chosen, the Speed Knob will be
+set to values of a just intonation [diatonic scale](https://en.m.wikipedia.org/wiki/Just_intonation#Diatonic_scale), where "1V" is the root. Best when
+the audio content is a fairly consistant single tone.
+
+### Bypass Behavior
+If Bypass is enabled, Fixation will stop playing. However, turning Fixation on and off by using Bypass while playing will also bypass the module's Click Avoidance behavior, so it's not generally advised; it will almost surely have clicks in the audio it sends out.
+
 # Click Avoidance
 Having recording heads starting and stopping and playback heads moving past recording heads is a recipe for usually annoying clicks and pops. A math-oriented person (like myself) might think of them as "discontinuities". For the sake of brevity, I'll forego describing all of the ways that the Memory system works to avoid these, and just mention a couple things:
-* A playback head (i.e., Ruminate) will fade its output volume to zero when it passes over a recording head, and then fade the volume back up. This usually happens in less than a millisecond of time, and is, in my experience, not noticable. However, a side effect of this is that if a playback head is moving at the same speed as a recording head and very closely near it (like within 50 samples), it's volume may be reduced or even zero. Setting the INITIAL position knobs to different values can help spread them apart when you start up the patch.
+* A playback head (i.e., Ruminate or Fixation) will fade its output volume to zero when it passes over a recording head, and then fade the volume back up. This usually happens in less than a millisecond of time, and is, in my experience, not noticable. However, a side effect of this is that if a playback head is moving at the same speed as a recording head and very closely near it (like within 50 samples), it's volume may be reduced or even zero. Setting the INITIAL position knobs to different values can help spread them apart when you start up the patch.
 * Similarly, when two recording heads pass each other (e.g., in opposite directions), they will both fade out the signal they are writing to Memory.
 * Another source of clicks is turing the playback head on and off, so this also fades in and out.
 * Whenever a recording head starts or stops, it will "smooth out" where that happened.

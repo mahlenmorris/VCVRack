@@ -76,7 +76,10 @@
       "name": "Memory",
       "description": "The root part of a Memory Ensemble. What Fixation and Ruminate reads, Embellish writes to and Depict displays.",
       "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#memory",
-      "tags": []
+      "tags": [
+        "Recording",
+        "Sampler"
+      ]
     },
     {
       "slug": "Ruminate",
@@ -85,7 +88,8 @@
       "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#ruminate",
       "tags": [
         "Delay",
-        "Expander"
+        "Expander",
+        "Sampler"
       ]
     },
     {
@@ -95,7 +99,8 @@
       "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#fixation",
       "tags": [
         "Delay",
-        "Expander"
+        "Expander",
+        "Sampler"
       ]
     },
     {
@@ -105,7 +110,8 @@
       "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#embellish",
       "tags": [
         "Expander",
-        "Recording"
+        "Recording",
+        "Sampler"
       ]
     },
     {

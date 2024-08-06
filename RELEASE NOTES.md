@@ -1,7 +1,24 @@
 # Release Notes
 
-### 2.0.15
+### 2.0.16
 #### Date TBD
+* Added **Fixation**, a new module for playing back audio from Memory. It specializes in rhythmic, small interval playing
+* * Videos featuring Fixation:
+* * * [Initial Techniques](https://www.youtube.com/watch?v=nDcjS6hz9qE)
+* * * [Melodies from samples](https://www.youtube.com/watch?v=rDCgencIVIY)
+* * * [Highly controllable granular playback](https://www.youtube.com/watch?v=jzkOs-odrig)
+* * Documentation [here](https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#fixation).
+* Memory, when loading a file, now smooths the ending and beginning to ensure there is
+no sudden "click" when looping from beginning to end (or vice versa).
+* Made the text windows on Fermata, BASICally, and TTY more efficient on the UI thread. This won't affect the measured performance of these modules, but you may see slightly higher FPS numbers when using these modules.
+* Added string variables and arrays to BASICally:
+* * A variable name that ends with a "\$" (e.g., a\$, foo\$, mod_name\$) can only hold a string
+(i.e., a series of printable characters) instead of a number.
+* * An array whose name ends in a "\$" (e.g., bar\$[], names\$[3]) can only hold an array of strings.
+* * These changes are only really useful when using print() to send text messages to other modules. See [docs for details](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#text-functions).
+
+### 2.0.15
+#### June 24, 2024
 * Memory gained access to the file system:
 * * Memory can now load .WAV files into itself, replacing the entire contents of the Memory and resizing it.
 * * Memory can save .WAV files as well.
