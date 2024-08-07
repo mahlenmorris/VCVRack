@@ -14,15 +14,23 @@ sound over time straighforward.
 * [Ruminate](#ruminate): Plays back audio buffer at a large variety of speeds, most easily over the whole Memory.
 * [Fixation](#fixation): Also plays back audio from the Memory, but with an emphasis on playing smaller sections and with repetition.
 
-A 15 minute video demonstrating some uses cases [is here](https://youtu.be/EKoMFsSqUo4). It demonstrates some simple patches:
+A 15 minute video demonstrating some uses cases [is here](https://youtu.be/EKoMFsSqUo4). It demonstrates these simple patches:
 * [Introduction](examples/Memory%20-%20ensemble%20basics.vcv)
 * [First Guitar Example](examples/Memory%20-%20guitar%20samples.vcv)
 * [Square Wave and Delay](examples/Memory%20-%20Delay%20Pass%20over%20Square%20Wave.vcv)
 * [Guitar Beat](examples/Memory%20-%20guitar%20sample%20beat.vcv)
 * [Live Recording](examples/Memory%20-%20record%20live.vcv)
 
-Note that this video was made before the Fixation module existed; there are other videos on the same channel that specifically
-describe Fixation.
+These videos demonstrate some other features of these modules:
+* [Fade on Move menu option](https://www.youtube.com/watch?v=dOsupn0-Mxw)
+* [V/Oct SPEED menu option](https://www.youtube.com/watch?v=kGKmS2WjqIs)
+* [Loading Files into Memory](https://www.youtube.com/watch?v=MvuQLtUkY4w)
+* [Loading and Saving in Memory](https://www.youtube.com/watch?v=fw6dk4pGn1s)
+
+And these videos discuss Fixation in particular:
+* [Playing sections of Memory](https://www.youtube.com/watch?v=nDcjS6hz9qE)
+* [Fixation as Highly Controllable Granular Synth](https://www.youtube.com/watch?v=jzkOs-odrig)
+* [Playing Melodies with Short Samples](https://www.youtube.com/watch?v=rDCgencIVIY)
 
 The documentation for the *other* Stochastic Telegraph modules can [be found here](README.md).
 
