@@ -62,6 +62,12 @@ struct TTY : Module {
     LIGHTS_LEN
   };
 
+  enum TimeStamp {
+    NONE,
+    PATCH_TIME,
+    LOCAL_TIME
+  } ;
+
   TTY() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configSwitch(PAUSE_PARAM, 0, 1, 0, "Stop writing to output",
@@ -87,6 +93,7 @@ struct TTY : Module {
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "width", json_integer(width));
+    json_object_set_new(rootJ, "timestamp", json_integer(time_stamp_format));
 
     json_object_set_new(rootJ, "screen_colors", json_integer(screen_colors));
     if (font_choice.length() > 0) {
@@ -107,6 +114,9 @@ struct TTY : Module {
     json_t* widthJ = json_object_get(rootJ, "width");
     if (widthJ)
       width = json_integer_value(widthJ);
+    json_t* timestampJ = json_object_get(rootJ, "timestamp");
+    if (timestampJ)
+      time_stamp_format = static_cast<TimeStamp>(json_integer_value(timestampJ));
     json_t* screenJ = json_object_get(rootJ, "screen_colors");
     if (screenJ)
         screen_colors = json_integer_value(screenJ);
@@ -160,14 +170,13 @@ struct TTY : Module {
       if (!paused && !text_input->decoder.isError(decoder_status) &&
           decoder_status == tipsy::DecoderResult::BODY_READY &&
           std::strcmp(text_input->decoder.getMimeType(), "text/plain") == 0) {
-        std::string next(std::string((const char *) text_input->recvBuffer));
-        if (next.compare("!!CLEAR!!") == 0) {
+        std::string str_value(std::string((const char *) text_input->recvBuffer));
+        if (str_value.compare("!!CLEAR!!") == 0) {
           clear_command_received = true;
         } else {
-          if (preface_outputs) {
-            next.insert(0, "> ");
-            next.insert(0, text_input->preface);
-          }
+          std::string prefix(MakePrefix(text_input->preface));
+          std::string next(prefix);
+          next.append(str_value);
           next.append("\n");
           add_string(next);
         }
@@ -175,6 +184,46 @@ struct TTY : Module {
     }
   }
 
+  std::string MakePrefix(const std::string& source) {
+    std::string result;
+    switch (time_stamp_format) {
+      case NONE:
+        break;
+      case PATCH_TIME: {
+        double seconds = rack::system::getTime();
+        int hours = static_cast<int>(seconds / 3600);
+        seconds -= hours * 3600;
+        int minutes = static_cast<int>(seconds / 60);
+        seconds -= minutes * 60;
+        int secs = static_cast<int>(seconds);
+
+        char buffer[9]; // Enough space for HH:MM:SS
+        sprintf(buffer, "%02d:%02d:%02d", hours, minutes, secs);
+        result.append(buffer);
+      }
+      break;
+      case LOCAL_TIME: {
+        time_t t = system::getUnixTime();
+        char buffer[9];
+        size_t s = std::strftime(buffer, sizeof(buffer), "%H:%M:%S", std::localtime(&t));
+        result.append(std::string(buffer, s));
+      }
+      break;
+    }
+
+    if (preface_outputs) {
+      if (!result.empty()) {
+        result.append(" ");
+      }
+      result.append(source);
+      result.append(">");
+    }
+    if (!result.empty()) {
+      result.append(" ");
+    }
+    return result;
+  }
+ 
   void process(const ProcessArgs& args) override {
     bool paused = params[PAUSE_PARAM].getValue() > 0;
 
@@ -201,10 +250,9 @@ struct TTY : Module {
             // odd to see the same string twice on a tighly changing value....
 
             // Add to buffer.
-            std::string next(str_value);
-            if (preface_outputs) {
-              next.insert(0, "V1> ");
-            }
+            std::string prefix(MakePrefix("V1"));
+            std::string next(prefix);
+            next.append(str_value);
             next.append("\n");
             add_string(next);
           }
@@ -218,10 +266,9 @@ struct TTY : Module {
             // odd to see the same string twice on a tighly changing value....
 
             // Add to buffer.
-            std::string next(str_value);
-            if (preface_outputs) {
-              next.insert(0, "V2> ");
-            }
+            std::string prefix(MakePrefix("V2"));
+            std::string next(prefix);
+            next.append(str_value);
             next.append("\n");
             add_string(next);
           }
@@ -291,6 +338,8 @@ struct TTY : Module {
   bool preface_outputs = false;
   // Save/restore output when saving/loading the patch.
   bool preserve_output = false;
+  // What timestamp to use, if any.
+  TimeStamp time_stamp_format = NONE;
 
   // Black on yellow paper color (by my memory, at least).
   long long int screen_colors = 0x000000edc672;
@@ -635,6 +684,24 @@ struct TTYWidget : ModuleWidget {
                                       [=](bool state) {module->preface_outputs = state;
                                                        module->RedrawText();}
                                       ));
+    // Select timestamp to show.
+    std::pair<std::string, TTY::TimeStamp> time_options[] = {
+      {"No", TTY::NONE},
+      {"Time since patch started", TTY::PATCH_TIME},
+      {"Local time", TTY::LOCAL_TIME}
+    };
+    MenuItem* time_menu = createSubmenuItem("Preface lines with timestamp?", "",
+     [=](Menu* menu) {
+         for (auto line : time_options) {
+           menu->addChild(createCheckMenuItem(line.first, "",
+           [=]() {return line.second == module->time_stamp_format;},
+           [=]() {module->time_stamp_format = line.second;}
+           ));
+         }
+     }
+    );
+    menu->addChild(time_menu);
+
     menu->addChild(createBoolPtrMenuItem("Keep recent output when patch is saved", "",
                                           &module->preserve_output));
 
