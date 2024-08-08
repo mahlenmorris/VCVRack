@@ -274,13 +274,13 @@ struct BufferChangeThread {
             // Check that creation_time is long enough ago that we're
             // confident that the new section is written.
             if (item->creation_time < 0 || (system::getTime() - item->creation_time > 0.001)) {
-        	    smooth(buffer->left_array, buffer->right_array, item->position, 25, buffer->length);
+              smooth(buffer->left_array, buffer->right_array, item->position, 25, buffer->length);
               delete item;
             } else {
               buffer->smooths.additions.push(item);
               break;
             }
-	        }
+          }
         }
 
         if (module_buffer_queue->tasks.size() > 0) {
@@ -377,8 +377,8 @@ struct BufferChangeThread {
                 // So if I suspect there will be one, add a Smooth to get rid of it.
                 if (abs(buffer->left_array[0] - buffer->left_array[buffer->length - 1]) > 0.1 ||
                     abs(buffer->right_array[0] - buffer->right_array[buffer->length - 1]) > 0.1) {
-        					Smooth* new_smooth = new Smooth(0, true);
-				         	buffer->smooths.additions.push(new_smooth);
+                  Smooth* new_smooth = new Smooth(0, true);
+                   buffer->smooths.additions.push(new_smooth);
                 }
               }
               break;
@@ -400,8 +400,8 @@ struct BufferChangeThread {
       // It seems like I need a tiny sleep here to allow join() to work
       // on this thread.
       if (!shutdown) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-			}
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      }
     }
   }
 };  // BufferChangeThread.
@@ -443,18 +443,18 @@ struct PrepareThread {
     }
 
     busy = true;
-		std::vector<std::string> dirList = system::getEntries(load_folder.c_str());
+    std::vector<std::string> dirList = system::getEntries(load_folder.c_str());
 
-		// "Sort the vector.  This is in response to a user who's samples were being
-		// loaded out of order.  I think it's a mac thing." - Voxglitch.
-		sort(dirList.begin(), dirList.end());
+    // "Sort the vector.  This is in response to a user who's samples were being
+    // loaded out of order.  I think it's a mac thing." - Voxglitch.
+    sort(dirList.begin(), dirList.end());
 
-		for (auto path : dirList)	{
-			if ((rack::string::lowercase(system::getExtension(path)) == "wav") ||
-				  (rack::string::lowercase(system::getExtension(path)) == ".wav")) {
-				loadable_files->push_back(system::getFilename(path));
-			}
-		}
+    for (auto path : dirList)  {
+      if ((rack::string::lowercase(system::getExtension(path)) == "wav") ||
+          (rack::string::lowercase(system::getExtension(path)) == ".wav")) {
+        loadable_files->push_back(system::getFilename(path));
+      }
+    }
     busy = false;
   }
 
@@ -599,8 +599,8 @@ struct PrepareThread {
       // on this thread. I make this sleep longer than for BufferChangeThread, since file system
       // activity is so slow that we can ease up on the CPU.
       if (!shutdown) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(10));
-			}
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
     }
   }
 };  // PrepareThread.
@@ -614,14 +614,14 @@ struct Memory : BufferedModule {
   };
   enum InputId {
     WIPE_TRIGGER_INPUT,
-		TIPSY_LOAD_INPUT,
-		TIPSY_SAVE_INPUT,
+    TIPSY_LOAD_INPUT,
+    TIPSY_SAVE_INPUT,
     INPUTS_LEN
   };
   enum OutputId {
-		LOAD_TRIGGER_OUTPUT,
-		SAVE_TRIGGER_OUTPUT,
-		TIPSY_LOGGING_OUTPUT,
+    LOAD_TRIGGER_OUTPUT,
+    SAVE_TRIGGER_OUTPUT,
+    TIPSY_LOGGING_OUTPUT,
     OUTPUTS_LEN
   };
   enum LightId {
@@ -693,11 +693,11 @@ struct Memory : BufferedModule {
     // This is really an integer.
     getParamQuantity(SECONDS_PARAM)->snapEnabled = true;
     configButton(RESET_BUTTON_PARAM, "Press to reset length and wipe contents to 0.0V");
-		configInput(TIPSY_LOAD_INPUT, "Tipsy text input to load named file");
-		configOutput(LOAD_TRIGGER_OUTPUT, "Sends a trigger when file load has completed");
-		configInput(TIPSY_SAVE_INPUT, "Tipsy text input to save contents to named file");
-		configOutput(SAVE_TRIGGER_OUTPUT, "Sends a trigger when file save has completed");
-		configOutput(TIPSY_LOGGING_OUTPUT, "Logging of File events; connect to a TTY TEXT input");
+    configInput(TIPSY_LOAD_INPUT, "Tipsy text input to load named file");
+    configOutput(LOAD_TRIGGER_OUTPUT, "Sends a trigger when file load has completed");
+    configInput(TIPSY_SAVE_INPUT, "Tipsy text input to save contents to named file");
+    configOutput(SAVE_TRIGGER_OUTPUT, "Sends a trigger when file save has completed");
+    configOutput(TIPSY_LOGGING_OUTPUT, "Logging of File events; connect to a TTY TEXT input");
 
     // Setting an initial Buffer object.
     std::shared_ptr<Buffer> temp = std::make_shared<Buffer>();
@@ -763,15 +763,15 @@ struct Memory : BufferedModule {
   }
 
   static constexpr int COLOR_COUNT = 7;
-	NVGcolor colors[COLOR_COUNT] = {
-		SCHEME_RED,
-		SCHEME_BLUE,
-		SCHEME_ORANGE,
-		SCHEME_PURPLE,
-		SCHEME_GREEN,
-		SCHEME_CYAN,
+  NVGcolor colors[COLOR_COUNT] = {
+    SCHEME_RED,
+    SCHEME_BLUE,
+    SCHEME_ORANGE,
+    SCHEME_PURPLE,
+    SCHEME_GREEN,
+    SCHEME_CYAN,
     SCHEME_WHITE
-	};
+  };
 
   // Both process() and processBypass() call this.
   void HandleLights(const ProcessArgs& args) {
@@ -1308,7 +1308,7 @@ struct MemoryWidget : ModuleWidget {
 
     // Module is so narrow that we only include two screws instead of four.
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,
+    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,
                                            RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
     // WIPE button and trigger.
@@ -1316,10 +1316,10 @@ struct MemoryWidget : ModuleWidget {
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(14.886, 14.817)),
                                              module, Memory::WIPE_BUTTON_PARAM,
                                              Memory::WIPE_BUTTON_LIGHT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.378, 14.817)), module,
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.378, 14.817)), module,
                                              Memory::WIPE_TRIGGER_INPUT));
 
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(10.16, 32.837)),
+    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(10.16, 32.837)),
              module, Memory::SECONDS_PARAM));
     // RESET button.
     addParam(createLightParamCentered<VCVLightButton<
@@ -1327,20 +1327,20 @@ struct MemoryWidget : ModuleWidget {
                                              module, Memory::RESET_BUTTON_PARAM,
                                              Memory::RESET_BUTTON_LIGHT));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.378, 79.325)),
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.378, 79.325)),
              module, Memory::TIPSY_LOAD_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.378, 95.795)),
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.378, 95.795)),
              module, Memory::TIPSY_SAVE_INPUT));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(14.886, 79.325)),
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(14.886, 79.325)),
              module, Memory::LOAD_TRIGGER_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(14.886, 95.795)),
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(14.886, 95.795)),
              module, Memory::SAVE_TRIGGER_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.806, 112.537)),
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.806, 112.537)),
              module, Memory::TIPSY_LOGGING_OUTPUT));
 
     // FILE I/O light.
-   	addChild(createLightCentered<SmallLight<WhiteLight>>(mm2px(Vec(17.039, 121.986)),
+     addChild(createLightCentered<SmallLight<WhiteLight>>(mm2px(Vec(17.039, 121.986)),
              module, Memory::FILE_IO_LIGHT));
   }
 

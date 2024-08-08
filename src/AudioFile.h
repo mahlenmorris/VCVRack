@@ -506,23 +506,23 @@ bool AudioFile<T>::load (std::string filePath)
     
     std::vector<uint8_t> fileData;
 
-	file.unsetf (std::ios::skipws);
+  file.unsetf (std::ios::skipws);
 
-	file.seekg (0, std::ios::end);
-	size_t length = file.tellg();
-	file.seekg (0, std::ios::beg);
+  file.seekg (0, std::ios::end);
+  size_t length = file.tellg();
+  file.seekg (0, std::ios::beg);
 
-	// allocate
-	fileData.resize (length);
+  // allocate
+  fileData.resize (length);
 
-	file.read(reinterpret_cast<char*> (fileData.data()), length);
-	file.close();
+  file.read(reinterpret_cast<char*> (fileData.data()), length);
+  file.close();
 
-	if (file.gcount() != length)
-	{
-		reportError ("ERROR: Couldn't read entire file\n" + filePath);
-		return false;
-	}
+  if (file.gcount() != length)
+  {
+    reportError ("ERROR: Couldn't read entire file\n" + filePath);
+    return false;
+  }
     
     // Handle very small files that will break our attempt to read the
     // first header info from them

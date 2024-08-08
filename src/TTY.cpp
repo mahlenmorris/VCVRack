@@ -40,35 +40,35 @@ struct TextInput {
 struct TTY : Module {
   static const int DEFAULT_WIDTH = 12;
   enum ParamId {
-		CLEAR_PARAM,
+    CLEAR_PARAM,
     SAMPLE_PARAM,
     PAUSE_PARAM,
-		PARAMS_LEN
-	};
-	enum InputId {
-		V1_INPUT,
+    PARAMS_LEN
+  };
+  enum InputId {
+    V1_INPUT,
     TEXT1_INPUT,
     V2_INPUT,
     TEXT2_INPUT,
-		TEXT3_INPUT,
-		INPUTS_LEN
-	};
-	enum OutputId {
-		OUTPUTS_LEN
-	};
-	enum LightId {
+    TEXT3_INPUT,
+    INPUTS_LEN
+  };
+  enum OutputId {
+    OUTPUTS_LEN
+  };
+  enum LightId {
     CLEAR_LIGHT,
     PAUSE_LIGHT,
-		LIGHTS_LEN
-	};
+    LIGHTS_LEN
+  };
 
   TTY() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configSwitch(PAUSE_PARAM, 0, 1, 0, "Stop writing to output",
                  {"Writing", "Paused"});
-		configParam(CLEAR_PARAM, 0.f, 1.f, 0.f, "Clears all output");
+    configParam(CLEAR_PARAM, 0.f, 1.f, 0.f, "Clears all output");
     configParam(SAMPLE_PARAM, 1000.0f, 0.0f, 50.0f, "Number of milliseconds skipped between V1/V2 logging attempts");
-		configInput(V1_INPUT, "New values will be shown on screen");
+    configInput(V1_INPUT, "New values will be shown on screen");
     configInput(V2_INPUT, "New values will be shown on screen");
     configInput(TEXT1_INPUT, "Input for Tipsy text info");
     configInput(TEXT2_INPUT, "Input for Tipsy text info");
@@ -105,14 +105,14 @@ struct TTY : Module {
 
   void dataFromJson(json_t* rootJ) override {
     json_t* widthJ = json_object_get(rootJ, "width");
-		if (widthJ)
-			width = json_integer_value(widthJ);
+    if (widthJ)
+      width = json_integer_value(widthJ);
       json_t* screenJ = json_object_get(rootJ, "screen_colors");
-  		if (screenJ)
-  			screen_colors = json_integer_value(screenJ);
+      if (screenJ)
+        screen_colors = json_integer_value(screenJ);
     json_t* font_choiceJ = json_object_get(rootJ, "font_choice");
-		if (font_choiceJ) {
-			font_choice = json_string_value(font_choiceJ);
+    if (font_choiceJ) {
+      font_choice = json_string_value(font_choiceJ);
     }
     json_t* preface_outputsJ = json_object_get(rootJ, "preface_outputs");
     if (preface_outputsJ) {
@@ -339,48 +339,48 @@ struct TTYUndoRedoAction : history::ModuleAction {
 // compiles but just won't work.
 // TODO: Possible to make this a reusable class between the two? Unlikely.
 struct TTYModuleResizeHandle : OpaqueWidget {
-	Vec dragPos;
-	Rect originalBox;
-	TTY* module;
+  Vec dragPos;
+  Rect originalBox;
+  TTY* module;
 
-	TTYModuleResizeHandle() {
+  TTYModuleResizeHandle() {
     // One hole wide and full length tall.
-		box.size = Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
-	}
+    box.size = Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
+  }
 
-	void onDragStart(const DragStartEvent& e) override {
-		if (e.button != GLFW_MOUSE_BUTTON_LEFT)
-			return;
+  void onDragStart(const DragStartEvent& e) override {
+    if (e.button != GLFW_MOUSE_BUTTON_LEFT)
+      return;
 
-		dragPos = APP->scene->rack->getMousePos();
-		ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
-		assert(mw);
-		originalBox = mw->box;
-	}
+    dragPos = APP->scene->rack->getMousePos();
+    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
+    assert(mw);
+    originalBox = mw->box;
+  }
 
-	void onDragMove(const DragMoveEvent& e) override {
-		ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
-		assert(mw);
+  void onDragMove(const DragMoveEvent& e) override {
+    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
+    assert(mw);
     int original_width = module->width;
 
-		Vec newDragPos = APP->scene->rack->getMousePos();
-		float deltaX = newDragPos.x - dragPos.x;
+    Vec newDragPos = APP->scene->rack->getMousePos();
+    float deltaX = newDragPos.x - dragPos.x;
 
-		Rect newBox = originalBox;
-		Rect oldBox = mw->box;
+    Rect newBox = originalBox;
+    Rect oldBox = mw->box;
     // Minimum and maximum number of holes we allow the module to be.
-		const float minWidth = 4 * RACK_GRID_WIDTH;
+    const float minWidth = 4 * RACK_GRID_WIDTH;
     const float maxWidth = 64 * RACK_GRID_WIDTH;
-		newBox.size.x += deltaX;
-		newBox.size.x = std::fmax(newBox.size.x, minWidth);
+    newBox.size.x += deltaX;
+    newBox.size.x = std::fmax(newBox.size.x, minWidth);
     newBox.size.x = std::fmin(newBox.size.x, maxWidth);
-		newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
-		// Set box and test whether it's valid.
-		mw->box = newBox;
-		if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
-			mw->box = oldBox;
-		}
-		module->width = std::round(mw->box.size.x / RACK_GRID_WIDTH);
+    newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
+    // Set box and test whether it's valid.
+    mw->box = newBox;
+    if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
+      mw->box = oldBox;
+    }
+    module->width = std::round(mw->box.size.x / RACK_GRID_WIDTH);
     if (original_width != module->width) {
       // Make resizing an undo/redo action. If I don't do this, undoing a
       // different module's move will cause them to overlap (aka, a
@@ -391,23 +391,23 @@ struct TTYModuleResizeHandle : OpaqueWidget {
       // since the width has changed.
       module->RedrawText();
     }
-	}
+  }
 
-	void drawLayer(const DrawArgs& args, int layer) override {
+  void drawLayer(const DrawArgs& args, int layer) override {
     if (layer == 1) {
       // Draw two lines to give people something to grab for.
       // Lifted from the VCV Blank module.
-  		for (float x = 5.0; x <= 10.0; x += 5.0) {
-  			nvgBeginPath(args.vg);
-  			const float margin = 5.0;
-  			nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
-  			nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
-  			nvgStrokeWidth(args.vg, 1.0);
-  			nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
-  			nvgStroke(args.vg);
-  		}
+      for (float x = 5.0; x <= 10.0; x += 5.0) {
+        nvgBeginPath(args.vg);
+        const float margin = 5.0;
+        nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
+        nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
+        nvgStrokeWidth(args.vg, 1.0);
+        nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
+        nvgStroke(args.vg);
+      }
     }
-	}
+  }
 };
 
 static std::string module_browser_text =
@@ -416,7 +416,7 @@ static std::string module_browser_text =
 
 // Class for the editor.
 struct TTYTextField : STTextField {
-	TTY* module;
+  TTY* module;
   FramebufferWidget* frame_buffer;
   bool was_selected;
   long long int color_scheme;
@@ -432,8 +432,8 @@ struct TTYTextField : STTextField {
     }
   }
 
-	void setModule(TTY* module, FramebufferWidget* fb_widget) {
-		this->module = module;
+  void setModule(TTY* module, FramebufferWidget* fb_widget) {
+    this->module = module;
     frame_buffer = fb_widget;
     // If this is the module browser, 'module' will be null!
     if (module != nullptr) {
@@ -443,7 +443,7 @@ struct TTYTextField : STTextField {
       this->text = &module_browser_text;
     }
     textUpdated();
-	}
+  }
 
   // bgColor seems to have no effect if I don't do this. Drawing a background
   // and then letting LedDisplayTextField draw the rest will fixes that.
@@ -465,11 +465,11 @@ struct TTYTextField : STTextField {
       extended.RepositionWindow(cursor);
     }
     STTextField::draw(args);  // Draw text.
-  	nvgResetScissor(args.vg);
+    nvgResetScissor(args.vg);
   }
 
-	void step() override {
-		STTextField::step();
+  void step() override {
+    STTextField::step();
     if (module) {
       // At smaller sizes, hide the screen.
       if (module->width <= 4) {
@@ -488,14 +488,14 @@ struct TTYTextField : STTextField {
         color = int_to_color(color_scheme >> 24);
         bgColor = int_to_color(color_scheme & 0xffffff);
       }
-  		if (module->editor_refresh) {
+      if (module->editor_refresh) {
         // TODO: is this checked often enough? I don't know when step()
         // is called.
         // Text has been changed, editor needs to update itself.
         // This happens when the module loads, and on undo/redo.
-  			textUpdated();
-  			module->editor_refresh = false;
-  		}
+        textUpdated();
+        module->editor_refresh = false;
+      }
     }
     // Need to notice when the text window has become (or no longer is)
     // the focus, since that determines if we show the cursor or not.
@@ -508,7 +508,7 @@ struct TTYTextField : STTextField {
     if (is_dirty && frame_buffer) {
       frame_buffer->setDirty();
     }
-	}
+  }
 };
 
 const float NON_SCREEN_WIDTH = 2.0f;
@@ -516,9 +516,9 @@ const float CONTROL_WIDTH = 13.0f;
 
 struct TTYWidget : ModuleWidget {
   Widget* topRightScrew;
-	Widget* bottomRightScrew;
-	TTYModuleResizeHandle* rightHandle;
-	TTYTextField* textDisplay;
+  Widget* bottomRightScrew;
+  TTYModuleResizeHandle* rightHandle;
+  TTYTextField* textDisplay;
   FramebufferWidget* main_text_framebuffer;
 
   TTYWidget(TTY* module) {
@@ -528,9 +528,9 @@ struct TTYWidget : ModuleWidget {
 
     // Set reasonable initial size of module. Will likely get updated below.
     box.size = Vec(RACK_GRID_WIDTH * TTY::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
-		if (module) {
+    if (module) {
       // Set box width from loaded Module when available.
-			box.size.x = module->width * RACK_GRID_WIDTH;
+      box.size.x = module->width * RACK_GRID_WIDTH;
     } else {
       // Like when showing the module in the module browser.
       box.size.x = TTY::DEFAULT_WIDTH * RACK_GRID_WIDTH;
@@ -574,10 +574,10 @@ struct TTYWidget : ModuleWidget {
     // don't have to keep redrawing it (and wasting UI CPU to do it).
     main_text_framebuffer = new FramebufferWidget();
     textDisplay = createWidget<TTYTextField>(mm2px(Vec(18.08, 5.9)));
-		textDisplay->box.size = mm2px(Vec(60.0, 117.0));
+    textDisplay->box.size = mm2px(Vec(60.0, 117.0));
     textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH - mm2px(CONTROL_WIDTH);
-		textDisplay->setModule(module, main_text_framebuffer);
-		addChild(main_text_framebuffer);
+    textDisplay->setModule(module, main_text_framebuffer);
+    addChild(main_text_framebuffer);
     main_text_framebuffer->addChild(textDisplay);
     if (module) {
       module->main_text_framebuffer = main_text_framebuffer;
@@ -585,7 +585,7 @@ struct TTYWidget : ModuleWidget {
 
     // Resize bar on right.
     rightHandle = new TTYModuleResizeHandle;
-		rightHandle->module = module;
+    rightHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module
     // browser.
     rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
@@ -596,34 +596,34 @@ struct TTYWidget : ModuleWidget {
   }
 
   void step() override {
-		TTY* module = dynamic_cast<TTY*>(this->module);
+    TTY* module = dynamic_cast<TTY*>(this->module);
     // While this is really only useful to call when the width changes,
     // I don't think it's currently worth the effort to ONLY call it then.
     // And maybe the *first* time step() is called.
-		if (module) {
-			box.size.x = module->width * RACK_GRID_WIDTH;
+    if (module) {
+      box.size.x = module->width * RACK_GRID_WIDTH;
       // The right-hand screws have slightly different logic.
       if (module->width < 8) {
         topRightScrew->hide();
-      	bottomRightScrew->hide();
+        bottomRightScrew->hide();
       } else {
         topRightScrew->show();
         bottomRightScrew->show();
       }
-		} else {
+    } else {
       // Like when showing the module in the module browser.
       box.size.x = TTY::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
     // Adjust size of area we display text in; it's a function of the size
     // of the module minus some set width.
-		textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH - mm2px(CONTROL_WIDTH);
+    textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH - mm2px(CONTROL_WIDTH);
     // Move the right side screws to follow.
-		topRightScrew->box.pos.x = box.size.x - 30;
-		bottomRightScrew->box.pos.x = box.size.x - 30;
-		rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
+    topRightScrew->box.pos.x = box.size.x - 30;
+    bottomRightScrew->box.pos.x = box.size.x - 30;
+    rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
 
-		ModuleWidget::step();
-	}
+    ModuleWidget::step();
+  }
 
   void appendContextMenu(Menu* menu) override {
     TTY* module = dynamic_cast<TTY*>(this->module);

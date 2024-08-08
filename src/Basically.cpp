@@ -15,7 +15,7 @@
 #include "st_textfield.hpp"
 #include "tipsy_utils.h"
 #include <tipsy/tipsy.h>  // Library for sending text.
-
+  
 enum Style {
   ALWAYS_STYLE,
   TRIGGER_LOOP_STYLE,
@@ -488,27 +488,27 @@ struct Basically : Module {
 
   void dataFromJson(json_t* rootJ) override {
     json_t* textJ = json_object_get(rootJ, "text");
-		if (textJ) {
-			text = json_string_value(textJ);
+    if (textJ) {
+      text = json_string_value(textJ);
       previous_text = text;
-  		editor_refresh = true;
+      editor_refresh = true;
       module_refresh = true;
     }
     json_t* title_textJ = json_object_get(rootJ, "title_text");
-		if (title_textJ) {
-			title_text = json_string_value(title_textJ);
+    if (title_textJ) {
+      title_text = json_string_value(title_textJ);
     }
     json_t* font_choiceJ = json_object_get(rootJ, "font_choice");
-		if (font_choiceJ) {
-			font_choice = json_string_value(font_choiceJ);
+    if (font_choiceJ) {
+      font_choice = json_string_value(font_choiceJ);
     }
     json_t* widthJ = json_object_get(rootJ, "width");
-		if (widthJ)
-			width = json_integer_value(widthJ);
+    if (widthJ)
+      width = json_integer_value(widthJ);
 
     // OUTn clamping.
     json_t* clampJ = json_object_get(rootJ, "clamp");
-		if (clampJ) {
+    if (clampJ) {
       const char *key;
       json_t *value;
       // Assuming that all values in clamp_info have been set to true.
@@ -519,8 +519,8 @@ struct Basically : Module {
     }
 
     json_t* screenJ = json_object_get(rootJ, "screen_colors");
-		if (screenJ)
-			screen_colors = json_integer_value(screenJ);
+    if (screenJ)
+      screen_colors = json_integer_value(screenJ);
     json_t* error_highlightJ = json_object_get(rootJ, "allow_error_highlight");
     if (error_highlightJ) {
       allow_error_highlight = json_integer_value(error_highlightJ) == 1;
@@ -841,49 +841,49 @@ struct TextEditAction : history::ModuleAction {
 };
 
 struct ModuleResizeHandle : OpaqueWidget {
-	Vec dragPos;
-	Rect originalBox;
-	Basically* module;
+  Vec dragPos;
+  Rect originalBox;
+  Basically* module;
 
-	ModuleResizeHandle() {
+  ModuleResizeHandle() {
     // One hole wide and full length tall.
-		box.size = Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
-	}
+    box.size = Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
+  }
 
-	void onDragStart(const DragStartEvent& e) override {
-		if (e.button != GLFW_MOUSE_BUTTON_LEFT)
-			return;
+  void onDragStart(const DragStartEvent& e) override {
+    if (e.button != GLFW_MOUSE_BUTTON_LEFT)
+      return;
 
-		dragPos = APP->scene->rack->getMousePos();
-		ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
-		assert(mw);
-		originalBox = mw->box;
-	}
+    dragPos = APP->scene->rack->getMousePos();
+    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
+    assert(mw);
+    originalBox = mw->box;
+  }
 
-	void onDragMove(const DragMoveEvent& e) override {
-		ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
-		assert(mw);
+  void onDragMove(const DragMoveEvent& e) override {
+    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
+    assert(mw);
     int original_width = module->width;
 
-		Vec newDragPos = APP->scene->rack->getMousePos();
-		float deltaX = newDragPos.x - dragPos.x;
+    Vec newDragPos = APP->scene->rack->getMousePos();
+    float deltaX = newDragPos.x - dragPos.x;
 
-		Rect newBox = originalBox;
-		Rect oldBox = mw->box;
+    Rect newBox = originalBox;
+    Rect oldBox = mw->box;
     // Minimum and maximum number of holes we allow the module to be.
-		const float minWidth = 7 * RACK_GRID_WIDTH;
+    const float minWidth = 7 * RACK_GRID_WIDTH;
     const float maxWidth = 64 * RACK_GRID_WIDTH;
-		newBox.size.x += deltaX;
-		newBox.size.x = std::fmax(newBox.size.x, minWidth);
+    newBox.size.x += deltaX;
+    newBox.size.x = std::fmax(newBox.size.x, minWidth);
     newBox.size.x = std::fmin(newBox.size.x, maxWidth);
-		newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
+    newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
 
-		// Set box and test whether it's valid.
-		mw->box = newBox;
-		if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
-			mw->box = oldBox;
-		}
-		module->width = std::round(mw->box.size.x / RACK_GRID_WIDTH);
+    // Set box and test whether it's valid.
+    mw->box = newBox;
+    if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
+      mw->box = oldBox;
+    }
+    module->width = std::round(mw->box.size.x / RACK_GRID_WIDTH);
     if (original_width != module->width) {
       // Make this an undo action. If I don't do this, undoing a different
       // module's move will cause them to overlap.
@@ -893,23 +893,23 @@ struct ModuleResizeHandle : OpaqueWidget {
       // since the width has changed,
       module->RedrawText();
     }
-	}
+  }
 
-	void drawLayer(const DrawArgs& args, int layer) override {
+  void drawLayer(const DrawArgs& args, int layer) override {
     if (layer == 1) {
       // Draw two lines to give people something to grab for.
       // Lifted from the VCV Blank module.
-  		for (float x = 5.0; x <= 10.0; x += 5.0) {
-  			nvgBeginPath(args.vg);
-  			const float margin = 5.0;
-  			nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
-  			nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
-  			nvgStrokeWidth(args.vg, 1.0);
-  			nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
-  			nvgStroke(args.vg);
-  		}
+      for (float x = 5.0; x <= 10.0; x += 5.0) {
+        nvgBeginPath(args.vg);
+        const float margin = 5.0;
+        nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
+        nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
+        nvgStrokeWidth(args.vg, 1.0);
+        nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
+        nvgStroke(args.vg);
+      }
     }
-	}
+  }
 };
 
 struct TitleTextField : LightWidget {
@@ -982,7 +982,7 @@ static std::string module_browser_text =
 
 // Class for the editor.
 struct BasicallyTextField : STTextField {
-	Basically* module;
+  Basically* module;
   FramebufferWidget* frame_buffer;
   bool was_selected;
   long long int color_scheme;
@@ -998,8 +998,8 @@ struct BasicallyTextField : STTextField {
     }
   }
 
-	void setModule(Basically* module, FramebufferWidget* fb_widget) {
-		this->module = module;
+  void setModule(Basically* module, FramebufferWidget* fb_widget) {
+    this->module = module;
     frame_buffer = fb_widget;
     // If this is the module browser, 'module' will be null!
     if (module != nullptr) {
@@ -1009,7 +1009,7 @@ struct BasicallyTextField : STTextField {
       this->text = &module_browser_text;
     }
     textUpdated();
-	}
+  }
   
   // bgColor seems to have no effect if I don't do this. Drawing a background
   // and then letting LedDisplayTextField draw the rest will fixes that.
@@ -1047,11 +1047,11 @@ struct BasicallyTextField : STTextField {
       // to show it.
       extended.RepositionWindow(cursor);
     }
-  	STTextField::draw(args);  // Draw text.
-  	nvgResetScissor(args.vg);
+    STTextField::draw(args);  // Draw text.
+    nvgResetScissor(args.vg);
   }
 
-	void step() override {
+  void step() override {
     // At smallest size, hide the screen.
     if (module && module->width <= 7) {
       frame_buffer->hide();
@@ -1066,16 +1066,16 @@ struct BasicallyTextField : STTextField {
       color = int_to_color(color_scheme >> 24);
       bgColor = int_to_color(color_scheme & 0xffffff);
     }
-		if (module && module->editor_refresh) {
+    if (module && module->editor_refresh) {
       // TODO: is this checked often enough? I don't know when step()
       // is called.
       // Text has been changed, editor needs to update itself.
       // This happens when the module loads, and on undo/redo.
-			textUpdated();
+      textUpdated();
       frame_buffer->setDirty();
-			module->editor_refresh = false;
-		}
-		STTextField::step();
+      module->editor_refresh = false;
+    }
+    STTextField::step();
 
     // Need to notice when the text window has become (or no longer is)
     // the focus, since that determines if we show the cursor or not.
@@ -1088,11 +1088,11 @@ struct BasicallyTextField : STTextField {
     if (is_dirty) {
       frame_buffer->setDirty();
     }
-	}
+  }
 
   // User has updated the text.
-	void onChange(const ChangeEvent& e) override {
-		if (module) {
+  void onChange(const ChangeEvent& e) override {
+    if (module) {
       // Sometimes the text isn't actually different. If I don't check
       // this, I might get spurious history events.
       // TODO: do I need this check anymore?
@@ -1106,17 +1106,17 @@ struct BasicallyTextField : STTextField {
       module->previous_cursor = cursor;
     }
     frame_buffer->setDirty();
-	}
+  }
 };
 
 struct ErrorWidget;
 struct ErrorTooltip : ui::Tooltip {
-	ErrorWidget* errorWidget;
+  ErrorWidget* errorWidget;
   std::string error_text;
 
   ErrorTooltip(const std::string &text) : error_text{text} {}
 
-	void step() override;
+  void step() override;
 };
 
 struct ErrorWidget : widget::OpaqueWidget {
@@ -1136,12 +1136,12 @@ struct ErrorWidget : widget::OpaqueWidget {
   }
 
   void create_tooltip() {
-  	if (!settings::tooltips)
-  		return;
-  	if (tooltip)  // Already exists.
-  		return;
-  	if (!module)
-  		return;
+    if (!settings::tooltips)
+      return;
+    if (tooltip)  // Already exists.
+      return;
+    if (!module)
+      return;
     std::string tip_text;
     if (module->compiles) {
       tip_text = "Program compiles!";
@@ -1160,18 +1160,18 @@ struct ErrorWidget : widget::OpaqueWidget {
         }
       }
     }
-  	ErrorTooltip* new_tooltip = new ErrorTooltip(tip_text);
-  	new_tooltip->errorWidget = this;
-  	APP->scene->addChild(new_tooltip);
-  	tooltip = new_tooltip;
+    ErrorTooltip* new_tooltip = new ErrorTooltip(tip_text);
+    new_tooltip->errorWidget = this;
+    APP->scene->addChild(new_tooltip);
+    tooltip = new_tooltip;
   }
 
   void destroy_tooltip() {
-  	if (!tooltip)
-  		return;
-  	APP->scene->removeChild(tooltip);
-  	delete tooltip;
-  	tooltip = NULL;
+    if (!tooltip)
+      return;
+    APP->scene->removeChild(tooltip);
+    delete tooltip;
+    tooltip = NULL;
   }
 
   void drawLayer(const DrawArgs& args, int layer) override {
@@ -1217,25 +1217,25 @@ struct ErrorWidget : widget::OpaqueWidget {
 
 void ErrorTooltip::step() {
   text = error_text;
-	Tooltip::step();
-	// Position at bottom-right of parameter
-	box.pos = errorWidget->getAbsoluteOffset(errorWidget->box.size).round();
-	// Fit inside parent (copied from Tooltip.cpp)
-	assert(parent);
-	box = box.nudge(parent->box.zeroPos());
+  Tooltip::step();
+  // Position at bottom-right of parameter
+  box.pos = errorWidget->getAbsoluteOffset(errorWidget->box.size).round();
+  // Fit inside parent (copied from Tooltip.cpp)
+  assert(parent);
+  box = box.nudge(parent->box.zeroPos());
 }
 
 struct TextFieldMenuItem : TextField {
-	TextFieldMenuItem() {
+  TextFieldMenuItem() {
     box.size = Vec(120, 20);
     multiline = false;
   }
 };
 
 struct ProgramNameMenuItem : TextFieldMenuItem {
-	Basically* module;
+  Basically* module;
 
-	ProgramNameMenuItem(Basically* basically_module) {
+  ProgramNameMenuItem(Basically* basically_module) {
     module = basically_module;
     if (module) {
       text = module->title_text;
@@ -1243,7 +1243,7 @@ struct ProgramNameMenuItem : TextFieldMenuItem {
       text = "";
     }
   }
-	void onChange(const event::Change& e) override {
+  void onChange(const event::Change& e) override {
     TextFieldMenuItem::onChange(e);
     if (module) {
       module->title_text = text;
@@ -1253,9 +1253,9 @@ struct ProgramNameMenuItem : TextFieldMenuItem {
 
 struct BasicallyWidget : ModuleWidget {
   Widget* topRightScrew;
-	Widget* bottomRightScrew;
-	Widget* rightHandle;
-	BasicallyTextField* codeDisplay;
+  Widget* bottomRightScrew;
+  Widget* rightHandle;
+  BasicallyTextField* codeDisplay;
   FramebufferWidget* main_text_framebuffer;
 
   BasicallyWidget(Basically* module) {
@@ -1265,9 +1265,9 @@ struct BasicallyWidget : ModuleWidget {
 
     // Set reasonable initial size of module. Will likely get updated below.
     box.size = Vec(RACK_GRID_WIDTH * Basically::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
-		if (module) {
+    if (module) {
       // Set box width from loaded Module when available.
-			box.size.x = module->width * RACK_GRID_WIDTH;
+      box.size.x = module->width * RACK_GRID_WIDTH;
     } else {
       // Like when showing the module in the module browser.
       box.size.x = Basically::DEFAULT_WIDTH * RACK_GRID_WIDTH;
@@ -1290,10 +1290,10 @@ struct BasicallyWidget : ModuleWidget {
     main_text_framebuffer = new FramebufferWidget();
     codeDisplay = createWidget<BasicallyTextField>(
       mm2px(Vec(31.149, 5.9)));
-		codeDisplay->box.size = mm2px(Vec(60.0, 117.0));
+    codeDisplay->box.size = mm2px(Vec(60.0, 117.0));
     codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 7.1;
-		codeDisplay->setModule(module, main_text_framebuffer);
-		addChild(main_text_framebuffer);
+    codeDisplay->setModule(module, main_text_framebuffer);
+    addChild(main_text_framebuffer);
     main_text_framebuffer->addChild(codeDisplay);
     if (module) {
       module->main_text_framebuffer = main_text_framebuffer;
@@ -1336,19 +1336,19 @@ struct BasicallyWidget : ModuleWidget {
     // Data Inputs
     addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 57.35)),
       module, Basically::IN1_INPUT));
-		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 57.35)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 57.35)),
       module, Basically::IN2_INPUT));
     addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 57.35)),
       module, Basically::IN3_INPUT));
     addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 71.35)),
       module, Basically::IN4_INPUT));
-		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 71.35)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 71.35)),
       module, Basically::IN5_INPUT));
-		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 71.35)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 71.35)),
       module, Basically::IN6_INPUT));
     addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 83.65)),
       module, Basically::IN7_INPUT));
-		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 83.65)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 83.65)),
       module, Basically::IN8_INPUT));
     addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 83.65)),
       module, Basically::IN9_INPUT));
@@ -1356,11 +1356,11 @@ struct BasicallyWidget : ModuleWidget {
     // The Outputs
     addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 101.601)),
       module, Basically::OUT1_OUTPUT));
-		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 101.601)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 101.601)),
       module, Basically::OUT2_OUTPUT));
-		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 101.601)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 101.601)),
       module, Basically::OUT3_OUTPUT));
-		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 115.601)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 115.601)),
       module, Basically::OUT4_OUTPUT));
     addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 115.601)),
       module, Basically::OUT5_OUTPUT));
@@ -1369,8 +1369,8 @@ struct BasicallyWidget : ModuleWidget {
 
     // Resize bar on right.
     ModuleResizeHandle* new_rightHandle = new ModuleResizeHandle;
-		this->rightHandle = new_rightHandle;
-		new_rightHandle->module = module;
+    this->rightHandle = new_rightHandle;
+    new_rightHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module
     // browser.
     new_rightHandle->box.pos.x = box.size.x - new_rightHandle->box.size.x;
@@ -1381,27 +1381,27 @@ struct BasicallyWidget : ModuleWidget {
   }
 
   void step() override {
-		Basically* module = dynamic_cast<Basically*>(this->module);
+    Basically* module = dynamic_cast<Basically*>(this->module);
     // While this is really only useful to call when the width changes,
     // I don't think it's currently worth the effort to ONLY call it then.
     // And maybe the *first* time step() is called.
-		if (module) {
-			box.size.x = module->width * RACK_GRID_WIDTH;
-		} else {
+    if (module) {
+      box.size.x = module->width * RACK_GRID_WIDTH;
+    } else {
       // Like when showing the module in the module browser.
       box.size.x = Basically::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
 
     // Adjust size of area we display code in.
     // "7.5" here is ~6 on the left side plus ~1.1 on the right.
-		codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 7.1;
+    codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 7.1;
     // Move the right side screws to follow.
-		topRightScrew->box.pos.x = box.size.x - 30;
-		bottomRightScrew->box.pos.x = box.size.x - 30;
-		rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
+    topRightScrew->box.pos.x = box.size.x - 30;
+    bottomRightScrew->box.pos.x = box.size.x - 30;
+    rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
 
-		ModuleWidget::step();
-	}
+    ModuleWidget::step();
+  }
 
   void appendContextMenu(Menu* menu) override {
     Basically* module = dynamic_cast<Basically*>(this->module);

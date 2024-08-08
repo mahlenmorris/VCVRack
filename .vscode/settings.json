@@ -74,5 +74,6 @@
     "thread": "cpp",
     "typeinfo": "cpp",
     "variant": "cpp"
-  }
+  },
+  "cmake.sourceDirectory": "C:/msys64/home/mahle/VCVRack/googletest-main"
 }
