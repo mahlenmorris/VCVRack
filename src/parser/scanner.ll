@@ -134,6 +134,7 @@ blank [ \t\r]
 "}"        return yy::Parser::make_RBRACE (yytext, loc);
 "="        return yy::Parser::make_ASSIGN (yytext, loc);
 ","        return yy::Parser::make_COMMA  (yytext, loc);
+"$"        return yy::Parser::make_DOLLAR (yytext, loc);
 "all"      return yy::Parser::make_ALL    (yytext, loc);
 "also"     return yy::Parser::make_ALSO   (yytext, loc);
 "and"      return yy::Parser::make_AND    (yytext, loc);

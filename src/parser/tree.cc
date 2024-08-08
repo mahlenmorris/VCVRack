@@ -115,6 +115,7 @@ float Expression::Compute() {
                              subexpressions[1].Compute());
     }
     break;
+    case STRING_VARIABLE:
     case STRINGFUNC: {
       // This should never happen, compiler should prevent this.
       return -987.654;
@@ -135,6 +136,14 @@ std::string ShortPrint(float value) {
 std::string Expression::ComputeString() {
   if (type == STRING) {
     return string_value;
+  } else if (type == STRING_VARIABLE) {
+    return *str_variable_ptr;
+  } else if (type == STRING_ARRAY_VARIABLE) {
+    int index = (int) floor(subexpressions[0].Compute());
+    if ((index < 0) || (index >= (int) str_array_ptr->size())) {
+      return "";  // The default value if not in the array.
+    }
+    return str_array_ptr->at(index);
   } else if (type == STRINGFUNC) {
     if (operation == DEBUG) {
       if (subexpressions.size() == 2) {  // An array.
@@ -147,6 +156,9 @@ std::string Expression::ComputeString() {
           end = temp;
         }
         std::string str_value(name);
+        if (str_array_ptr != nullptr) {
+          str_value.append("$");
+        }
         str_value.append("[");
         str_value.append(std::to_string(start));
         str_value.append("] = {");
@@ -154,19 +166,37 @@ std::string Expression::ComputeString() {
           if (index > start) {
             str_value.append(", ");
           }
-          // Array may not be as long as the end index thinks it is.
-          if (index >= (int) array_ptr->size()) {
-            str_value.append("0");
+          // Depends on whether or not is a string or float array.
+          if (str_array_ptr != nullptr) {
+            // Array may not be as long as the end index thinks it is.
+            if (index >= (int) str_array_ptr->size()) {
+              str_value.append("\"\"");  // Quoted empty string.
+            } else {
+              str_value.append("\"");
+              str_value.append(str_array_ptr->at(index));
+              str_value.append("\"");
+            }
           } else {
-            str_value.append(ShortPrint(array_ptr->at(index)));
+            // Array may not be as long as the end index thinks it is.
+            if (index >= (int) array_ptr->size()) {
+              str_value.append("0");
+            } else {
+              str_value.append(ShortPrint(array_ptr->at(index)));
+            }
           }
         }
         str_value.append("}");
         return str_value;
       } else {
         std::string str_value(name);
-        str_value.append(" = ");
-        str_value.append(subexpressions[0].ComputeString());
+        if (variable_ptr != nullptr) {
+          str_value.append(" = ");
+          str_value.append(ShortPrint(*variable_ptr));
+        } else {
+          str_value.append("$ = \"");
+          str_value.append(*str_variable_ptr);
+          str_value.append("\"");
+        }
         return str_value;
       }
     } else {  // Compiler shouldn't allow this.
@@ -187,19 +217,19 @@ bool Expression::Volatile() {
       bool rhs = subexpressions[1].Volatile();
       return lhs || rhs;
     }
-    break;
     case ARRAY_VARIABLE: return subexpressions[0].Volatile();
     case VARIABLE: {
       return port.port_type == PortPointer::INPUT;
     }
-    break;
+    case STRING_ARRAY_VARIABLE: return false;
+    case STRING_VARIABLE: return false;
     case NOT: return subexpressions[0].Volatile();
     // sample_rate() doesn't seem to change immediately? But that might be
     // a bug or Windows-specific. And Start() is volatile.
     // And the time funcs are.
     case ZEROARGFUNC: return true;
     case ONEARGFUNC: return subexpressions[0].Volatile();
-    // Yes, both conneted() and trigger are volatile.
+    // Yes, both connected() and trigger are volatile.
     case ONEPORTFUNC: return true;
     default: return false;
   }
@@ -447,6 +477,18 @@ Expression ExpressionFactory::ArrayVariable(const std::string &array_name,
   return ex;
 }
 
+Expression ExpressionFactory::StringArrayVariable(const std::string &array_name,
+                                                  const Expression &arg1,
+                                                  Driver* driver) {
+  Expression ex;
+  ex.type = Expression::STRING_ARRAY_VARIABLE;
+  std::string lower;
+  ToLower(array_name, &lower);
+  ex.str_array_ptr = driver->GetStringArrayFromName(lower);
+  ex.subexpressions.push_back(arg1);
+  return ex;
+}
+
 // TODO: Now that compiler knows if var_name is a port or not, could
 // avoid deciding here. Or make a new kind of Expression called PORT!?
 Expression ExpressionFactory::Variable(const char *var_name, Driver* driver) {
@@ -475,18 +517,27 @@ Expression ExpressionFactory::Variable(char* var_name, Driver* driver) {
   return Variable(std::string(var_name).c_str(), driver);
 }
 
+Expression ExpressionFactory::StringVariable(const std::string& var_name, Driver* driver) {
+  Expression ex;
+  ex.type = Expression::STRING_VARIABLE;
+  // Intentionally copying the name.
+  std::string copied(var_name);
+  ToLower(copied, &(ex.name));
+  ex.str_variable_ptr = driver->GetStringVarFromName(ex.name);
+  return ex;
+}
+
+
 Expression ExpressionFactory::DebugId(const std::string &var_name, Driver* driver) {
   Expression ex;
   ex.type = Expression::STRINGFUNC;
   ex.operation = Expression::DEBUG;
   ex.name = var_name;
-  // TODO: maybe set variable_ptr instead? Except that string variables are
-  // coming.
-  ex.subexpressions.push_back(Variable(var_name, driver));
+  ex.variable_ptr = driver->GetVarFromName(var_name);
   return ex;
 }
 
-// For arrays.
+// For float arrays.
 Expression ExpressionFactory::DebugId(const std::string &var_name,
    const Expression &start, const Expression &end, Driver* driver) {
   Expression ex;
@@ -501,6 +552,29 @@ Expression ExpressionFactory::DebugId(const std::string &var_name,
   return ex;
 }
 
+Expression ExpressionFactory::DebugIdString(const std::string &var_name, Driver* driver) {
+  Expression ex;
+  ex.type = Expression::STRINGFUNC;
+  ex.operation = Expression::DEBUG;
+  ex.name = var_name;
+  ex.str_variable_ptr = driver->GetStringVarFromName(var_name);
+  return ex;
+}
+
+// For string arrays.
+Expression ExpressionFactory::DebugIdString(const std::string &var_name,
+   const Expression &start, const Expression &end, Driver* driver) {
+  Expression ex;
+  ex.type = Expression::STRINGFUNC;
+  ex.operation = Expression::DEBUG;
+  ex.name = var_name;
+  std::string lower;
+  ToLower(var_name, &lower);
+  ex.str_array_ptr = driver->GetStringArrayFromName(lower);
+  ex.subexpressions.push_back(start);
+  ex.subexpressions.push_back(end);
+  return ex;
+}
 
 Line Line::ArrayAssignment(const std::string &variable_name,
                      const Expression &index,
@@ -530,6 +604,34 @@ Line Line::ArrayAssignment(const std::string &variable_name,
   return line;
 }
 
+Line Line::StringArrayAssignment(const std::string &variable_name,
+                     const Expression &index,
+                     const Expression &value, Driver* driver) {
+  Line line;
+  line.type = STRING_ARRAY_ASSIGNMENT;
+  std::string lower;
+  ToLower(variable_name, &lower);
+  line.str1 = lower;  // Not required, but handy for troubleshooting.
+  line.str_array_ptr = driver->GetStringArrayFromName(lower);
+  line.expr1 = index;
+  line.expr2 = value;
+  return line;
+}
+
+Line Line::StringArrayAssignment(const std::string &variable_name,
+                     const Expression &index,
+                     const ExpressionList &values, Driver* driver) {
+  Line line;
+  line.type = STRING_ARRAY_ASSIGNMENT;
+  std::string lower;
+  ToLower(variable_name, &lower);
+  line.str1 = lower;  // Not required, but handy for troubleshooting.
+  line.str_array_ptr = driver->GetStringArrayFromName(lower);
+  line.expr1 = index;
+  line.expr_list = values;
+  return line;
+}
+
 Line Line::Assignment(const std::string &variable_name, const Expression &expr,
                       Driver* driver) {
   Line line;
@@ -546,6 +648,20 @@ Line Line::Assignment(const std::string &variable_name, const Expression &expr,
   line.expr1 = expr;
   return line;
 }
+
+// expr could be a math expression or a string_exp.
+Line Line::StringAssignment(const std::string &str_variable_name,
+                            const Expression &expr, Driver* driver) {
+  Line line;
+  line.type = STRING_ASSIGNMENT;
+  std::string lower;
+  ToLower(str_variable_name, &lower);
+  line.str1 = lower;
+  line.str_variable_ptr = driver->GetStringVarFromName(lower);
+  line.expr1 = expr;
+  return line;
+}
+
 
 Line Line::ClearAll() {
   Line line;

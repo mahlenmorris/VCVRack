@@ -63,12 +63,12 @@ struct SmoothQueue {
  * Data for creating the drawing of the waveform in Depict.
  */
 struct PointBuffer {
-	// We just measure the amplitudes, not the min and max of the waves.
-	// At the scale we show, a single channel is nearly certain to be symmetric.
-	// I.e., we are closer to SoundCloud than Scope.
-	float points[WAVEFORM_SIZE][2];
-	double normalize_factor;
-	std::string text_factor;
+  // We just measure the amplitudes, not the min and max of the waves.
+  // At the scale we show, a single channel is nearly certain to be symmetric.
+  // I.e., we are closer to SoundCloud than Scope.
+  float points[WAVEFORM_SIZE][2];
+  double normalize_factor;
+  std::string text_factor;
 };
 
 struct Buffer {
@@ -148,9 +148,10 @@ struct BufferedModule : Module {
 // Module that has an associated position. Play and record heads have these.
 
 enum ModuleType {
-	RUMINATE,
-	EMBELLISH
-	// More later.
+  RUMINATE,
+  EMBELLISH,
+  FIXATION
+  // More later.
 };
 
 struct LineRecord {
@@ -175,10 +176,12 @@ struct PositionedModule : Module {
   LineRecord line_record;
 };
 
+bool ModelHasColor(Model* model);
+bool IsNonMemoryEnsembleModel(Model* model);
 std::shared_ptr<Buffer> findClosestMemory(Module* leftModule);
 
 struct TimestampField : OpaqueWidget {
-	TimestampField() {
+  TimestampField() {
     box.size = mm2px(Vec(10.0, 5.0));
   }
 
@@ -233,12 +236,12 @@ struct TimestampField : OpaqueWidget {
 
 // Common UI elements.
 struct ConnectedLight : LargeLight<GreenLight> {
-	PositionedModule* pos_module;
+  PositionedModule* pos_module;
 
   void step() override {
-		if (pos_module) {
-			baseColors[0] = pos_module->line_record.color;
-		}
-		LargeLight::step();
-	}
+    if (pos_module) {
+      baseColors[0] = pos_module->line_record.color;
+    }
+    LargeLight::step();
+  }
 };

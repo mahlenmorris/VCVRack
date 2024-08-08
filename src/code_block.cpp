@@ -59,10 +59,21 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
         current_line++;
       }
       break;
+      case PCode::STRING_ARRAY_ASSIGNMENT: {
+        pcode->DoStringArrayAssignment();
+        current_line++;
+      }
+      break;
       case PCode::ASSIGNMENT: {
         float rhs = pcode->expr1.Compute();
         SetVariableValue(pcode->variable_ptr,
                          pcode->assign_port, rhs);
+        current_line++;
+      }
+      break;
+      case PCode::STRING_ASSIGNMENT: {
+        std::string rhs = pcode->expr1.ComputeString();
+        pcode->str_variable_ptr->assign(rhs);
         current_line++;
       }
       break;

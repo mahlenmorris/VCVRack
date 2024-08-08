@@ -9,7 +9,8 @@
 
 #include "environment.h"
 
-typedef std::vector<float> STArray;
+typedef std::vector<float> FloatArray;
+typedef std::vector<std::string> StringArray;
 
 class Expression;
 class Driver;
@@ -21,7 +22,9 @@ class Expression {
     STRING,  // "hello, world"
     BINOP,   // plus, times
     VARIABLE, // in1, out1, foo
+    STRING_VARIABLE, // foo$
     ARRAY_VARIABLE, // array[subexpressions[0]]
+    STRING_ARRAY_VARIABLE, // array$[subexpressions[0]]
     NOT,      // not bool
     ZEROARGFUNC, // operation
     ONEARGFUNC, // operation (subexpressions[0])
@@ -71,18 +74,22 @@ class Expression {
   std::string string_value;
   // Some variables are just pointers to a float (e.g., i, foo, etc.).
   float* variable_ptr;
+  // Some variables are just pointers to a string (e.g., i$, foo$, etc.).
+  std::string* str_variable_ptr;
   // But other variables are Input or Output ports in the UI. We can avoid
   // always updating them by pointing to their location in the Environment.
   PortPointer port;
   // And ARRAY_VARIABLE has a pointer to the array it getting data from.
-  STArray* array_ptr;
+  FloatArray* array_ptr;
+  StringArray* str_array_ptr;
   Environment* env = nullptr;
 
   std::string name;
   std::vector<Expression> subexpressions;
 
   static std::unordered_map<std::string, float> note_to_volt_octave_4;
-  Expression() {}
+  Expression() : variable_ptr{nullptr}, str_variable_ptr{nullptr}, array_ptr{nullptr},
+                 str_array_ptr{nullptr} {}
 
   // Compute the float numeric result of this Expression.
   float Compute();
@@ -130,13 +137,21 @@ class ExpressionFactory {
   Expression ArrayVariable(const std::string &array_name,
                            const Expression &arg1,
                            Driver* driver);
+  Expression StringArrayVariable(const std::string &array_name,
+                                 const Expression &arg1,
+                                 Driver* driver);
   Expression Variable(const char *var_name, Driver* driver);
   // The parser seems to need many variants of Variable.
   Expression Variable(const std::string &expr, Driver* driver);
   Expression Variable(char * var_name, Driver* driver);
+  Expression StringVariable(const std::string& var_name, Driver* driver);
   Expression DebugId(const std::string &var_name, Driver* driver);
   Expression DebugId(const std::string &var_name, const Expression &start,
                      const Expression &end, Driver* driver);
+  // For String variables.
+  Expression DebugIdString(const std::string &var_name, Driver* driver);
+  Expression DebugIdString(const std::string &var_name, const Expression &start,
+                           const Expression &end, Driver* driver);
  private:
   static std::unordered_map<std::string, Expression::Operation> string_to_operation;
 };
@@ -176,26 +191,30 @@ struct Statements;
 
 struct Line {
   enum Type {
-    ARRAY_ASSIGNMENT, // array_ptr[expr1] = expr2
-    ASSIGNMENT,  // str1 = expr1
-    CLEAR,       // Set variables to initial state (0.0f).
-    CONTINUE,    // continue str1
-    ELSEIF,      // elseif expr1 then state1
-    EXIT,        // exit str1
-    FORNEXT,     // for str1 = expr1 to expr2 state1 next
-    IFTHEN,      // if expr1 then state1 [elseifs - state2] end if
-    IFTHENELSE,  // if expr1 then state1 [elseifs - state3] else state2 end if
-    PRINT,       // print(out1, )
-    RESET,       // Start all blocks from the top, as if newly compiled.
-    WAIT         // wait expr1
+    ARRAY_ASSIGNMENT,  // array_ptr[expr1] = expr2
+    STRING_ARRAY_ASSIGNMENT,  // str_array_ptr[expr1] = expr2
+    ASSIGNMENT,        // str1 = expr1
+    STRING_ASSIGNMENT, // str1$ = expr1
+    CLEAR,             // Set variables to initial state (0.0f).
+    CONTINUE,          // continue str1
+    ELSEIF,            // elseif expr1 then state1
+    EXIT,              // exit str1
+    FORNEXT,           // for str1 = expr1 to expr2 state1 next
+    IFTHEN,            // if expr1 then state1 [elseifs - state2] end if
+    IFTHENELSE,        // if expr1 then state1 [elseifs - state3] else state2 end if
+    PRINT,             // print(out1, )
+    RESET,             // Start all blocks from the top, as if newly compiled.
+    WAIT               // wait expr1
   };
   Type type;
   std::string str1;
 
-  // When assigning to a variable/port/array.
+  // When assigning to a variable/string variable/port/array.
   float* variable_ptr;
+  std::string* str_variable_ptr;
   PortPointer assign_port;
-  std::vector<float>* array_ptr;
+  FloatArray* array_ptr;
+  StringArray* str_array_ptr;
 
   Expression expr1, expr2, expr3;
   ExpressionList expr_list;
@@ -209,11 +228,25 @@ struct Line {
                               const Expression &index,
                               const ExpressionList &values, Driver* driver);
 
+  static Line StringArrayAssignment(const std::string &variable_name,
+                                    const Expression &index,
+                                    const Expression &value, Driver* driver);
+
+  static Line StringArrayAssignment(const std::string &variable_name,
+                                    const Expression &index,
+                                    const ExpressionList &values, Driver* driver);
+
   // identifiers on both right hand and left hand side of = look the same.
   // So the lhs will get turned into a VariableExpression. We need to pull
   // the name out of it.
   static Line Assignment(const std::string &variable_name,
                          const Expression &expr, Driver* driver);
+
+  // str_variable_name does NOT contain the $. I'm going to leave the '$'s
+  // out of the names; string and float variables live in completely separate namespaces,
+  // which the parser has sufficient information to determine. I hope.
+  static Line StringAssignment(const std::string &str_variable_name,
+                               const Expression &expr, Driver* driver);
 
   static Line ClearAll();
 

@@ -18,6 +18,8 @@ public:
                   bool last_falls_through);
   PCode Assignment(const std::string str1, float* variable_ptr,
                    const PortPointer &port, const Expression &expr1);
+  PCode StringAssignment(const std::string str1,
+                         std::string* str_variable_ptr, const Expression &expr1);
 
 private:
   void AddLineToPCode(const Line &line, const Exit &innermost_loop);

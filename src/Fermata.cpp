@@ -10,8 +10,17 @@
 
 struct Fermata : Module {
   static const int DEFAULT_WIDTH = 18;
+  // Many actions mean we need to force the buffer to recalculate the
+  // text appearance, so we keep the FramebufferWidget available.
+  FramebufferWidget* main_text_framebuffer = nullptr;
 
   Fermata() {
+  }
+
+  void RedrawText() {
+    if (main_text_framebuffer != nullptr) {
+      main_text_framebuffer->setDirty();
+    }
   }
 
   json_t* dataToJson() override {
@@ -33,24 +42,24 @@ struct Fermata : Module {
 
   void dataFromJson(json_t* rootJ) override {
     json_t* textJ = json_object_get(rootJ, "text");
-		if (textJ) {
-			text = json_string_value(textJ);
+    if (textJ) {
+      text = json_string_value(textJ);
       previous_text = text;
-  		editor_refresh = true;
+      editor_refresh = true;
     }
     json_t* widthJ = json_object_get(rootJ, "width");
-		if (widthJ)
-			width = json_integer_value(widthJ);
+    if (widthJ)
+      width = json_integer_value(widthJ);
       json_t* screenJ = json_object_get(rootJ, "screen_colors");
-  		if (screenJ)
-  			screen_colors = json_integer_value(screenJ);
+      if (screenJ)
+        screen_colors = json_integer_value(screenJ);
     json_t* font_choiceJ = json_object_get(rootJ, "font_choice");
-		if (font_choiceJ) {
-			font_choice = json_string_value(font_choiceJ);
+    if (font_choiceJ) {
+      font_choice = json_string_value(font_choiceJ);
     }
     json_t* title_textJ = json_object_get(rootJ, "title_text");
-		if (title_textJ) {
-			title_text = json_string_value(title_textJ);
+    if (title_textJ) {
+      title_text = json_string_value(title_textJ);
     }
   }
 
@@ -64,7 +73,7 @@ struct Fermata : Module {
   }
 
   void process(const ProcessArgs& args) override {
-  }
+ }
 
   bool editor_refresh = false;
   ///////
@@ -135,6 +144,7 @@ struct FermataUndoRedoAction : history::ModuleAction {
         module->box_pos_x = this->old_posx;  // Used by FermataWidget::step.
         module->update_pos = true;
       }
+      module->RedrawText();
     }
   }
 
@@ -151,6 +161,7 @@ struct FermataUndoRedoAction : history::ModuleAction {
         module->box_pos_x = this->new_posx;
         module->update_pos = true;
       }
+      module->RedrawText();
     }
   }
 };
@@ -159,57 +170,57 @@ struct FermataUndoRedoAction : history::ModuleAction {
 // compiles but just won't work.
 // TODO: Possible to make this a reusable class between the two? Unlikely.
 struct FermataModuleResizeHandle : OpaqueWidget {
-	Vec dragPos;
-	Rect originalBox;
-	Fermata* module;
+  Vec dragPos;
+  Rect originalBox;
+  Fermata* module;
   bool right = false;  // True for one on the right side.
 
-	FermataModuleResizeHandle() {
+  FermataModuleResizeHandle() {
     // One hole wide and full length tall.
-		box.size = Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
-	}
+    box.size = Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
+  }
 
-	void onDragStart(const DragStartEvent& e) override {
-		if (e.button != GLFW_MOUSE_BUTTON_LEFT)
-			return;
+  void onDragStart(const DragStartEvent& e) override {
+    if (e.button != GLFW_MOUSE_BUTTON_LEFT)
+      return;
 
-		dragPos = APP->scene->rack->getMousePos();
-		ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
-		assert(mw);
-		originalBox = mw->box;
-	}
+    dragPos = APP->scene->rack->getMousePos();
+    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
+    assert(mw);
+    originalBox = mw->box;
+  }
 
-	void onDragMove(const DragMoveEvent& e) override {
-		ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
-		assert(mw);
+  void onDragMove(const DragMoveEvent& e) override {
+    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
+    assert(mw);
     int original_width = module->width;
 
-		Vec newDragPos = APP->scene->rack->getMousePos();
-		float deltaX = newDragPos.x - dragPos.x;
+    Vec newDragPos = APP->scene->rack->getMousePos();
+    float deltaX = newDragPos.x - dragPos.x;
 
-		Rect newBox = originalBox;
-		Rect oldBox = mw->box;
+    Rect newBox = originalBox;
+    Rect oldBox = mw->box;
     // Minimum and maximum number of holes we allow the module to be.
-		const float minWidth = 3 * RACK_GRID_WIDTH;
+    const float minWidth = 3 * RACK_GRID_WIDTH;
     const float maxWidth = 64 * RACK_GRID_WIDTH;
     if (right) {
-  		newBox.size.x += deltaX;
-  		newBox.size.x = std::fmax(newBox.size.x, minWidth);
+      newBox.size.x += deltaX;
+      newBox.size.x = std::fmax(newBox.size.x, minWidth);
       newBox.size.x = std::fmin(newBox.size.x, maxWidth);
-  		newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
+      newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
     } else {
       newBox.size.x -= deltaX;
-  		newBox.size.x = std::fmax(newBox.size.x, minWidth);
+      newBox.size.x = std::fmax(newBox.size.x, minWidth);
       newBox.size.x = std::fmin(newBox.size.x, maxWidth);
-  		newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
+      newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
       newBox.pos.x = originalBox.pos.x + originalBox.size.x - newBox.size.x;
     }
-		// Set box and test whether it's valid.
-		mw->box = newBox;
-		if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
-			mw->box = oldBox;
-		}
-		module->width = std::round(mw->box.size.x / RACK_GRID_WIDTH);
+    // Set box and test whether it's valid.
+    mw->box = newBox;
+    if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
+      mw->box = oldBox;
+    }
+    module->width = std::round(mw->box.size.x / RACK_GRID_WIDTH);
     if (original_width != module->width) {
       // Make resizing an undo/redo action. If I don't do this, undoing a
       // different module's move will cause them to overlap (aka, a
@@ -217,24 +228,26 @@ struct FermataModuleResizeHandle : OpaqueWidget {
       APP->history->push(
         new FermataUndoRedoAction(module->id, original_width, module->width,
                                   oldBox.pos.x, mw->box.pos.x));
+      // Also need to tell FramebufferWidget to update the appearance.
+      module->RedrawText();
     }
-	}
+  }
 
-	void drawLayer(const DrawArgs& args, int layer) override {
+  void drawLayer(const DrawArgs& args, int layer) override {
     if (layer == 1) {
       // Draw two lines to give people something to grab for.
       // Lifted from the VCV Blank module.
-  		for (float x = 5.0; x <= 10.0; x += 5.0) {
-  			nvgBeginPath(args.vg);
-  			const float margin = 5.0;
-  			nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
-  			nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
-  			nvgStrokeWidth(args.vg, 1.0);
-  			nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
-  			nvgStroke(args.vg);
-  		}
+      for (float x = 5.0; x <= 10.0; x += 5.0) {
+        nvgBeginPath(args.vg);
+        const float margin = 5.0;
+        nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
+        nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
+        nvgStrokeWidth(args.vg, 1.0);
+        nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
+        nvgStroke(args.vg);
+      }
     }
-	}
+  }
 };
 
 // The title when shown below the text.
@@ -275,7 +288,7 @@ struct FermataTitleTextField : LightWidget {
 };
 
 struct FermataTextFieldMenuItem : TextField {
-	FermataTextFieldMenuItem() {
+  FermataTextFieldMenuItem() {
     box.size = Vec(120, 50);
     multiline = false;
   }
@@ -285,7 +298,7 @@ struct FermataTextFieldMenuItem : TextField {
 struct ClosedTitleTextField : LightWidget {
   Fermata* module;
 
-	ClosedTitleTextField() {
+  ClosedTitleTextField() {
     box.size = mm2px(Vec(6 * 5.08, 110));
   }
 
@@ -368,21 +381,21 @@ struct ClosedTitleTextField : LightWidget {
         }
       }
     }
-    Widget::drawLayer(args, layer);
+    LightWidget::drawLayer(args, layer);
     nvgResetScissor(args.vg);
   }
 };
 
 struct FermataProgramNameMenuItem : FermataTextFieldMenuItem {
-	Fermata* module;
+  Fermata* module;
 
-	FermataProgramNameMenuItem(Fermata* fermata_module) {
+  FermataProgramNameMenuItem(Fermata* fermata_module) {
     module = fermata_module;
     if (module) {
       text = module->title_text;
     }
   }
-	void onChange(const event::Change& e) override {
+  void onChange(const event::Change& e) override {
     FermataTextFieldMenuItem::onChange(e);
     if (module) {
       module->title_text = text;
@@ -390,80 +403,7 @@ struct FermataProgramNameMenuItem : FermataTextFieldMenuItem {
   }
 };
 
-// Class for the editor.
-struct FermataTextField : STTextField {
-	Fermata* module;
-  long long int color_scheme;
-
-  NVGcolor int_to_color(int color) {
-    return nvgRGB(color >> 16, (color & 0xff00) >> 8, color & 0xff);
-  }
-
-  // bgColor seems to have no effect if I don't do this. Drawing a background
-  // and then letting LedDisplayTextField draw the rest will fixes that.
-  void drawLayer(const DrawArgs& args, int layer) override {
-    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-
-    if (layer == 1) {
-  		// background only
-      nvgBeginPath(args.vg);
-      nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
-      nvgFillColor(args.vg, bgColor);
-      nvgFill(args.vg);
-
-      if (module && module->cursor_override >= 0) {
-        // Undo/redo must have just happened.
-        // Move cursor (with no selection) to where the cursor was when we
-        // did edit.
-        cursor = module->cursor_override;
-        selection = module->cursor_override;
-        module->cursor_override = -1;
-        // Since we just forcibly moved the cursor, need to reposition window
-        // to show it.
-        extended.RepositionWindow(cursor);
-      }
-  	}
-  	STTextField::drawLayer(args, layer);  // Draw text.
-  	nvgResetScissor(args.vg);
-  }
-
-	void step() override {
-		STTextField::step();
-    if (module && (color_scheme != module->screen_colors ||
-                   module->editor_refresh)) {
-      // Note: this doesn't actully care about editor_refresh. But this cleared
-      // up a bug about duplicated windows not keeping the same color.
-      color_scheme = module->screen_colors;
-      color = int_to_color(color_scheme >> 24);
-      bgColor = int_to_color(color_scheme & 0xffffff);
-    }
-		if (module && module->editor_refresh) {
-      // TODO: is this checked often enough? I don't know when step()
-      // is called.
-      // Text has been changed, editor needs to update itself.
-      // This happens when the module loads, and on undo/redo.
-			textUpdated();
-			module->editor_refresh = false;
-		}
-	}
-
-  // User has updated the text.
-	void onChange(const ChangeEvent& e) override {
-		if (module) {
-      // Sometimes the text isn't actually different. If I don't check
-      // this, I might get spurious history events.
-      // TODO: do I need this check anymore?
-      if (module->text != module->previous_text) {
-        APP->history->push(
-          new FermataUndoRedoAction(module->id, module->previous_text,
-                             module->text, module->previous_cursor, cursor));
-        module->previous_text = module->text;
-      }
-      module->previous_cursor = cursor;
-    }
-	}
-};
-
+// The text that gets show in the module browser and the library.
 static std::string module_browser_text =
   "Write your text here! For example:\n"
   "* Instructions for playing the patch.\n"
@@ -476,46 +416,117 @@ static std::string module_browser_text =
   "If you shrink the module enough, the title becomes a large label on "
   "the front.";
 
-struct FermataDisplay : LedDisplay {
-  FermataTextField* textField;
+// Class for the editor.
+struct FermataTextField : STTextField {
+  Fermata* module;
+  FramebufferWidget* frame_buffer;
+  bool was_selected;
 
-	void setModule(Fermata* module) {
-		textField = createWidget<FermataTextField>(Vec(0, 0));
-		textField->box.size = box.size;
-		textField->module = module;
-    // If this is the module browser, 'module' will be null!
-    if (module != nullptr) {
-      textField->text = &(module->text);
-    } else {
-      // Show something inviting when being shown in the module browser.
-      textField->text = &module_browser_text;
-    }
-    textField->textUpdated();
-		addChild(textField);
-	}
+  long long int color_scheme;
 
-  // The FermataWidget changes size, so we have to reflect that.
-  void step() override {
-    // At smaller sizes, hide the screen.
-    if (textField->module && textField->module->width <= 8) {
-      hide();
-    } else {
-      show();
-    }
-    textField->box.size = box.size;
-    LedDisplay::step();
-	}
-
-  // Text insertions from the menu.
-  void insertText(const std::string &fragment) {
-    textField->insertText(fragment);
+  NVGcolor int_to_color(int color) {
+    return nvgRGB(color >> 16, (color & 0xff00) >> 8, color & 0xff);
   }
 
-  // Setting the font.
+  // Setting the font. Need to have a method for this, since it can be
+  // changed by the menu.
   void setFontPath() {
-    if (textField && textField->module) {
-      textField->fontPath = textField->module->getFontPath();
+    if (module) {
+      fontPath = module->getFontPath();
     }
+  }
+
+  void setModule(Fermata* module, FramebufferWidget* fb_widget) {
+    this->module = module;
+    frame_buffer = fb_widget;
+    // If this is the module browser, 'module' will be null!
+    if (module != nullptr) {
+      this->text = &(module->text);
+    } else {
+      // Show something inviting when being shown in the module browser.
+      this->text = &module_browser_text;
+    }
+    textUpdated();
+  }
+
+  // bgColor seems to have no effect if I don't do this. Drawing a background
+  // and then letting STTextField draw the rest fixes that.
+  void draw(const DrawArgs& args) override {
+    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+
+    // background only
+    nvgBeginPath(args.vg);
+    nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
+    nvgFillColor(args.vg, bgColor);
+    nvgFill(args.vg);
+
+    if (module && module->cursor_override >= 0) {
+      // Undo/redo must have just happened.
+      // Move cursor (with no selection) to where the cursor was when we
+      // did edit.
+      cursor = module->cursor_override;
+      selection = module->cursor_override;
+      module->cursor_override = -1;
+      // Since we just forcibly moved the cursor, need to reposition window
+      // to show it.
+      extended.RepositionWindow(cursor);
+    }
+    STTextField::draw(args);  // Draw text.
+    nvgResetScissor(args.vg);
+  }
+
+  void step() override {
+    // At smaller sizes, hide the screen.
+    // User can resize the window, so we need to keep checking for this.
+    if (module && module->width <= 8) {
+      frame_buffer->hide();
+    } else {
+      frame_buffer->show();
+    }
+    if (module && (color_scheme != module->screen_colors ||
+                   module->editor_refresh)) {
+      // Note: this doesn't actully care about editor_refresh. But this cleared
+      // up a bug about duplicated windows not keeping the same color.
+      color_scheme = module->screen_colors;
+      color = int_to_color(color_scheme >> 24);
+      bgColor = int_to_color(color_scheme & 0xffffff);
+    }
+    if (module && module->editor_refresh) {
+      // TODO: is this checked often enough? I don't know when step()
+      // is called.
+      // Text has been changed, editor needs to update itself.
+      // This happens when the module loads, and on undo/redo.
+      textUpdated();
+      frame_buffer->setDirty();
+      module->editor_refresh = false;
+    }
+    STTextField::step();
+
+    bool is_selected = (this == APP->event->selectedWidget);
+    if (is_selected != was_selected) {
+      was_selected = is_selected;
+      is_dirty = true;
+    }   
+    if (is_dirty) {
+      frame_buffer->setDirty();
+    }
+  }
+
+  // User has updated the text.
+  void onChange(const ChangeEvent& e) override {
+    if (module) {
+      // Sometimes the text isn't actually different. If I don't check
+      // this, I might get spurious history events.
+      // TODO: do I need this check anymore?
+      if (module->text != module->previous_text) {
+        APP->history->push(
+          new FermataUndoRedoAction(module->id, module->previous_text,
+                             module->text, module->previous_cursor, cursor));
+        module->previous_text = module->text;
+      }
+      module->previous_cursor = cursor;
+    }
+    frame_buffer->setDirty();
   }
 };
 
@@ -524,11 +535,12 @@ const float NON_TITLE_WIDTH = 4.6f;
 
 struct FermataWidget : ModuleWidget {
   Widget* topRightScrew;
-	Widget* bottomRightScrew;
-	FermataModuleResizeHandle* rightHandle;
-	FermataDisplay* textDisplay;
+  Widget* bottomRightScrew;
+  FermataModuleResizeHandle* rightHandle;
+  FermataTextField* textField;
   FermataTitleTextField* title;
   ClosedTitleTextField* closed_title;
+  FramebufferWidget* main_text_framebuffer;
 
   FermataWidget(Fermata* module) {
     setModule(module);
@@ -537,9 +549,9 @@ struct FermataWidget : ModuleWidget {
 
     // Set reasonable initial size of module. Will likely get updated below.
     box.size = Vec(RACK_GRID_WIDTH * Fermata::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
-		if (module) {
+    if (module) {
       // Set box width from loaded Module when available.
-			box.size.x = module->width * RACK_GRID_WIDTH;
+      box.size.x = module->width * RACK_GRID_WIDTH;
     } else {
       // Like when showing the module in the module browser.
       box.size.x = Fermata::DEFAULT_WIDTH * RACK_GRID_WIDTH;
@@ -569,43 +581,52 @@ struct FermataWidget : ModuleWidget {
     closed_title->hide();  // Only shown when at smallest size.
     addChild(closed_title);
 
-    textDisplay = createWidget<FermataDisplay>(
-      mm2px(Vec(5.08, 5.9)));  // 5.08 == RACK_GRID_WIDTH in mm.
-		textDisplay->box.size = mm2px(Vec(60.0, 117.0));
-    textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
-		textDisplay->setModule(module);
 
-		addChild(textDisplay);
+    // The FramebufferWidget that caches the appearence of the text, so we
+    // don't have to keep redrawing it (and wasting UI CPU to do it).
+    main_text_framebuffer = new FramebufferWidget();
+    // The actual widget that shows and edits text.
+    textField = createWidget<FermataTextField>(
+      mm2px(Vec(5.08, 5.9)));  // 5.08 == RACK_GRID_WIDTH in mm.
+    textField->box.size = mm2px(Vec(60.0, 117.0));
+    textField->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
+    textField->setModule(module, main_text_framebuffer);
+    addChild(main_text_framebuffer);
+    main_text_framebuffer->addChild(textField);
+    if (module) {
+      module->main_text_framebuffer = main_text_framebuffer;
+    }
 
     // Resize bar on left.
     FermataModuleResizeHandle* leftHandle = new FermataModuleResizeHandle;
-		leftHandle->module = module;
+    leftHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module
     // browser.
     // new_rightHandle->box.pos.x = box.size.x - new_rightHandle->box.size.x;
     addChild(leftHandle);
 
-
     // Resize bar on right.
     rightHandle = new FermataModuleResizeHandle;
     rightHandle->right = true;
-		rightHandle->module = module;
+    rightHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module
     // browser.
     rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
     addChild(rightHandle);
 
     // Update the font in the code window to be the one chosen in the menu.
-    textDisplay->setFontPath();
+    textField->setFontPath();
   }
 
   void step() override {
-		Fermata* module = dynamic_cast<Fermata*>(this->module);
+    Fermata* module = dynamic_cast<Fermata*>(this->module);
     // While this is really only useful to call when the width changes,
     // I don't think it's currently worth the effort to ONLY call it then.
     // And maybe the *first* time step() is called.
-		if (module) {
-			box.size.x = module->width * RACK_GRID_WIDTH;
+    if (module) {
+      box.size.x = module->width * RACK_GRID_WIDTH;
+
+      // TODO: Should the logic in step() above that shows/hides the text editor also be here?
       if (module->width <= 8) {
         closed_title->show();
         title->hide();
@@ -613,10 +634,10 @@ struct FermataWidget : ModuleWidget {
         closed_title->hide();
         title->show();
       }
-      // The right-hand screws have slightly different logic.
+      // The right-hand screws have to disappear when we get thin enough.
       if (module->width < 8) {
         topRightScrew->hide();
-      	bottomRightScrew->hide();
+        bottomRightScrew->hide();
       } else {
         topRightScrew->show();
         bottomRightScrew->show();
@@ -625,22 +646,22 @@ struct FermataWidget : ModuleWidget {
         module->update_pos = false;
         box.pos.x = module->box_pos_x;
       }
-		} else {
+    } else {
       // Like when showing the module in the module browser.
       box.size.x = Fermata::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
     // Adjust size of area we display text in; it's a function of the size
     // of the module minus some set width.
-		textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
+    textField->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
     // Adjust size of area we display title in.
-		title->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_TITLE_WIDTH;
+    title->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_TITLE_WIDTH;
     // Move the right side screws to follow.
-		topRightScrew->box.pos.x = box.size.x - 30;
-		bottomRightScrew->box.pos.x = box.size.x - 30;
-		rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
+    topRightScrew->box.pos.x = box.size.x - 30;
+    bottomRightScrew->box.pos.x = box.size.x - 30;
+    rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
 
-		ModuleWidget::step();
-	}
+    ModuleWidget::step();
+  }
 
   void appendContextMenu(Menu* menu) override {
     Fermata* module = dynamic_cast<Fermata*>(this->module);
@@ -663,7 +684,8 @@ struct FermataWidget : ModuleWidget {
          for (auto line : colors) {
            menu->addChild(createCheckMenuItem(line.first, "",
            [=]() {return line.second == module->screen_colors;},
-           [=]() {module->screen_colors = line.second;}
+           [=]() {module->screen_colors = line.second;
+                  module->RedrawText(); }
            ));
          }
      }
@@ -679,7 +701,7 @@ struct FermataWidget : ModuleWidget {
       {"RobotoSlab Bold", "fonts/RobotoSlab-Bold.ttf"},
       {"RobotoSlab Light", "fonts/RobotoSlab-Light.ttf"},
       {"RobotoSlab Regular", "fonts/RobotoSlab-Regular.ttf"}
-  };
+    };
 
     MenuItem* font_menu = createSubmenuItem("Font", "",
       [=](Menu* menu) {
@@ -687,7 +709,8 @@ struct FermataWidget : ModuleWidget {
             menu->addChild(createCheckMenuItem(line.first, "",
                 [=]() {return line.second == module->font_choice;},
                 [=]() {module->font_choice = line.second;
-                       textDisplay->setFontPath();}
+                       textField->setFontPath();
+                       module->RedrawText(); }
             ));
           }
       }
