@@ -107,8 +107,8 @@ struct TTY : Module {
     json_t* widthJ = json_object_get(rootJ, "width");
     if (widthJ)
       width = json_integer_value(widthJ);
-      json_t* screenJ = json_object_get(rootJ, "screen_colors");
-      if (screenJ)
+    json_t* screenJ = json_object_get(rootJ, "screen_colors");
+    if (screenJ)
         screen_colors = json_integer_value(screenJ);
     json_t* font_choiceJ = json_object_get(rootJ, "font_choice");
     if (font_choiceJ) {
