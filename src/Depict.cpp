@@ -294,8 +294,7 @@ struct MemoryDepict : Widget {
         delete waveform;
       }
     }
-    Widget::drawLayer(args, layer);
-  }
+	}
 };
 
 struct DepictWidget : ModuleWidget {

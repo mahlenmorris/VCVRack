@@ -155,9 +155,9 @@ enum ModuleType {
 };
 
 struct LineRecord {
-  double position;  // Set by module. Read by Depict.
-  NVGcolor color;  // Set by Memory. Read by Depict and the module.
-  ModuleType type;  // Set by module class. Read by Depict.
+	double position;  // Set by module. Read by Depict.
+	NVGcolor color;  // Set by Memory. Read by Depict and the module.
+	ModuleType type;  // Set by module class. Read by Depict.
   // Number of modules away from Memory this is. One-indexed.
   int distance;  // Set by Memory, Read by Depict.
 

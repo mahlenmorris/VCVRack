@@ -77,7 +77,7 @@ The length of the Memory audio buffer, in seconds, ranging from 1 - 1000. Change
 #### RESET Button
 Gets rid of the previous audio buffer, creates a new one of LENGTH seconds, then sets it to 0.0V.
 #### LOAD Tipsy Input
-**The LOAD input takes *only* Tipsy inputs. Tipsy is a way to send text over a VCV Rack cable; currently, the only module that can send useful Tipsy data is
+**The LOAD input takes *only* [Tipsy](https://github.com/baconpaul/tipsy-encoder) inputs. Tipsy is a way to send text over a VCV Rack cable; currently, the only module that can send controllable Tipsy text is
 [BASICally](README.md#basically) (see the "print()" command).**
 
 The LOAD input can accept two different types of textual messages:
@@ -130,6 +130,9 @@ immediately load it into the Memory.
 Select a folder to Save .wav files to. Once this is done, any inputs to the SAVE Tipsy input will be relative to this folder.  
 #### Save to File...
 A standard dialog box to save files with will appear. The entire current contents of the Memory buffer will be saved as a WAV file.
+
+### Known Limitations
+* Putting noise into the LOAD and SAVE Tipsy inputs can crash VCV Rack.
 
 # Depict
 A module for displaying both a representation of the audio data in Memory and showing the positions of the Embellish, Fixation, and Ruminate heads.
@@ -358,6 +361,12 @@ Any Delay or Sampler module can do some of what the Memory system can do.
 Many thanks to [Marc Weidenbaum](https://disquiet.com/) for his offhand suggestion
 that resulted in this idea coming to fruition. His encouragement and enthusiasm for
 this idea were essential to it reaching this point.
+
+Thanks to both [BaconPaul](https://baconpaul.org/) and
+[pachde](https://library.vcvrack.com/?query=&brand=pachde&tag=&license=) of the VCV Rack 
+community for greatly extending my silly idea to send text over a VCV cable and
+seeing far more value in it then I did. And for then doing the actual work of
+implementing it.
 
 And my deepest gratitude to Diane LeVan, for letting me ignore her and useful household projects
 for periods of time just to craft these things. I apologize for
