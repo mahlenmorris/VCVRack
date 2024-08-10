@@ -56,6 +56,10 @@ A Memory by itself cannot play or record audio. It is solely where the stereo au
 
 Most modules treat the Memory audio data as a circular loop; typically, moving past the arrives at the beginning of the audio.
 
+### Video Demos
+* [Loading Files into Memory](https://www.youtube.com/watch?v=MvuQLtUkY4w)
+* [Loading and Saving in Memory](https://www.youtube.com/watch?v=fw6dk4pGn1s)
+
 ### Position and signal voltage
 There are knobs, inputs, and outputs that all correspond to positions within the Memory. Since there is no standard way to send a "time" within VCV, and especially since
 Memory buffers can be quite a bit larger than 10 seconds, I decided to just map 0-10 to whatever the length of the buffere is. All of them work the same way:
@@ -69,7 +73,6 @@ Memory buffers can be quite a bit larger than 10 seconds, I decided to just map 
 * Memory modules can consume *a lot* of your computer's RAM when running. The higher the LENGTH, the more data Memory will be storing. The larger the VCV Sample Rate, the more data Memory will be storing. A single Memory set to 1000 seconds (i.e., 16m 40s) at a Sample Rate of 48 kHz is using 366 Mb of RAM.
 
 ### Controls
-**There are videos about file loading and saving [here](https://www.youtube.com/watch?v=MvuQLtUkY4w) and [here](https://www.youtube.com/watch?v=fw6dk4pGn1s).**
 #### WIPE Input and Button
 Pressing the button or sending a trigger to the WIPE input will keep the length of the Memory the same, but reset all of the values within it to 0.0V.
 #### LENGTH Knob
@@ -197,6 +200,11 @@ Ruminate, like Fixation, is used to playback audio from a Memory. Ruminate repre
 
 More than one Ruminate can be used in the same ensemble. On a Depict, each Ruminate will appear as a
 line connected to the left edge of the Depict screen.
+
+### Video Demos
+* [Fade on Move menu option](https://www.youtube.com/watch?v=dOsupn0-Mxw)
+* [V/Oct SPEED menu option](https://www.youtube.com/watch?v=kGKmS2WjqIs)
+
 ### Uses
 * To listen to audio recorded into the Memory, attach the OUT (Left and Right) outputs to a mixer. Or better yet, put a few Ruminates in different locations and/or different speeds and mix them together.
 * Try playing the same audio at different speeds an octave apart. I find that making one Ruminate run at SPEED 1 and others run at, say, 2.0 or 0.5 or .25 works as a nice starting place. 
@@ -258,6 +266,14 @@ Fixation, like Ruminate, is used to playback audio from a Memory. Fixation has a
 
 More than one Fixation can be used in the same ensemble. On a Depict, each Fixation will appear as a
 short line, not connected to either edge.
+
+### Video Demos
+* [Playing sections of Memory](https://www.youtube.com/watch?v=nDcjS6hz9qE)
+* [Fixation as Highly Controllable Granular Synth](https://www.youtube.com/watch?v=jzkOs-odrig)
+* [Playing Melodies with Short Samples](https://www.youtube.com/watch?v=rDCgencIVIY)
+
+NOTE: These were made while Fixation was being developed, and so the module may look different from how it does now.
+
 ### Controls
 
 The STYLE control is key to understanding how Fixation will behave. Note that some controls will have no effect if particular STYLE's are selected.
