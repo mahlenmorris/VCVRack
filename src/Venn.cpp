@@ -6,6 +6,7 @@ struct Circle {
   // 0, 0 is lower left corner; 10, 10 is upper right.
   float radius;
   std::string name;
+  bool present;  // Not deleted.
 };
 
 struct Venn : Module {
@@ -38,12 +39,16 @@ struct Venn : Module {
     first.x_center = 6.0;
     first.y_center = 5.0;
     first.radius = 3.5;
+    first.present = true;
     circles.push_back(first);
     Circle second;
     second.x_center = 4.0;
     second.y_center = 5.5;
     second.radius = 3.0;
+    second.present = true;
     circles.push_back(second);
+
+    current_circle = 1;
 
     point.x = 5;
     point.y = 5;
@@ -98,39 +103,40 @@ struct Venn : Module {
   }
 
   std::vector<Circle> circles;
+  int current_circle;
   Vec point;
 };
 
-struct CircleDisplay : Widget {
+struct CircleDisplay : OpaqueWidget {
   Venn* module;
 
   CircleDisplay() {}
 
+  // Move point to current location if left clicked.
   void onButton(const ButtonEvent& e) override {
-    Widget::onButton(e);
+    OpaqueWidget::onButton(e);
 
-    if (module) {
-      if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_LEFT) {
-        // Must change position in widget to voltage.
-        Rect r = box.zeroPos();
-        Vec bounding_box = r.getBottomRight();
-        module->point.x = e.pos.x / bounding_box.x * 10.0;
-        module->point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0;
-        e.consume(this);
-      }
-
-      /*   
-      // Hmm, might care about right button presses later?   
-      if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT) {
-        createContextMenu();
-        e.consume(this);
-      }
-      */
+    if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_LEFT) {
+      // Must change position in widget to voltage.
+      Rect r = box.zeroPos();
+      Vec bounding_box = r.getBottomRight();
+      module->point.x = e.pos.x / bounding_box.x * 10.0;
+      module->point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0;
+      e.consume(this);
     }
+
+    /*   
+    // Hmm, might care about right button presses later?   
+    if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT) {
+      createContextMenu();
+      e.consume(this);
+    }
+    */
   }
 
+  // Move point to current location when dragged.
   void onDragHover(const DragHoverEvent& e) override {
-    Widget::onDragHover(e);
+    OpaqueWidget::onDragHover(e);
 
     if (e.origin == this) {
         // Must change position in widget to voltage.
@@ -141,6 +147,106 @@ struct CircleDisplay : Widget {
         e.consume(this);
     }
   }
+
+void onSelectKey(const SelectKeyEvent& e) override {
+  // TODO: impose max/min size and position.
+  if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) {
+    if (module->current_circle >= 0) {  // i.e., there is a circle to edit.
+      // Editing the Circle.
+      // W - up
+      if (e.keyName == "w" && (e.mods & RACK_MOD_CTRL) == 0) {
+        module->circles.at(module->current_circle).y_center += 0.1;
+        e.consume(this);
+      }
+      // S - down
+      if (e.keyName == "s" && (e.mods & RACK_MOD_CTRL) == 0) {
+        module->circles.at(module->current_circle).y_center -= 0.1;
+        e.consume(this);
+      }
+      // A - left
+      if (e.keyName == "a" && (e.mods & RACK_MOD_CTRL) == 0) {
+        module->circles.at(module->current_circle).x_center -= 0.1;
+        e.consume(this);
+      }
+      // D - right
+      if (e.keyName == "d" && (e.mods & RACK_MOD_CTRL) == 0) {
+        module->circles.at(module->current_circle).x_center += 0.1;
+        e.consume(this);
+      }
+      // Q - smaller
+      if (e.keyName == "q" && (e.mods & RACK_MOD_CTRL) == 0) {
+        module->circles.at(module->current_circle).radius -= 0.1;
+        e.consume(this);
+      }
+      // E - bigger
+      if (e.keyName == "e" && (e.mods & RACK_MOD_CTRL) == 0) {
+        module->circles.at(module->current_circle).radius += 0.1;
+        e.consume(this);
+      }
+    }
+    // Selecting which Circle.
+    // Z - previous
+    if (e.keyName == "z" && (e.mods & RACK_MOD_CTRL) == 0) {
+      // TODO: what if there are none? What happens above?
+      if (module->circles.size() > 0) {
+        for (int curr = module->current_circle - 1; curr != module->current_circle; curr--) {
+          if (curr < 0) {
+            curr = module->circles.size() - 1;
+          }
+          if (module->circles.at(curr).present) {
+            module->current_circle = curr;
+            break;
+          }
+        }
+      }
+      e.consume(this);
+    }
+    // C - next
+    if (e.keyName == "c" && (e.mods & RACK_MOD_CTRL) == 0) {
+      // TODO: what if there are none? What happens above?
+      if (module->circles.size() > 0) {
+        for (int curr = module->current_circle + 1; curr != module->current_circle; curr++) {
+          if (curr >= (int) (module->circles.size())) {
+            curr = 0;
+          }
+          if (module->circles.at(curr).present) {
+            module->current_circle = curr;
+            break;
+          }
+        }
+      }
+      e.consume(this);
+    }
+    /*
+    // Ctrl+X
+    if (e.keyName == "x" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+      cutClipboard();
+      e.consume(this);
+    }
+    // Ctrl+C
+    if (e.keyName == "c" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+      copyClipboard();
+      e.consume(this);
+    }
+    // Ctrl+A
+    if (e.keyName == "a" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+      selectAll();
+      e.consume(this);
+    }
+    // Enter
+    if ((e.key == GLFW_KEY_ENTER || e.key == GLFW_KEY_KP_ENTER) && (e.mods & RACK_MOD_MASK) == 0) {
+      if (allow_text_entry) {
+        insertText("\n");
+      }
+      e.consume(this);
+    }
+    // Consume all printable keys unless Ctrl is held
+    if ((e.mods & RACK_MOD_CTRL) == 0 && e.keyName != "") {
+      e.consume(this);
+    }
+  */
+  }
+}
 
   double nvg_x(float volt_x, double size) { 
     return volt_x * size / 10.0;
@@ -155,6 +261,7 @@ struct CircleDisplay : Widget {
   // when the "room lights" are turned down. That seems correct to me.
   void drawLayer(const DrawArgs& args, int layer) override {
     if (module && layer == 1) {
+      nvgScissor(args.vg, RECT_ARGS(args.clipBox));
       Rect r = box.zeroPos();
       Vec bounding_box = r.getBottomRight();
       // Assuming that we are always on a square-pixeled surface, with X and Y the same distances.
@@ -162,12 +269,28 @@ struct CircleDisplay : Widget {
 
       // The circles.
       // TODO: add number, name, and vary the color (same scheme as Memory?).
+      int index = -1;
+      // TODO: Change to different font.
+      std::shared_ptr<Font> font = APP->window->loadFont(
+        asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
+
       for (const Circle& circle : module->circles) {
+        index++;
         nvgBeginPath(args.vg);
         nvgCircle(args.vg, nvg_x(circle.x_center, bounding_box.x), nvg_y(circle.y_center, bounding_box.x),
                 pixels_per_volt * circle.radius);
         nvgStrokeColor(args.vg, SCHEME_BLUE);
+        nvgStrokeWidth(args.vg, index == module->current_circle ? 2.0 : 1.0);
         nvgStroke(args.vg);
+
+        nvgFillColor(args.vg, color::BLACK);
+        nvgFontSize(args.vg, 13);
+        nvgFontFaceId(args.vg, font->handle);
+        //nvgTextLetterSpacing(args.vg, -2);
+        // Place in the center.
+        nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
+                         nvg_y(circle.y_center, bounding_box.x),
+                         std::to_string(index + 1).c_str(), NULL);
       }
 
       // Draw the pointer (need a name for it).
@@ -175,148 +298,12 @@ struct CircleDisplay : Widget {
       nvgCircle(args.vg, nvg_x(module->point.x, bounding_box.x), nvg_y(module->point.y, bounding_box.x),
               pixels_per_volt * 0.15);
       nvgStrokeColor(args.vg, SCHEME_BLACK);
+      nvgStrokeWidth(args.vg, 1.0);
       nvgStroke(args.vg);
 
-    }
-/*
-    if (layer == 1) {
-      int max_distance;
-      int line_record_size;
-      int buffer_length;
-      PointBuffer* waveform;
-      // True iff point_buffer was allocated just for this call.
-      bool free_point_buffer = false;
-
-      if (module) {
-        max_distance = std::max(1, module->max_distance + 1);
-        line_record_size = (int) module->line_records.size();
-        std::shared_ptr<Buffer> buffer = module->buffer;  // In case it gets reset by another action.
-        if (buffer && buffer->IsValid()) {
-          waveform = &(buffer->waveform);
-          buffer_length = buffer->length;
-        } else {
-          waveform = new PointBuffer();
-          FillDummyWaveform(waveform, false);
-          buffer_length = 100000;
-          free_point_buffer = true;
-        }
-      } else {
-        // Dummy data for the module browser.
-        max_distance = 5;  // I'll have four heads.
-        line_record_size = 4;
-        waveform = new PointBuffer();
-        FillDummyWaveform(waveform, true);
-        free_point_buffer = true;
-        buffer_length = 10;
-      }
-       
-      // just in case max_distance is zero somehow, I don't want to divide by it.
-      Rect r = box.zeroPos();
-      Vec bounding_box = r.getBottomRight();
-
-      double x_per_volt = (bounding_box.x - 1.0) / 20.0;
-      double zero_volt_left = bounding_box.x / 2 - 0.5;
-      double zero_volt_right = bounding_box.x / 2 + 0.5;
-      double y_per_point = bounding_box.y / WAVEFORM_SIZE;
-
-      // Draw the wave forms.
-      // In one shape we:
-      // * Draw the left side side from bottom to top.
-      // * Draw the right side line from top to bottom.
-      // * Join them. Draw that shape.
-      // Then draw a white line down the middle to suggest that these are
-      // two separate channels.
-
-      // Make half-white.
-      nvgFillColor(args.vg, nvgRGBA(140, 140, 140, 255));
-
-      nvgSave(args.vg);
-      nvgScissor(args.vg, RECT_ARGS(r));  // Not sure this is right?
-      nvgBeginPath(args.vg);
-
-      // Draw left points on the left of the mid.
-      for (int i = 0; i < WAVEFORM_SIZE; i++) {
-        float max = waveform->points[i][0] * waveform->normalize_factor;
-        // We'll say the x position ranges from -10V to 10V.
-        float x = zero_volt_left - (max * x_per_volt);
-        float y = (WAVEFORM_SIZE - i) * y_per_point;
-        if (i == 0) {
-          nvgMoveTo(args.vg, x, y);
-        } else {
-          nvgLineTo(args.vg, x, y);
-        }
-      }
-
-      // Now do the right channel.
-      for (int i = WAVEFORM_SIZE - 1; i >= 0; i--) {
-        float max = waveform->points[i][1] * waveform->normalize_factor;
-        float x = zero_volt_right + (max * x_per_volt);
-        float y = (WAVEFORM_SIZE - 1 - i) * y_per_point;
-        nvgLineTo(args.vg, x, y);
-      }
-
-      nvgClosePath(args.vg);
-      nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
-      nvgFill(args.vg);
-
-      // Draw line.
-      nvgBeginPath(args.vg);
-      nvgRect(args.vg, zero_volt_left, 0, 0.5f, bounding_box.y);
-      nvgFillColor(args.vg, SCHEME_WHITE);
-      nvgFill(args.vg);
-
-      // Add text to indicate the largest value we currently display.
-      nvgBeginPath(args.vg);
-      nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
-      nvgFillColor(args.vg, SCHEME_BLUE);
-      nvgFontSize(args.vg, 11);
-      // Do I need this? nvgFontFaceId(args.vg, font->handle);
-      nvgTextLetterSpacing(args.vg, -1);
-
-      // Place on the line just off the left edge.
-      nvgText(args.vg, 4, 10, waveform->text_factor.c_str(), NULL);
-
-      // Restore previous state.
+      OpaqueWidget::draw(args);
       nvgResetScissor(args.vg);
-      nvgRestore(args.vg);
-
-      // Then draw the recording heads on top.
-      for (int i = 0; i < line_record_size; i++) {
-        LineRecord line;
-        if (module) {
-          line = module->line_records[i];
-        } else {
-          line = dummy_lines[i];
-        }
-        nvgBeginPath(args.vg);
-        // I picture 0.0 at the bottom. TODO: is that a good idea?
-        double y_pos = bounding_box.y *
-                        (1 - ((double) line.position / buffer_length));
-        // Line is changed by distance and type.
-        if (line.type == RUMINATE) {
-          // Endpoint of line suggests which module it is.
-          double len = bounding_box.x * line.distance / max_distance;
-          nvgRect(args.vg, 0.0, y_pos, len, 1);
-        } else if (line.type == EMBELLISH) {
-          double len = bounding_box.x * (max_distance - line.distance) / max_distance;
-          nvgRect(args.vg, bounding_box.x - len, y_pos, len, 2);
-        } else if (line.type == FIXATION) {
-          double center = bounding_box.x * line.distance / max_distance;
-          // Make these lines one fifth of the way across. Sure they'll overlap sometimes,
-          // but they typically don't travel the whole vertical length of the buffer, and
-          // they have to show up againt the white waveform.
-          double len = bounding_box.x * 0.2;
-          nvgRect(args.vg, center - len / 2.0, y_pos, len, 2);
-        }
-        nvgFillColor(args.vg, line.color);
-        nvgFill(args.vg);
-      }
-
-      if (free_point_buffer) {
-        delete waveform;
-      }
     }
-    */
 	}
 };
 
