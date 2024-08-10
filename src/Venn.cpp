@@ -66,9 +66,12 @@ struct Venn : Module {
 
   void process(const ProcessArgs& args) override {
     // Update X and Y inputs.
-    point.x = inputs[X_POSITION_INPUT].getVoltage();
-    point.y = inputs[Y_POSITION_INPUT].getVoltage();
-
+    if (inputs[X_POSITION_INPUT].isConnected()) {
+      point.x = inputs[X_POSITION_INPUT].getVoltage();
+    }
+    if (inputs[Y_POSITION_INPUT].isConnected()) {
+      point.y = inputs[Y_POSITION_INPUT].getVoltage();
+    }
     // Determine what values to output.
     // TODO: many optimizations, including doing nothing when neither point nor circles has changed.
     // TODO: Can SIMD library help me?
@@ -103,6 +106,41 @@ struct CircleDisplay : Widget {
 
   CircleDisplay() {}
 
+  void onButton(const ButtonEvent& e) override {
+    Widget::onButton(e);
+
+    if (module) {
+      if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_LEFT) {
+        // Must change position in widget to voltage.
+        Rect r = box.zeroPos();
+        Vec bounding_box = r.getBottomRight();
+        module->point.x = e.pos.x / bounding_box.x * 10.0;
+        module->point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0;
+        e.consume(this);
+      }
+
+      /*   
+      // Hmm, might care about right button presses later?   
+      if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT) {
+        createContextMenu();
+        e.consume(this);
+      }
+      */
+    }
+  }
+
+  void onDragHover(const DragHoverEvent& e) override {
+    Widget::onDragHover(e);
+
+    if (e.origin == this) {
+        // Must change position in widget to voltage.
+        Rect r = box.zeroPos();
+        Vec bounding_box = r.getBottomRight();
+        module->point.x = e.pos.x / bounding_box.x * 10.0;
+        module->point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0;
+        e.consume(this);
+    }
+  }
 
   double nvg_x(float volt_x, double size) { 
     return volt_x * size / 10.0;
@@ -116,7 +154,7 @@ struct CircleDisplay : Widget {
   // By using drawLayer() instead of draw(), this becomes a glowing Depict
   // when the "room lights" are turned down. That seems correct to me.
   void drawLayer(const DrawArgs& args, int layer) override {
-    if (layer == 1) {
+    if (module && layer == 1) {
       Rect r = box.zeroPos();
       Vec bounding_box = r.getBottomRight();
       // Assuming that we are always on a square-pixeled surface, with X and Y the same distances.
