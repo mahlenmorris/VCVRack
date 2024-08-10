@@ -12,6 +12,7 @@ extern Model* modelDepict;
 extern Model* modelDrifter;
 extern Model* modelEmbellish;
 extern Model* modelFermata;
+extern Model* modelFixation;
 extern Model* modelFuse;
 extern Model* modelMemory;
 extern Model* modelRuminate;

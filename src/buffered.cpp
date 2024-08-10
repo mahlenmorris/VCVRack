@@ -7,14 +7,25 @@ std::shared_ptr<Buffer> findClosestMemory(Module* leftModule) {
       return dynamic_cast<BufferedModule*>(leftModule)->getHandle()->buffer;
     }
     auto m = leftModule->model;
-    if ((m == modelRuminate) ||
-        (m == modelEmbellish) ||
-        (m == modelDepict)) {  // This will be a list soon...
+    if (IsNonMemoryEnsembleModel(m)) {
       leftModule = leftModule->getLeftExpander().module;
     } else {
       return nullptr;
     }
   }
+}
+
+bool ModelHasColor(Model* model) {
+  return ((model == modelRuminate) ||
+          (model == modelFixation) ||
+          (model == modelEmbellish));
+}
+
+bool IsNonMemoryEnsembleModel(Model* model) {
+  return ((model == modelRuminate) ||
+          (model == modelFixation) ||
+          (model == modelDepict) ||
+          (model == modelEmbellish));
 }
 
 bool Buffer::IsValid() {

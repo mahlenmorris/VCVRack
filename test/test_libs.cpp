@@ -104,17 +104,42 @@ TEST(ParserTest, Arrays)
     EXPECT_EQ(6, lines->at(0).expr2.Compute());
 
     EXPECT_EQ(0, drv.parse("b = a[4]"));
+    lines = &(drv.blocks[0].lines);
     ASSERT_EQ(1, lines->size());
 
     EXPECT_EQ(0, drv.parse("b = a[-3]"));
+    lines = &(drv.blocks[0].lines);
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ(0, lines->at(0).expr1.Compute());
 
     EXPECT_EQ(0, drv.parse("a[4] = {1, 0, 1, sin(in1)}"));
+    lines = &(drv.blocks[0].lines);
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ("a", lines->at(0).str1);
     EXPECT_EQ(4, lines->at(0).expr1.Compute());
     EXPECT_EQ(4, lines->at(0).expr_list.size());
+}
+
+TEST(ParserTest, StringVariableTest)
+{
+    Driver drv;
+
+    EXPECT_EQ(0, drv.parse("f$ = \"foo\""));
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("f", lines->at(0).str1);
+    EXPECT_EQ("foo", lines->at(0).expr1.ComputeString());
+
+    EXPECT_EQ(0, drv.parse("a$ = bar$"));
+    lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ("a", lines->at(0).str1);
+    EXPECT_EQ("", lines->at(0).expr1.ComputeString());
+
+    // These should fail. Cannot assign a string to a float.
+    EXPECT_EQ(1, drv.parse("a = bar$"));
+    EXPECT_EQ(1, drv.parse("a = 2 * bar$"));
+    EXPECT_EQ(1, drv.parse("a = \"foo\""));
 }
 
 TEST(ParserTest, SimpleTest)
@@ -283,7 +308,6 @@ TEST(ParserTest, NegativeTest)
     EXPECT_EQ(0, drv.parse("out1 = 1 - -0.33"));
     ASSERT_EQ(1, lines->size());
     EXPECT_EQ("out1", lines->at(0).str1);
-    *(drv.GetVarFromName("in2")) = 1.0f;
     EXPECT_FLOAT_EQ(1.33, lines->at(0).expr1.Compute());
 }
 
@@ -482,14 +506,14 @@ TEST(ParserTest, ErrorTest)
   err = drv.errors[0];
   EXPECT_EQ(3, err.line);
   EXPECT_EQ(6, err.column);
-  EXPECT_EQ("syntax error, unexpected end of file, expecting = or [", err.message);
+  EXPECT_EQ("syntax error, unexpected end of file, expecting = or [ or $", err.message);
 
   EXPECT_EQ(1, drv.parse("out1 = 5 ' comment\nidjfi"));
   ASSERT_EQ(1, drv.errors.size());
   err = drv.errors[0];
   EXPECT_EQ(2, err.line);
   EXPECT_EQ(6, err.column);
-  EXPECT_EQ("syntax error, unexpected end of file, expecting = or [", err.message);
+  EXPECT_EQ("syntax error, unexpected end of file, expecting = or [ or $", err.message);
 }
 
 TEST(ParserTest, NoteTest)
@@ -641,6 +665,80 @@ TEST(RunTest, RunsClear) {
   EXPECT_EQ(true, test_env.clear_called);
 }
 
+TEST(RunTest, StringAssignment) {
+  Driver drv;
+  PCodeTranslator translator;
+  TestEnvironment test_env;
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse("foo$ = 3.14159"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ("3.141590", *(drv.GetStringVarFromName("foo")));
+
+  EXPECT_EQ(0, drv.parse("bar$ = 1 + 2"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ("3", *(drv.GetStringVarFromName("bar")));
+
+  EXPECT_EQ(0, drv.parse("bloont $ = \"hello, string\""));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ("hello, string", *(drv.GetStringVarFromName("bloont")));
+
+  // String and float vars of the same name can co-exist.
+  EXPECT_EQ(0, drv.parse("a = 5   a$ = 6"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(5, *(drv.GetVarFromName("a")));
+  EXPECT_EQ("6", *(drv.GetStringVarFromName("a")));
+
+  EXPECT_EQ(0, drv.parse("b = 22   b$ = debug(b)"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(22, *(drv.GetVarFromName("b")));
+  EXPECT_EQ("b = 22", *(drv.GetStringVarFromName("b")));
+
+  EXPECT_EQ(0, drv.parse("c$ = \"apple\"   d$ = c$"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ("apple", *(drv.GetStringVarFromName("c")));
+  EXPECT_EQ("apple", *(drv.GetStringVarFromName("d")));
+
+  EXPECT_EQ(0, drv.parse("e$ = \"banana\"   f$ = debug(e$)"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ("banana", *(drv.GetStringVarFromName("e")));
+  EXPECT_EQ("e$ = \"banana\"", *(drv.GetStringVarFromName("f")));
+
+  // String arrays.
+  EXPECT_EQ(0, drv.parse(
+    "foo$[4] = \"bar\"\n"
+    "ploop$ = foo$[4]"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ("bar", *(drv.GetStringVarFromName("ploop")));
+
+  EXPECT_EQ(0, drv.parse(
+    "g$ = \"boo!\"\n"
+    "a$[2] = {1, \"---\", debug(bb), g$}\n"
+    "a$[2] = 3\n"
+    "result$ = debug(a$[], 0, 6)"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ("a$[0] = {\"\", \"\", \"3\", \"---\", \"bb = 0\", \"boo!\", \"\"}",
+    *(drv.GetStringVarFromName("result")));
+}
+
 TEST(RunTest, RunsPrint) {
   Driver drv;
   PCodeTranslator translator;
@@ -649,6 +747,25 @@ TEST(RunTest, RunsPrint) {
   CodeBlock block(&test_env);
 
   EXPECT_EQ(0, drv.parse("print(out1, 7, \" \", sin(6), \" hello, world \")"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  ASSERT_EQ(0, test_env.text_sent.size());
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  ASSERT_EQ(1, test_env.text_sent.size());
+  EXPECT_EQ("7 -0.279415 hello, world ", test_env.text_sent[0]);
+}
+
+TEST(RunTest, RunsPrintWithStringVar) {
+  Driver drv;
+  PCodeTranslator translator;
+  TestEnvironment test_env;
+  drv.SetEnvironment(&test_env);
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse(
+    "space$ = \" \"\n"
+    "msg$ = \"hello, world\"\n"
+    "print(out1, 7, space$, sin(6), space$, msg$, space$)"));
   ASSERT_EQ(1, drv.blocks.size());
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
   ASSERT_EQ(0, test_env.text_sent.size());
@@ -712,7 +829,10 @@ TEST(RunTest, RunsStringFunctions2) {
   drv.SetEnvironment(&test_env);
   CodeBlock block(&test_env);
 
-  EXPECT_EQ(0, drv.parse("a[0] = { 5, 4, 3, 2, 1}\n a[2] = 8.8\n print(out1, debug(a[], 0, 5))"));
+  EXPECT_EQ(0, drv.parse(
+    "a[0] = { 5, 4, 3, 2, 1}\n"
+    "a[2] = 8.8\n"
+    "print(out1, debug(a[], 0, 5))"));
   ASSERT_EQ(1, drv.blocks.size());
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
   ASSERT_EQ(0, test_env.text_sent.size());
@@ -746,7 +866,10 @@ TEST(RunTest, RunsStringFunctions4) {
   CodeBlock block(&test_env);
 
   // Make sure works even when debug() is first mention of the variable.
-  EXPECT_EQ(0, drv.parse("print(OUT3, debug(foo))\nfoo = 4\nprint(OUT3, debug(foo))"));
+  EXPECT_EQ(0, drv.parse(
+    "print(OUT3, debug(foo))\n"
+    "foo = 4\n"
+    "print(OUT3, debug(foo))"));
   ASSERT_EQ(1, drv.blocks.size());
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
   ASSERT_EQ(0, test_env.text_sent.size());

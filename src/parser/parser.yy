@@ -90,6 +90,7 @@
   LBRACKET "["
   RBRACKET "]"
   COMMA   ","
+  DOLLAR  "$"
 ;
 
 %token <std::string> IDENTIFIER "identifier"
@@ -168,11 +169,16 @@ statement:
 array_assignment:
   "identifier" "[" exp "]" "=" exp  { $$ = Line::ArrayAssignment($1, $3, $6, &drv); }
 | "identifier" "[" exp "]" "=" "{" expression_list "}"  { $$ = Line::ArrayAssignment($1, $3, $7, &drv); }
+| "identifier" "$" "[" exp "]" "=" exp  { $$ = Line::StringArrayAssignment($1, $4, $7, &drv); }
+| "identifier" "$" "[" exp "]" "=" string_exp  { $$ = Line::StringArrayAssignment($1, $4, $7, &drv); }
+| "identifier" "$" "[" exp "]" "=" "{" string_list "}"  { $$ = Line::StringArrayAssignment($1, $4, $8, &drv); }
 
 assignment:
   "identifier" "=" exp  { $$ = Line::Assignment($1, $3, &drv); }
 | "in_port" "=" exp     { $$ = Line::Assignment($1, $3, &drv); }
 | "out_port" "=" exp    { $$ = Line::Assignment($1, $3, &drv); }
+| "identifier" "$" "=" exp  { $$ = Line::StringAssignment($1, $4, &drv); }
+| "identifier" "$" "=" string_exp  { $$ = Line::StringAssignment($1, $4, &drv); }
 
 clear_statement:
   "clear" "all"         { $$ = Line::ClearAll(); }
@@ -254,9 +260,13 @@ string_list:
 | string_list "," exp        { $$ = $1.add($3); }
 
 string_exp:
-  "quoted_string"              { $$ = drv.factory.Quoted($1); }
-| "debug" "(" "identifier" ")" { $$ = drv.factory.DebugId($3, &drv); }
+  "quoted_string"                  { $$ = drv.factory.Quoted($1); }
+| "identifier" "$"                 { $$ = drv.factory.StringVariable($1, &drv); }
+| "identifier" "$" "[" exp "]"     { $$ = drv.factory.StringArrayVariable($1, $4, &drv); }
+| "debug" "(" "identifier" ")"     { $$ = drv.factory.DebugId($3, &drv); }
+| "debug" "(" "identifier" "$" ")" { $$ = drv.factory.DebugIdString($3, &drv); }
 | "debug" "(" "identifier" "[" "]" "," exp "," exp ")" { $$ = drv.factory.DebugId($3, $7, $9, &drv); }
+| "debug" "(" "identifier" "$" "[" "]" "," exp "," exp ")" { $$ = drv.factory.DebugIdString($3, $8, $10, &drv); }
 
 %%
 

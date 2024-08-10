@@ -4,8 +4,8 @@ struct Fuse : Module {
   enum ParamId {
     COUNT_PARAM,
     STYLE_PARAM,
-		RESET_PARAM,
-		TRIGGER_PARAM,
+    RESET_PARAM,
+    TRIGGER_PARAM,
     SLEW_PARAM,
     UNTRIGGER_PARAM,
     PARAMS_LEN
@@ -198,7 +198,7 @@ struct Fuse : Module {
     // blown the fuse.
     // TODO: make this possible to allow in the menu?
     if (!blown && (untrigger_from_input || untrigger_from_button)) {
-	    count = std::max(0, count - 1);
+      count = std::max(0, count - 1);
       // Flash the UNTRIGGER light for a tenth of second.
       // Compute how many samples to show the light.
       // Note that, in contrast to RESET, we do set a timer on the UNTRIGGER
@@ -208,16 +208,16 @@ struct Fuse : Module {
     }
     // Now process an incoming trigger.
     if (!blown && (trigger_from_input || trigger_from_button)) {
-	    count += 1;
+      count += 1;
       // Flash the TRIGGER light for a tenth of second.
       // Compute how many samples to show the light.
       // Note that, in contrast to RESET, we do set a timer on the TRIGGER
       // light; because we want to convey that TRIGGER does ONE TRIGGER per
       // press, but RESET is just as reset no matter how long you hold it.
       trigger_light_countdown = std::floor(args.sampleRate / 10.0f);
-	    if (count >= limit) {
-	      blown = true;
-	    }
+      if (count >= limit) {
+        blown = true;
+      }
     }
     if (!was_blown && blown) {
       blown_generator.trigger(1e-3f);
@@ -477,12 +477,12 @@ struct FuseWidget : ModuleWidget {
 
     addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
     addChild(createWidget<ThemedScrew>(
-	      Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
+        Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
     addChild(createWidget<ThemedScrew>(
-	      Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+        Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     addChild(createWidget<ThemedScrew>(
-	      Vec(box.size.x - 2 * RACK_GRID_WIDTH,
-	          RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+        Vec(box.size.x - 2 * RACK_GRID_WIDTH,
+            RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
     // Screen at the top.
     FuseDisplay* display = createWidget<FuseDisplay>(
@@ -504,7 +504,7 @@ struct FuseWidget : ModuleWidget {
 
     // Trigger
     addInput(createInputCentered<ThemedPJ301MPort>(
-	      mm2px(Vec(8.024, 48.0)), module, Fuse::TRIGGER_INPUT));
+        mm2px(Vec(8.024, 48.0)), module, Fuse::TRIGGER_INPUT));
     // Making this a Button and not a Latch means that it pops back up
     // when you let go.
     addParam(createLightParamCentered<VCVLightButton<
@@ -514,7 +514,7 @@ struct FuseWidget : ModuleWidget {
 
     // Untrigger
     addInput(createInputCentered<ThemedPJ301MPort>(
-	      mm2px(Vec(8.024, 64.0)), module, Fuse::UNTRIGGER_INPUT));
+        mm2px(Vec(8.024, 64.0)), module, Fuse::UNTRIGGER_INPUT));
     // Making this a Button and not a Latch means that it pops back up
     // when you let go.
     addParam(createLightParamCentered<VCVLightButton<
@@ -524,7 +524,7 @@ struct FuseWidget : ModuleWidget {
 
     // Reset
     addInput(createInputCentered<ThemedPJ301MPort>(
-	      mm2px(Vec(8.024, 80.0)), module, Fuse::RESET_INPUT));
+        mm2px(Vec(8.024, 80.0)), module, Fuse::RESET_INPUT));
     // Making this a Button and not a Latch means that it pops back up
     // when you let go.
     addParam(createLightParamCentered<VCVLightButton<
@@ -537,13 +537,13 @@ struct FuseWidget : ModuleWidget {
         mm2px(Vec(8.024, 96.0)), module, Fuse::SLEW_PARAM));
 
     addOutput(createOutputCentered<ThemedPJ301MPort>(
-	      mm2px(Vec(20.971, 96.0)), module, Fuse::BLOWN_OUTPUT));
+        mm2px(Vec(20.971, 96.0)), module, Fuse::BLOWN_OUTPUT));
 
     addInput(createInputCentered<ThemedPJ301MPort>(
-	      mm2px(Vec(8.024, 112.0)), module, Fuse::MAIN_INPUT));
+        mm2px(Vec(8.024, 112.0)), module, Fuse::MAIN_INPUT));
 
     addOutput(createOutputCentered<ThemedPJ301MPort>(
-	      mm2px(Vec(20.971, 112.0)), module, Fuse::MAIN_OUTPUT));
+        mm2px(Vec(20.971, 112.0)), module, Fuse::MAIN_OUTPUT));
   }
 
   void appendContextMenu(Menu* menu) override {
