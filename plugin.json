@@ -123,6 +123,12 @@
         "Expander",
         "Visual"
       ]
+    },
+    {
+      "slug": "Venn",
+      "name": "Venn",
+      "description": "Graphical approach to control signal generation.",
+      "tags": []
     }
   ]
 }

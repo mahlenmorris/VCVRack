@@ -17,3 +17,4 @@ extern Model* modelFuse;
 extern Model* modelMemory;
 extern Model* modelRuminate;
 extern Model* modelTTY;
+extern Model* modelVenn;
