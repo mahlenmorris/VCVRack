@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.16
-#### Date TBD
+#### August 10, 2024
 * Added **Fixation**, a new module for playing back audio from Memory. It specializes in rhythmic, small interval playing
 * * Videos featuring Fixation:
 * * * [Initial Techniques](https://www.youtube.com/watch?v=nDcjS6hz9qE)
