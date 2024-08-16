@@ -321,6 +321,9 @@ struct CircleDisplay : OpaqueWidget {
       std::shared_ptr<Font> font = APP->window->loadFont(
         asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
 
+      // Only indicate that a circle is selected if Venn module has focus. 
+      bool is_selected = (this == APP->event->selectedWidget);
+
       for (const Circle& circle : module->circles) {
         index++;
         if (circle.present) {
@@ -328,11 +331,11 @@ struct CircleDisplay : OpaqueWidget {
           nvgCircle(args.vg, nvg_x(circle.x_center, bounding_box.x), nvg_y(circle.y_center, bounding_box.x),
                   pixels_per_volt * circle.radius);
           nvgStrokeColor(args.vg, colors[index % COLOR_COUNT]);
-          nvgStrokeWidth(args.vg, index == module->current_circle ? 2.0 : 1.0);
+          nvgStrokeWidth(args.vg, index == module->current_circle && is_selected ? 2.0 : 1.0);
           nvgStroke(args.vg);
 
           nvgFillColor(args.vg, colors[index % COLOR_COUNT]);
-          nvgFontSize(args.vg, 13);
+          nvgFontSize(args.vg, index == module->current_circle && is_selected ? 15 : 13);
           nvgFontFaceId(args.vg, font->handle);
           //nvgTextLetterSpacing(args.vg, -2);
           // Place in the center.
