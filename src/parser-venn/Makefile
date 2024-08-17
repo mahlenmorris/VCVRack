@@ -1,7 +1,7 @@
 # This Makefile is designed to be simple and readable.  It does not
 # aim at portability.  It requires GNU Make.
 
-# This is for parsing BASICally programs.
+# This is for parsing Venn configurations.
 
 BISON = bison
 CXX = g++

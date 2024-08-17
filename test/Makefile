@@ -29,7 +29,7 @@ CXXFLAGS += -g -Wall -Wextra -pthread
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
-TESTS = test_libs text_field
+TESTS = test_libs text_field test_venn_parse
 
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
@@ -69,7 +69,7 @@ gtest_main.a : gtest-all.o gtest_main.o
 
 # Mahlen's additions.
 
-VPATH = .:../src/parser
+VPATH = .:../src/parser:../src/parser-venn
 CXXFLAGS += -I../../Rack-SDK/include
 
 # A test should link with either gtest.a or
@@ -91,6 +91,12 @@ test_libs.o : $(USER_DIR)/test_libs.cpp ../src/parser/parser.o ../src/parser/sca
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/test_libs.cpp
 
 test_libs : test_libs.o ../src/parser/driver.o ../src/parser/parser.o ../src/parser/scanner.o ../src/parser/tree.o ../src/code_block.o ../src/pcode.o gtest_main.a
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
+
+test_venn_parse.o : $(USER_DIR)/test_venn_parse.cpp ../src/parser-venn/parser.o ../src/parser-venn/scanner.o ../src/parser-venn/driver.o ../src/parser-venn/tree.o $(GTEST_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/test_venn_parse.cpp
+
+test_venn_parse : test_venn_parse.o ../src/parser-venn/driver.o ../src/parser-venn/parser.o ../src/parser-venn/scanner.o ../src/parser-venn/tree.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
 text_field.o : $(USER_DIR)/text_field.cpp ../src/extended_text.o $(GTEST_HEADERS)
