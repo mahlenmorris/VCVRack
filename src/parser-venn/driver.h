@@ -28,7 +28,7 @@
 // TODO: move this to scanner.ll
 typedef void* yyscan_t;
 # define YY_DECL \
-  yy::Parser::symbol_type yylex (yyscan_t yyscanner, yy::location& loc)
+  VENN::Parser::symbol_type yylex (yyscan_t yyscanner, VENN::location& loc)
 // ... and declare it for the parser's sake.
 YY_DECL;
 // From scanner.cc
@@ -49,7 +49,7 @@ struct Error {
 };
 
 // Conducting the whole scanning and parsing of Calc++.
-class Driver
+class VennDriver
 {
 public:
   // The Venn module Diagram being constructed.
@@ -63,10 +63,10 @@ public:
   // Whether to generate scanner debug traces.
   bool trace_scanning;
   // The token's location used by the scanner.
-  yy::location location;
+  VENN::location location;
 
-  Driver();
-  ~Driver();
+  VennDriver();
+  ~VennDriver();
 
   // Reset the state of all variables to zero/empty.
   void Clear() {

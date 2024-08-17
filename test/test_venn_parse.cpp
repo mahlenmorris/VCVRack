@@ -6,7 +6,7 @@
 
 TEST(ParserTest, ParsesAtAll)
 {
-    Driver drv;
+    VennDriver drv;
 
     EXPECT_EQ(0, drv.parse("[foo]\n x = 2\ny=-1 \n radius = 3.5"));
     EXPECT_EQ(0, drv.errors.size());
@@ -20,7 +20,7 @@ TEST(ParserTest, ParsesAtAll)
 
 TEST(ParserTest, BadVar)
 {
-    Driver drv;
+    VennDriver drv;
 
     EXPECT_EQ(1, drv.parse("[foo]\n x = 2\ny=-1 \n radius = 3.5\n bloont = 4.333"));
     EXPECT_EQ(1, drv.errors.size());
@@ -34,7 +34,7 @@ TEST(ParserTest, BadVar)
 
 TEST(ParserTest, ParsesMultipleCircles)
 {
-    Driver drv;
+    VennDriver drv;
     const char * text =
       "[foo]\n"
       " x = 2\n"

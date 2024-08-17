@@ -4,7 +4,7 @@
 #include <vector>
 #include "driver.h"
 
-Circle Circle::NewCircle(const std::string& name, const Assignments& fields, Driver* driver) {
+Circle Circle::NewCircle(const std::string& name, const Assignments& fields, VennDriver* driver) {
   Circle circle;
   circle.present = true;  // A new circle has never been deleted.
   circle.name.assign(name);

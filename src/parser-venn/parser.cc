@@ -35,6 +35,8 @@
 // private implementation details that can be changed or removed.
 
 
+// Take the name prefix into account.
+#define yylex   vvlex
 
 
 
@@ -42,11 +44,11 @@
 
 
 // Unqualified %code blocks.
-#line 36 "parser.yy"
+#line 37 "parser.yy"
 
 #include "driver.h"
 
-#line 50 "parser.cc"
+#line 52 "parser.cc"
 
 
 #ifndef YY_
@@ -137,11 +139,12 @@
 #define YYERROR         goto yyerrorlab
 #define YYRECOVERING()  (!!yyerrstatus_)
 
-namespace yy {
-#line 142 "parser.cc"
+#line 11 "parser.yy"
+namespace VENN {
+#line 145 "parser.cc"
 
   /// Build a parser object.
-  Parser::Parser (Driver& drv_yyarg, void* yyscanner_yyarg, yy::location& loc_yyarg)
+  Parser::Parser (VennDriver& drv_yyarg, void* yyscanner_yyarg, VENN::location& loc_yyarg)
 #if YYDEBUG
     : yydebug_ (false),
       yycdebug_ (&std::cerr),
@@ -422,75 +425,75 @@ namespace yy {
         switch (yykind)
     {
       case symbol_kind::S_ASSIGN: // "="
-#line 57 "parser.yy"
+#line 58 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 428 "parser.cc"
+#line 431 "parser.cc"
         break;
 
       case symbol_kind::S_MINUS: // "-"
-#line 57 "parser.yy"
+#line 58 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 434 "parser.cc"
+#line 437 "parser.cc"
         break;
 
       case symbol_kind::S_LBRACKET: // "["
-#line 57 "parser.yy"
+#line 58 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 440 "parser.cc"
+#line 443 "parser.cc"
         break;
 
       case symbol_kind::S_RBRACKET: // "]"
-#line 57 "parser.yy"
+#line 58 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 446 "parser.cc"
+#line 449 "parser.cc"
         break;
 
       case symbol_kind::S_IDENTIFIER: // "identifier"
-#line 57 "parser.yy"
+#line 58 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 452 "parser.cc"
+#line 455 "parser.cc"
         break;
 
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
-#line 57 "parser.yy"
+#line 58 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 458 "parser.cc"
+#line 461 "parser.cc"
         break;
 
       case symbol_kind::S_NUMBER: // "number"
-#line 57 "parser.yy"
+#line 58 "parser.yy"
                  { yyo << yysym.value.template as < float > (); }
-#line 464 "parser.cc"
+#line 467 "parser.cc"
         break;
 
       case symbol_kind::S_diagram: // diagram
-#line 57 "parser.yy"
+#line 58 "parser.yy"
                  { yyo << yysym.value.template as < Diagram > (); }
-#line 470 "parser.cc"
+#line 473 "parser.cc"
         break;
 
       case symbol_kind::S_circle_list: // circle_list
-#line 57 "parser.yy"
+#line 58 "parser.yy"
                  { yyo << yysym.value.template as < CircleList > (); }
-#line 476 "parser.cc"
+#line 479 "parser.cc"
         break;
 
       case symbol_kind::S_circle: // circle
-#line 57 "parser.yy"
+#line 58 "parser.yy"
                  { yyo << yysym.value.template as < Circle > (); }
-#line 482 "parser.cc"
+#line 485 "parser.cc"
         break;
 
       case symbol_kind::S_assignments: // assignments
-#line 57 "parser.yy"
+#line 58 "parser.yy"
                  { yyo << yysym.value.template as < Assignments > (); }
-#line 488 "parser.cc"
+#line 491 "parser.cc"
         break;
 
       case symbol_kind::S_numeric_assign: // numeric_assign
-#line 57 "parser.yy"
+#line 58 "parser.yy"
                  { yyo << yysym.value.template as < NumericAssignment > (); }
-#line 494 "parser.cc"
+#line 497 "parser.cc"
         break;
 
       default:
@@ -784,55 +787,55 @@ namespace yy {
           switch (yyn)
             {
   case 2: // diagram: circle_list $end
-#line 64 "parser.yy"
+#line 65 "parser.yy"
                                        { drv.diagram.circles = yystack_[1].value.as < CircleList > ().circles; }
-#line 790 "parser.cc"
+#line 793 "parser.cc"
     break;
 
   case 3: // circle_list: circle
-#line 67 "parser.yy"
+#line 68 "parser.yy"
                                        { yylhs.value.as < CircleList > () = CircleList::NewCircleList(yystack_[0].value.as < Circle > ()); }
-#line 796 "parser.cc"
+#line 799 "parser.cc"
     break;
 
   case 4: // circle_list: circle_list circle
-#line 68 "parser.yy"
+#line 69 "parser.yy"
                                        { yylhs.value.as < CircleList > () = yystack_[1].value.as < CircleList > ().Add(yystack_[0].value.as < Circle > ()); }
-#line 802 "parser.cc"
+#line 805 "parser.cc"
     break;
 
   case 5: // circle: "[" "identifier" "]" assignments
-#line 71 "parser.yy"
+#line 72 "parser.yy"
                                        { yylhs.value.as < Circle > () = Circle::NewCircle(yystack_[2].value.as < std::string > (), yystack_[0].value.as < Assignments > (), &drv); }
-#line 808 "parser.cc"
+#line 811 "parser.cc"
     break;
 
   case 6: // assignments: numeric_assign
-#line 74 "parser.yy"
+#line 75 "parser.yy"
                                        { yylhs.value.as < Assignments > () = Assignments::NewAssignments(yystack_[0].value.as < NumericAssignment > ()); }
-#line 814 "parser.cc"
+#line 817 "parser.cc"
     break;
 
   case 7: // assignments: assignments numeric_assign
-#line 75 "parser.yy"
+#line 76 "parser.yy"
                                        { yylhs.value.as < Assignments > () = yystack_[1].value.as < Assignments > ().Add(yystack_[0].value.as < NumericAssignment > ()); }
-#line 820 "parser.cc"
+#line 823 "parser.cc"
     break;
 
   case 8: // numeric_assign: "identifier" "=" "number"
-#line 78 "parser.yy"
+#line 79 "parser.yy"
                                        { yylhs.value.as < NumericAssignment > () = NumericAssignment::NewAssignment(yystack_[2].value.as < std::string > (), (float) yystack_[0].value.as < float > ()); }
-#line 826 "parser.cc"
+#line 829 "parser.cc"
     break;
 
   case 9: // numeric_assign: "identifier" "=" "-" "number"
-#line 79 "parser.yy"
+#line 80 "parser.yy"
                                        { yylhs.value.as < NumericAssignment > () = NumericAssignment::NewAssignment(yystack_[3].value.as < std::string > (), -1 * (float) yystack_[0].value.as < float > ()); }
-#line 832 "parser.cc"
+#line 835 "parser.cc"
     break;
 
 
-#line 836 "parser.cc"
+#line 839 "parser.cc"
 
             default:
               break;
@@ -1357,7 +1360,7 @@ namespace yy {
   const signed char
   Parser::yyrline_[] =
   {
-       0,    64,    64,    67,    68,    71,    74,    75,    78,    79
+       0,    65,    65,    68,    69,    72,    75,    76,    79,    80
   };
 
   void
@@ -1388,14 +1391,15 @@ namespace yy {
 #endif // YYDEBUG
 
 
-} // yy
-#line 1393 "parser.cc"
+#line 11 "parser.yy"
+} // VENN
+#line 1397 "parser.cc"
 
-#line 81 "parser.yy"
+#line 82 "parser.yy"
 
 
 void
-yy::Parser::error (const location_type& l, const std::string& m)
+VENN::Parser::error (const location_type& l, const std::string& m)
 {
   drv.errors.push_back(Error(l.begin.line, l.begin.column, m));
 }

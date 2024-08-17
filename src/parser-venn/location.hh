@@ -32,11 +32,11 @@
 
 /**
  ** \file location.hh
- ** Define the yy::location class.
+ ** Define the VENN::location class.
  */
 
-#ifndef YY_YY_LOCATION_HH_INCLUDED
-# define YY_YY_LOCATION_HH_INCLUDED
+#ifndef YY_VV_LOCATION_HH_INCLUDED
+# define YY_VV_LOCATION_HH_INCLUDED
 
 # include <iostream>
 # include <string>
@@ -53,8 +53,9 @@
 #  endif
 # endif
 
-namespace yy {
-#line 58 "location.hh"
+#line 11 "parser.yy"
+namespace VENN {
+#line 59 "location.hh"
 
   /// A point in a source file.
   class position
@@ -298,7 +299,8 @@ namespace yy {
     return ostr;
   }
 
-} // yy
-#line 303 "location.hh"
+#line 11 "parser.yy"
+} // VENN
+#line 305 "location.hh"
 
-#endif // !YY_YY_LOCATION_HH_INCLUDED
+#endif // !YY_VV_LOCATION_HH_INCLUDED

@@ -7,16 +7,16 @@ Derived from the Driver for calc++, a Bison example program.
 #include "driver.h"
 #include "parser.hh"
 
-Driver::Driver()
+VennDriver::VennDriver()
   : trace_parsing (false), trace_scanning (false)
 {
 }
 
-Driver::~Driver() {
+VennDriver::~VennDriver() {
 }
 
 // Returns zero on success.
-int Driver::parse(const std::string &text)
+int VennDriver::parse(const std::string &text)
 {
   location.initialize();
   // Remove any errors from previous parse attempt.

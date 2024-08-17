@@ -25,8 +25,217 @@
 /* %endif */
 
 /* %if-c-only */
+#ifdef yy_create_buffer
+#define vv_create_buffer_ALREADY_DEFINED
+#else
+#define yy_create_buffer vv_create_buffer
+#endif
+
+#ifdef yy_delete_buffer
+#define vv_delete_buffer_ALREADY_DEFINED
+#else
+#define yy_delete_buffer vv_delete_buffer
+#endif
+
+#ifdef yy_scan_buffer
+#define vv_scan_buffer_ALREADY_DEFINED
+#else
+#define yy_scan_buffer vv_scan_buffer
+#endif
+
+#ifdef yy_scan_string
+#define vv_scan_string_ALREADY_DEFINED
+#else
+#define yy_scan_string vv_scan_string
+#endif
+
+#ifdef yy_scan_bytes
+#define vv_scan_bytes_ALREADY_DEFINED
+#else
+#define yy_scan_bytes vv_scan_bytes
+#endif
+
+#ifdef yy_init_buffer
+#define vv_init_buffer_ALREADY_DEFINED
+#else
+#define yy_init_buffer vv_init_buffer
+#endif
+
+#ifdef yy_flush_buffer
+#define vv_flush_buffer_ALREADY_DEFINED
+#else
+#define yy_flush_buffer vv_flush_buffer
+#endif
+
+#ifdef yy_load_buffer_state
+#define vv_load_buffer_state_ALREADY_DEFINED
+#else
+#define yy_load_buffer_state vv_load_buffer_state
+#endif
+
+#ifdef yy_switch_to_buffer
+#define vv_switch_to_buffer_ALREADY_DEFINED
+#else
+#define yy_switch_to_buffer vv_switch_to_buffer
+#endif
+
+#ifdef yypush_buffer_state
+#define vvpush_buffer_state_ALREADY_DEFINED
+#else
+#define yypush_buffer_state vvpush_buffer_state
+#endif
+
+#ifdef yypop_buffer_state
+#define vvpop_buffer_state_ALREADY_DEFINED
+#else
+#define yypop_buffer_state vvpop_buffer_state
+#endif
+
+#ifdef yyensure_buffer_stack
+#define vvensure_buffer_stack_ALREADY_DEFINED
+#else
+#define yyensure_buffer_stack vvensure_buffer_stack
+#endif
+
+#ifdef yylex
+#define vvlex_ALREADY_DEFINED
+#else
+#define yylex vvlex
+#endif
+
+#ifdef yyrestart
+#define vvrestart_ALREADY_DEFINED
+#else
+#define yyrestart vvrestart
+#endif
+
+#ifdef yylex_init
+#define vvlex_init_ALREADY_DEFINED
+#else
+#define yylex_init vvlex_init
+#endif
+
+#ifdef yylex_init_extra
+#define vvlex_init_extra_ALREADY_DEFINED
+#else
+#define yylex_init_extra vvlex_init_extra
+#endif
+
+#ifdef yylex_destroy
+#define vvlex_destroy_ALREADY_DEFINED
+#else
+#define yylex_destroy vvlex_destroy
+#endif
+
+#ifdef yyget_debug
+#define vvget_debug_ALREADY_DEFINED
+#else
+#define yyget_debug vvget_debug
+#endif
+
+#ifdef yyset_debug
+#define vvset_debug_ALREADY_DEFINED
+#else
+#define yyset_debug vvset_debug
+#endif
+
+#ifdef yyget_extra
+#define vvget_extra_ALREADY_DEFINED
+#else
+#define yyget_extra vvget_extra
+#endif
+
+#ifdef yyset_extra
+#define vvset_extra_ALREADY_DEFINED
+#else
+#define yyset_extra vvset_extra
+#endif
+
+#ifdef yyget_in
+#define vvget_in_ALREADY_DEFINED
+#else
+#define yyget_in vvget_in
+#endif
+
+#ifdef yyset_in
+#define vvset_in_ALREADY_DEFINED
+#else
+#define yyset_in vvset_in
+#endif
+
+#ifdef yyget_out
+#define vvget_out_ALREADY_DEFINED
+#else
+#define yyget_out vvget_out
+#endif
+
+#ifdef yyset_out
+#define vvset_out_ALREADY_DEFINED
+#else
+#define yyset_out vvset_out
+#endif
+
+#ifdef yyget_leng
+#define vvget_leng_ALREADY_DEFINED
+#else
+#define yyget_leng vvget_leng
+#endif
+
+#ifdef yyget_text
+#define vvget_text_ALREADY_DEFINED
+#else
+#define yyget_text vvget_text
+#endif
+
+#ifdef yyget_lineno
+#define vvget_lineno_ALREADY_DEFINED
+#else
+#define yyget_lineno vvget_lineno
+#endif
+
+#ifdef yyset_lineno
+#define vvset_lineno_ALREADY_DEFINED
+#else
+#define yyset_lineno vvset_lineno
+#endif
+
+#ifdef yyget_column
+#define vvget_column_ALREADY_DEFINED
+#else
+#define yyget_column vvget_column
+#endif
+
+#ifdef yyset_column
+#define vvset_column_ALREADY_DEFINED
+#else
+#define yyset_column vvset_column
+#endif
+
+#ifdef yywrap
+#define vvwrap_ALREADY_DEFINED
+#else
+#define yywrap vvwrap
+#endif
 
 /* %endif */
+
+#ifdef yyalloc
+#define vvalloc_ALREADY_DEFINED
+#else
+#define yyalloc vvalloc
+#endif
+
+#ifdef yyrealloc
+#define vvrealloc_ALREADY_DEFINED
+#else
+#define yyrealloc vvrealloc
+#endif
+
+#ifdef yyfree
+#define vvfree_ALREADY_DEFINED
+#else
+#define yyfree vvfree
+#endif
 
 /* %if-c-only */
 
@@ -387,7 +596,7 @@ void yyfree ( void * , yyscan_t yyscanner );
 /* %% [1.0] yytext/yyin/yyout/yy_state_type/yylineno etc. def's & init go here */
 /* Begin user sect3 */
 
-#define yywrap(yyscanner) (/*CONSTCOND*/1)
+#define vvwrap(yyscanner) (/*CONSTCOND*/1)
 #define YY_SKIP_YYWRAP
 
 #define FLEX_DEBUG
@@ -534,10 +743,10 @@ static const flex_int16_t yy_rule_linenum[12] =
 #include "driver.h"
 #include "parser.hh"
 
-#line 537 "scanner.cc"
+#line 746 "scanner.cc"
 /*
-  #define YY_DECL yy::Parser::symbol_type yylex(yyscan_t yyscanner, yy::location& loc)
-  #define yyterminate() return yy::Parser::make_END(loc)
+  #define YY_DECL VENN::Parser::symbol_type venn_yylex(yyscan_t yyscanner, VENN::location& loc)
+  #define yyterminate() return VENN::Parser::make_END(loc)
 */
 #line 21 "scanner.ll"
 #if defined __clang__
@@ -608,18 +817,18 @@ static const flex_int16_t yy_rule_linenum[12] =
 #if defined GCC_VERSION && 900 <= GCC_VERSION
 # pragma GCC diagnostic ignored "-Wuseless-cast"
 #endif
-#line 611 "scanner.cc"
+#line 820 "scanner.cc"
 #define YY_NO_INPUT 1
 #line 94 "scanner.ll"
   // A number symbol corresponding to the value in S.
-  yy::Parser::symbol_type
-  make_NUMBER (const std::string &s, const yy::Parser::location_type& loc);
-#line 617 "scanner.cc"
+  VENN::Parser::symbol_type
+  make_NUMBER (const std::string &s, const VENN::Parser::location_type& loc);
+#line 826 "scanner.cc"
 #line 105 "scanner.ll"
   // Code run each time a pattern is matched.
   #define YY_USER_ACTION  loc.columns (yyleng);
-#line 621 "scanner.cc"
-#line 622 "scanner.cc"
+#line 830 "scanner.cc"
+#line 831 "scanner.cc"
 
 #define INITIAL 0
 
@@ -949,11 +1158,11 @@ YY_DECL
 
 #line 111 "scanner.ll"
   // A handy shortcut to the location held by the driver.
-  //yy::location& loc = drv.location;
-  // Code run each time yylex is called.
+  //VENN::location& loc = drv.location;
+  // Code run each time venn_yylex is called.
   loc.step ();
 
-#line 956 "scanner.cc"
+#line 1165 "scanner.cc"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -1049,27 +1258,27 @@ case 4:
 /* rule 4 can match eol */
 YY_RULE_SETUP
 #line 119 "scanner.ll"
-return yy::Parser::make_QUOTED_STRING  (yytext, loc);  // Will this grab newlines?
+return VENN::Parser::make_QUOTED_STRING  (yytext, loc);  // Will this grab newlines?
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
 #line 120 "scanner.ll"
-return yy::Parser::make_MINUS  (yytext, loc);
+return VENN::Parser::make_MINUS  (yytext, loc);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
 #line 121 "scanner.ll"
-return yy::Parser::make_ASSIGN (yytext, loc);
+return VENN::Parser::make_ASSIGN (yytext, loc);
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
 #line 122 "scanner.ll"
-return yy::Parser::make_LBRACKET (yytext, loc);
+return VENN::Parser::make_LBRACKET (yytext, loc);
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
 #line 123 "scanner.ll"
-return yy::Parser::make_RBRACKET (yytext, loc);
+return VENN::Parser::make_RBRACKET (yytext, loc);
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
@@ -1079,26 +1288,26 @@ return make_NUMBER (yytext, loc);
 case 10:
 YY_RULE_SETUP
 #line 125 "scanner.ll"
-return yy::Parser::make_IDENTIFIER (yytext, loc);
+return VENN::Parser::make_IDENTIFIER (yytext, loc);
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
 #line 126 "scanner.ll"
 {
-             throw yy::Parser::syntax_error
+             throw VENN::Parser::syntax_error
                (loc, "invalid character: " + std::string(yytext));
 }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 #line 130 "scanner.ll"
-return yy::Parser::make_YYEOF (loc);
+return VENN::Parser::make_YYEOF (loc);
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
 #line 131 "scanner.ll"
 ECHO;
 	YY_BREAK
-#line 1101 "scanner.cc"
+#line 1310 "scanner.cc"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2372,26 +2581,26 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 #line 131 "scanner.ll"
 
 
-yy::Parser::symbol_type
-make_NUMBER (const std::string &s, const yy::Parser::location_type& loc) {
+VENN::Parser::symbol_type
+make_NUMBER (const std::string &s, const VENN::Parser::location_type& loc) {
   errno = 0;
   float n = strtof(s.c_str(), NULL);
-  return yy::Parser::make_NUMBER (n, loc);
+  return VENN::Parser::make_NUMBER (n, loc);
 }
 
 int
-Driver::set_text(const std::string &text) {
+VennDriver::set_text(const std::string &text) {
   yyscan_t scanner;
 
   yylex_init(&scanner);
-  yy::location* loc = new yy::location();
+  VENN::location* loc = new VENN::location();
   // yy_flex_debug = trace_scanning;
   // Creates a buffer from the string.
   YY_BUFFER_STATE input_buffer = yy_scan_string(text.c_str(), scanner);
   // Tell Flex to use this buffer.
   yy_switch_to_buffer(input_buffer, scanner);
 
-  yy::Parser the_parser(*this, scanner, *loc);
+  VENN::Parser the_parser(*this, scanner, *loc);
   the_parser.set_debug_level(trace_parsing);
   int res = the_parser.parse();
   yy_delete_buffer(input_buffer, scanner);  // Free the buffer

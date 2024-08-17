@@ -33,7 +33,7 @@
 
 /**
  ** \file parser.hh
- ** Define the yy::parser class.
+ ** Define the VENN::parser class.
  */
 
 // C++ LALR(1) parser skeleton written by Akim Demaille.
@@ -42,14 +42,14 @@
 // especially those whose name start with YY_ or yy_.  They are
 // private implementation details that can be changed or removed.
 
-#ifndef YY_YY_PARSER_HH_INCLUDED
-# define YY_YY_PARSER_HH_INCLUDED
+#ifndef YY_VV_PARSER_HH_INCLUDED
+# define YY_VV_PARSER_HH_INCLUDED
 // "%code requires" blocks.
-#line 18 "parser.yy"
+#line 19 "parser.yy"
 
   #include <string>
   #include "tree.h"
-  class Driver;
+  class VennDriver;
   typedef void* yyscan_t;
 
 #line 56 "parser.hh"
@@ -191,8 +191,9 @@
 # define YYDEBUG 1
 #endif
 
-namespace yy {
-#line 196 "parser.hh"
+#line 11 "parser.yy"
+namespace VENN {
+#line 197 "parser.hh"
 
 
 
@@ -904,7 +905,7 @@ switch (yykind)
     };
 
     /// Build a parser object.
-    Parser (Driver& drv_yyarg, void* yyscanner_yyarg, yy::location& loc_yyarg);
+    Parser (VennDriver& drv_yyarg, void* yyscanner_yyarg, VENN::location& loc_yyarg);
     virtual ~Parser ();
 
 #if 201103L <= YY_CPLUSPLUS
@@ -1450,9 +1451,9 @@ switch (yykind)
 
 
     // User arguments.
-    Driver& drv;
+    VennDriver& drv;
     void* yyscanner;
-    yy::location& loc;
+    VENN::location& loc;
 
   };
 
@@ -1634,10 +1635,11 @@ switch (yykind)
   }
 
 
-} // yy
-#line 1639 "parser.hh"
+#line 11 "parser.yy"
+} // VENN
+#line 1641 "parser.hh"
 
 
 
 
-#endif // !YY_YY_PARSER_HH_INCLUDED
+#endif // !YY_VV_PARSER_HH_INCLUDED

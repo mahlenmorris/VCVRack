@@ -1,13 +1,14 @@
-/* Parser for BASICally.   -*- C++ -*-
-  TODO: Do I need to mark this as a %pure_parser? Saw something that says
-  this is needed to make the parser reentrant.
+/* Parser for Venn.   -*- C++ -*-
 
 */
 
 %skeleton "lalr1.cc" // -*- C++ -*-
 %require "3.8.2"
+%language "c++"
 %header
 
+// %define api.prefix {venn_yy}
+%define api.namespace {VENN}
 %define api.token.raw
 %define api.parser.class {Parser}
 
@@ -18,14 +19,14 @@
 %code requires {
   #include <string>
   #include "tree.h"
-  class Driver;
+  class VennDriver;
   typedef void* yyscan_t;
 }
 
 // The parsing context.
-// If we don't include this, parser cannot access Driver instance.
-%parse-param { Driver& drv } { void* yyscanner } {yy::location& loc}
-%lex-param { void* yyscanner } {yy::location& loc}
+// If we don't include this, parser cannot access VennDriver instance.
+%parse-param { VennDriver& drv } { void* yyscanner } {VENN::location& loc}
+%lex-param { void* yyscanner } {VENN::location& loc}
 
 %locations
 
@@ -81,7 +82,7 @@ numeric_assign:
 %%
 
 void
-yy::Parser::error (const location_type& l, const std::string& m)
+VENN::Parser::error (const location_type& l, const std::string& m)
 {
   drv.errors.push_back(Error(l.begin.line, l.begin.column, m));
 }

@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-class Driver;  // Circular includes if we try to include driver.h here.
+class VennDriver;  // Circular includes if we try to include driver.h here.
 
 // Intermediate structures made while compiling.
 struct NumericAssignment {
@@ -48,7 +48,7 @@ struct Circle {
   bool present;  // Not deleted.
 
   // Must be defined in tree.cc, because it actually uses Driver.
-  static Circle NewCircle(const std::string& name, const Assignments& fields, Driver* driver);
+  static Circle NewCircle(const std::string& name, const Assignments& fields, VennDriver* driver);
 
   // Bison seems to require this if I use const references; I don't use it.
   friend std::ostream& operator<<(std::ostream& os, const Circle &ex);

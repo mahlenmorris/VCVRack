@@ -13,8 +13,8 @@
 
 %}
 /*
-  #define YY_DECL yy::Parser::symbol_type yylex(yyscan_t yyscanner, yy::location& loc)
-  #define yyterminate() return yy::Parser::make_END(loc)
+  #define YY_DECL VENN::Parser::symbol_type venn_yylex(yyscan_t yyscanner, VENN::location& loc)
+  #define yyterminate() return VENN::Parser::make_END(loc)
 */
 
 %{
@@ -92,8 +92,8 @@
 
 %{
   // A number symbol corresponding to the value in S.
-  yy::Parser::symbol_type
-  make_NUMBER (const std::string &s, const yy::Parser::location_type& loc);
+  VENN::Parser::symbol_type
+  make_NUMBER (const std::string &s, const VENN::Parser::location_type& loc);
 %}
 
 id    [a-zA-Z][a-zA-Z_0-9]*
@@ -108,47 +108,47 @@ blank [ \t\r]
 %%
 %{
   // A handy shortcut to the location held by the driver.
-  //yy::location& loc = drv.location;
-  // Code run each time yylex is called.
+  //VENN::location& loc = drv.location;
+  // Code run each time venn_yylex is called.
   loc.step ();
 %}
 {blank}+   loc.step ();
 \n+        loc.lines (yyleng); loc.step ();
 "' ".*     // Comments, skip over. Hint: '.' will not match \n. But location might need fixing.
-\"[^"]*\"  return yy::Parser::make_QUOTED_STRING  (yytext, loc);  // Will this grab newlines?
-"-"        return yy::Parser::make_MINUS  (yytext, loc);
-"="        return yy::Parser::make_ASSIGN (yytext, loc);
-"["        return yy::Parser::make_LBRACKET (yytext, loc);
-"]"        return yy::Parser::make_RBRACKET (yytext, loc);
+\"[^"]*\"  return VENN::Parser::make_QUOTED_STRING  (yytext, loc);  // Will this grab newlines?
+"-"        return VENN::Parser::make_MINUS  (yytext, loc);
+"="        return VENN::Parser::make_ASSIGN (yytext, loc);
+"["        return VENN::Parser::make_LBRACKET (yytext, loc);
+"]"        return VENN::Parser::make_RBRACKET (yytext, loc);
 {float}    return make_NUMBER (yytext, loc);
-{id}       return yy::Parser::make_IDENTIFIER (yytext, loc);
+{id}       return VENN::Parser::make_IDENTIFIER (yytext, loc);
 .          {
-             throw yy::Parser::syntax_error
+             throw VENN::Parser::syntax_error
                (loc, "invalid character: " + std::string(yytext));
 }
-<<EOF>>    return yy::Parser::make_YYEOF (loc);
+<<EOF>>    return VENN::Parser::make_YYEOF (loc);
 %%
 
-yy::Parser::symbol_type
-make_NUMBER (const std::string &s, const yy::Parser::location_type& loc) {
+VENN::Parser::symbol_type
+make_NUMBER (const std::string &s, const VENN::Parser::location_type& loc) {
   errno = 0;
   float n = strtof(s.c_str(), NULL);
-  return yy::Parser::make_NUMBER (n, loc);
+  return VENN::Parser::make_NUMBER (n, loc);
 }
 
 int
-Driver::set_text(const std::string &text) {
+VennDriver::set_text(const std::string &text) {
   yyscan_t scanner;
 
   yylex_init(&scanner);
-  yy::location* loc = new yy::location();
+  VENN::location* loc = new VENN::location();
   // yy_flex_debug = trace_scanning;
   // Creates a buffer from the string.
   YY_BUFFER_STATE input_buffer = yy_scan_string(text.c_str(), scanner);
   // Tell Flex to use this buffer.
   yy_switch_to_buffer(input_buffer, scanner);
 
-  yy::Parser the_parser(*this, scanner, *loc);
+  VENN::Parser the_parser(*this, scanner, *loc);
   the_parser.set_debug_level(trace_parsing);
   int res = the_parser.parse();
   yy_delete_buffer(input_buffer, scanner);  // Free the buffer
