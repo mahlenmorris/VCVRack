@@ -1,19 +1,28 @@
 // Code for the Diagram data structure being built.
 #include "tree.h"
 
+#include <algorithm>
 #include <vector>
 #include "driver.h"
+
+void ToLower(const std::string &mixed, std::string *lower) {
+  lower->resize(mixed.size());
+  std::transform(mixed.begin(), mixed.end(),
+                 lower->begin(), ::tolower);
+}
 
 Circle Circle::NewCircle(const std::string& name, const Assignments& fields, VennDriver* driver) {
   Circle circle;
   circle.present = true;  // A new circle has never been deleted.
   circle.name.assign(name);
   for (NumericAssignment assign : fields.assignments) {
-    if (assign.field_name.compare("x") == 0) {
+    std::string lower_name;
+    ToLower(assign.field_name, &lower_name);
+    if (lower_name.compare("x") == 0) {
       circle.x_center = assign.value;
-    } else if (assign.field_name.compare("y") == 0) {
+    } else if (lower_name.compare("y") == 0) {
       circle.y_center = assign.value;
-    } else if (assign.field_name.compare("radius") == 0) {
+    } else if (lower_name.compare("radius") == 0) {
       circle.radius = assign.value;
     } else {
       driver->AddError("I don't know what a '" + assign.field_name + "' is.");

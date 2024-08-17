@@ -436,6 +436,7 @@ namespace VENN {
       // "]"
       // "identifier"
       // "quoted_string"
+      // name
       char dummy7[sizeof (std::string)];
     };
 
@@ -528,8 +529,9 @@ namespace VENN {
         S_diagram = 11,                          // diagram
         S_circle_list = 12,                      // circle_list
         S_circle = 13,                           // circle
-        S_assignments = 14,                      // assignments
-        S_numeric_assign = 15                    // numeric_assign
+        S_name = 14,                             // name
+        S_assignments = 15,                      // assignments
+        S_numeric_assign = 16                    // numeric_assign
       };
     };
 
@@ -596,6 +598,7 @@ namespace VENN {
       case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
+      case symbol_kind::S_name: // name
         value.move< std::string > (std::move (that.value));
         break;
 
@@ -774,6 +777,7 @@ switch (yykind)
       case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
+      case symbol_kind::S_name: // name
         value.template destroy< std::string > ();
         break;
 
@@ -1445,8 +1449,8 @@ switch (yykind)
     enum
     {
       yylast_ = 17,     ///< Last index in yytable_.
-      yynnts_ = 6,  ///< Number of nonterminal symbols.
-      yyfinal_ = 6 ///< Termination state number.
+      yynnts_ = 7,  ///< Number of nonterminal symbols.
+      yyfinal_ = 7 ///< Termination state number.
     };
 
 
@@ -1503,6 +1507,7 @@ switch (yykind)
       case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
+      case symbol_kind::S_name: // name
         value.copy< std::string > (YY_MOVE (that.value));
         break;
 
@@ -1567,6 +1572,7 @@ switch (yykind)
       case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
+      case symbol_kind::S_name: // name
         value.move< std::string > (YY_MOVE (s.value));
         break;
 
@@ -1637,7 +1643,7 @@ switch (yykind)
 
 #line 11 "parser.yy"
 } // VENN
-#line 1641 "parser.hh"
+#line 1647 "parser.hh"
 
 
 

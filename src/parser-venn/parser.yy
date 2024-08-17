@@ -54,6 +54,7 @@
 %nterm <Diagram> diagram
 %nterm <Circle> circle
 %nterm <CircleList> circle_list
+%nterm <std::string> name
 
 %printer { yyo << $$; } <*>;
 
@@ -69,7 +70,11 @@ circle_list:
 | circle_list circle                   { $$ = $1.Add($2); }
 
 circle:
-  "[" "identifier" "]" assignments     { $$ = Circle::NewCircle($2, $4, &drv); }
+  "[" name "]" assignments             { $$ = Circle::NewCircle($2, $4, &drv); }
+
+name:
+  "identifier"                         { $$ = $1; }
+| name "identifier"                    { $$ = $1 + " " + $2; }
 
 assignments:
   numeric_assign                       { $$ = Assignments::NewAssignments($1); }
