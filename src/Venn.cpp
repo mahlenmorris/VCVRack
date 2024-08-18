@@ -28,8 +28,8 @@ struct Venn : Module {
     configOutput(WITHIN_GATE_OUTPUT, "");
 
     current_circle = 0;
-    point.x = 5;
-    point.y = 5;
+    point.x = 0;
+    point.y = 0;
   }
 
   std::string to_string(std::vector<Circle>& the_circles) {
@@ -68,6 +68,17 @@ struct Venn : Module {
     }
   }
 
+  // Fit values to range between -5..5.
+  float WrapValue(float value) {
+    while (value > 5.0) {
+      value -= 10;
+    }
+    while (value < -5.0) {
+      value += 10;
+    }
+    return value;
+  }
+
   void process(const ProcessArgs& args) override {
     // Update X and Y inputs.
     if (inputs[X_POSITION_INPUT].isConnected()) {
@@ -76,6 +87,11 @@ struct Venn : Module {
     if (inputs[Y_POSITION_INPUT].isConnected()) {
       point.y = inputs[Y_POSITION_INPUT].getVoltage();
     }
+
+    // Wrap point values.
+    point.x = WrapValue(point.x);
+    point.y = WrapValue(point.y);
+
     // Determine what values to output.
     // TODO: many optimizations, including doing nothing when neither point nor circles has changed.
     // TODO: Can SIMD library help me?
@@ -136,8 +152,8 @@ struct CircleDisplay : OpaqueWidget {
       // Must change position in widget to voltage.
       Rect r = box.zeroPos();
       Vec bounding_box = r.getBottomRight();
-      module->point.x = e.pos.x / bounding_box.x * 10.0;
-      module->point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0;
+      module->point.x = e.pos.x / bounding_box.x * 10.0 - 5;
+      module->point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0 - 5;
       e.consume(this);
     }
 
@@ -158,8 +174,8 @@ struct CircleDisplay : OpaqueWidget {
         // Must change position in widget to voltage.
         Rect r = box.zeroPos();
         Vec bounding_box = r.getBottomRight();
-        module->point.x = e.pos.x / bounding_box.x * 10.0;
-        module->point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0;
+        module->point.x = e.pos.x / bounding_box.x * 10.0 - 5;
+        module->point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0 - 5;
         e.consume(this);
     }
   }
@@ -289,12 +305,12 @@ struct CircleDisplay : OpaqueWidget {
   }
 
   double nvg_x(float volt_x, double size) { 
-    return volt_x * size / 10.0;
+    return (volt_x + 5) * size / 10.0;
   }
 
   double nvg_y(float volt_y, double size) { 
-    // Need to invert Y, since I want to put y == 0 on the bottom.
-    return size - (volt_y * size / 10.0);
+    // Need to invert Y, since I want to put y == -5 on the bottom.
+    return size - ((volt_y + 5) * size / 10.0);
   }
   
   // By using drawLayer() instead of draw(), this becomes a glowing Depict
