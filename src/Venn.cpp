@@ -1,13 +1,6 @@
 #include "plugin.hpp"
 
-// The fundamental object being drawn and interacted with.
-struct Circle {
-  float x_center, y_center;  // Values from [0, 10).
-  // 0, 0 is lower left corner; 10, 10 is upper right.
-  float radius;
-  std::string name;
-  bool present;  // Not deleted.
-};
+#include "parser-venn/driver.h"
 
 struct Venn : Module {
   enum ParamId {
@@ -34,21 +27,23 @@ struct Venn : Module {
     configOutput(DISTANCE_OUTPUT, "");
     configOutput(WITHIN_GATE_OUTPUT, "");
 
-    // Just to have something to start with, here are two overlapping Circles.
-    Circle first;
-    first.x_center = 6.0;
-    first.y_center = 5.0;
-    first.radius = 3.5;
-    first.present = true;
-    circles.push_back(first);
-    Circle second;
-    second.x_center = 4.0;
-    second.y_center = 5.5;
-    second.radius = 3.0;
-    second.present = true;
-    circles.push_back(second);
+    const char * initial = 
+      "[Reverb] "
+      "x = 6.0 "
+      "y = 5.0 "
+      "radius = 3.5 "
+      "[Delay Time] "
+      "x = 4 "
+      "y = 5.5 "
+      "radius = 3 ";
+    
+    // Just to have something to start with during development, here are two overlapping Circles.
+    // TODO: put the compilation on a background thread, once the Tipsy port is live.
+    VennDriver driver;
+    driver.parse(initial);
+    circles = driver.diagram.circles;   
 
-    current_circle = 1;
+    current_circle = 0;
 
     point.x = 5;
     point.y = 5;
@@ -339,9 +334,15 @@ struct CircleDisplay : OpaqueWidget {
           nvgFontFaceId(args.vg, font->handle);
           //nvgTextLetterSpacing(args.vg, -2);
           // Place in the center.
+          // TODO: Precompute this string, so don't have to keep remaking it.
+          std::string center_text = std::to_string(index + 1);
+          if (!circle.name.empty()) {
+            center_text.append(" - ");
+            center_text.append(circle.name);
+          }
           nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
                           nvg_y(circle.y_center, bounding_box.x),
-                          std::to_string(index + 1).c_str(), NULL);
+                          center_text.c_str(), NULL);
         }
       }
 

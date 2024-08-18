@@ -5,7 +5,7 @@
 #include <vector>
 #include "driver.h"
 
-void ToLower(const std::string &mixed, std::string *lower) {
+void VennToLower(const std::string &mixed, std::string *lower) {
   lower->resize(mixed.size());
   std::transform(mixed.begin(), mixed.end(),
                  lower->begin(), ::tolower);
@@ -17,7 +17,7 @@ Circle Circle::NewCircle(const std::string& name, const Assignments& fields, Ven
   circle.name.assign(name);
   for (NumericAssignment assign : fields.assignments) {
     std::string lower_name;
-    ToLower(assign.field_name, &lower_name);
+    VennToLower(assign.field_name, &lower_name);
     if (lower_name.compare("x") == 0) {
       circle.x_center = assign.value;
     } else if (lower_name.compare("y") == 0) {
