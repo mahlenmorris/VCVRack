@@ -821,44 +821,50 @@ namespace VENN {
 #line 822 "parser.cc"
     break;
 
-  case 6: // name: "identifier"
-#line 76 "parser.yy"
-                                       { yylhs.value.as < std::string > () = yystack_[0].value.as < std::string > (); }
+  case 6: // circle: "[" "]" assignments
+#line 74 "parser.yy"
+                                       { yylhs.value.as < Circle > () = Circle::NewCircle("", yystack_[0].value.as < Assignments > (), &drv); }
 #line 828 "parser.cc"
     break;
 
-  case 7: // name: name "identifier"
+  case 7: // name: "identifier"
 #line 77 "parser.yy"
-                                       { yylhs.value.as < std::string > () = yystack_[1].value.as < std::string > () + " " + yystack_[0].value.as < std::string > (); }
+                                       { yylhs.value.as < std::string > () = yystack_[0].value.as < std::string > (); }
 #line 834 "parser.cc"
     break;
 
-  case 8: // assignments: numeric_assign
-#line 80 "parser.yy"
-                                       { yylhs.value.as < Assignments > () = Assignments::NewAssignments(yystack_[0].value.as < NumericAssignment > ()); }
+  case 8: // name: name "identifier"
+#line 78 "parser.yy"
+                                       { yylhs.value.as < std::string > () = yystack_[1].value.as < std::string > () + " " + yystack_[0].value.as < std::string > (); }
 #line 840 "parser.cc"
     break;
 
-  case 9: // assignments: assignments numeric_assign
+  case 9: // assignments: numeric_assign
 #line 81 "parser.yy"
-                                       { yylhs.value.as < Assignments > () = yystack_[1].value.as < Assignments > ().Add(yystack_[0].value.as < NumericAssignment > ()); }
+                                       { yylhs.value.as < Assignments > () = Assignments::NewAssignments(yystack_[0].value.as < NumericAssignment > ()); }
 #line 846 "parser.cc"
     break;
 
-  case 10: // numeric_assign: "identifier" "=" "number"
-#line 84 "parser.yy"
-                                       { yylhs.value.as < NumericAssignment > () = NumericAssignment::NewAssignment(yystack_[2].value.as < std::string > (), (float) yystack_[0].value.as < float > ()); }
+  case 10: // assignments: assignments numeric_assign
+#line 82 "parser.yy"
+                                       { yylhs.value.as < Assignments > () = yystack_[1].value.as < Assignments > ().Add(yystack_[0].value.as < NumericAssignment > ()); }
 #line 852 "parser.cc"
     break;
 
-  case 11: // numeric_assign: "identifier" "=" "-" "number"
+  case 11: // numeric_assign: "identifier" "=" "number"
 #line 85 "parser.yy"
-                                       { yylhs.value.as < NumericAssignment > () = NumericAssignment::NewAssignment(yystack_[3].value.as < std::string > (), -1 * (float) yystack_[0].value.as < float > ()); }
+                                       { yylhs.value.as < NumericAssignment > () = NumericAssignment::NewAssignment(yystack_[2].value.as < std::string > (), (float) yystack_[0].value.as < float > ()); }
 #line 858 "parser.cc"
     break;
 
+  case 12: // numeric_assign: "identifier" "=" "-" "number"
+#line 86 "parser.yy"
+                                       { yylhs.value.as < NumericAssignment > () = NumericAssignment::NewAssignment(yystack_[3].value.as < std::string > (), -1 * (float) yystack_[0].value.as < float > ()); }
+#line 864 "parser.cc"
+    break;
 
-#line 862 "parser.cc"
+
+#line 868 "parser.cc"
 
             default:
               break;
@@ -1313,69 +1319,72 @@ namespace VENN {
   }
 
 
-  const signed char Parser::yypact_ninf_ = -5;
+  const signed char Parser::yypact_ninf_ = -13;
 
   const signed char Parser::yytable_ninf_ = -1;
 
   const signed char
   Parser::yypact_[] =
   {
-      -1,     1,     7,     0,    -5,    -5,    -4,    -5,    -5,    -5,
-       2,    -5,     8,     2,    -5,    -3,    -5,     3,    -5,    -5
+      -4,    -2,    11,     2,   -13,     5,   -13,     3,   -13,   -13,
+     -13,    10,     5,   -13,     5,   -13,    -1,   -13,     5,     6,
+     -13,   -13
   };
 
   const signed char
   Parser::yydefact_[] =
   {
-       0,     0,     0,     0,     3,     6,     0,     1,     2,     4,
-       0,     7,     0,     5,     8,     0,     9,     0,    10,    11
+       0,     0,     0,     0,     3,     0,     7,     0,     1,     2,
+       4,     0,     6,     9,     0,     8,     0,    10,     5,     0,
+      11,    12
   };
 
   const signed char
   Parser::yypgoto_[] =
   {
-      -5,    -5,    -5,    10,    -5,    -5,     4
+     -13,   -13,   -13,    13,   -13,     0,   -12
   };
 
   const signed char
   Parser::yydefgoto_[] =
   {
-       0,     2,     3,     4,     6,    13,    14
+       0,     2,     3,     4,     7,    12,    13
   };
 
   const signed char
   Parser::yytable_[] =
   {
-       8,    17,    10,    11,     1,     1,    18,     7,     5,    12,
-       0,    15,    19,     9,     0,     0,     0,    16
+      17,     1,     9,    19,     5,     6,    17,     1,    20,    14,
+      15,     8,    11,    16,    18,    21,    10
   };
 
   const signed char
   Parser::yycheck_[] =
   {
-       0,     4,     6,     7,     5,     5,     9,     0,     7,     7,
-      -1,     3,     9,     3,    -1,    -1,    -1,    13
+      12,     5,     0,     4,     6,     7,    18,     5,     9,     6,
+       7,     0,     7,     3,    14,     9,     3
   };
 
   const signed char
   Parser::yystos_[] =
   {
-       0,     5,    11,    12,    13,     7,    14,     0,     0,    13,
-       6,     7,     7,    15,    16,     3,    16,     4,     9,     9
+       0,     5,    11,    12,    13,     6,     7,    14,     0,     0,
+      13,     7,    15,    16,     6,     7,     3,    16,    15,     4,
+       9,     9
   };
 
   const signed char
   Parser::yyr1_[] =
   {
-       0,    10,    11,    12,    12,    13,    14,    14,    15,    15,
-      16,    16
+       0,    10,    11,    12,    12,    13,    13,    14,    14,    15,
+      15,    16,    16
   };
 
   const signed char
   Parser::yyr2_[] =
   {
-       0,     2,     2,     1,     2,     4,     1,     2,     1,     2,
-       3,     4
+       0,     2,     2,     1,     2,     4,     3,     1,     2,     1,
+       2,     3,     4
   };
 
 
@@ -1385,8 +1394,8 @@ namespace VENN {
   const signed char
   Parser::yyrline_[] =
   {
-       0,    66,    66,    69,    70,    73,    76,    77,    80,    81,
-      84,    85
+       0,    66,    66,    69,    70,    73,    74,    77,    78,    81,
+      82,    85,    86
   };
 
   void
@@ -1419,9 +1428,9 @@ namespace VENN {
 
 #line 11 "parser.yy"
 } // VENN
-#line 1423 "parser.cc"
+#line 1432 "parser.cc"
 
-#line 87 "parser.yy"
+#line 88 "parser.yy"
 
 
 void

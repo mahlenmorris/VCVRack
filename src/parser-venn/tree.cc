@@ -13,7 +13,6 @@ void VennToLower(const std::string &mixed, std::string *lower) {
 
 Circle Circle::NewCircle(const std::string& name, const Assignments& fields, VennDriver* driver) {
   Circle circle;
-  circle.present = true;  // A new circle has never been deleted.
   circle.name.assign(name);
   for (NumericAssignment assign : fields.assignments) {
     std::string lower_name;
@@ -28,6 +27,7 @@ Circle Circle::NewCircle(const std::string& name, const Assignments& fields, Ven
       driver->AddError("I don't know what a '" + assign.field_name + "' is.");
     }
   }
+  circle.present = (circle.x_center != 0.0) || (circle.y_center != 0.0) || (circle.radius != 0.0);
   return circle;
 }
 

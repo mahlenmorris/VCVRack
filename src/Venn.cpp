@@ -27,41 +27,45 @@ struct Venn : Module {
     configOutput(DISTANCE_OUTPUT, "");
     configOutput(WITHIN_GATE_OUTPUT, "");
 
-    const char * initial = 
-      "[Reverb] "
-      "x = 6.0 "
-      "y = 5.0 "
-      "radius = 3.5 "
-      "[Delay Time] "
-      "x = 4 "
-      "y = 5.5 "
-      "radius = 3 ";
-    
-    // Just to have something to start with during development, here are two overlapping Circles.
-    // TODO: put the compilation on a background thread, once the Tipsy port is live.
-    VennDriver driver;
-    driver.parse(initial);
-    circles = driver.diagram.circles;   
-
     current_circle = 0;
-
     point.x = 5;
     point.y = 5;
   }
 
+  std::string to_string(std::vector<Circle>& the_circles) {
+    std::string result;
+    // Don't need to store deleted circles with a larger index than the largest intact one.
+    // So I'll just take this opportunity to erase any at the end.
+    int last_index = -1;
+    for (int curr = the_circles.size() - 1; curr >= 0; curr--) {
+      if (the_circles[curr].present) {
+        last_index = curr;
+        break;
+      }
+    }
+    for (int curr = 0; curr <= last_index; curr++) {
+      result.append(the_circles[curr].to_string());
+    }
+    return result;
+  }
+
+
   // Save and retrieve menu choice(s).
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
+    std::string diagram = to_string(circles);
+    json_object_set_new(rootJ, "diagram", json_stringn(diagram.c_str(), diagram.size()));
     return rootJ;
   }
 
   void dataFromJson(json_t* rootJ) override {
-    /*
-    json_t* default_inJ = json_object_get(rootJ, "default_in");
-    if (default_inJ) {
-      default_in_voltage = json_real_value(default_inJ);
+    json_t* diagramJ = json_object_get(rootJ, "diagram");
+    if (diagramJ) {
+      std::string diagram = json_string_value(diagramJ);
+      VennDriver driver;
+      driver.parse(diagram);
+      circles = driver.diagram.circles;   
     }
-    */
   }
 
   void process(const ProcessArgs& args) override {

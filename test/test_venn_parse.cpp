@@ -77,3 +77,23 @@ TEST(ParserTest, ParsesMultipleCircles)
     ASSERT_EQ(2, diagram->circles.size());
     EXPECT_EQ(2.0, diagram->circles.at(0).x_center);
 }
+
+TEST(ParserTest, NoName)
+{
+    VennDriver drv;
+    const char * text =
+      "[]\n"
+      "x = 2\n"
+      "y = -1\n"
+      "radius = 3.5\n"
+      "\n";
+
+    EXPECT_EQ(0, drv.parse(text));
+    EXPECT_EQ(0, drv.errors.size());
+    if (drv.errors.size() > 0) {
+      std::cout << "\n" << drv.errors.at(0).to_string() << "\n";
+    }
+    Diagram* diagram = &(drv.diagram);
+    ASSERT_EQ(1, diagram->circles.size());
+    EXPECT_EQ("", diagram->circles.at(0).name);
+}

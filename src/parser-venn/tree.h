@@ -47,11 +47,34 @@ struct Circle {
   std::string name;
   bool present;  // Not deleted.
 
+  Circle() : x_center{0.0}, y_center{0.0}, radius{0.0} {}
+
   // Must be defined in tree.cc, because it actually uses Driver.
   static Circle NewCircle(const std::string& name, const Assignments& fields, VennDriver* driver);
 
   // Bison seems to require this if I use const references; I don't use it.
   friend std::ostream& operator<<(std::ostream& os, const Circle &ex);
+
+  std::string AnAssignment(const char* name, float value) {
+    std::string result(name);
+    result.append(" = ");
+    result.append(std::to_string(value));
+    result.append("\n");
+    return result;
+  }  
+
+  std::string to_string() {
+    std::string result("[");
+    result.append(name);
+    result.append("]\n");
+
+    if (present) {
+      result.append(AnAssignment("x", x_center));
+      result.append(AnAssignment("y", y_center));
+      result.append(AnAssignment("radius", radius));
+    }  // Leaving these fields as zero will result in it looking like a deleted circle.
+    return result;
+  }
 };
 
 struct CircleList {

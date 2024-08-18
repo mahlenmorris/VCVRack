@@ -71,6 +71,7 @@ circle_list:
 
 circle:
   "[" name "]" assignments             { $$ = Circle::NewCircle($2, $4, &drv); }
+| "[" "]" assignments                  { $$ = Circle::NewCircle("", $3, &drv); }
 
 name:
   "identifier"                         { $$ = $1; }
