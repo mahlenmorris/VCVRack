@@ -4,16 +4,23 @@
 
 struct Venn : Module {
   enum ParamId {
+		EXP_LIN_LOG_PARAM,
+		X_POSITION_ATTN_PARAM,
+		Y_POSITION_ATTN_PARAM,
     PARAMS_LEN
   };
   enum InputId {
     X_POSITION_INPUT,
     Y_POSITION_INPUT,
+		X_POSITION_WIGGLE_INPUT,
+		Y_POSITION_WIGGLE_INPUT,
     INPUTS_LEN
   };
   enum OutputId {
     DISTANCE_OUTPUT,
     WITHIN_GATE_OUTPUT,
+		X_DISTANCE_OUTPUT,
+		Y_DISTANCE_OUTPUT,
     OUTPUTS_LEN
   };
   enum LightId {
@@ -22,16 +29,26 @@ struct Venn : Module {
 
   Venn() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-    configInput(X_POSITION_INPUT, "");
-    configInput(Y_POSITION_INPUT, "");
-    configOutput(DISTANCE_OUTPUT, "");
-    configOutput(WITHIN_GATE_OUTPUT, "");
+		configParam(EXP_LIN_LOG_PARAM, -1.f, 1.f, 0.f, "");
+		configParam(X_POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.0f, "Attenuverter for second input to X position of Point");
+		configParam(Y_POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.0f, "Attenuverter for second input to Y position of Point");
+
+    configInput(X_POSITION_INPUT, "X position of Point - attenuated value of other input will be added");
+    configInput(Y_POSITION_INPUT, "Y position of Point - attenuated value of other input will be added");
+		configInput(X_POSITION_WIGGLE_INPUT, "Multiplied by attenuverter to alter the X position of Point");
+		configInput(Y_POSITION_WIGGLE_INPUT, "Multiplied by attenuverter to alter the Y position of Point");
+
+    configOutput(DISTANCE_OUTPUT, "0V at edge, 10V at center, polyphonic");
+    configOutput(WITHIN_GATE_OUTPUT, "0V outside circle, 10V within, polyphonic");
+		configOutput(X_DISTANCE_OUTPUT, "");
+		configOutput(Y_DISTANCE_OUTPUT, "");
 
     current_circle = 0;
     point.x = 0;
     point.y = 0;
   }
-
+  
+  // Turns a set of shapes into a text string that we can parse later to recreate the shapes.
   std::string to_string(std::vector<Circle>& the_circles) {
     std::string result;
     // Don't need to store deleted circles with a larger index than the largest intact one.
@@ -48,7 +65,6 @@ struct Venn : Module {
     }
     return result;
   }
-
 
   // Save and retrieve menu choice(s).
   json_t* dataToJson() override {
@@ -83,12 +99,39 @@ struct Venn : Module {
     // Update X and Y inputs.
     if (inputs[X_POSITION_INPUT].isConnected()) {
       point.x = inputs[X_POSITION_INPUT].getVoltage();
+    } else {
+      // We do these separately, so human can control one axis but no other, if desired.
+      point.x = human_point.x;
     }
     if (inputs[Y_POSITION_INPUT].isConnected()) {
       point.y = inputs[Y_POSITION_INPUT].getVoltage();
+    } else {
+      point.y = human_point.y;
     }
 
+    // TODO: for this to work how I want it to, I need to track the last human selected point.
+    if (params[X_POSITION_ATTN_PARAM].getValue() != 0.0f) {
+      point.x += params[X_POSITION_ATTN_PARAM].getValue() *
+        inputs[X_POSITION_WIGGLE_INPUT].getVoltage();
+    }
+    if (params[Y_POSITION_ATTN_PARAM].getValue() != 0.0f) {
+      point.y += params[Y_POSITION_ATTN_PARAM].getValue() *
+        inputs[Y_POSITION_WIGGLE_INPUT].getVoltage();
+    }
+
+    // TODO: make this a menu option? It's actually odd not to have walls.
+    bool wrapping = false;
+    if (wrapping) {
+      // Wrap point values.
+      point.x = WrapValue(point.x);
+      point.y = WrapValue(point.y);
+    } else {
+      // Keep within walls.
+      point.x = fmax(-5, fmin(5, point.x));
+      point.y = fmax(-5, fmin(5, point.y));
+    }
     // Wrap point values.
+    // TODO: make this a menu option? It's actually odd not to have walls.
     point.x = WrapValue(point.x);
     point.y = WrapValue(point.y);
 
@@ -124,7 +167,10 @@ struct Venn : Module {
 
   std::vector<Circle> circles;
   int current_circle;
+  // Current position we use.
   Vec point;
+  // Last human selected point (to wiggle from).
+  Vec human_point;
 };
 
 struct CircleDisplay : OpaqueWidget {
@@ -152,8 +198,8 @@ struct CircleDisplay : OpaqueWidget {
       // Must change position in widget to voltage.
       Rect r = box.zeroPos();
       Vec bounding_box = r.getBottomRight();
-      module->point.x = e.pos.x / bounding_box.x * 10.0 - 5;
-      module->point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0 - 5;
+      module->human_point.x = module->point.x = e.pos.x / bounding_box.x * 10.0 - 5;
+      module->human_point.y = module->point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0 - 5;
       e.consume(this);
     }
 
@@ -174,8 +220,8 @@ struct CircleDisplay : OpaqueWidget {
         // Must change position in widget to voltage.
         Rect r = box.zeroPos();
         Vec bounding_box = r.getBottomRight();
-        module->point.x = e.pos.x / bounding_box.x * 10.0 - 5;
-        module->point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0 - 5;
+        module->human_point.x = module->point.x = e.pos.x / bounding_box.x * 10.0 - 5;
+        module->human_point.y = module->point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0 - 5;
         e.consume(this);
     }
   }
@@ -255,9 +301,9 @@ struct CircleDisplay : OpaqueWidget {
       if (e.keyName == "f" && (e.mods & RACK_MOD_CTRL) == 0) {
         Circle circle;
         // TODO: Center on where mouse is (if available).
-        circle.x_center = 5.0;  
-        circle.y_center = 5.0;
-        circle.radius = 1.0;
+        circle.x_center = random::uniform() * 2 - 1;  
+        circle.y_center = random::uniform() * 2 - 1;
+        circle.radius = 1.0 + random::uniform();
         circle.present = true;
         // What position should this be in?
         // Let's start with the first non-present slot.
@@ -391,15 +437,23 @@ struct VennWidget : ModuleWidget {
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.024, 48.0)), module, Venn::X_POSITION_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(20.989, 47.993)), module, Venn::Y_POSITION_INPUT));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(165.1, 12.435)), module, Venn::EXP_LIN_LOG_PARAM));
+		addParam(createParamCentered<Trimpot>(mm2px(Vec(15.205, 17.394)), module, Venn::X_POSITION_ATTN_PARAM));
+		addParam(createParamCentered<Trimpot>(mm2px(Vec(15.205, 32.591)), module, Venn::Y_POSITION_ATTN_PARAM));
 
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(174.36, 12.435)), module, Venn::DISTANCE_OUTPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(174.625, 30.162)), module, Venn::WITHIN_GATE_OUTPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.0, 17.394)), module, Venn::X_POSITION_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.0, 32.591)), module, Venn::Y_POSITION_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.201, 17.394)), module, Venn::X_POSITION_WIGGLE_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.201, 32.591)), module, Venn::Y_POSITION_WIGGLE_INPUT));
+
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(177.535, 12.435)), module, Venn::DISTANCE_OUTPUT));
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(177.8, 30.162)), module, Venn::WITHIN_GATE_OUTPUT));  // These shouldn't have different x pos.
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(165.1, 47.286)), module, Venn::X_DISTANCE_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(177.8, 47.286)), module, Venn::Y_DISTANCE_OUTPUT));
 
     // The Circles.
     CircleDisplay* display = createWidget<CircleDisplay>(
-      mm2px(Vec(26.19, 1.5)));
+      mm2px(Vec(31.0, 1.7)));
     display->box.size = mm2px(Vec(125.0, 125.0));
     display->module = module;
     addChild(display);
