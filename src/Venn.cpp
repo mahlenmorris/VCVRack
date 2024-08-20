@@ -143,6 +143,16 @@ struct Venn : Module {
     outputs[DISTANCE_OUTPUT].setChannels(circles.size());
     outputs[WITHIN_GATE_OUTPUT].setChannels(circles.size());
 
+    float scaling = params[EXP_LIN_LOG_PARAM].getValue();
+    // If we are from -1 - 0, we want to scale it 0.1 - 1.
+    if (scaling == 0.0) {
+      scaling = 1.0;
+    } else if (scaling < 0.0) {
+      scaling = rack::math::rescale(scaling, -1, 0, .1, 1);
+    } else {
+      scaling = rack::math::rescale(scaling, 0, 1, 1, 10);
+    }
+
     for (size_t channel = 0; channel < circles.size(); channel++) {
       const Circle& circle = circles.at(channel);
       if (circle.present) {
@@ -155,7 +165,11 @@ struct Venn : Module {
           outputs[WITHIN_GATE_OUTPUT].setVoltage(0.0f, channel);
         } else {
           // We'll do linear distance scaling for now.
-          outputs[DISTANCE_OUTPUT].setVoltage((1 - distance / circle.radius) * 10, channel);
+          float value = (1 - distance / circle.radius);
+          if (scaling != 1.0) {
+            value = pow(value, scaling);
+          }
+          outputs[DISTANCE_OUTPUT].setVoltage(value * 10, channel);
           outputs[WITHIN_GATE_OUTPUT].setVoltage(10.0f, channel);
         }
       } else {
