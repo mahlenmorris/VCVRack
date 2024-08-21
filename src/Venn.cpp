@@ -96,6 +96,20 @@ struct Venn : Module {
   }
 
   void process(const ProcessArgs& args) override {
+    if (--check_live_circles <= 0) {
+      // One sixtieth of a second.
+      check_live_circles = (int) (args.sampleRate / 60);
+      // It's not great that our channel count is basically the index of the highest
+      // circle that has existed while this module is alive.
+      // To avoid doing that, we occasionally check how many circles are present.
+      // Deleting them is dangerous (multiple threads read the vector), so we don't do that.
+      live_circle_count = 0;
+      for (size_t channel = 0; channel < circles.size(); channel++) {
+        if (circles.at(channel).present) {
+          live_circle_count = channel + 1;
+        }
+      }
+    }
     // Update X and Y inputs.
     if (inputs[X_POSITION_INPUT].isConnected()) {
       point.x = inputs[X_POSITION_INPUT].getVoltage();
@@ -139,9 +153,8 @@ struct Venn : Module {
     // TODO: many optimizations, including doing nothing when neither point nor circles has changed.
     // TODO: Can SIMD library help me?
 
-    // TODO: We will need deleted circles to make this work when we can delete circles.
-    outputs[DISTANCE_OUTPUT].setChannels(circles.size());
-    outputs[WITHIN_GATE_OUTPUT].setChannels(circles.size());
+    outputs[DISTANCE_OUTPUT].setChannels(live_circle_count);
+    outputs[WITHIN_GATE_OUTPUT].setChannels(live_circle_count);
 
     float scaling = params[EXP_LIN_LOG_PARAM].getValue();
     // If we are from -1 - 0, we want to scale it 0.1 - 1.
@@ -153,7 +166,7 @@ struct Venn : Module {
       scaling = rack::math::rescale(scaling, 0, 1, 1, 10);
     }
 
-    for (size_t channel = 0; channel < circles.size(); channel++) {
+    for (size_t channel = 0; channel < live_circle_count; channel++) {
       const Circle& circle = circles.at(channel);
       if (circle.present) {
         float x_distance = point.x - circle.x_center;
@@ -181,6 +194,8 @@ struct Venn : Module {
 
   std::vector<Circle> circles;
   int current_circle;
+  size_t live_circle_count;
+  int check_live_circles;
   // Current position we use.
   Vec point;
   // Last human selected point (to wiggle from).
@@ -268,6 +283,9 @@ struct CircleDisplay : OpaqueWidget {
         // Q - smaller
         if (e.keyName == "q" && (e.mods & RACK_MOD_CTRL) == 0) {
           module->circles.at(module->current_circle).radius -= 0.1;
+          if (module->circles.at(module->current_circle).radius < 0.1) {
+            module->circles.at(module->current_circle).radius = 0.1;
+          }
           e.consume(this);
         }
         // E - bigger
