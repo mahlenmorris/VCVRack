@@ -155,41 +155,71 @@ struct Venn : Module {
 
     outputs[DISTANCE_OUTPUT].setChannels(live_circle_count);
     outputs[WITHIN_GATE_OUTPUT].setChannels(live_circle_count);
+    outputs[X_DISTANCE_OUTPUT].setChannels(live_circle_count);
+    outputs[Y_DISTANCE_OUTPUT].setChannels(live_circle_count);
 
     float scaling = params[EXP_LIN_LOG_PARAM].getValue();
-    // If we are from -1 - 0, we want to scale it 0.1 - 1.
-    if (scaling == 0.0) {
-      scaling = 1.0;
-    } else if (scaling < 0.0) {
-      scaling = rack::math::rescale(scaling, -1, 0, .1, 1);
-    } else {
-      scaling = rack::math::rescale(scaling, 0, 1, 1, 10);
-    }
+    if (outputs[DISTANCE_OUTPUT].isConnected()) {
+      // Save the compute time if not going to use 'scaling'.
 
+      // If we are from -1 - 0, we want to scale it 0.1 - 1.
+      if (scaling == 0.0) {
+        scaling = 1.0;
+      } else if (scaling < 0.0) {
+        scaling = rack::math::rescale(scaling, -1, 0, .1, 1);
+      } else {
+        scaling = rack::math::rescale(scaling, 0, 1, 1, 10);
+      }
+    }
     for (size_t channel = 0; channel < live_circle_count; channel++) {
       const Circle& circle = circles.at(channel);
       if (circle.present) {
+        // All of the outputs care if we are in the circle or not, so we always compute it,
+        // regardless of there is a cable connected or not.
         float x_distance = point.x - circle.x_center;
         float y_distance = point.y - circle.y_center;
+        // TODO: eliminate this sqrt() call? But the distance actually matters to the result.
+        // Maybe there is a cheaper approximation? And we only need the true distance for
+        // DISTANCE_OUTPUT.
         float distance = sqrt(x_distance * x_distance + y_distance * y_distance);
+
 
         if (distance > circle.radius) {
           outputs[DISTANCE_OUTPUT].setVoltage(0.0f, channel);
           outputs[WITHIN_GATE_OUTPUT].setVoltage(0.0f, channel);
+          // An odd default value, since it is the same value as being in line with the center.
+          // TODO: is there a better choice?
+          outputs[X_DISTANCE_OUTPUT].setVoltage(0.0f, channel);
+          outputs[Y_DISTANCE_OUTPUT].setVoltage(0.0f, channel);
         } else {
-          // We'll do linear distance scaling for now.
-          float value = (1 - distance / circle.radius);
-          if (scaling != 1.0) {
-            value = pow(value, scaling);
-          }
-          outputs[DISTANCE_OUTPUT].setVoltage(value * 10, channel);
           outputs[WITHIN_GATE_OUTPUT].setVoltage(10.0f, channel);
+          if (outputs[DISTANCE_OUTPUT].isConnected()) {
+            float value = (1 - distance / circle.radius);
+            // Since 1.0 is the default, skip the call to pow() if not needed.
+            if (scaling != 1.0) {
+              value = pow(value, scaling);
+            }
+            outputs[DISTANCE_OUTPUT].setVoltage(value * 10, channel);            
+          }
+
+          if (outputs[X_DISTANCE_OUTPUT].isConnected()) {
+            outputs[X_DISTANCE_OUTPUT].setVoltage(x_distance / circle.radius * 5.0, channel);
+          }
+          if (outputs[Y_DISTANCE_OUTPUT].isConnected()) {
+            outputs[Y_DISTANCE_OUTPUT].setVoltage(y_distance / circle.radius * 5.0, channel);
+          }
         }
       } else {
         outputs[DISTANCE_OUTPUT].setVoltage(0.0f, channel);
         outputs[WITHIN_GATE_OUTPUT].setVoltage(0.0f, channel);
       }
     }
+
+
+    outputs[DISTANCE_OUTPUT].setChannels(live_circle_count);
+    outputs[WITHIN_GATE_OUTPUT].setChannels(live_circle_count);
+
+
   }
 
   std::vector<Circle> circles;
