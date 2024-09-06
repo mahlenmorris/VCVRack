@@ -27,6 +27,52 @@ struct Venn : Module {
     LIGHTS_LEN
   };
 
+  // Adds support for undo/redo for changes to a single Circle.
+  struct VennMultiCircleUndoRedoAction : history::ModuleAction {
+    std::vector<Circle> old_circles;
+    std::vector<Circle> new_circles;
+    int old_position, new_position;
+
+    VennMultiCircleUndoRedoAction(int64_t id, const char* change_name,
+                                  const std::vector<Circle>& oldCircles,
+                                  const std::vector<Circle>& newCircles,
+                                  int oldPos, int newPos) : old_circles{oldCircles}, new_circles{newCircles},
+                                  old_position{oldPos}, new_position{newPos} {
+      moduleId = id;
+      name = change_name;
+    }
+
+    void undo() override {
+      Venn *module = dynamic_cast<Venn*>(APP->engine->getModule(moduleId));
+      if (module) {
+        // swap modifies both vectors, but I don't want it to be modified.
+        std::vector<Circle> temp(old_circles);
+        module->circles.swap(temp);
+        module->current_circle = old_position;
+      }
+    }
+
+    void redo() override {
+      Venn *module = dynamic_cast<Venn*>(APP->engine->getModule(moduleId));
+      if (module) {
+        // swap modifies both vectors, but I don't want it to be modified.
+        std::vector<Circle> temp(new_circles);
+        module->circles.swap(temp);
+        module->current_circle = new_position;
+      }
+    }
+  };
+
+  std::vector<Circle> circles;
+  int current_circle;
+  bool circles_loaded = false;
+  size_t live_circle_count;
+  int check_live_circles;
+  // Current position we use.
+  Vec point;
+  // Last human selected point (to wiggle from).
+  Vec human_point;
+
   Venn() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configParam(EXP_LIN_LOG_PARAM, -1.f, 1.f, 0.f, "");
@@ -44,6 +90,8 @@ struct Venn : Module {
 		configOutput(Y_DISTANCE_OUTPUT, "");
 
     current_circle = 0;
+    check_live_circles = 0;
+    circles_loaded = true;
     point.x = 0;
     point.y = 0;
   }
@@ -77,11 +125,24 @@ struct Venn : Module {
   void dataFromJson(json_t* rootJ) override {
     json_t* diagramJ = json_object_get(rootJ, "diagram");
     if (diagramJ) {
+      circles_loaded = false;
       std::string diagram = json_string_value(diagramJ);
       VennDriver driver;
       driver.parse(diagram);
-      circles = driver.diagram.circles;   
+      circles = driver.diagram.circles;
+      current_circle = circles.size() > 0 ? 0 : -1;
     }
+    circles_loaded = true;
+  }
+
+  void onReset(const ResetEvent &e) override {
+    // If the user hits Initialize in menu, remove all of the circles.
+    // This needs to be something that can be undone.
+    std::vector<Circle> empty;
+    APP->history->push(
+      new VennMultiCircleUndoRedoAction(id, "initialize module", circles, empty, current_circle, -1));
+    circles.clear();
+    current_circle = -1;
   }
 
   // Fit values to range between -5..5.
@@ -96,6 +157,9 @@ struct Venn : Module {
   }
 
   void process(const ProcessArgs& args) override {
+    if (!circles_loaded) {
+      return;
+    }
     if (--check_live_circles <= 0) {
       // One sixtieth of a second.
       check_live_circles = (int) (args.sampleRate / 60);
@@ -214,22 +278,90 @@ struct Venn : Module {
         outputs[WITHIN_GATE_OUTPUT].setVoltage(0.0f, channel);
       }
     }
-
-
     outputs[DISTANCE_OUTPUT].setChannels(live_circle_count);
     outputs[WITHIN_GATE_OUTPUT].setChannels(live_circle_count);
+  }
+};
 
+// Adds support for undo/redo for changes to a single Circle.
+struct VennCircleUndoRedoAction : history::ModuleAction {
+  enum CircleEditType {
+    CHANGE,
+    ADDITION,
+    DELETION
+  };
+  CircleEditType edit;
+  Circle old_circle;
+  Circle new_circle;
+  int old_position;  // Index into circles this was at. CHANGE doesn't alter the index.
+  int new_position;  // Index after a non-CHANGE action.
 
+  VennCircleUndoRedoAction(
+      int64_t id, const Circle& oldCircle, const Circle& newCircle,
+      int old_index) : old_circle{oldCircle}, new_circle{newCircle}, old_position{old_index} {
+    moduleId = id;
+    name = "circle edit";  // TODO: split this into circle enlarge/circle shrink/circle move?
+    edit = CHANGE;
   }
 
-  std::vector<Circle> circles;
-  int current_circle;
-  size_t live_circle_count;
-  int check_live_circles;
-  // Current position we use.
-  Vec point;
-  // Last human selected point (to wiggle from).
-  Vec human_point;
+  VennCircleUndoRedoAction(int64_t id, const Circle& circle, int old_index,
+                           int new_index, bool addition) : 
+                           old_position{old_index}, new_position{new_index} {
+    moduleId = id;
+    if (addition) {
+      name = "circle addition";
+      edit = ADDITION;
+      new_circle = circle;
+    } else {
+      name = "circle deletion";
+      edit = DELETION;
+      old_circle = circle;
+    }
+  }
+
+  void undo() override {
+    Venn *module = dynamic_cast<Venn*>(APP->engine->getModule(moduleId));
+    if (module) {
+      switch (edit) {
+        case DELETION: {
+          module->circles[old_position] = old_circle;
+          module->current_circle = old_position;
+        }
+        break;
+        case CHANGE: {
+          module->circles[old_position] = old_circle;
+        }
+        break;
+        case ADDITION: {
+          module->circles[new_position].present = false;
+          module->current_circle = old_position;
+        }
+        break;
+      }
+    }
+  }
+
+  void redo() override {
+    Venn *module = dynamic_cast<Venn*>(APP->engine->getModule(moduleId));
+    if (module) {
+      switch (edit) {
+        case DELETION: {
+          module->circles[old_position].present = false;
+          module->current_circle = new_position;
+        }
+        break;
+        case CHANGE: {
+          module->circles[old_position] = new_circle;
+        }
+        break;
+        case ADDITION: {
+          module->circles[new_position] = new_circle;
+          module->current_circle = new_position;
+
+        }
+      }
+    }
+  }
 };
 
 struct CircleDisplay : OpaqueWidget {
@@ -285,6 +417,13 @@ struct CircleDisplay : OpaqueWidget {
     }
   }
 
+  void RememberChange(const Circle& old_circle) {
+    APP->history->push(
+      new VennCircleUndoRedoAction(module->id, old_circle,
+                                   module->circles.at(module->current_circle),
+                                   module->current_circle));
+  }
+
   void onSelectKey(const SelectKeyEvent& e) override {
     // TODO: impose max/min size and position.
     if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) {
@@ -292,35 +431,47 @@ struct CircleDisplay : OpaqueWidget {
         // Editing the Circle.
         // W - up
         if (e.keyName == "w" && (e.mods & RACK_MOD_CTRL) == 0) {
+          Circle old(module->circles.at(module->current_circle));
           module->circles.at(module->current_circle).y_center += 0.1;
+          RememberChange(old);
           e.consume(this);
         }
         // S - down
         if (e.keyName == "s" && (e.mods & RACK_MOD_CTRL) == 0) {
+          Circle old(module->circles.at(module->current_circle));
           module->circles.at(module->current_circle).y_center -= 0.1;
+          RememberChange(old);
           e.consume(this);
         }
         // A - left
         if (e.keyName == "a" && (e.mods & RACK_MOD_CTRL) == 0) {
+          Circle old(module->circles.at(module->current_circle));
           module->circles.at(module->current_circle).x_center -= 0.1;
+          RememberChange(old);
           e.consume(this);
         }
         // D - right
         if (e.keyName == "d" && (e.mods & RACK_MOD_CTRL) == 0) {
+          Circle old(module->circles.at(module->current_circle));
           module->circles.at(module->current_circle).x_center += 0.1;
+          RememberChange(old);
           e.consume(this);
         }
         // Q - smaller
         if (e.keyName == "q" && (e.mods & RACK_MOD_CTRL) == 0) {
+          Circle old(module->circles.at(module->current_circle));
           module->circles.at(module->current_circle).radius -= 0.1;
           if (module->circles.at(module->current_circle).radius < 0.1) {
             module->circles.at(module->current_circle).radius = 0.1;
           }
+          RememberChange(old);
           e.consume(this);
         }
         // E - bigger
         if (e.keyName == "e" && (e.mods & RACK_MOD_CTRL) == 0) {
+          Circle old(module->circles.at(module->current_circle));
           module->circles.at(module->current_circle).radius += 0.1;
+          RememberChange(old);
           e.consume(this);
         }
       }
@@ -362,6 +513,7 @@ struct CircleDisplay : OpaqueWidget {
       // F - add new one
       if (e.keyName == "f" && (e.mods & RACK_MOD_CTRL) == 0) {
         Circle circle;
+        int old_index = module->current_circle;
         // TODO: Center on where mouse is (if available).
         circle.x_center = random::uniform() * 2 - 1;  
         circle.y_center = random::uniform() * 2 - 1;
@@ -369,18 +521,26 @@ struct CircleDisplay : OpaqueWidget {
         circle.present = true;
         // What position should this be in?
         // Let's start with the first non-present slot.
-        // Limit of 16 channels in a cable.
+        // Limit of 16 channels in a cable, so won't add after that.
+        bool added = false;
         for (int curr = 0; curr < 16; curr++) {
           if (curr == (int) module->circles.size()) {
             module->circles.push_back(circle);
             module->current_circle = curr;
+            added = true;
             break;
           }
           if (!(module->circles.at(curr).present)) {
             module->circles.at(curr) = circle;
             module->current_circle = curr;
+            added = true;
             break;
           }
+        }
+        if (added) {
+          APP->history->push(
+            new VennCircleUndoRedoAction(module->id, module->circles.at(module->current_circle),
+                                         old_index, module->current_circle, true));
         }
         e.consume(this);
       }
@@ -388,6 +548,9 @@ struct CircleDisplay : OpaqueWidget {
       // x - delete current one.
       if (e.keyName == "x" && (e.mods & RACK_MOD_CTRL) == 0) {
         if (module->current_circle >= 0) {  // i.e., there is a circle to delete.
+          // Copy circle *before* "present" is set to false!
+          Circle old_circle(module->circles.at(module->current_circle));
+          int old_index = module->current_circle;
           module->circles.at(module->current_circle).present = false;
           // Move focus to next circle, if any.
           bool found_next = false;
@@ -406,6 +569,9 @@ struct CircleDisplay : OpaqueWidget {
           if (!found_next) {
             module->current_circle = -1;  // Indicares no currently selected circle.
           }
+          APP->history->push(
+            new VennCircleUndoRedoAction(module->id, old_circle,
+                                         old_index, module->current_circle, false));
         }
         e.consume(this);
       }
