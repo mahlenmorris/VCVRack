@@ -68,11 +68,10 @@ struct Circle {
     result.append(name);
     result.append("]\n");
 
-    if (present) {
-      result.append(AnAssignment("x", x_center));
-      result.append(AnAssignment("y", y_center));
-      result.append(AnAssignment("radius", radius));
-    }  // Leaving these fields as zero will result in it looking like a deleted circle.
+    result.append(AnAssignment("x", x_center));
+    result.append(AnAssignment("y", y_center));
+    result.append(AnAssignment("radius", radius));
+    result.append(AnAssignment("present", present ? 1 : 0));
     return result;
   }
 };

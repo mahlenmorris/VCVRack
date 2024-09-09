@@ -27,42 +27,6 @@ struct Venn : Module {
     LIGHTS_LEN
   };
 
-  // Adds support for undo/redo for changes to a single Circle.
-  struct VennMultiCircleUndoRedoAction : history::ModuleAction {
-    std::vector<Circle> old_circles;
-    std::vector<Circle> new_circles;
-    int old_position, new_position;
-
-    VennMultiCircleUndoRedoAction(int64_t id, const char* change_name,
-                                  const std::vector<Circle>& oldCircles,
-                                  const std::vector<Circle>& newCircles,
-                                  int oldPos, int newPos) : old_circles{oldCircles}, new_circles{newCircles},
-                                  old_position{oldPos}, new_position{newPos} {
-      moduleId = id;
-      name = change_name;
-    }
-
-    void undo() override {
-      Venn *module = dynamic_cast<Venn*>(APP->engine->getModule(moduleId));
-      if (module) {
-        // swap modifies both vectors, but I don't want it to be modified.
-        std::vector<Circle> temp(old_circles);
-        module->circles.swap(temp);
-        module->current_circle = old_position;
-      }
-    }
-
-    void redo() override {
-      Venn *module = dynamic_cast<Venn*>(APP->engine->getModule(moduleId));
-      if (module) {
-        // swap modifies both vectors, but I don't want it to be modified.
-        std::vector<Circle> temp(new_circles);
-        module->circles.swap(temp);
-        module->current_circle = new_position;
-      }
-    }
-  };
-
   std::vector<Circle> circles;
   int current_circle;
   bool circles_loaded = false;
@@ -89,8 +53,16 @@ struct Venn : Module {
 		configOutput(X_DISTANCE_OUTPUT, "");
 		configOutput(Y_DISTANCE_OUTPUT, "");
 
-    current_circle = 0;
+    current_circle = -1;
     check_live_circles = 0;
+    
+    // To avoid errors with improper indexes into circles, I just fill it up.
+    Circle circle;
+    circle.present = false;
+    // TODO: Make circles into a vector of size 16!
+    for (int i = 0; i < 16; ++i) {
+      circles.push_back(circle);
+    }
     circles_loaded = true;
     point.x = 0;
     point.y = 0;
@@ -128,22 +100,58 @@ struct Venn : Module {
       circles_loaded = false;
       std::string diagram = json_string_value(diagramJ);
       VennDriver driver;
-      driver.parse(diagram);
-      circles = driver.diagram.circles;
-      current_circle = circles.size() > 0 ? 0 : -1;
+      if (driver.parse(diagram) != 0) {
+        WARN("Compile Failure:\n%s", diagram.c_str());
+      }
+      ClearAllCircles();
+      for (int i = 0; i < std::min(16, (int) driver.diagram.circles.size()); ++i) {
+        circles[i] = driver.diagram.circles.at(i);
+      }
+      current_circle = driver.diagram.circles.size() > 0 ? 0 : -1;
     }
     circles_loaded = true;
   }
 
-  void onReset(const ResetEvent &e) override {
-    // If the user hits Initialize in menu, remove all of the circles.
-    // This needs to be something that can be undone.
-    std::vector<Circle> empty;
-    APP->history->push(
-      new VennMultiCircleUndoRedoAction(id, "initialize module", circles, empty, current_circle, -1));
-    circles.clear();
-    current_circle = -1;
+  void ClearAllCircles() {
+    for (int i = 0; i < 16; ++i) {
+      circles.at(i).present = false;
+    }
   }
+
+  void onReset(const ResetEvent& e) override {
+    Module::onReset(e);
+
+    // A lock around the sudden change, so process() and UI doesn't fail.
+    circles_loaded = false;
+    ClearAllCircles();
+    current_circle = -1;
+    circles_loaded = true;
+  }
+
+  float MyNormal() {
+    return (random::uniform() + random::uniform()) / 2.0f; 
+  }
+
+  void onRandomize(const RandomizeEvent& e) override {
+    Module::onRandomize(e);
+
+    // When User hits Randomize, let's make some circles.
+    int count = clamp((int) (MyNormal() * 10.0 + 3), 3, 13);
+    circles_loaded = false;
+    current_circle = -1;
+    ClearAllCircles();
+    for (int i = 0; i < count; ++i) {
+        Circle circle;
+        circle.x_center = random::uniform() * 9.6 - 4.8;  
+        circle.y_center = random::uniform() * 9.9 - 4.8;
+        circle.radius = MyNormal() * 5 + 1;
+        circle.present = true;
+        // TODO: Random names, once names are shown, would be delightful.
+        circles.at(i) = circle;
+    }
+    current_circle = 0;
+    circles_loaded = true;
+  }	
 
   // Fit values to range between -5..5.
   float WrapValue(float value) {
@@ -168,7 +176,7 @@ struct Venn : Module {
       // To avoid doing that, we occasionally check how many circles are present.
       // Deleting them is dangerous (multiple threads read the vector), so we don't do that.
       live_circle_count = 0;
-      for (size_t channel = 0; channel < circles.size(); channel++) {
+      for (size_t channel = 0; channel < 16; channel++) {
         if (circles.at(channel).present) {
           live_circle_count = channel + 1;
         }
@@ -322,6 +330,7 @@ struct VennCircleUndoRedoAction : history::ModuleAction {
   void undo() override {
     Venn *module = dynamic_cast<Venn*>(APP->engine->getModule(moduleId));
     if (module) {
+      module->circles_loaded = false;
       switch (edit) {
         case DELETION: {
           module->circles[old_position] = old_circle;
@@ -338,12 +347,14 @@ struct VennCircleUndoRedoAction : history::ModuleAction {
         }
         break;
       }
+      module->circles_loaded = true;
     }
   }
 
   void redo() override {
     Venn *module = dynamic_cast<Venn*>(APP->engine->getModule(moduleId));
     if (module) {
+      module->circles_loaded = false;
       switch (edit) {
         case DELETION: {
           module->circles[old_position].present = false;
@@ -360,6 +371,7 @@ struct VennCircleUndoRedoAction : history::ModuleAction {
 
         }
       }
+      module->circles_loaded = true;
     }
   }
 };
@@ -425,6 +437,11 @@ struct CircleDisplay : OpaqueWidget {
   }
 
   void onSelectKey(const SelectKeyEvent& e) override {
+    if (!module->circles_loaded) {
+      // Don't edit circles if we're in the middle of loading them!
+      return;
+    } 
+    // Undo/redo can make current_circle invalid. Rationalize it.
     // TODO: impose max/min size and position.
     if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) {
       if (module->current_circle >= 0) {  // i.e., there is a circle to edit.
@@ -478,11 +495,10 @@ struct CircleDisplay : OpaqueWidget {
       // Selecting which Circle.
       // Z - previous
       if (e.keyName == "z" && (e.mods & RACK_MOD_CTRL) == 0) {
-        // TODO: what if there are none? What happens above?
-        if (module->circles.size() > 0) {
+        if (module->live_circle_count > 0) {
           for (int curr = module->current_circle - 1; curr != module->current_circle; curr--) {
             if (curr < 0) {
-              curr = module->circles.size() - 1;
+              curr = 16 - 1;
             }
             if (module->circles.at(curr).present) {
               module->current_circle = curr;
@@ -494,10 +510,9 @@ struct CircleDisplay : OpaqueWidget {
       }
       // C - next
       if (e.keyName == "c" && (e.mods & RACK_MOD_CTRL) == 0) {
-        // TODO: what if there are none? What happens above?
-        if (module->circles.size() > 0) {
+        if (module->live_circle_count > 0) {
           for (int curr = module->current_circle + 1; curr != module->current_circle; curr++) {
-            if (curr >= (int) (module->circles.size())) {
+            if (curr >= 16) {
               curr = 0;
             }
             if (module->circles.at(curr).present) {
@@ -524,12 +539,6 @@ struct CircleDisplay : OpaqueWidget {
         // Limit of 16 channels in a cable, so won't add after that.
         bool added = false;
         for (int curr = 0; curr < 16; curr++) {
-          if (curr == (int) module->circles.size()) {
-            module->circles.push_back(circle);
-            module->current_circle = curr;
-            added = true;
-            break;
-          }
           if (!(module->circles.at(curr).present)) {
             module->circles.at(curr) = circle;
             module->current_circle = curr;
@@ -554,16 +563,14 @@ struct CircleDisplay : OpaqueWidget {
           module->circles.at(module->current_circle).present = false;
           // Move focus to next circle, if any.
           bool found_next = false;
-          if (module->circles.size() > 0) {
-            for (int curr = module->current_circle + 1; curr != module->current_circle; curr++) {
-              if (curr >= (int) (module->circles.size())) {
-                curr = 0;
-              }
-              if (module->circles.at(curr).present) {
-                module->current_circle = curr;
-                found_next = true;
-                break;
-              }
+          for (int curr = module->current_circle + 1; curr != module->current_circle; curr++) {
+            if (curr >= 16) {
+              curr = 0;
+            }
+            if (module->circles.at(curr).present) {
+              module->current_circle = curr;
+              found_next = true;
+              break;
             }
           }
           if (!found_next) {
@@ -590,7 +597,7 @@ struct CircleDisplay : OpaqueWidget {
   // By using drawLayer() instead of draw(), this becomes a glowing Depict
   // when the "room lights" are turned down. That seems correct to me.
   void drawLayer(const DrawArgs& args, int layer) override {
-    if (module && layer == 1) {
+    if (module && layer == 1 && module->circles_loaded) {
       nvgScissor(args.vg, RECT_ARGS(args.clipBox));
       Rect r = box.zeroPos();
       Vec bounding_box = r.getBottomRight();
@@ -604,9 +611,9 @@ struct CircleDisplay : OpaqueWidget {
       nvgFill(args.vg);
 
       // The circles.
-      // TODO: add number, name, and vary the color (same scheme as Memory?).
+      // TODO: add name.
       int index = -1;
-      // TODO: Change to different font.
+      // TODO: Change to different font?
       std::shared_ptr<Font> font = APP->window->loadFont(
         asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
 

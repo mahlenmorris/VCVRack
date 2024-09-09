@@ -23,11 +23,12 @@ Circle Circle::NewCircle(const std::string& name, const Assignments& fields, Ven
       circle.y_center = assign.value;
     } else if (lower_name.compare("radius") == 0) {
       circle.radius = assign.value;
+    } else if (lower_name.compare("present") == 0) {
+      circle.present = assign.value > 0;  // a boolean.
     } else {
       driver->AddError("I don't know what a '" + assign.field_name + "' is.");
     }
   }
-  circle.present = (circle.x_center != 0.0) || (circle.y_center != 0.0) || (circle.radius != 0.0);
   return circle;
 }
 
