@@ -21,6 +21,8 @@ struct Venn : Module {
     WITHIN_GATE_OUTPUT,
 		X_DISTANCE_OUTPUT,
 		Y_DISTANCE_OUTPUT,
+ 		X_POSITION_OUTPUT,
+		Y_POSITION_OUTPUT,
     OUTPUTS_LEN
   };
   enum LightId {
@@ -50,6 +52,8 @@ struct Venn : Module {
 
     configOutput(DISTANCE_OUTPUT, "0V at edge, 10V at center, polyphonic");
     configOutput(WITHIN_GATE_OUTPUT, "0V outside circle, 10V within, polyphonic");
+		configOutput(X_POSITION_OUTPUT, "The current X coordinate of the point (-5V -> 5V). Useful for recording point gestures and performances.");
+		configOutput(Y_POSITION_OUTPUT, "The current Y coordinate of the point (-5V -> 5V). Useful for recording point gestures and performances.");
 		configOutput(X_DISTANCE_OUTPUT, "");
 		configOutput(Y_DISTANCE_OUTPUT, "");
 
@@ -211,11 +215,12 @@ struct Venn : Module {
         }
       }
     }
+    // Determine where "point" is.
     // Update X and Y inputs.
     if (inputs[X_POSITION_INPUT].isConnected()) {
       point.x = inputs[X_POSITION_INPUT].getVoltage();
     } else {
-      // We do these separately, so human can control one axis but no other, if desired.
+      // We do these separately, so human can control one axis but not the other, if desired.
       point.x = human_point.x;
     }
     if (inputs[Y_POSITION_INPUT].isConnected()) {
@@ -249,6 +254,10 @@ struct Venn : Module {
     // TODO: make this a menu option? It's actually odd not to have walls.
     point.x = WrapValue(point.x);
     point.y = WrapValue(point.y);
+
+    // We have now determined the postion of "point".
+    outputs[X_POSITION_OUTPUT].setVoltage(point.x);
+    outputs[Y_POSITION_OUTPUT].setVoltage(point.y);
 
     // Determine what values to output.
     // TODO: many optimizations, including doing nothing when neither point nor circles has changed.
@@ -744,16 +753,19 @@ struct VennWidget : ModuleWidget {
     addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(165.1, 12.435)), module, Venn::EXP_LIN_LOG_PARAM));
-		addParam(createParamCentered<Trimpot>(mm2px(Vec(15.205, 17.394)), module, Venn::X_POSITION_ATTN_PARAM));
-		addParam(createParamCentered<Trimpot>(mm2px(Vec(15.205, 32.591)), module, Venn::Y_POSITION_ATTN_PARAM));
+		addParam(createParamCentered<Trimpot>(mm2px(Vec(9.446, 25.0)), module, Venn::X_POSITION_ATTN_PARAM));
+		addParam(createParamCentered<Trimpot>(mm2px(Vec(21.034, 25.0)), module, Venn::Y_POSITION_ATTN_PARAM));
 
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.0, 17.394)), module, Venn::X_POSITION_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.0, 32.591)), module, Venn::Y_POSITION_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.201, 17.394)), module, Venn::X_POSITION_WIGGLE_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.201, 32.591)), module, Venn::Y_POSITION_WIGGLE_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(9.446, 16.0)), module, Venn::X_POSITION_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(21.034, 16.0)), module, Venn::Y_POSITION_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(9.446, 34.0)), module, Venn::X_POSITION_WIGGLE_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(21.034, 34.0)), module, Venn::Y_POSITION_WIGGLE_INPUT));
+
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(9.446, 45.0)), module, Venn::X_POSITION_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.034, 45.0)), module, Venn::Y_POSITION_OUTPUT));
 
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(177.535, 12.435)), module, Venn::DISTANCE_OUTPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(177.8, 30.162)), module, Venn::WITHIN_GATE_OUTPUT));  // These shouldn't have different x pos.
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(177.8, 30.162)), module, Venn::WITHIN_GATE_OUTPUT));  // TODO: These shouldn't have different x pos?
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(165.1, 47.286)), module, Venn::X_DISTANCE_OUTPUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(177.8, 47.286)), module, Venn::Y_DISTANCE_OUTPUT));
 
