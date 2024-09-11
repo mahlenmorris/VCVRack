@@ -91,11 +91,30 @@ struct Venn : Module {
     json_t* rootJ = json_object();
     std::string diagram = to_string(circles);
     json_object_set_new(rootJ, "diagram", json_stringn(diagram.c_str(), diagram.size()));
-    // TODO: Should we include "point" and "current_circle", so it's exactly how it was when last seen?
+
+    // We include "human_point" and "current_circle", so that it's exactly how user left it.
+    // Like maybe the user has dialed in the exact right spot...
+    json_t* saved_point = json_array();
+    json_array_append_new(saved_point, json_real(human_point.x));
+    json_array_append_new(saved_point, json_real(human_point.y));
+    json_object_set(rootJ, "point", saved_point);
+    json_decref(saved_point);
+    json_object_set_new(rootJ, "current", json_integer(current_circle));
     return rootJ;
   }
 
   void dataFromJson(json_t* rootJ) override {
+    json_t* pointJ = json_object_get(rootJ, "point");
+    if (pointJ) {
+      human_point.x = json_real_value(json_array_get(pointJ, 0));
+      human_point.y = json_real_value(json_array_get(pointJ, 1));
+    }
+    json_t* currentJ = json_object_get(rootJ, "current");
+    if (currentJ) {
+      current_circle = json_integer_value(currentJ);
+    }
+
+    // We actually parse the string that defines the circles.
     json_t* diagramJ = json_object_get(rootJ, "diagram");
     if (diagramJ) {
       circles_loaded = false;
@@ -108,7 +127,12 @@ struct Venn : Module {
       for (int i = 0; i < std::min(16, (int) driver.diagram.circles.size()); ++i) {
         circles[i] = driver.diagram.circles.at(i);
       }
-      current_circle = driver.diagram.circles.size() > 0 ? 0 : -1;
+      json_t* currentJ = json_object_get(rootJ, "current");
+      if (currentJ) {
+        current_circle = json_integer_value(currentJ);
+      } else {
+        current_circle = driver.diagram.circles.size() > 0 ? 0 : -1;
+      } 
     }
     circles_loaded = true;
   }
@@ -126,6 +150,8 @@ struct Venn : Module {
     circles_loaded = false;
     ClearAllCircles();
     current_circle = -1;
+    human_point.x = 0.0;
+    human_point.y = 0.0;
     circles_loaded = true;
   }
 
@@ -151,6 +177,8 @@ struct Venn : Module {
         circles.at(i) = circle;
     }
     current_circle = 0;
+    human_point.x = random::uniform() * 9.6 - 4.8;
+    human_point.y = random::uniform() * 9.6 - 4.8;
     circles_loaded = true;
   }	
 
