@@ -91,6 +91,7 @@ struct Venn : Module {
     json_t* rootJ = json_object();
     std::string diagram = to_string(circles);
     json_object_set_new(rootJ, "diagram", json_stringn(diagram.c_str(), diagram.size()));
+    // TODO: Should we include "point" and "current_circle", so it's exactly how it was when last seen?
     return rootJ;
   }
 
@@ -593,11 +594,49 @@ struct CircleDisplay : OpaqueWidget {
     // Need to invert Y, since I want to put y == -5 on the bottom.
     return size - ((volt_y + 5) * size / 10.0);
   }
-  
+
+  // Caller is responsible for deleting this.
+  std::vector<Circle>* default_circles() {
+    float x[6] = {0.062705, -2.653372, 2.517570, 3.260226, -2.121736, 0.974539};
+    float y[6] = {-0.411569, 2.684878, 4.339533, -0.208806, -2.508809, -4.108777};
+    float radius[6] = {1.742869, 4.004038, 2.987639, 2.559288, 2.169408, 3.424444};
+
+    std::vector<Circle>* circs = new std::vector<Circle>();
+    for (int i = 0; i < 6; ++i) {
+      Circle circle;
+      circle.x_center = x[i];
+      circle.y_center = y[i];
+      circle.radius = radius[i];
+      circle.present = true;
+      circs->push_back(circle);
+    }
+    return circs;
+  }
+
   // By using drawLayer() instead of draw(), this becomes a glowing Depict
   // when the "room lights" are turned down. That seems correct to me.
   void drawLayer(const DrawArgs& args, int layer) override {
-    if (module && layer == 1 && module->circles_loaded) {
+    if (layer == 1) {
+      std::vector<Circle>* circles;
+      int current_circle; 
+      Vec point;
+      if (module) {
+        // If we have a module, but the circles are being updated, best not to draw anything.
+        // TODO: reconsider this decision, since we no longer have the issue of out-of-range indexies.
+        if (!module->circles_loaded) {
+          return;
+        } else {
+          circles = &(module->circles);
+          current_circle = module->current_circle;
+          point = module->point;
+        }
+      } else {
+        // Simple demo values to show in the browser and library page.
+        circles = default_circles();
+        current_circle = 2;
+        point.x = 0.0;
+        point.y = 0.2345;
+      }
       nvgScissor(args.vg, RECT_ARGS(args.clipBox));
       Rect r = box.zeroPos();
       Vec bounding_box = r.getBottomRight();
@@ -620,18 +659,18 @@ struct CircleDisplay : OpaqueWidget {
       // Only indicate that a circle is selected if Venn module has focus. 
       bool is_selected = (this == APP->event->selectedWidget);
 
-      for (const Circle& circle : module->circles) {
+      for (const Circle& circle : *circles) {
         index++;
         if (circle.present) {
           nvgBeginPath(args.vg);
           nvgCircle(args.vg, nvg_x(circle.x_center, bounding_box.x), nvg_y(circle.y_center, bounding_box.x),
                   pixels_per_volt * circle.radius);
           nvgStrokeColor(args.vg, colors[index % COLOR_COUNT]);
-          nvgStrokeWidth(args.vg, index == module->current_circle && is_selected ? 2.0 : 1.0);
+          nvgStrokeWidth(args.vg, index == current_circle && is_selected ? 2.0 : 1.0);
           nvgStroke(args.vg);
 
           nvgFillColor(args.vg, colors[index % COLOR_COUNT]);
-          nvgFontSize(args.vg, index == module->current_circle && is_selected ? 15 : 13);
+          nvgFontSize(args.vg, index == current_circle && is_selected ? 15 : 13);
           nvgFontFaceId(args.vg, font->handle);
           //nvgTextLetterSpacing(args.vg, -2);
           // Place in the center.
@@ -649,7 +688,7 @@ struct CircleDisplay : OpaqueWidget {
 
       // Draw the pointer (need a name for it).
       nvgBeginPath(args.vg);
-      nvgCircle(args.vg, nvg_x(module->point.x, bounding_box.x), nvg_y(module->point.y, bounding_box.x),
+      nvgCircle(args.vg, nvg_x(point.x, bounding_box.x), nvg_y(point.y, bounding_box.x),
               pixels_per_volt * 0.15);
       nvgStrokeColor(args.vg, SCHEME_WHITE);
       nvgStrokeWidth(args.vg, 1.0);
@@ -657,6 +696,10 @@ struct CircleDisplay : OpaqueWidget {
 
       OpaqueWidget::draw(args);
       nvgResetScissor(args.vg);
+
+      if (!module) {
+        delete circles;
+      }
     }
 	}
 };
@@ -693,6 +736,11 @@ struct VennWidget : ModuleWidget {
     display->module = module;
     addChild(display);
 
+  }
+
+  void appendContextMenu(Menu* menu) override {
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createMenuLabel("Inspired by Leafcutter John's 'Forester' instrument."));
   }
 };
 

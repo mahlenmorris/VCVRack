@@ -14,6 +14,7 @@ void VennToLower(const std::string &mixed, std::string *lower) {
 Circle Circle::NewCircle(const std::string& name, const Assignments& fields, VennDriver* driver) {
   Circle circle;
   circle.name.assign(name);
+  circle.present = true;  // To allow me to read my development saves.
   for (NumericAssignment assign : fields.assignments) {
     std::string lower_name;
     VennToLower(assign.field_name, &lower_name);
