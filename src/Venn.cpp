@@ -90,6 +90,8 @@ struct Venn : Module {
   Vec point;
   // Last human selected point (to wiggle from).
   Vec human_point;
+  // If > -1, the channel to "solo" on.
+  int solo_channel;
 
   Venn() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -122,6 +124,7 @@ struct Venn : Module {
     circles_loaded = true;
     point.x = 0;
     point.y = 0;
+    solo_channel = -1;
   }
   
   // Turns a set of shapes into a text string that we can parse later to recreate the shapes.
@@ -205,7 +208,7 @@ struct Venn : Module {
     // A lock around the sudden change, so process() and UI doesn't fail.
     circles_loaded = false;
     ClearAllCircles();
-    current_circle = -1;
+    current_circle = solo_channel = -1;
     human_point.x = 0.0;
     human_point.y = 0.0;
     circles_loaded = true;
@@ -221,7 +224,7 @@ struct Venn : Module {
     // When User hits Randomize, let's make some circles.
     int count = clamp((int) (MyNormal() * 10.0 + 3), 3, 13);
     circles_loaded = false;
-    current_circle = -1;
+    current_circle = solo_channel = -1;
     ClearAllCircles();
     for (int i = 0; i < count; ++i) {
         Circle circle;
@@ -347,17 +350,17 @@ struct Venn : Module {
     }
     for (size_t channel = 0; channel < live_circle_count; channel++) {
       const Circle& circle = circles.at(channel);
-      if (circle.present) {
+      // If solo-ing, make sure that only solo channel gets computed.
+      if (circle.present && (solo_channel < 0 || (int) channel == solo_channel)) {
         // All of the outputs care if we are in the circle or not, so we always compute it,
         // regardless of there is a cable connected or not.
         float x_distance = point.x - circle.x_center;
         float y_distance = point.y - circle.y_center;
+
         // TODO: eliminate this sqrt() call? But the distance actually matters to the result.
         // Maybe there is a cheaper approximation? And we only need the true distance for
         // DISTANCE_OUTPUT.
         float distance = sqrt(x_distance * x_distance + y_distance * y_distance);
-
-
         if (distance > circle.radius) {
           outputs[DISTANCE_OUTPUT].setVoltage(0.0f, channel);
           outputs[WITHIN_GATE_OUTPUT].setVoltage(0.0f, channel);
@@ -386,6 +389,8 @@ struct Venn : Module {
       } else {
         outputs[DISTANCE_OUTPUT].setVoltage(0.0f, channel);
         outputs[WITHIN_GATE_OUTPUT].setVoltage(0.0f, channel);
+        outputs[X_DISTANCE_OUTPUT].setVoltage(0.0f, channel);
+        outputs[Y_DISTANCE_OUTPUT].setVoltage(0.0f, channel);
       }
     }
     outputs[DISTANCE_OUTPUT].setChannels(live_circle_count);
@@ -684,6 +689,15 @@ struct CircleDisplay : OpaqueWidget {
         }
         e.consume(this);
       }
+
+      // Solo this channel or return to full poly.
+      if (e.keyName == "r" && (e.mods & RACK_MOD_CTRL) == 0) {
+        if (module->current_circle >= 0) {  // i.e., there is a circle to solo.
+          // Set or unset the solo_channel.
+          module->solo_channel = (module->solo_channel >= 0) ? -1 : module->current_circle;
+        }
+        e.consume(this);
+      }      
     }
   }
 
@@ -719,7 +733,7 @@ struct CircleDisplay : OpaqueWidget {
   void drawLayer(const DrawArgs& args, int layer) override {
     if (layer == 1) {
       std::vector<Circle>* circles;
-      int current_circle; 
+      int current_circle, solo_circle; 
       Vec point;
       if (module) {
         // If we have a module, but the circles are being updated, best not to draw anything.
@@ -729,12 +743,14 @@ struct CircleDisplay : OpaqueWidget {
         } else {
           circles = &(module->circles);
           current_circle = module->current_circle;
+          solo_circle = module->solo_channel;
           point = module->point;
         }
       } else {
         // Simple demo values to show in the browser and library page.
         circles = default_circles();
         current_circle = 2;
+        solo_circle = -1;
         point.x = 0.0;
         point.y = 0.2345;
       }
@@ -762,13 +778,20 @@ struct CircleDisplay : OpaqueWidget {
       for (const Circle& circle : *circles) {
         index++;
         if (circle.present) {
+          // Draw the circle itself.
           nvgBeginPath(args.vg);
           nvgCircle(args.vg, nvg_x(circle.x_center, bounding_box.x), nvg_y(circle.y_center, bounding_box.x),
                   pixels_per_volt * circle.radius);
-          nvgStrokeColor(args.vg, colors[index % COLOR_COUNT]);
+          NVGcolor circle_color = colors[index % COLOR_COUNT];
+          if (solo_circle >= 0 && solo_circle != index) {
+            // Dim the muted circles.
+            circle_color = nvgTransRGBAf(circle_color, 0.3);
+          }
+          nvgStrokeColor(args.vg, circle_color);
           nvgStrokeWidth(args.vg, index == current_circle && is_selected ? 2.0 : 1.0);
           nvgStroke(args.vg);
-
+          
+          // Now draw the text in the center.
           nvgFillColor(args.vg, colors[index % COLOR_COUNT]);
           nvgFontSize(args.vg, index == current_circle && is_selected ? 15 : 13);
           nvgFontFaceId(args.vg, font->handle);
