@@ -816,7 +816,7 @@ struct VennWidget : ModuleWidget {
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(166.582, 12.435)), module, Venn::EXP_LIN_LOG_PARAM));
+		addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(166.582, 11.906)), module, Venn::EXP_LIN_LOG_PARAM));
 		addParam(createParamCentered<Trimpot>(mm2px(Vec(9.446, 25.0)), module, Venn::X_POSITION_ATTN_PARAM));
 		addParam(createParamCentered<Trimpot>(mm2px(Vec(21.034, 25.0)), module, Venn::Y_POSITION_ATTN_PARAM));
 
@@ -828,7 +828,7 @@ struct VennWidget : ModuleWidget {
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(9.446, 45.0)), module, Venn::X_POSITION_OUTPUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.034, 45.0)), module, Venn::Y_POSITION_OUTPUT));
 
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 12.435)), module, Venn::DISTANCE_OUTPUT));
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 11.906)), module, Venn::DISTANCE_OUTPUT));
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 30.162)), module, Venn::WITHIN_GATE_OUTPUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(166.582, 47.286)), module, Venn::X_DISTANCE_OUTPUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 47.286)), module, Venn::Y_DISTANCE_OUTPUT));
