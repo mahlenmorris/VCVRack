@@ -2,6 +2,58 @@
 
 #include "parser-venn/driver.h"
 
+constexpr int PART_LEN = 18;
+constexpr const char* PARTS[PART_LEN] = {
+  "Bass",
+  "Drum",
+  "Lead",
+  "Melody",
+  "Bloop",
+  "Noise",
+  "Piano",
+  "Tympani",
+  "Flute",
+  "Grit",
+  "Airiness",
+  "Choir",
+  "Theremin",
+  "Gamelan",
+  "Kalimba",
+  "Bagpipe",
+  "Erhu",
+  "Kora"
+};
+
+constexpr int EFFECT_LEN = 26;
+static const char* EFFECTS[EFFECT_LEN] = {
+  "Reverb",
+  "Delay",
+  "Chorus",
+  "Flange",
+  "Filter",
+  "Mix",
+  "Distortion",
+  "Punch",
+  "Smoother",
+  "Phaser",
+  "Limiter",
+  "Pan",
+  "Pitch",
+  "Gate",
+  "Scale",
+  "Key",
+  "Grit",
+  "Space",
+  "Throb",
+  "Echo",
+  "Attack",
+  "Polarity",
+  "Pressure",
+  "Timbre",
+  "Tempo",
+  "Dissonance"
+};
+
 struct Venn : Module {
   enum ParamId {
 		EXP_LIN_LOG_PARAM,
@@ -177,7 +229,19 @@ struct Venn : Module {
         circle.y_center = random::uniform() * 9.9 - 4.8;
         circle.radius = MyNormal() * 5 + 1;
         circle.present = true;
-        // TODO: Random names, once names are shown, would be delightful.
+        // Random names are delightful.
+        // I'll allow them to range in length from 1 to three words, just to see how they look.
+        // Thanks to @disquiet for suggesting I add evocative color names.
+        std::string the_name(PARTS[(int) std::floor(random::uniform() * PART_LEN)]);
+        if (random::uniform() > 0.333) {
+          the_name.append(" ");
+          the_name.append(EFFECTS[(int) (random::uniform() * sizeof(EFFECT_LEN))]);
+          if (random::uniform() > 0.7) {
+            the_name.append(" ");
+            the_name.append(EFFECTS[(int) (random::uniform() * sizeof(EFFECT_LEN))]);
+          }
+        }
+        circle.name = the_name;
         circles.at(i) = circle;
     }
     current_circle = 0;
@@ -687,7 +751,6 @@ struct CircleDisplay : OpaqueWidget {
       nvgFill(args.vg);
 
       // The circles.
-      // TODO: add name.
       int index = -1;
       // TODO: Change to different font?
       std::shared_ptr<Font> font = APP->window->loadFont(
@@ -710,8 +773,9 @@ struct CircleDisplay : OpaqueWidget {
           nvgFontSize(args.vg, index == current_circle && is_selected ? 15 : 13);
           nvgFontFaceId(args.vg, font->handle);
           //nvgTextLetterSpacing(args.vg, -2);
-          // Place in the center.
+          // Place in the center. TODO: make it apparent where the center of the circle is.
           // TODO: Precompute this string, so don't have to keep remaking it.
+          // Or just let FrameBuffer cache the entire result.
           std::string center_text = std::to_string(index + 1);
           if (!circle.name.empty()) {
             center_text.append(" - ");
