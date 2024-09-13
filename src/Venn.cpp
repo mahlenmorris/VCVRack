@@ -230,7 +230,7 @@ struct Venn : Module {
         Circle circle;
         circle.x_center = random::uniform() * 9.6 - 4.8;  
         circle.y_center = random::uniform() * 9.9 - 4.8;
-        circle.radius = MyNormal() * 5 + 1;
+        circle.radius = MyNormal() * 3 + .1;
         circle.present = true;
         // Random names are delightful.
         // I'll allow them to range in length from 1 to three words, just to see how they look.
@@ -252,17 +252,6 @@ struct Venn : Module {
     human_point.y = random::uniform() * 9.6 - 4.8;
     circles_loaded = true;
   }	
-
-  // Fit values to range between -5..5.
-  float WrapValue(float value) {
-    while (value > 5.0) {
-      value -= 10;
-    }
-    while (value < -5.0) {
-      value += 10;
-    }
-    return value;
-  }
 
   void process(const ProcessArgs& args) override {
     if (!circles_loaded) {
@@ -306,21 +295,9 @@ struct Venn : Module {
         inputs[Y_POSITION_WIGGLE_INPUT].getVoltage();
     }
 
-    // TODO: make this a menu option? It's actually odd not to have walls.
-    bool wrapping = false;
-    if (wrapping) {
-      // Wrap point values.
-      point.x = WrapValue(point.x);
-      point.y = WrapValue(point.y);
-    } else {
-      // Keep within walls.
-      point.x = fmax(-5, fmin(5, point.x));
-      point.y = fmax(-5, fmin(5, point.y));
-    }
-    // Wrap point values.
-    // TODO: make this a menu option? It's actually odd not to have walls.
-    point.x = WrapValue(point.x);
-    point.y = WrapValue(point.y);
+    // Keep within walls.
+    point.x = fmax(-5, fmin(5, point.x));
+    point.y = fmax(-5, fmin(5, point.y));
 
     // We have now determined the postion of "point".
     outputs[X_POSITION_OUTPUT].setVoltage(point.x);
@@ -508,8 +485,8 @@ struct CircleDisplay : OpaqueWidget {
       // Must change position in widget to voltage.
       Rect r = box.zeroPos();
       Vec bounding_box = r.getBottomRight();
-      module->human_point.x = module->point.x = e.pos.x / bounding_box.x * 10.0 - 5;
-      module->human_point.y = module->point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0 - 5;
+      module->human_point.x = e.pos.x / bounding_box.x * 10.0 - 5;
+      module->human_point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0 - 5;
       e.consume(this);
     }
 
@@ -530,8 +507,8 @@ struct CircleDisplay : OpaqueWidget {
         // Must change position in widget to voltage.
         Rect r = box.zeroPos();
         Vec bounding_box = r.getBottomRight();
-        module->human_point.x = module->point.x = e.pos.x / bounding_box.x * 10.0 - 5;
-        module->human_point.y = module->point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0 - 5;
+        module->human_point.x = e.pos.x / bounding_box.x * 10.0 - 5;
+        module->human_point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0 - 5;
         e.consume(this);
     }
   }
@@ -760,10 +737,17 @@ struct CircleDisplay : OpaqueWidget {
       // Assuming that we are always on a square-pixeled surface, with X and Y the same distances.
       double pixels_per_volt = bounding_box.x / 10.0;
 
+      // Only indicate that a circle is selected if Venn module has focus. 
+      bool is_selected = (this == APP->event->selectedWidget);
+
       // Background first.
       nvgBeginPath(args.vg);
       nvgRect(args.vg, 0.0, 0.0, bounding_box.x, bounding_box.y);
-      nvgFillColor(args.vg, SCHEME_DARK_GRAY);
+      NVGcolor background_color = SCHEME_DARK_GRAY;
+      if (is_selected) {
+        background_color = nvgTransRGBAf(background_color, 0.9);
+      }
+      nvgFillColor(args.vg, background_color);
       nvgFill(args.vg);
 
       // The circles.
@@ -771,9 +755,6 @@ struct CircleDisplay : OpaqueWidget {
       // TODO: Change to different font?
       std::shared_ptr<Font> font = APP->window->loadFont(
         asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
-
-      // Only indicate that a circle is selected if Venn module has focus. 
-      bool is_selected = (this == APP->event->selectedWidget);
 
       for (const Circle& circle : *circles) {
         index++;
