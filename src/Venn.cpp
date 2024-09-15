@@ -111,6 +111,9 @@ struct Venn : Module {
   bool editing;
   // True iff editor's keystrokes are accepted (i.e., the keyboard map)
   bool keystrokes_accepted;
+  // Menu item that decides whether to show the readable keyboard hints
+  // or just the icon indicating that keyboard input is accepted.
+  bool show_keyboard;
 
   Venn() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -146,6 +149,9 @@ struct Venn : Module {
     solo_channel = -1;
     editing = false;
     keystrokes_accepted = false;
+    show_keyboard = true;  // For new instances, we are true.
+    // TODO: could menu choice be a default for all instances?
+    // Once user has learned it, it applies to all.
   }
   
   // Turns a set of shapes into a text string that we can parse later to recreate the shapes.
@@ -180,6 +186,8 @@ struct Venn : Module {
     json_object_set(rootJ, "point", saved_point);
     json_decref(saved_point);
     json_object_set_new(rootJ, "current", json_integer(current_circle));
+
+    json_object_set_new(rootJ, "show_keyboard", json_integer(show_keyboard ? 1 :0));
     return rootJ;
   }
 
@@ -215,6 +223,11 @@ struct Venn : Module {
       } 
     }
     circles_loaded = true;
+
+    json_t* keyboardJ = json_object_get(rootJ,  "show_keyboard");
+    if (keyboardJ) {
+      show_keyboard = json_integer_value(keyboardJ) > 0;
+    }
   }
 
   void ClearAllCircles() {
@@ -801,6 +814,7 @@ struct CircleDisplay : OpaqueWidget {
       Vec point;
       bool currently_editing;
       bool currently_keyboard;
+      bool show_full_keyboard;
       if (module) {
         // If we have a module, but the circles are being updated, best not to draw anything.
         // TODO: reconsider this decision, since we no longer have the issue of out-of-range indexies.
@@ -813,6 +827,7 @@ struct CircleDisplay : OpaqueWidget {
           point = module->point;
           currently_editing = module->editing;
           currently_keyboard = module->keystrokes_accepted;
+          show_full_keyboard = module->show_keyboard;
         }
       } else {
         // Simple demo values to show in the browser and library page.
@@ -823,6 +838,7 @@ struct CircleDisplay : OpaqueWidget {
         point.y = 0.2345;
         currently_editing = false;
         currently_keyboard = false;
+        show_full_keyboard = false;
       }
       nvgScissor(args.vg, RECT_ARGS(args.clipBox));
       Rect r = box.zeroPos();
@@ -831,14 +847,14 @@ struct CircleDisplay : OpaqueWidget {
       double pixels_per_volt = bounding_box.x / 10.0;
 
       // Background first.
-      nvgBeginPath(args.vg);
-      nvgRect(args.vg, 0.0, 0.0, bounding_box.x, bounding_box.y);
-      NVGcolor background_color = SCHEME_DARK_GRAY;
-      if (currently_keyboard) {
-        background_color = nvgTransRGBAf(background_color, 0.9);
+      // The background (with keyboard hints) is in the SVG template. We just hide it when
+      // keyboard input isn't accepted.
+      if (!currently_keyboard || !show_full_keyboard) {
+        nvgBeginPath(args.vg);
+        nvgRect(args.vg, 0.0, 0.0, bounding_box.x, bounding_box.y);
+        nvgFillColor(args.vg, SCHEME_DARK_GRAY);
+        nvgFill(args.vg);
       }
-      nvgFillColor(args.vg, background_color);
-      nvgFill(args.vg);
 
       // The circles.
       int index = -1;
@@ -938,6 +954,22 @@ struct VennNumberDisplayWidget : LightWidget {
   }
 };
 
+struct VennKeyboardIcon : SvgWidget {
+  Venn* module;
+
+  VennKeyboardIcon() {
+    box.size = mm2px(Vec(8.0, 6.0));
+    setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/Venn-key-icon.svg")));
+  }
+
+  void draw(const DrawArgs& args) override {
+    // Only show the icon under certain conditions.
+    if (module && module->keystrokes_accepted && !(module->show_keyboard)) {
+      SvgWidget::draw(args);
+    }
+  }
+};
+
 struct VennWidget : ModuleWidget {
   CircleDisplay* display;
   VennNameTextField* name_field;
@@ -987,6 +1019,10 @@ struct VennWidget : ModuleWidget {
     display->module = module;
     display->name_widget = name_field;
     addChild(display);
+
+    VennKeyboardIcon* icon = createWidget<VennKeyboardIcon>(mm2px(Vec(1.0, 1.0)));
+    icon->module = module;
+    display->addChild(icon);  // Ensures it's drawn on top of CircleDisplay.
   }
 
   void step() override {
@@ -1015,6 +1051,9 @@ struct VennWidget : ModuleWidget {
   } 
 
   void appendContextMenu(Menu* menu) override {
+    Venn* module = dynamic_cast<Venn*>(this->module);
+    menu->addChild(createBoolPtrMenuItem("Show Keyboard Commands", "",
+                                          &(module->show_keyboard)));
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel("Inspired by Leafcutter John's 'Forester' instrument."));
   }
