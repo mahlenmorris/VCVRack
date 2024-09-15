@@ -81,17 +81,36 @@ struct Venn : Module {
     LIGHTS_LEN
   };
 
+  // The array of circles. Initialized with 16 entries, which are only ever
+  // overwritten, not deleted. So any index from 0-15 is valid.
+  // TODO: replace with actual Circle[] array.
   std::vector<Circle> circles;
+  // Index to the circle being edited, or -1 if no circles are available.
   int current_circle;
+  // Flag to indicate that circles are being wholesale updated, maybe
+  // don't look at them right now.
   bool circles_loaded = false;
+  // Number of live channels, updated 60 times/second.
+  // Optimization for setting channel count and not iterating through
+  // high-numbered unused circles.
   size_t live_circle_count;
+  // Counts down process() calls until it's time to check if there are
+  // unused circles we can stop computing for.
+  // That process updates live_circle_count.
   int check_live_circles;
   // Current position we use.
   Vec point;
   // Last human selected point (to wiggle from).
+  // Set by the UI.
   Vec human_point;
   // If > -1, the channel to "solo" on.
+  // Set and unset by the UI widget.
   int solo_channel;
+  // True if UI believes the circles (or point) are being edited.
+  // Useful for other UI elements to know.
+  bool editing;
+  // True iff editor's keystrokes are accepted (i.e., the keyboard map)
+  bool keystrokes_accepted;
 
   Venn() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -125,6 +144,8 @@ struct Venn : Module {
     point.x = 0;
     point.y = 0;
     solo_channel = -1;
+    editing = false;
+    keystrokes_accepted = false;
   }
   
   // Turns a set of shapes into a text string that we can parse later to recreate the shapes.
@@ -236,7 +257,7 @@ struct Venn : Module {
         // I'll allow them to range in length from 1 to three words, just to see how they look.
         // Thanks to @disquiet for suggesting I add evocative color names.
         std::string the_name(PARTS[(int) std::floor(random::uniform() * PART_LEN)]);
-        if (random::uniform() > 0.333) {
+        if (random::uniform() > 0.1) {
           the_name.append(" ");
           the_name.append(EFFECTS[(int) (random::uniform() * sizeof(EFFECT_LEN))]);
           if (random::uniform() > 0.7) {
@@ -263,7 +284,6 @@ struct Venn : Module {
       // It's not great that our channel count is basically the index of the highest
       // circle that has existed while this module is alive.
       // To avoid doing that, we occasionally check how many circles are present.
-      // Deleting them is dangerous (multiple threads read the vector), so we don't do that.
       live_circle_count = 0;
       for (size_t channel = 0; channel < 16; channel++) {
         if (circles.at(channel).present) {
@@ -312,17 +332,15 @@ struct Venn : Module {
     outputs[X_DISTANCE_OUTPUT].setChannels(live_circle_count);
     outputs[Y_DISTANCE_OUTPUT].setChannels(live_circle_count);
 
-    float scaling = params[EXP_LIN_LOG_PARAM].getValue();
+    float exp_lin_log = params[EXP_LIN_LOG_PARAM].getValue();
+    float scaling = 1.0;
     if (outputs[DISTANCE_OUTPUT].isConnected()) {
-      // Save the compute time if not going to use 'scaling'.
-
-      // If we are from -1 - 0, we want to scale it 0.1 - 1.
-      if (scaling == 0.0) {
-        scaling = 1.0;
-      } else if (scaling < 0.0) {
-        scaling = rack::math::rescale(scaling, -1, 0, .1, 1);
-      } else {
-        scaling = rack::math::rescale(scaling, 0, 1, 1, 10);
+      // If we are from -1 - 0, we want to scale it to 0.1 - 1.
+      if (exp_lin_log != 0.0) {
+        scaling = rack::math::rescale(-1 * fabs(exp_lin_log), -1, 0, .1, 1);
+        if (exp_lin_log > 0.0) {
+          scaling = 1.0 / scaling;
+        }
       }
     }
     for (size_t channel = 0; channel < live_circle_count; channel++) {
@@ -370,8 +388,6 @@ struct Venn : Module {
         outputs[Y_DISTANCE_OUTPUT].setVoltage(0.0f, channel);
       }
     }
-    outputs[DISTANCE_OUTPUT].setChannels(live_circle_count);
-    outputs[WITHIN_GATE_OUTPUT].setChannels(live_circle_count);
   }
 };
 
@@ -419,6 +435,7 @@ struct VennCircleUndoRedoAction : history::ModuleAction {
         case DELETION: {
           module->circles[old_position] = old_circle;
           module->current_circle = old_position;
+          // TODO: need to tell state-holding widgets to update.
         }
         break;
         case CHANGE: {
@@ -460,8 +477,61 @@ struct VennCircleUndoRedoAction : history::ModuleAction {
   }
 };
 
+/*
+Principles for the UI:
+* There are these states for the editor:
+  Not Engaged
+  Keystrokes will not affect the editor, and no circle is currently selected (?).
+  This is the case when other modules have focus.
+
+  Circle editing
+  Keystrokes will affect the position/number of circles. This is implemented by each of
+  the widgets that can allow this to send keystrokes (onSelectKey() calls) to one
+  single function, possibly one in Venn module?
+
+  Editing current circle
+  Keystrokes are being used by the focus widget, and are not sent to the circle editor.
+
+* It should be visually clear to the user which state you are in.
+  Currently this is signified by the reveal of the keyboard hint,
+  but there should be at least one other way, since i think the keyboard hint
+  should be optional (as it adds visual noise to the editor). And it's really not
+  sufficient with three states.
+* The main Widget will need to cycle through all of the subwidgets to see if they
+  have focus. My previous idea of having each widget check in step() won't work,
+  because no Widget changes to Not Engaged.
+
+*/
+
+
+// Just the tiny window showing which circle is currently selected, if any.
+struct VennNameTextField : TextField {
+  Venn* module;
+
+  VennNameTextField() {
+    multiline = false;
+  }
+  
+  void setModule(Venn* the_module) {
+    module = the_module;
+  }
+
+  void onChange(const ChangeEvent& e) override {
+    // Text in the widget has changed, update the circle.
+    if (module && (module->current_circle >= 0)) {
+      module->circles.at(module->current_circle).name = text;
+    }
+    // TODO: what's the undo/redo story here?
+  }
+
+  void CircleUpdated(const std::string& name) {
+    text = name;
+  }
+};
+
 struct CircleDisplay : OpaqueWidget {
   Venn* module;
+  VennNameTextField* name_widget;
 
   CircleDisplay() {}
 
@@ -475,6 +545,18 @@ struct CircleDisplay : OpaqueWidget {
     SCHEME_CYAN,
     SCHEME_WHITE
   };
+
+  // Call this AFTER we've moved to a new circle.
+  void UpdateWidgets() {
+    if (module && module->current_circle >= 0) {
+      name_widget->CircleUpdated(module->circles.at(module->current_circle).name);
+    } else {
+      name_widget->CircleUpdated("");
+    }
+  }
+
+  // TODO: need something that notices when a wholesale change has happened (e.g., randomize)
+  // and tell any widgets with state to update to new values.
 
 
   // Move point to current location if left clicked.
@@ -586,6 +668,7 @@ struct CircleDisplay : OpaqueWidget {
             }
             if (module->circles.at(curr).present) {
               module->current_circle = curr;
+              UpdateWidgets();
               break;
             }
           }
@@ -601,6 +684,7 @@ struct CircleDisplay : OpaqueWidget {
             }
             if (module->circles.at(curr).present) {
               module->current_circle = curr;
+              UpdateWidgets();
               break;
             }
           }
@@ -626,6 +710,7 @@ struct CircleDisplay : OpaqueWidget {
           if (!(module->circles.at(curr).present)) {
             module->circles.at(curr) = circle;
             module->current_circle = curr;
+            UpdateWidgets();
             added = true;
             break;
           }
@@ -653,12 +738,14 @@ struct CircleDisplay : OpaqueWidget {
             }
             if (module->circles.at(curr).present) {
               module->current_circle = curr;
+              UpdateWidgets();
               found_next = true;
               break;
             }
           }
           if (!found_next) {
-            module->current_circle = -1;  // Indicares no currently selected circle.
+            module->current_circle = -1;  // Indicate there is no currently selected circle.
+            UpdateWidgets();
           }
           APP->history->push(
             new VennCircleUndoRedoAction(module->id, old_circle,
@@ -712,6 +799,8 @@ struct CircleDisplay : OpaqueWidget {
       std::vector<Circle>* circles;
       int current_circle, solo_circle; 
       Vec point;
+      bool currently_editing;
+      bool currently_keyboard;
       if (module) {
         // If we have a module, but the circles are being updated, best not to draw anything.
         // TODO: reconsider this decision, since we no longer have the issue of out-of-range indexies.
@@ -722,6 +811,8 @@ struct CircleDisplay : OpaqueWidget {
           current_circle = module->current_circle;
           solo_circle = module->solo_channel;
           point = module->point;
+          currently_editing = module->editing;
+          currently_keyboard = module->keystrokes_accepted;
         }
       } else {
         // Simple demo values to show in the browser and library page.
@@ -730,6 +821,8 @@ struct CircleDisplay : OpaqueWidget {
         solo_circle = -1;
         point.x = 0.0;
         point.y = 0.2345;
+        currently_editing = false;
+        currently_keyboard = false;
       }
       nvgScissor(args.vg, RECT_ARGS(args.clipBox));
       Rect r = box.zeroPos();
@@ -737,14 +830,11 @@ struct CircleDisplay : OpaqueWidget {
       // Assuming that we are always on a square-pixeled surface, with X and Y the same distances.
       double pixels_per_volt = bounding_box.x / 10.0;
 
-      // Only indicate that a circle is selected if Venn module has focus. 
-      bool is_selected = (this == APP->event->selectedWidget);
-
       // Background first.
       nvgBeginPath(args.vg);
       nvgRect(args.vg, 0.0, 0.0, bounding_box.x, bounding_box.y);
       NVGcolor background_color = SCHEME_DARK_GRAY;
-      if (is_selected) {
+      if (currently_keyboard) {
         background_color = nvgTransRGBAf(background_color, 0.9);
       }
       nvgFillColor(args.vg, background_color);
@@ -752,7 +842,6 @@ struct CircleDisplay : OpaqueWidget {
 
       // The circles.
       int index = -1;
-      // TODO: Change to different font?
       std::shared_ptr<Font> font = APP->window->loadFont(
         asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
 
@@ -769,25 +858,30 @@ struct CircleDisplay : OpaqueWidget {
             circle_color = nvgTransRGBAf(circle_color, 0.3);
           }
           nvgStrokeColor(args.vg, circle_color);
-          nvgStrokeWidth(args.vg, index == current_circle && is_selected ? 2.0 : 1.0);
+          nvgStrokeWidth(args.vg, index == current_circle && currently_editing ? 2.0 : 1.0);
           nvgStroke(args.vg);
           
           // Now draw the text in the center.
           nvgFillColor(args.vg, colors[index % COLOR_COUNT]);
-          nvgFontSize(args.vg, index == current_circle && is_selected ? 15 : 13);
+          nvgFontSize(args.vg, index == current_circle && currently_editing ? 15 : 13);
           nvgFontFaceId(args.vg, font->handle);
           //nvgTextLetterSpacing(args.vg, -2);
           // Place in the center. TODO: make it apparent where the center of the circle is.
           // TODO: Precompute this string, so don't have to keep remaking it.
           // Or just let FrameBuffer cache the entire result.
-          std::string center_text = std::to_string(index + 1);
-          if (!circle.name.empty()) {
-            center_text.append(" - ");
-            center_text.append(circle.name);
-          }
+          std::string center_number = std::to_string(index + 1);
+          nvgTextAlign(args.vg, NVG_ALIGN_MIDDLE | NVG_ALIGN_CENTER);
           nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
                           nvg_y(circle.y_center, bounding_box.x),
-                          center_text.c_str(), NULL);
+                          center_number.c_str(), NULL);
+          if (!circle.name.empty()) {
+            nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
+            // TODO: Break name into lines by spaces?
+            nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
+                             nvg_y(circle.y_center, bounding_box.x) + 5.0,
+                             circle.name.c_str(), NULL);
+
+          }
         }
       }
 
@@ -809,8 +903,47 @@ struct CircleDisplay : OpaqueWidget {
 	}
 };
 
+// Just the tiny window showing which circle is currently selected, if any.
+struct VennNumberDisplayWidget : LightWidget {
+  Venn* module;
+
+  VennNumberDisplayWidget() {
+  }
+
+  void drawLayer(const DrawArgs& args, int layer) override {
+    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+    if (layer == 1) {
+      Rect r = box.zeroPos();
+      Vec bounding_box = r.getBottomRight();
+      // No background color!
+
+      if (module) {
+        std::shared_ptr<Font> font = APP->window->loadFont(
+            asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
+
+        if (font) {
+          std::string text = module->editing && module->current_circle >= 0 ?
+                             std::to_string(module->current_circle + 1) :
+                             "";
+          nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
+                                                             color::BLACK);
+          nvgFontSize(args.vg, 20);
+          nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
+          nvgFontFaceId(args.vg, font->handle);
+          nvgTextLetterSpacing(args.vg, -1);
+          nvgText(args.vg, bounding_box.x / 2, 0, text.c_str(), NULL);
+        }
+      }
+    }
+    Widget::drawLayer(args, layer);
+    nvgResetScissor(args.vg);
+  }
+};
 
 struct VennWidget : ModuleWidget {
+  CircleDisplay* display;
+  VennNameTextField* name_field;
+
   VennWidget(Venn* module) {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Venn.svg")));
@@ -837,14 +970,51 @@ struct VennWidget : ModuleWidget {
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(166.582, 47.286)), module, Venn::X_DISTANCE_OUTPUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 47.286)), module, Venn::Y_DISTANCE_OUTPUT));
 
+    // Information about the currently selected circle.
+    // Lining up vertically with the black box around the X/Y outputs.
+    VennNumberDisplayWidget* number = createWidget<VennNumberDisplayWidget>(mm2px(Vec(2.240, 55.0)));
+    number->box.size = mm2px(Vec(10.0, 7.0));  // Decided by seeing how big "16" is in Inkscape.
+    number->module = module;
+    addChild(number);
+
+    name_field = createWidget<VennNameTextField>(mm2px(Vec(2.240, 65.0)));
+    name_field->box.size = mm2px(Vec(100.0, 7.0));
+    name_field->setModule(module);
+    addChild(name_field);
+
     // The Circles.
-    CircleDisplay* display = createWidget<CircleDisplay>(
+    display = createWidget<CircleDisplay>(
       mm2px(Vec(31.0, 1.7)));
     display->box.size = mm2px(Vec(125.0, 125.0));
     display->module = module;
+    display->name_widget = name_field;
     addChild(display);
-
   }
+
+  void step() override {
+    ModuleWidget::step();
+    if (module) {
+      Venn* module = dynamic_cast<Venn*>(this->module);
+      Widget* selected = APP->event->selectedWidget;
+      if (selected == this || selected == display) {
+        module->editing = true;
+        module->keystrokes_accepted = true;
+      } else if (selected == name_field) {
+        module->editing = true;
+        module->keystrokes_accepted = false;  // Text input field needs the keystrokes.
+      } else {
+        module->editing = false;
+        module->keystrokes_accepted = false;
+      }
+    }
+  } 
+
+  // This allows circle editing even when the display widget itself is not selected.
+  void onSelectKey(const SelectKeyEvent& e) override {
+    if (display) {
+      display->onSelectKey(e);
+    }
+  } 
 
   void appendContextMenu(Menu* menu) override {
     menu->addChild(new MenuSeparator);
