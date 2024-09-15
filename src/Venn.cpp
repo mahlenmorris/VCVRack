@@ -509,7 +509,7 @@ struct VennNameTextField : TextField {
   Venn* module;
 
   VennNameTextField() {
-    multiline = false;
+    multiline = true;
   }
   
   void setModule(Venn* the_module) {
@@ -913,8 +913,6 @@ struct VennNumberDisplayWidget : LightWidget {
   void drawLayer(const DrawArgs& args, int layer) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
     if (layer == 1) {
-      Rect r = box.zeroPos();
-      Vec bounding_box = r.getBottomRight();
       // No background color!
 
       if (module) {
@@ -928,10 +926,10 @@ struct VennNumberDisplayWidget : LightWidget {
           nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
                                                              color::BLACK);
           nvgFontSize(args.vg, 20);
-          nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
+          nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_LEFT);
           nvgFontFaceId(args.vg, font->handle);
           nvgTextLetterSpacing(args.vg, -1);
-          nvgText(args.vg, bounding_box.x / 2, 0, text.c_str(), NULL);
+          nvgText(args.vg, 0, 0, text.c_str(), NULL);
         }
       }
     }
@@ -972,13 +970,13 @@ struct VennWidget : ModuleWidget {
 
     // Information about the currently selected circle.
     // Lining up vertically with the black box around the X/Y outputs.
-    VennNumberDisplayWidget* number = createWidget<VennNumberDisplayWidget>(mm2px(Vec(2.240, 55.0)));
+    VennNumberDisplayWidget* number = createWidget<VennNumberDisplayWidget>(mm2px(Vec(2.240, 58.0)));
     number->box.size = mm2px(Vec(10.0, 7.0));  // Decided by seeing how big "16" is in Inkscape.
     number->module = module;
     addChild(number);
 
-    name_field = createWidget<VennNameTextField>(mm2px(Vec(2.240, 65.0)));
-    name_field->box.size = mm2px(Vec(100.0, 7.0));
+    name_field = createWidget<VennNameTextField>(mm2px(Vec(2.240, 66.0)));
+    name_field->box.size = mm2px(Vec(26.0, 21.0));
     name_field->setModule(module);
     addChild(name_field);
 
