@@ -114,6 +114,8 @@ struct Venn : Module {
   // Menu item that decides whether to show the readable keyboard hints
   // or just the icon indicating that keyboard input is accepted.
   bool show_keyboard;
+  // Flag to VennNameTextField to update itself.
+  bool update_name_ui;
 
   Venn() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -223,6 +225,7 @@ struct Venn : Module {
       } 
     }
     circles_loaded = true;
+    update_name_ui = true;
 
     json_t* keyboardJ = json_object_get(rootJ,  "show_keyboard");
     if (keyboardJ) {
@@ -246,6 +249,7 @@ struct Venn : Module {
     human_point.x = 0.0;
     human_point.y = 0.0;
     circles_loaded = true;
+    update_name_ui = true;
   }
 
   float MyNormal() {
@@ -285,6 +289,7 @@ struct Venn : Module {
     human_point.x = random::uniform() * 9.6 - 4.8;
     human_point.y = random::uniform() * 9.6 - 4.8;
     circles_loaded = true;
+    update_name_ui = true;
   }	
 
   void process(const ProcessArgs& args) override {
@@ -517,16 +522,42 @@ Principles for the UI:
 */
 
 
-// Just the tiny window showing which circle is currently selected, if any.
+// TODO: Places where this needs to be updated.
+// * When Module is first in context and there is already a selected circle.
+// * When randomized.
+// * When Module is no longer in context (should go blank).
+// * When has a value and is Reset.
+// OK, I think these four are fixed...
+// * Ugh, undo/redo....
+
+// Also, maybe filter out "\n" characters? Do we do that for Fermata/Basically titles?
+// In V2, maybe allow them and display accordingly. 
 struct VennNameTextField : TextField {
   Venn* module;
 
   VennNameTextField() {
     multiline = true;
   }
-  
+
   void setModule(Venn* the_module) {
     module = the_module;
+  }
+
+  void step() override {
+    TextField::step();
+    if (module) {
+      if (!module->editing) {
+        setText("");
+        return;
+      }
+      // See if this field needs updating.
+      if (module->update_name_ui) {
+        module->update_name_ui = false;
+        if (module->current_circle >= 0) {
+          setText(module->circles.at(module->current_circle).name);
+        }
+      }
+    }
   }
 
   void onChange(const ChangeEvent& e) override {
