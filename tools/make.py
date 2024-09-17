@@ -64,3 +64,13 @@ for i in range(1):
   print("%s written." % fname)
 
 print('Done!')
+
+
+# Past examples:
+# These are the contents of the "for x in range(...)" loop
+
+'''
+    # Makes a simple clockwise circle.
+    samples_left.append(math.sin(2 * math.pi * x / DATA_SIZE))
+    samples_right.append(math.cos(2 * math.pi * x / DATA_SIZE))
+'''

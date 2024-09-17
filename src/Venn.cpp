@@ -1011,8 +1011,9 @@ struct VennNumberDisplayWidget : LightWidget {
           std::string text = module->editing && module->current_circle >= 0 ?
                              std::to_string(module->current_circle + 1) :
                              "";
-          nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
-                                                             color::BLACK);
+          // nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
+          //                                                    color::BLACK);
+          nvgFillColor(args.vg, color::BLACK);
           nvgFontSize(args.vg, 20);
           nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_LEFT);
           nvgFontFaceId(args.vg, font->handle);
@@ -1021,7 +1022,7 @@ struct VennNumberDisplayWidget : LightWidget {
         }
       }
     }
-    Widget::drawLayer(args, layer);
+    LightWidget::drawLayer(args, layer);
     nvgResetScissor(args.vg);
   }
 };
