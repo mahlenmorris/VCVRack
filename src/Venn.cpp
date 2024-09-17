@@ -59,6 +59,11 @@ struct Venn : Module {
 		EXP_LIN_LOG_PARAM,
 		X_POSITION_ATTN_PARAM,
 		Y_POSITION_ATTN_PARAM,
+		INV_WITHIN_PARAM,
+		INV_X_PARAM,
+		INV_Y_PARAM,
+		OFST_X_PARAM,
+		OFST_Y_PARAM,
     PARAMS_LEN
   };
   enum InputId {
@@ -78,6 +83,11 @@ struct Venn : Module {
     OUTPUTS_LEN
   };
   enum LightId {
+  	INV_WITHIN_LIGHT,
+		INV_X_LIGHT,
+		INV_Y_LIGHT,
+		OFST_X_LIGHT,
+		OFST_Y_LIGHT,
     LIGHTS_LEN
   };
 
@@ -134,6 +144,17 @@ struct Venn : Module {
 		configOutput(Y_POSITION_OUTPUT, "The current Y coordinate of the point (-5V -> 5V). Useful for recording point gestures and performances.");
 		configOutput(X_DISTANCE_OUTPUT, "");
 		configOutput(Y_DISTANCE_OUTPUT, "");
+
+    configSwitch(INV_X_PARAM, 0, 1, 0, "Invert",
+                 {"Increasing (low -> high)", "Decreasing (high -> low)"});
+    configSwitch(INV_Y_PARAM, 0, 1, 0, "Invert",
+                 {"Increasing (low -> high)", "Decreasing (high -> low)"});
+    configSwitch(INV_WITHIN_PARAM, 0, 1, 0, "Invert",
+                 {"Increasing (outside = 0V, inside = 10V)", "Decreasing (outside = 10V, inside = 0V)"});
+    configSwitch(OFST_X_PARAM, 0, 1, 0, "Offset",
+                 {"Bipolar (-5V - +5V)", "Unipolar (0V - 10V)"});
+    configSwitch(OFST_Y_PARAM, 0, 1, 0, "Offset",
+                 {"Bipolar (-5V - +5V)", "Unipolar (0V - 10V)"});
 
     current_circle = -1;
     check_live_circles = 0;
@@ -341,6 +362,7 @@ struct Venn : Module {
     outputs[X_POSITION_OUTPUT].setVoltage(point.x);
     outputs[Y_POSITION_OUTPUT].setVoltage(point.y);
 
+
     // Determine what values to output.
     // TODO: many optimizations, including doing nothing when neither point nor circles has changed.
     // TODO: Can SIMD library help me?
@@ -361,6 +383,11 @@ struct Venn : Module {
         }
       }
     }
+    bool invert_gate = params[INV_WITHIN_PARAM].getValue();
+    bool offset_x = params[OFST_X_PARAM].getValue();
+    bool invert_x = params[INV_X_PARAM].getValue();
+    bool offset_y = params[OFST_Y_PARAM].getValue();
+    bool invert_y = params[INV_Y_PARAM].getValue();
     for (size_t channel = 0; channel < live_circle_count; channel++) {
       const Circle& circle = circles.at(channel);
       // If solo-ing, make sure that only solo channel gets computed.
@@ -376,13 +403,13 @@ struct Venn : Module {
         float distance = sqrt(x_distance * x_distance + y_distance * y_distance);
         if (distance > circle.radius) {
           outputs[DISTANCE_OUTPUT].setVoltage(0.0f, channel);
-          outputs[WITHIN_GATE_OUTPUT].setVoltage(0.0f, channel);
-          // An odd default value, since it is the same value as being in line with the center.
-          // TODO: is there a better choice?
+          outputs[WITHIN_GATE_OUTPUT].setVoltage(invert_gate ? 10.0f : 0.0f, channel);
+          // An odd default value for X and Y, since it is the same value as being in line with the center.
+          // TODO: is there a better choice? Should it be affected by offset_x|y?
           outputs[X_DISTANCE_OUTPUT].setVoltage(0.0f, channel);
           outputs[Y_DISTANCE_OUTPUT].setVoltage(0.0f, channel);
         } else {
-          outputs[WITHIN_GATE_OUTPUT].setVoltage(10.0f, channel);
+          outputs[WITHIN_GATE_OUTPUT].setVoltage(invert_gate ? 0.0f : 10.0f, channel);
           if (outputs[DISTANCE_OUTPUT].isConnected()) {
             float value = (1 - distance / circle.radius);
             // Since 1.0 is the default, skip the call to pow() if not needed.
@@ -393,10 +420,12 @@ struct Venn : Module {
           }
 
           if (outputs[X_DISTANCE_OUTPUT].isConnected()) {
-            outputs[X_DISTANCE_OUTPUT].setVoltage(x_distance / circle.radius * 5.0, channel);
+            outputs[X_DISTANCE_OUTPUT].setVoltage(
+              x_distance / circle.radius * 5.0 * (invert_x? -1.0 : 1.0) + (offset_x ? 5.0 : 0.0), channel);
           }
           if (outputs[Y_DISTANCE_OUTPUT].isConnected()) {
-            outputs[Y_DISTANCE_OUTPUT].setVoltage(y_distance / circle.radius * 5.0, channel);
+            outputs[Y_DISTANCE_OUTPUT].setVoltage(
+              y_distance / circle.radius * 5.0 * (invert_y ? -1.0 : 1.0) + (offset_y ? 5.0 : 0.0), channel);
           }
         }
       } else {
@@ -406,6 +435,12 @@ struct Venn : Module {
         outputs[Y_DISTANCE_OUTPUT].setVoltage(0.0f, channel);
       }
     }
+    // Lights.
+    lights[INV_WITHIN_LIGHT].setBrightness(params[INV_WITHIN_PARAM].getValue());
+    lights[INV_X_LIGHT].setBrightness(params[INV_X_PARAM].getValue());
+    lights[INV_Y_LIGHT].setBrightness(params[INV_Y_PARAM].getValue());
+    lights[OFST_X_LIGHT].setBrightness(params[OFST_X_PARAM].getValue());
+    lights[OFST_Y_LIGHT].setBrightness(params[OFST_Y_PARAM].getValue());
   }
 };
 
@@ -534,6 +569,7 @@ Principles for the UI:
 // In V2, maybe allow them and display accordingly. 
 struct VennNameTextField : TextField {
   Venn* module;
+  bool ignore_next_change = false;
 
   VennNameTextField() {
     multiline = true;
@@ -547,6 +583,7 @@ struct VennNameTextField : TextField {
     TextField::step();
     if (module) {
       if (!module->editing) {
+        ignore_next_change = true;
         setText("");
         return;
       }
@@ -561,6 +598,10 @@ struct VennNameTextField : TextField {
   }
 
   void onChange(const ChangeEvent& e) override {
+    if (ignore_next_change) {
+      ignore_next_change = false;
+      return;
+    }
     // Text in the widget has changed, update the circle.
     if (module && (module->current_circle >= 0)) {
       module->circles.at(module->current_circle).name = text;
@@ -1030,6 +1071,18 @@ struct VennWidget : ModuleWidget {
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 30.162)), module, Venn::WITHIN_GATE_OUTPUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(166.582, 47.286)), module, Venn::X_DISTANCE_OUTPUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 47.286)), module, Venn::Y_DISTANCE_OUTPUT));
+
+    addParam(createLightParamCentered<VCVLightLatch<
+          MediumSimpleLight<WhiteLight>>>(mm2px(Vec(163.936, 28.78)), module, Venn::INV_WITHIN_PARAM, Venn::INV_WITHIN_LIGHT));
+    addParam(createLightParamCentered<VCVLightLatch<
+          MediumSimpleLight<WhiteLight>>>(mm2px(Vec(166.582, 64.673)), module, Venn::INV_X_PARAM, Venn::INV_X_LIGHT));
+    addParam(createLightParamCentered<VCVLightLatch<
+          MediumSimpleLight<WhiteLight>>>(mm2px(Vec(178.17, 64.673)), module, Venn::INV_Y_PARAM, Venn::INV_Y_LIGHT));
+    addParam(createLightParamCentered<VCVLightLatch<
+          MediumSimpleLight<WhiteLight>>>(mm2px(Vec(166.582, 77.655)), module, Venn::OFST_X_PARAM, Venn::OFST_X_LIGHT));
+    addParam(createLightParamCentered<VCVLightLatch<
+          MediumSimpleLight<WhiteLight>>>(mm2px(Vec(178.17, 77.655)), module, Venn::OFST_Y_PARAM, Venn::OFST_Y_LIGHT));
+
 
     // Information about the currently selected circle.
     // Lining up vertically with the black box around the X/Y outputs.
