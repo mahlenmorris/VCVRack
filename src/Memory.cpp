@@ -84,6 +84,7 @@ struct PrepareTask {
   std::string str1, str2;
   float* new_left_array;
   float* new_right_array;
+  int result_sample_count;
   std::vector<std::string>* loadable_files;
   FileOperationReporting* status;  // Owned by module.
 
@@ -501,6 +502,7 @@ struct PrepareThread {
     }
     task->new_left_array = new_left_array;
     task->new_right_array = new_right_array;
+    task->result_sample_count = samples;
   }  
 
   void Work() {
@@ -536,14 +538,13 @@ struct PrepareThread {
                 busy = true;
                 ConvertFileToSamples(task, audio_file);
                 busy = false;
-                // Done with the audio_file.
-                int sample_count = audio_file.getNumSamplesPerChannel();
                 double seconds = audio_file.getLengthInSeconds();
+                // Done with the audio_file.
 
                 // Send task to BufferChangeThread.
                 BufferTask* replace_task = BufferTask::ReplaceTask(
                   task->new_left_array, task->new_right_array, task->status,
-                  sample_count, seconds);  
+                  task->result_sample_count, seconds);  
                 if (!prepare_buffer_queue->tasks.push(replace_task)) {
                   delete task->new_left_array;
                   delete task->new_right_array;
