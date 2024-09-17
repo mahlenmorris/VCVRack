@@ -26,6 +26,7 @@ DISTRIBUTABLES += res
 DISTRIBUTABLES += $(wildcard LICENSE*)
 DISTRIBUTABLES += presets
 DISTRIBUTABLES += fonts
+DISTRIBUTABLES += venn-waves
 
 # Include the Rack plugin Makefile framework
 include $(RACK_DIR)/plugin.mk
