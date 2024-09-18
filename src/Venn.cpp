@@ -556,6 +556,9 @@ Principles for the UI:
 
 */
 
+/*
+I'm removing visible names for now. There are many edge cases to clear up, and names shouldn't
+block the initial release.
 
 // TODO: Places where this needs to be updated.
 // * When Module is first in context and there is already a selected circle.
@@ -614,9 +617,11 @@ struct VennNameTextField : TextField {
   }
 };
 
+*/
+
 struct CircleDisplay : OpaqueWidget {
   Venn* module;
-  VennNameTextField* name_widget;
+  // VennNameTextField* name_widget;
 
   CircleDisplay() {}
 
@@ -632,6 +637,7 @@ struct CircleDisplay : OpaqueWidget {
   };
 
   // Call this AFTER we've moved to a new circle.
+  /* Delaying names.
   void UpdateWidgets() {
     if (module && module->current_circle >= 0) {
       name_widget->CircleUpdated(module->circles.at(module->current_circle).name);
@@ -639,6 +645,7 @@ struct CircleDisplay : OpaqueWidget {
       name_widget->CircleUpdated("");
     }
   }
+  */
 
   // TODO: need something that notices when a wholesale change has happened (e.g., randomize)
   // and tell any widgets with state to update to new values.
@@ -753,7 +760,9 @@ struct CircleDisplay : OpaqueWidget {
             }
             if (module->circles.at(curr).present) {
               module->current_circle = curr;
+              /* Delaying names.
               UpdateWidgets();
+              */
               break;
             }
           }
@@ -769,7 +778,9 @@ struct CircleDisplay : OpaqueWidget {
             }
             if (module->circles.at(curr).present) {
               module->current_circle = curr;
+              /* Delaying names.
               UpdateWidgets();
+              */
               break;
             }
           }
@@ -795,7 +806,9 @@ struct CircleDisplay : OpaqueWidget {
           if (!(module->circles.at(curr).present)) {
             module->circles.at(curr) = circle;
             module->current_circle = curr;
+            /* Delaying names.
             UpdateWidgets();
+            */
             added = true;
             break;
           }
@@ -823,14 +836,18 @@ struct CircleDisplay : OpaqueWidget {
             }
             if (module->circles.at(curr).present) {
               module->current_circle = curr;
+              /* Delaying names.
               UpdateWidgets();
+              */
               found_next = true;
               break;
             }
           }
           if (!found_next) {
             module->current_circle = -1;  // Indicate there is no currently selected circle.
+            /* Delaying names.
             UpdateWidgets();
+            */
           }
           APP->history->push(
             new VennCircleUndoRedoAction(module->id, old_circle,
@@ -962,6 +979,7 @@ struct CircleDisplay : OpaqueWidget {
           nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
                           nvg_y(circle.y_center, bounding_box.x),
                           center_number.c_str(), NULL);
+           /* Delaying names.
           if (!circle.name.empty()) {
             nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
             // TODO: Break name into lines by spaces?
@@ -970,6 +988,7 @@ struct CircleDisplay : OpaqueWidget {
                              circle.name.c_str(), NULL);
 
           }
+          */
         }
       }
 
@@ -1045,7 +1064,9 @@ struct VennKeyboardIcon : SvgWidget {
 
 struct VennWidget : ModuleWidget {
   CircleDisplay* display;
+  /* Delaying names.
   VennNameTextField* name_field;
+  */
 
   VennWidget(Venn* module) {
     setModule(module);
@@ -1087,22 +1108,28 @@ struct VennWidget : ModuleWidget {
 
     // Information about the currently selected circle.
     // Lining up vertically with the black box around the X/Y outputs.
+    /* Delaying names.
     VennNumberDisplayWidget* number = createWidget<VennNumberDisplayWidget>(mm2px(Vec(2.240, 58.0)));
     number->box.size = mm2px(Vec(10.0, 7.0));  // Decided by seeing how big "16" is in Inkscape.
     number->module = module;
     addChild(number);
+    */
 
+    /* Delaying names.
     name_field = createWidget<VennNameTextField>(mm2px(Vec(2.240, 66.0)));
     name_field->box.size = mm2px(Vec(26.0, 21.0));
     name_field->setModule(module);
     addChild(name_field);
+    */
 
     // The Circles.
     display = createWidget<CircleDisplay>(
       mm2px(Vec(31.0, 1.7)));
     display->box.size = mm2px(Vec(125.0, 125.0));
     display->module = module;
+    /* Delaying names.
     display->name_widget = name_field;
+    */
     addChild(display);
 
     VennKeyboardIcon* icon = createWidget<VennKeyboardIcon>(mm2px(Vec(1.0, 1.0)));
@@ -1118,9 +1145,12 @@ struct VennWidget : ModuleWidget {
       if (selected == this || selected == display) {
         module->editing = true;
         module->keystrokes_accepted = true;
+        /* Delaying names.
+
       } else if (selected == name_field) {
         module->editing = true;
         module->keystrokes_accepted = false;  // Text input field needs the keystrokes.
+        */
       } else {
         module->editing = false;
         module->keystrokes_accepted = false;

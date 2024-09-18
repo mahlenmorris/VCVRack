@@ -65,7 +65,9 @@ struct Circle {
 
   std::string to_string() {
     std::string result("[");
+    /* Delaying names.
     result.append(name);
+    */
     result.append("]\n");
 
     result.append(AnAssignment("x", x_center));
