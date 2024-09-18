@@ -454,6 +454,7 @@ void STTextField::onSelectKey(const SelectKeyEvent& e) {
     }
     // Consume all printable keys unless Ctrl is held
     if ((e.mods & RACK_MOD_CTRL) == 0 && e.keyName != "") {
+      // I'm not certain *how*, but this causes onSelectText() (above) to be called.
       e.consume(this);
     }
 
@@ -520,7 +521,7 @@ void STTextField::insertText(std::string new_text) {
     this->text->erase(begin, len);
     cursor = selection = begin;
     changed = true;
-  }
+  }  
 
   // Sometimes text pasted from the outside has unprintable characters that mess
   // the display up. Let's remove them.
