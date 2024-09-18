@@ -91,10 +91,8 @@ struct Venn : Module {
     LIGHTS_LEN
   };
 
-  // The array of circles. Initialized with 16 entries, which are only ever
-  // overwritten, not deleted. So any index from 0-15 is valid.
-  // TODO: replace with actual Circle[] array.
-  std::vector<Circle> circles;
+  // The array of circles.
+  Circle circles[16];
   // Index to the circle being edited, or -1 if no circles are available.
   int current_circle;
   // Flag to indicate that circles are being wholesale updated, maybe
@@ -162,10 +160,6 @@ struct Venn : Module {
     // To avoid errors with improper indexes into circles, I just fill it up.
     Circle circle;
     circle.present = false;
-    // TODO: Make circles into a vector of size 16!
-    for (int i = 0; i < 16; ++i) {
-      circles.push_back(circle);
-    }
     circles_loaded = true;
     point.x = 0;
     point.y = 0;
@@ -178,12 +172,12 @@ struct Venn : Module {
   }
   
   // Turns a set of shapes into a text string that we can parse later to recreate the shapes.
-  std::string to_string(std::vector<Circle>& the_circles) {
+  std::string to_string(Circle the_circles[16]) {
     std::string result;
     // Don't need to store deleted circles with a larger index than the largest intact one.
     // So I'll just take this opportunity to erase any at the end.
     int last_index = -1;
-    for (int curr = the_circles.size() - 1; curr >= 0; curr--) {
+    for (int curr = 16 - 1; curr >= 0; curr--) {
       if (the_circles[curr].present) {
         last_index = curr;
         break;
@@ -256,7 +250,7 @@ struct Venn : Module {
 
   void ClearAllCircles() {
     for (int i = 0; i < 16; ++i) {
-      circles.at(i).present = false;
+      circles[i].present = false;
     }
   }
 
@@ -304,7 +298,7 @@ struct Venn : Module {
           }
         }
         circle.name = the_name;
-        circles.at(i) = circle;
+        circles[i] = circle;
     }
     current_circle = 0;
     human_point.x = random::uniform() * 9.6 - 4.8;
@@ -325,7 +319,7 @@ struct Venn : Module {
       // To avoid doing that, we occasionally check how many circles are present.
       live_circle_count = 0;
       for (size_t channel = 0; channel < 16; channel++) {
-        if (circles.at(channel).present) {
+        if (circles[channel].present) {
           live_circle_count = channel + 1;
         }
       }
@@ -389,7 +383,7 @@ struct Venn : Module {
     bool offset_y = params[OFST_Y_PARAM].getValue();
     bool invert_y = params[INV_Y_PARAM].getValue();
     for (size_t channel = 0; channel < live_circle_count; channel++) {
-      const Circle& circle = circles.at(channel);
+      const Circle& circle = circles[channel];
       // If solo-ing, make sure that only solo channel gets computed.
       if (circle.present && (solo_channel < 0 || (int) channel == solo_channel)) {
         // All of the outputs care if we are in the circle or not, so we always compute it,
@@ -594,7 +588,7 @@ struct VennNameTextField : TextField {
       if (module->update_name_ui) {
         module->update_name_ui = false;
         if (module->current_circle >= 0) {
-          setText(module->circles.at(module->current_circle).name);
+          setText(module->circles[module->current_circle].name);
         }
       }
     }
@@ -607,7 +601,7 @@ struct VennNameTextField : TextField {
     }
     // Text in the widget has changed, update the circle.
     if (module && (module->current_circle >= 0)) {
-      module->circles.at(module->current_circle).name = text;
+      module->circles[module->current_circle].name = text;
     }
     // TODO: what's the undo/redo story here?
   }
@@ -640,7 +634,7 @@ struct CircleDisplay : OpaqueWidget {
   /* Delaying names.
   void UpdateWidgets() {
     if (module && module->current_circle >= 0) {
-      name_widget->CircleUpdated(module->circles.at(module->current_circle).name);
+      name_widget->CircleUpdated(module->circles[module->current_circle].name);
     } else {
       name_widget->CircleUpdated("");
     }
@@ -690,7 +684,7 @@ struct CircleDisplay : OpaqueWidget {
   void RememberChange(const Circle& old_circle) {
     APP->history->push(
       new VennCircleUndoRedoAction(module->id, old_circle,
-                                   module->circles.at(module->current_circle),
+                                   module->circles[module->current_circle],
                                    module->current_circle));
   }
 
@@ -706,46 +700,46 @@ struct CircleDisplay : OpaqueWidget {
         // Editing the Circle.
         // W - up
         if (e.keyName == "w" && (e.mods & RACK_MOD_CTRL) == 0) {
-          Circle old(module->circles.at(module->current_circle));
-          module->circles.at(module->current_circle).y_center += 0.1;
+          Circle old(module->circles[module->current_circle]);
+          module->circles[module->current_circle].y_center += 0.1;
           RememberChange(old);
           e.consume(this);
         }
         // S - down
         if (e.keyName == "s" && (e.mods & RACK_MOD_CTRL) == 0) {
-          Circle old(module->circles.at(module->current_circle));
-          module->circles.at(module->current_circle).y_center -= 0.1;
+          Circle old(module->circles[module->current_circle]);
+          module->circles[module->current_circle].y_center -= 0.1;
           RememberChange(old);
           e.consume(this);
         }
         // A - left
         if (e.keyName == "a" && (e.mods & RACK_MOD_CTRL) == 0) {
-          Circle old(module->circles.at(module->current_circle));
-          module->circles.at(module->current_circle).x_center -= 0.1;
+          Circle old(module->circles[module->current_circle]);
+          module->circles[module->current_circle].x_center -= 0.1;
           RememberChange(old);
           e.consume(this);
         }
         // D - right
         if (e.keyName == "d" && (e.mods & RACK_MOD_CTRL) == 0) {
-          Circle old(module->circles.at(module->current_circle));
-          module->circles.at(module->current_circle).x_center += 0.1;
+          Circle old(module->circles[module->current_circle]);
+          module->circles[module->current_circle].x_center += 0.1;
           RememberChange(old);
           e.consume(this);
         }
         // Q - smaller
         if (e.keyName == "q" && (e.mods & RACK_MOD_CTRL) == 0) {
-          Circle old(module->circles.at(module->current_circle));
-          module->circles.at(module->current_circle).radius -= 0.1;
-          if (module->circles.at(module->current_circle).radius < 0.1) {
-            module->circles.at(module->current_circle).radius = 0.1;
+          Circle old(module->circles[module->current_circle]);
+          module->circles[module->current_circle].radius -= 0.1;
+          if (module->circles[module->current_circle].radius < 0.1) {
+            module->circles[module->current_circle].radius = 0.1;
           }
           RememberChange(old);
           e.consume(this);
         }
         // E - bigger
         if (e.keyName == "e" && (e.mods & RACK_MOD_CTRL) == 0) {
-          Circle old(module->circles.at(module->current_circle));
-          module->circles.at(module->current_circle).radius += 0.1;
+          Circle old(module->circles[module->current_circle]);
+          module->circles[module->current_circle].radius += 0.1;
           RememberChange(old);
           e.consume(this);
         }
@@ -758,7 +752,7 @@ struct CircleDisplay : OpaqueWidget {
             if (curr < 0) {
               curr = 16 - 1;
             }
-            if (module->circles.at(curr).present) {
+            if (module->circles[curr].present) {
               module->current_circle = curr;
               /* Delaying names.
               UpdateWidgets();
@@ -776,7 +770,7 @@ struct CircleDisplay : OpaqueWidget {
             if (curr >= 16) {
               curr = 0;
             }
-            if (module->circles.at(curr).present) {
+            if (module->circles[curr].present) {
               module->current_circle = curr;
               /* Delaying names.
               UpdateWidgets();
@@ -803,8 +797,8 @@ struct CircleDisplay : OpaqueWidget {
         // Limit of 16 channels in a cable, so won't add after that.
         bool added = false;
         for (int curr = 0; curr < 16; curr++) {
-          if (!(module->circles.at(curr).present)) {
-            module->circles.at(curr) = circle;
+          if (!(module->circles[curr].present)) {
+            module->circles[curr] = circle;
             module->current_circle = curr;
             /* Delaying names.
             UpdateWidgets();
@@ -815,7 +809,7 @@ struct CircleDisplay : OpaqueWidget {
         }
         if (added) {
           APP->history->push(
-            new VennCircleUndoRedoAction(module->id, module->circles.at(module->current_circle),
+            new VennCircleUndoRedoAction(module->id, module->circles[module->current_circle],
                                          old_index, module->current_circle, true));
         }
         e.consume(this);
@@ -825,16 +819,16 @@ struct CircleDisplay : OpaqueWidget {
       if (e.keyName == "x" && (e.mods & RACK_MOD_CTRL) == 0) {
         if (module->current_circle >= 0) {  // i.e., there is a circle to delete.
           // Copy circle *before* "present" is set to false!
-          Circle old_circle(module->circles.at(module->current_circle));
+          Circle old_circle(module->circles[module->current_circle]);
           int old_index = module->current_circle;
-          module->circles.at(module->current_circle).present = false;
+          module->circles[module->current_circle].present = false;
           // Move focus to next circle, if any.
           bool found_next = false;
           for (int curr = module->current_circle + 1; curr != module->current_circle; curr++) {
             if (curr >= 16) {
               curr = 0;
             }
-            if (module->circles.at(curr).present) {
+            if (module->circles[curr].present) {
               module->current_circle = curr;
               /* Delaying names.
               UpdateWidgets();
@@ -876,29 +870,28 @@ struct CircleDisplay : OpaqueWidget {
     return size - ((volt_y + 5) * size / 10.0);
   }
 
-  // Caller is responsible for deleting this.
-  std::vector<Circle>* default_circles() {
+  void default_circles(Circle circs[16]) {
     float x[6] = {0.062705, -2.653372, 2.517570, 3.260226, -2.121736, 0.974539};
     float y[6] = {-0.411569, 2.684878, 4.339533, -0.208806, -2.508809, -4.108777};
     float radius[6] = {1.742869, 4.004038, 2.987639, 2.559288, 2.169408, 3.424444};
 
-    std::vector<Circle>* circs = new std::vector<Circle>();
     for (int i = 0; i < 6; ++i) {
       Circle circle;
       circle.x_center = x[i];
       circle.y_center = y[i];
       circle.radius = radius[i];
       circle.present = true;
-      circs->push_back(circle);
+      circs[i] = circle;
     }
-    return circs;
   }
 
   // By using drawLayer() instead of draw(), this becomes a glowing Depict
   // when the "room lights" are turned down. That seems correct to me.
   void drawLayer(const DrawArgs& args, int layer) override {
     if (layer == 1) {
-      std::vector<Circle>* circles;
+      Circle dummy[16];
+      Circle *circles;
+      int circle_count;
       int current_circle, solo_circle; 
       Vec point;
       bool currently_editing;
@@ -910,7 +903,8 @@ struct CircleDisplay : OpaqueWidget {
         if (!module->circles_loaded) {
           return;
         } else {
-          circles = &(module->circles);
+          circles = module->circles;
+          circle_count = module->live_circle_count;
           current_circle = module->current_circle;
           solo_circle = module->solo_channel;
           point = module->point;
@@ -920,7 +914,9 @@ struct CircleDisplay : OpaqueWidget {
         }
       } else {
         // Simple demo values to show in the browser and library page.
-        circles = default_circles();
+        default_circles(dummy);
+        circles = dummy;
+        circle_count = 6;
         current_circle = 2;
         solo_circle = -1;
         point.x = 0.0;
@@ -946,12 +942,11 @@ struct CircleDisplay : OpaqueWidget {
       }
 
       // The circles.
-      int index = -1;
       std::shared_ptr<Font> font = APP->window->loadFont(
         asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
 
-      for (const Circle& circle : *circles) {
-        index++;
+      for (int index = 0; index < circle_count; index++) {
+        const Circle& circle = circles[index];
         if (circle.present) {
           // Draw the circle itself.
           nvgBeginPath(args.vg);
@@ -1002,10 +997,6 @@ struct CircleDisplay : OpaqueWidget {
 
       OpaqueWidget::draw(args);
       nvgResetScissor(args.vg);
-
-      if (!module) {
-        delete circles;
-      }
     }
 	}
 };

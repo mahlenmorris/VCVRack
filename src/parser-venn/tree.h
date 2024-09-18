@@ -63,7 +63,7 @@ struct Circle {
     return result;
   }  
 
-  std::string to_string() {
+  const std::string to_string() {
     std::string result("[");
     /* Delaying names.
     result.append(name);
