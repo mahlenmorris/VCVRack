@@ -338,7 +338,6 @@ struct Venn : Module {
       point.y = human_point.y;
     }
 
-    // TODO: for this to work how I want it to, I need to track the last human selected point.
     if (params[X_POSITION_ATTN_PARAM].getValue() != 0.0f) {
       point.x += params[X_POSITION_ATTN_PARAM].getValue() *
         inputs[X_POSITION_WIGGLE_INPUT].getVoltage();
@@ -391,9 +390,8 @@ struct Venn : Module {
         float x_distance = point.x - circle.x_center;
         float y_distance = point.y - circle.y_center;
 
-        // TODO: eliminate this sqrt() call? But the distance actually matters to the result.
-        // Maybe there is a cheaper approximation? And we only need the true distance for
-        // DISTANCE_OUTPUT.
+        // Despite my intution, sqrt() is probably cheap enough now to not try and replace it
+        // with an approximation.
         float distance = sqrt(x_distance * x_distance + y_distance * y_distance);
         if (distance > circle.radius) {
           outputs[DISTANCE_OUTPUT].setVoltage(0.0f, channel);
@@ -616,6 +614,7 @@ struct VennNameTextField : TextField {
 struct CircleDisplay : OpaqueWidget {
   Venn* module;
   // VennNameTextField* name_widget;
+  Vec last_hover_pos;
 
   CircleDisplay() {}
 
@@ -687,6 +686,15 @@ struct CircleDisplay : OpaqueWidget {
                                    module->circles[module->current_circle],
                                    module->current_circle));
   }
+
+  void onHover (const HoverEvent&	e) override {
+    if (module && module->keystrokes_accepted) {
+      // In case the user presses "f" to create a new circle, we note the current position.
+      last_hover_pos = e.pos;
+      // I think we don't want to consume this event.
+      OpaqueWidget::onHover(e);
+    }
+  }	
 
   void onSelectKey(const SelectKeyEvent& e) override {
     if (!module->circles_loaded) {
@@ -787,9 +795,19 @@ struct CircleDisplay : OpaqueWidget {
       if (e.keyName == "f" && (e.mods & RACK_MOD_CTRL) == 0) {
         Circle circle;
         int old_index = module->current_circle;
-        // TODO: Center on where mouse is (if available).
-        circle.x_center = random::uniform() * 2 - 1;  
-        circle.y_center = random::uniform() * 2 - 1;
+        // Center on where mouse is (if available).
+        Rect r = box.zeroPos();
+        Vec bounding_box = r.getBottomRight();
+        float x = last_hover_pos.x / bounding_box.x * 10.0 - 5;
+        float y = (1 - (last_hover_pos.y / bounding_box.y)) * 10.0 - 5;
+        if (fabs(x) < 5.0 && fabs(y) < 5.0) {
+          circle.x_center = x;  
+          circle.y_center = y;
+        } else {
+          circle.x_center = random::uniform() * 2 - 1;  
+          circle.y_center = random::uniform() * 2 - 1;
+        }
+
         circle.radius = 1.0 + random::uniform();
         circle.present = true;
         // What position should this be in?
@@ -965,10 +983,7 @@ struct CircleDisplay : OpaqueWidget {
           nvgFillColor(args.vg, colors[index % COLOR_COUNT]);
           nvgFontSize(args.vg, index == current_circle && currently_editing ? 15 : 13);
           nvgFontFaceId(args.vg, font->handle);
-          //nvgTextLetterSpacing(args.vg, -2);
-          // Place in the center. TODO: make it apparent where the center of the circle is.
-          // TODO: Precompute this string, so don't have to keep remaking it.
-          // Or just let FrameBuffer cache the entire result.
+          // Place in the center.
           std::string center_number = std::to_string(index + 1);
           nvgTextAlign(args.vg, NVG_ALIGN_MIDDLE | NVG_ALIGN_CENTER);
           nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
