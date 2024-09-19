@@ -121,6 +121,8 @@ struct Venn : Module {
   bool keystrokes_accepted;
   // Menu item that decides whether to show the readable keyboard hints
   // or just the icon indicating that keyboard input is accepted.
+  // TODO: This should probably apply to all instances of Venn at once, but reading XTStyle,
+  // it's more work than I want to do for V1.
   bool show_keyboard;
   // Flag to VennNameTextField to update itself.
   bool update_name_ui;
@@ -156,10 +158,11 @@ struct Venn : Module {
 
     current_circle = -1;
     check_live_circles = 0;
-    
-    // To avoid errors with improper indexes into circles, I just fill it up.
-    Circle circle;
-    circle.present = false;
+
+    for (int i = 0; i < 16; ++i) {
+      circles[i].present = false;  // Start empty; every circle is not present.
+    }    
+
     circles_loaded = true;
     point.x = 0;
     point.y = 0;
