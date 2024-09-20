@@ -24,10 +24,10 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.4142137"
-     inkscape:cx="342.5932"
+     inkscape:cx="317.13736"
      inkscape:cy="127.27921"
      inkscape:document-units="mm"
-     inkscape:current-layer="g1684"
+     inkscape:current-layer="layer2"
      showgrid="false"
      units="mm"
      inkscape:snap-bbox="true"
@@ -35,7 +35,7 @@
      inkscape:bbox-nodes="false"
      inkscape:snap-bbox-edge-midpoints="false"
      inkscape:window-width="2560"
-     inkscape:window-height="1417"
+     inkscape:window-height="1369"
      inkscape:window-x="-8"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
@@ -762,7 +762,7 @@
        aria-label="INV"
        id="text873-2"
        style="font-size:3.52778px;line-height:1.25;word-spacing:0px;display:inline;stroke-width:0.264583"
-       transform="translate(-1.4444745,0.52916667)">
+       transform="translate(1.2013588,0.52916667)">
       <path
          d="m 163.2664,204.49014 h -1.01286 v -0.26182 h 0.33589 v -2.04122 h -0.33589 v -0.26183 h 1.01286 v 0.26183 h -0.3359 v 2.04122 h 0.3359 z"
          id="path974" />
@@ -825,6 +825,15 @@
          d="m 168.50811,201.92527 -0.93362,2.56487 h -0.45475 l -0.93362,-2.56487 h 0.36518 l 0.80443,2.25654 0.80443,-2.25654 z"
          id="path978-4-9" />
     </g>
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke-width:0.184328"
+       id="rect631"
+       width="11"
+       height="8"
+       x="9.7399998"
+       y="228.18126"
+       rx="2.5666873"
+       ry="2.5666873" />
   </g>
   <g
      inkscape:groupmode="layer"
@@ -925,7 +934,7 @@
     <circle
        style="display:inline;fill:#ff0000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
        id="path4954-3-0-2-9-0-1-1-1"
-       cx="163.93639"
+       cx="166.58218"
        cy="28.779554"
        r="4"
        inkscape:label="inv_within" />

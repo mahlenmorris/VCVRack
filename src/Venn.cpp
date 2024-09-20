@@ -1020,7 +1020,7 @@ struct CircleDisplay : OpaqueWidget {
 };
 
 // Just the tiny window showing which circle is currently selected, if any.
-struct VennNumberDisplayWidget : LightWidget {
+struct VennNumberDisplayWidget : TransparentWidget {
   Venn* module;
 
   VennNumberDisplayWidget() {
@@ -1036,21 +1036,25 @@ struct VennNumberDisplayWidget : LightWidget {
             asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
 
         if (font) {
-          std::string text = module->editing && module->current_circle >= 0 ?
-                             std::to_string(module->current_circle + 1) :
-                             "";
-          // nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
-          //                                                    color::BLACK);
-          nvgFillColor(args.vg, color::BLACK);
-          nvgFontSize(args.vg, 20);
-          nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_LEFT);
-          nvgFontFaceId(args.vg, font->handle);
-          nvgTextLetterSpacing(args.vg, -1);
-          nvgText(args.vg, 0, 0, text.c_str(), NULL);
+          if (module->editing && module->current_circle >= 0) {
+            std::string text(std::to_string(module->current_circle + 1));
+            Rect r = box.zeroPos();
+            Vec bounding_box = r.getBottomRight();
+            // nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
+            //                                                    color::BLACK);
+            nvgFillColor(args.vg, color::BLACK);
+            nvgFontSize(args.vg, 28);
+            nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
+            nvgFontFaceId(args.vg, font->handle);
+            nvgTextLetterSpacing(args.vg, -1);
+            nvgText(args.vg, bounding_box.x / 2, 0, text.c_str(), NULL);
+          } else {
+            nvgText(args.vg, 0, 0, "", NULL);  // Clear it.
+          }
         }
       }
     }
-    LightWidget::drawLayer(args, layer);
+    TransparentWidget::drawLayer(args, layer);
     nvgResetScissor(args.vg);
   }
 };
@@ -1104,7 +1108,7 @@ struct VennWidget : ModuleWidget {
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 47.286)), module, Venn::Y_DISTANCE_OUTPUT));
 
     addParam(createLightParamCentered<VCVLightLatch<
-          MediumSimpleLight<WhiteLight>>>(mm2px(Vec(163.936, 28.78)), module, Venn::INV_WITHIN_PARAM, Venn::INV_WITHIN_LIGHT));
+          MediumSimpleLight<WhiteLight>>>(mm2px(Vec(166.582, 28.78)), module, Venn::INV_WITHIN_PARAM, Venn::INV_WITHIN_LIGHT));
     addParam(createLightParamCentered<VCVLightLatch<
           MediumSimpleLight<WhiteLight>>>(mm2px(Vec(166.582, 64.673)), module, Venn::INV_X_PARAM, Venn::INV_X_LIGHT));
     addParam(createLightParamCentered<VCVLightLatch<
@@ -1117,12 +1121,11 @@ struct VennWidget : ModuleWidget {
 
     // Information about the currently selected circle.
     // Lining up vertically with the black box around the X/Y outputs.
-    /* Delaying names.
-    VennNumberDisplayWidget* number = createWidget<VennNumberDisplayWidget>(mm2px(Vec(2.240, 58.0)));
-    number->box.size = mm2px(Vec(10.0, 7.0));  // Decided by seeing how big "16" is in Inkscape.
+    VennNumberDisplayWidget* number = createWidget<VennNumberDisplayWidget>(mm2px(Vec(10.0, 58.6)));
+    // Decided by seeing how big "16" is in Inkscape, although not in the right font, so...wrongish.
+    number->box.size = mm2px(Vec(11.0, 8.0));
     number->module = module;
     addChild(number);
-    */
 
     /* Delaying names.
     name_field = createWidget<VennNameTextField>(mm2px(Vec(2.240, 66.0)));
