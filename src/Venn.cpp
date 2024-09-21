@@ -111,9 +111,9 @@ struct Venn : Module {
   // Last human selected point (to wiggle from).
   // Set by the UI.
   Vec human_point;
-  // If > -1, the channel to "solo" on.
+  // If true, the current channel is solo'd.
   // Set and unset by the UI widget.
-  int solo_channel;
+  bool solo;
   // True if UI believes the circles (or point) are being edited.
   // Useful for other UI elements to know.
   bool editing;
@@ -166,7 +166,7 @@ struct Venn : Module {
     circles_loaded = true;
     point.x = 0;
     point.y = 0;
-    solo_channel = -1;
+    solo = false;
     editing = false;
     keystrokes_accepted = false;
     show_keyboard = true;  // For new instances, we are true.
@@ -263,7 +263,8 @@ struct Venn : Module {
     // A lock around the sudden change, so process() and UI doesn't fail.
     circles_loaded = false;
     ClearAllCircles();
-    current_circle = solo_channel = -1;
+    current_circle = -1;
+    solo = false;
     human_point.x = 0.0;
     human_point.y = 0.0;
     circles_loaded = true;
@@ -280,7 +281,8 @@ struct Venn : Module {
     // When User hits Randomize, let's make some circles.
     int count = clamp((int) (MyNormal() * 10.0 + 3), 3, 13);
     circles_loaded = false;
-    current_circle = solo_channel = -1;
+    current_circle = -1;
+    solo = false;
     ClearAllCircles();
     for (int i = 0; i < count; ++i) {
         Circle circle;
@@ -387,7 +389,7 @@ struct Venn : Module {
     for (size_t channel = 0; channel < live_circle_count; channel++) {
       const Circle& circle = circles[channel];
       // If solo-ing, make sure that only solo channel gets computed.
-      if (circle.present && (solo_channel < 0 || (int) channel == solo_channel)) {
+      if (circle.present && (!solo || (int) channel == current_circle)) {
         // All of the outputs care if we are in the circle or not, so we always compute it,
         // regardless of there is a cable connected or not.
         float x_distance = point.x - circle.x_center;
@@ -871,11 +873,11 @@ struct CircleDisplay : OpaqueWidget {
         e.consume(this);
       }
 
-      // Solo this channel or return to full poly.
+      // Turn solo on or off.
       if (e.keyName == "r" && (e.mods & RACK_MOD_CTRL) == 0) {
         if (module->current_circle >= 0) {  // i.e., there is a circle to solo.
           // Set or unset the solo_channel.
-          module->solo_channel = (module->solo_channel >= 0) ? -1 : module->current_circle;
+          module->solo = !(module->solo);
         }
         e.consume(this);
       }      
@@ -913,7 +915,8 @@ struct CircleDisplay : OpaqueWidget {
       Circle dummy[16];
       Circle *circles;
       int circle_count;
-      int current_circle, solo_circle; 
+      int current_circle;
+      bool solo; 
       Vec point;
       bool currently_editing;
       bool currently_keyboard;
@@ -927,7 +930,7 @@ struct CircleDisplay : OpaqueWidget {
           circles = module->circles;
           circle_count = module->live_circle_count;
           current_circle = module->current_circle;
-          solo_circle = module->solo_channel;
+          solo = module->solo;
           point = module->point;
           currently_editing = module->editing;
           currently_keyboard = module->keystrokes_accepted;
@@ -939,7 +942,7 @@ struct CircleDisplay : OpaqueWidget {
         circles = dummy;
         circle_count = 6;
         current_circle = 2;
-        solo_circle = -1;
+        solo = false;
         point.x = 0.0;
         point.y = 0.2345;
         currently_editing = false;
@@ -974,7 +977,7 @@ struct CircleDisplay : OpaqueWidget {
           nvgCircle(args.vg, nvg_x(circle.x_center, bounding_box.x), nvg_y(circle.y_center, bounding_box.x),
                   pixels_per_volt * circle.radius);
           NVGcolor circle_color = colors[index % COLOR_COUNT];
-          if (solo_circle >= 0 && solo_circle != index) {
+          if (solo && current_circle != index) {
             // Dim the muted circles.
             circle_color = nvgTransRGBAf(circle_color, 0.3);
           }
