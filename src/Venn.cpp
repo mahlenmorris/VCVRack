@@ -129,9 +129,9 @@ struct Venn : Module {
 
   Venn() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		configParam(EXP_LIN_LOG_PARAM, -1.f, 1.f, 0.f, "");
-		configParam(X_POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.0f, "Attenuverter for second input to X position of Point");
-		configParam(Y_POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.0f, "Attenuverter for second input to Y position of Point");
+		configParam(EXP_LIN_LOG_PARAM, -1.f, 1.f, 0.f, "Controls the speed that DISTANCE increases. At -1, it grows early, 0 is linear, 1 grows slowly.");
+		configParam(X_POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.0f, "Attenuverter for 2nd input to X position of Point");
+		configParam(Y_POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.0f, "Attenuverter for 2nd input to Y position of Point");
 
     configInput(X_POSITION_INPUT, "X position of Point - attenuated value of other input will be added");
     configInput(Y_POSITION_INPUT, "Y position of Point - attenuated value of other input will be added");
@@ -142,13 +142,13 @@ struct Venn : Module {
     configOutput(WITHIN_GATE_OUTPUT, "0V outside circle, 10V within, polyphonic");
 		configOutput(X_POSITION_OUTPUT, "The current X coordinate of the point (-5V -> 5V). Useful for recording point gestures and performances.");
 		configOutput(Y_POSITION_OUTPUT, "The current Y coordinate of the point (-5V -> 5V). Useful for recording point gestures and performances.");
-		configOutput(X_DISTANCE_OUTPUT, "");
-		configOutput(Y_DISTANCE_OUTPUT, "");
+		configOutput(X_DISTANCE_OUTPUT, "Within a circle, varies linearly from left to right, polyphonic");
+		configOutput(Y_DISTANCE_OUTPUT, "Within a circle, varies linearly from bottom to top, polyphonic");
 
     configSwitch(INV_X_PARAM, 0, 1, 0, "Invert",
-                 {"Increasing (low -> high)", "Decreasing (high -> low)"});
+                 {"Increases as point moves to the right", "Increases as point moves to the left"});
     configSwitch(INV_Y_PARAM, 0, 1, 0, "Invert",
-                 {"Increasing (low -> high)", "Decreasing (high -> low)"});
+                 {"Increases as point moves up", "Increases as point moves down"});
     configSwitch(INV_WITHIN_PARAM, 0, 1, 0, "Invert",
                  {"Increasing (outside = 0V, inside = 10V)", "Decreasing (outside = 10V, inside = 0V)"});
     configSwitch(OFST_X_PARAM, 0, 1, 0, "Offset",
@@ -1043,9 +1043,8 @@ struct VennNumberDisplayWidget : TransparentWidget {
             std::string text(std::to_string(module->current_circle + 1));
             Rect r = box.zeroPos();
             Vec bounding_box = r.getBottomRight();
-            // nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
-            //                                                    color::BLACK);
-            nvgFillColor(args.vg, color::BLACK);
+            nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
+                                                               color::BLACK);
             nvgFontSize(args.vg, 28);
             nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
             nvgFontFaceId(args.vg, font->handle);
@@ -1086,7 +1085,8 @@ struct VennWidget : ModuleWidget {
 
   VennWidget(Venn* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/Venn.svg")));
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/Venn.svg"),
+                         asset::plugin(pluginInstance, "res/Venn-dark.svg")));
 
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
     addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
