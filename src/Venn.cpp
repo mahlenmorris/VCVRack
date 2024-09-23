@@ -1183,7 +1183,7 @@ struct VennWidget : ModuleWidget {
   void appendContextMenu(Menu* menu) override {
     Venn* module = dynamic_cast<Venn*>(this->module);
     menu->addChild(createBoolPtrMenuItem("Show Keyboard Commands", "",
-                                          &(module->show_keyboard)));
+                                         &(module->show_keyboard)));
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel("Inspired by Leafcutter John's 'Forester' instrument."));
   }

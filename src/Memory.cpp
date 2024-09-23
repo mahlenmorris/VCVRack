@@ -667,6 +667,11 @@ struct Memory : BufferedModule {
   std::vector<std::string> loadable_files;  // List found in menu.
   std::string loaded_file;  // Checked item in menu.
   std::string save_folder_name;  // For menu to display.
+  // Menu option to load "loaded_file" on patch start.
+  bool load_latest_file_on_start;
+  // Trigger to actually initiate that startup_load.
+  bool initiate_startup_load;
+
   std::vector<FileOperationReporting*> reporters;
   // Makes the output trigger for loads and saves when needed.
   dsp::PulseGenerator load_generator;
@@ -712,6 +717,9 @@ struct Memory : BufferedModule {
 
     load_decoder.provideDataBuffer(load_recv_buffer, recvBufferSize);
     save_decoder.provideDataBuffer(save_recv_buffer, recvBufferSize);
+
+    load_latest_file_on_start = false;
+    initiate_startup_load = false;
   }
 
   ~Memory() {
@@ -733,7 +741,6 @@ struct Memory : BufferedModule {
       }
       delete buffer_change_worker;
     }
-
   }
 
   // Save and retrieve menu choice(s).
@@ -744,6 +751,11 @@ struct Memory : BufferedModule {
     }
     if (!save_folder_name.empty()) {
       json_object_set_new(rootJ, "save_folder", json_string(save_folder_name.c_str()));
+    }
+    json_object_set_new(rootJ, "load_latest_on_start",
+                        json_integer(load_latest_file_on_start ? 1 : 0));
+    if (!loaded_file.empty()) {
+      json_object_set_new(rootJ, "loaded_file", json_string(loaded_file.c_str()));
     }
     return rootJ;
   }
@@ -760,6 +772,18 @@ struct Memory : BufferedModule {
     json_t* save_folderJ = json_object_get(rootJ, "save_folder");
     if (save_folderJ) {
       save_folder_name.assign(json_string_value(save_folderJ));
+    }
+    json_t* loaded_fileJ = json_object_get(rootJ, "loaded_file");
+    if (loaded_fileJ) {
+      loaded_file.assign(json_string_value(loaded_fileJ));
+    }
+    json_t* load_latestJ = json_object_get(rootJ, "load_latest_on_start");
+    if (load_latestJ) {
+      load_latest_file_on_start = json_integer_value(load_latestJ) > 0;
+      // Set load in motion. process() will actually kick it off.
+      if (load_latest_file_on_start) {
+        initiate_startup_load = true;
+      }
     }
   }
 
@@ -874,6 +898,23 @@ struct Memory : BufferedModule {
     } else {
       // This is the post-initialization part of process().
 
+      // We may be asked to load a .wav file on startup. We wait unti the buffer is initialized before
+      // attempting this, however, since the operation might fail, and I'd rather have *some* buffer than none.
+      if (initiate_startup_load && !load_folder_name.empty() && !loaded_file.empty()) {
+        initiate_startup_load = false;
+        FileOperationReporting* reporter = new FileOperationReporting();
+        reporters.push_back(reporter);
+        PrepareTask* task = PrepareTask::LoadFileTask(
+          reporter, loaded_file, load_folder_name);
+        if (!widget_module_queue.tasks.push(task)) {
+          std::string message = "ERROR: Queue is full, cannot load '" +
+            loaded_file + "' from '" + load_folder_name + "'.";
+          reporter->log_messages.lines.push(message);
+          reporter->completed = LOAD_COMPLETED;
+          delete task;
+        }
+      }
+
       // Some lights are lit by triggers or button presses; these enable them to be
       // lit long enough to be seen by humans.
       if (wipe_light_countdown > 0) {
@@ -911,6 +952,7 @@ struct Memory : BufferedModule {
                     "a string like '#3'.";
                   log_message_sender.AddToQueue(message);
                 } else if (parsed_long > INT_MAX || parsed_long < INT_MIN) {
+                  // TODO: is this condition even possible?
                   // Handle overflow if the parsed value is outside int range
                   std::string message = "ERROR: the number found in '" + next + "' is too large, " +
                     "expecting a string like '#3'.";
@@ -1347,55 +1389,58 @@ struct MemoryWidget : ModuleWidget {
 
   void appendContextMenu(Menu* menu) override {
     Memory* module = dynamic_cast<Memory*>(this->module);
-      assert(module);
-      menu->addChild(new MenuSeparator);
-      menu->addChild(createMenuLabel("Pick Folder for Loading"));
+    assert(module);
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createMenuLabel("Pick Folder for Loading"));
 
-      MenuItemPickLoadFolder* menu_item_load_folder = new MenuItemPickLoadFolder;
-      if (module->load_folder_name.empty()) {
-        menu_item_load_folder->text = "Click here to pick";  
-      } else {
-        menu_item_load_folder->text = module->load_folder_name;
-      }
-      menu_item_load_folder->module = module;
-      menu->addChild(menu_item_load_folder);
-      if (module->loadable_files.empty()) {
-        menu->addChild(createMenuLabel("No .wav files seen in Loading directory"));
-      } else {
-        MenuItem* loadable_file_menu = createSubmenuItem("Load File", "",
-          [=](Menu* menu) {
-              for (const std::string& name : module->loadable_files) {
-                menu->addChild(createCheckMenuItem(name, "",
-                  [=]() {return name.compare(module->loaded_file) == 0;},
-                  [=]() {
-                    PrepareTask* task = PrepareTask::LoadFileTask(nullptr,
-                     name, module->load_folder_name);
-                    if (!module->widget_module_queue.tasks.push(task)) {
-                      delete task;
-                    }
+    MenuItemPickLoadFolder* menu_item_load_folder = new MenuItemPickLoadFolder;
+    if (module->load_folder_name.empty()) {
+      menu_item_load_folder->text = "Click here to pick";  
+    } else {
+      menu_item_load_folder->text = module->load_folder_name;
+    }
+    menu_item_load_folder->module = module;
+    menu->addChild(menu_item_load_folder);
+    if (module->loadable_files.empty()) {
+      menu->addChild(createMenuLabel("No .wav files seen in Loading directory"));
+    } else {
+      MenuItem* loadable_file_menu = createSubmenuItem("Load File", "",
+        [=](Menu* menu) {
+            for (const std::string& name : module->loadable_files) {
+              menu->addChild(createCheckMenuItem(name, "",
+                [=]() {return name.compare(module->loaded_file) == 0;},
+                [=]() {
+                  PrepareTask* task = PrepareTask::LoadFileTask(nullptr,
+                    name, module->load_folder_name);
+                  if (!module->widget_module_queue.tasks.push(task)) {
+                    delete task;
                   }
-                ));
-              }
-          }
-        );
-        menu->addChild(loadable_file_menu);
-      }
+                }
+              ));
+            }
+        }
+      );
+      menu->addChild(loadable_file_menu);
+    }
+    menu->addChild(createBoolPtrMenuItem("Load most recent file on module start", "",
+                                         &(module->load_latest_file_on_start)));
+    // TODO: Add menu action to just load some random file without setting the load folder.
 
-      menu->addChild(new MenuSeparator);
-      menu->addChild(createMenuLabel("Pick Folder for Saving"));
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createMenuLabel("Pick Folder for Saving"));
 
-      MenuItemPickSaveFolder* menu_item_save_folder = new MenuItemPickSaveFolder;
-      if (module->save_folder_name.empty()) {
-        menu_item_save_folder->text = "Click here to pick";  
-      } else {
-        menu_item_save_folder->text = module->save_folder_name;
-      }
-      menu_item_save_folder->module = module;
-      menu->addChild(menu_item_save_folder);
-      MenuItemPickSaveFile* menu_item_save_file = new MenuItemPickSaveFile;
-      menu_item_save_file->text = "Save to File...";  
-      menu_item_save_file->module = module;
-      menu->addChild(menu_item_save_file);
+    MenuItemPickSaveFolder* menu_item_save_folder = new MenuItemPickSaveFolder;
+    if (module->save_folder_name.empty()) {
+      menu_item_save_folder->text = "Click here to pick";  
+    } else {
+      menu_item_save_folder->text = module->save_folder_name;
+    }
+    menu_item_save_folder->module = module;
+    menu->addChild(menu_item_save_folder);
+    MenuItemPickSaveFile* menu_item_save_file = new MenuItemPickSaveFile;
+    menu_item_save_file->text = "Save to File...";  
+    menu_item_save_file->module = module;
+    menu->addChild(menu_item_save_file);
   }
 };
 
