@@ -1,7 +1,17 @@
 # Release Notes
 
-### 2.0.16
+### 2.0.17
 #### Date TBD
+* Added **Venn**, a signal generator with an intuitive graphical control system. A single click can change as many as 64 signals (four polyphonic signals).
+* * Videos about Venn:
+* * * Introducation and [using as a mixer](https://www.youtube.com/watch?v=yvjIii_FKCs)
+* * * Details about [editing and sonic neighborhoods](https://www.youtube.com/watch?v=Csc6DKv9wHI)
+* TTY can now display a timestamp on each line via a menu option.
+* Fixed a bug in Memory's file loading that would clip the end of the file when the file and Rack had different sample rates.
+* Added a menu option to Memory to load the last loaded file on module start (thanks, @jue). 
+
+### 2.0.16
+#### August 10, 2024
 * Added **Fixation**, a new module for playing back audio from Memory. It specializes in rhythmic, small interval playing
 * * Videos featuring Fixation:
 * * * [Initial Techniques](https://www.youtube.com/watch?v=nDcjS6hz9qE)
