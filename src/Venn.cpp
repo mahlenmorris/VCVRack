@@ -312,16 +312,33 @@ struct Venn : Module {
     update_name_ui = true;
   }	
 
-  void process(const ProcessArgs& args) override {
+  void processBypass(const ProcessArgs& args) override {
     if (!circles_loaded) {
       return;
     }
+    // We do this so you can continue editing the Surface.
+    update_circle_count(args);
+
+    outputs[DISTANCE_OUTPUT].setChannels(live_circle_count);
+    outputs[WITHIN_GATE_OUTPUT].setChannels(live_circle_count);
+    outputs[X_DISTANCE_OUTPUT].setChannels(live_circle_count);
+    outputs[Y_DISTANCE_OUTPUT].setChannels(live_circle_count);
+
+    for (size_t i = 0; i < live_circle_count; ++i) {
+        outputs[DISTANCE_OUTPUT].setVoltage(0.0f, i);
+        outputs[WITHIN_GATE_OUTPUT].setVoltage(0.0f, i);
+        outputs[X_DISTANCE_OUTPUT].setVoltage(0.0f, i);
+        outputs[Y_DISTANCE_OUTPUT].setVoltage(0.0f, i);
+    }
+  }
+
+  void update_circle_count(const ProcessArgs& args) {
     if (--check_live_circles <= 0) {
       // One sixtieth of a second.
       check_live_circles = (int) (args.sampleRate / 60);
-      // It's not great that our channel count is basically the index of the highest
-      // circle that has existed while this module is alive.
-      // To avoid doing that, we occasionally check how many circles are present.
+      // We occasionally check how many circles are marked present.
+      // This allows us to set the channel count correctly, and reduce the overhead of
+      // circles that don't exist.
       live_circle_count = 0;
       for (size_t channel = 0; channel < 16; channel++) {
         if (circles[channel].present) {
@@ -329,6 +346,13 @@ struct Venn : Module {
         }
       }
     }
+  }
+
+  void process(const ProcessArgs& args) override {
+    if (!circles_loaded) {
+      return;
+    }
+    update_circle_count(args);
     // Determine where "point" is.
     // Update X and Y inputs.
     if (inputs[X_POSITION_INPUT].isConnected()) {
