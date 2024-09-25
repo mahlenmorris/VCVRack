@@ -5,14 +5,14 @@ self-regulating structure. Exploring the region between random and static.
 ![All Modules image](images/TheFamily.png)
 ![Memory Modules image](images/MemoryFamilySameHeight.png)
 
+* [Memory System](Memory.md): A set of inter-related recording/playback modules with [their own documentation](Memory.md).
 * [BASICally](#basically): A simple, likely familiar procedural programming language within the context of VCV Rack.
 * [Drifter](#drifter): Creates sequences of values that can slowly (or quickly) vary, like a series of points doing random walks connected into a series.
 * [Fermata](#fermata): A text editor and labeling module. Write much longer text notes. Resizable, scrolls, font choices, and more. Or just add some visual emphasis,
 Stochastic Telegraph-style.
 * [Fuse](#fuse): Block, allow, or attenuate a signal passing through, based on the number of triggers observed in a different signal.
-* [TTY](#tty): A scrolling text window that displays distinct values it gets, and displays [Tipsy](https://github.com/baconpaul/tipsy-encoder) text messages
-sent by other modules (like BASICally).
-* [Memory System](Memory.md): A set of inter-related recording/playback modules with [their own documentation](Memory.md).
+* [TTY](#tty): A scrolling text window that displays distinct values it gets, and also displays [Tipsy](https://github.com/baconpaul/tipsy-encoder) text messages sent by other modules (like BASICally).
+* [Venn](#venn): A 2D graphical signal generator consisting of up to sixteen visible Circles and a visible Point chosen by mouse or CV. Where the Point is in relation to a Circle determines four CV values per Circle. 
 
 ![Line Break image](images/Separator.png)
 
@@ -1215,6 +1215,115 @@ when it is Paused.
 * Despite TTY being a common shorthand for "teletype", do NOT confuse
 TTY with [Monome's Teletype](https://library.vcvrack.com/monome/teletype),
 which is a deep, interesting platform for dynamic algorithmic event triggering.
+
+![Line Break image](images/Separator.png)
+
+# Venn
+Venn is a signal generator for VCV Rack. It creates up to 64 CV signals simultaneously with an intuitive and visually appealing interface.
+
+Venn's UI is inspired by part of Leafcutter John's [Forester 2022](https://leafcutterjohn.com/forester-2022/) desktop sonic playground. 
+Forester 2022 does a *LOT* more than Venn, and you should certainly take a look at it. This is just my take on an innovative piece of Forester that I wanted to see in VCV Rack.
+
+![Venn Overview](images/VennHeadline.png)
+
+### Videos
+* Using Venn to [control the panning and mixing](youtube.com/watch?v=yvjIii_FKCs) of four audio signals.
+* A detailed look at [editing the Circles](https://www.youtube.com/watch?v=Csc6DKv9wHI&t=6s) and using Venn to create [sonic neighborhoods](https://www.youtube.com/watch?v=Csc6DKv9wHI&t=139s).
+### Uses
+* With a single gesture, change multiple aspects of a single sound, or change the mix
+of several sounds or effects, or both at the same time.
+* Use it as a loose-as-you-like sequencer to send notes or events to other modules or connected MIDI
+instruments. The movement of the Point is highly controllable and can easily be made complex and yet non-random.
+* If you attach audio rate X+Y signals, you'll get droning sounds from the outputs.
+* Set up environments where signals that drive the position of the Point can vary the sound of a patch in numerous ways, like a process that takes two random numbers and turns them into a dozen slightly less random numbers.
+
+## Controls
+
+### The Circle Surface
+The large black area in the center of Venn is where the Circles and the Point reside.
+
+#### Circles
+Each Circle has a number (displayed in the center), and that number is the same as the channel in the polyphonic outputs (on the right side of Venn) that it outputs to. Since the maximum polyphony of VCV Rack is sixteen channels, you can have no more than 16 Circles in one Venn.
+
+The Circles are created, resized, moved, and deleted with keystrokes. These are all centered
+around the WASD keys familiar to anyone who has played games on a computer.
+![Venn Keyboard editing](images/VennKeyboard.png)
+These edits affect
+whichever Circle is currently **selected**; the currently selected Circle is shown in slightly thicker lines, and it's corresponding number is shown in a small window to the left of the Surface.
+
+Just to spell out those icons:
+* **F** - create a new Circle of slightly randomized size, centered on where the mouse cursor is currently hovering over the surface. That new Circle will now be the selected Circle.
+* **W/A/S/D** - move the selected Circle around the space.
+* **Q** - shrink the selected Circle
+* **E** - enlarge the selecetd Circle
+* **Z/C** - cycles through the Circles, selecting each in turn. **C** moves to the next higher numbered Circle, **Z** moves to lower numbers, and both gestures wrap around.
+* **R** - this **solos** the selected Circle. Like soloing in a mixer, this turns off all of the other Circles, and only that Circle's output is non-zero in the outputs. You can still cycle through the Circles with **Z/C**, soloing each in turn. The display will show the muted Circles only faintly. Typing **R** again will turn off soloing, and all Circles will be registered in the outputs again.
+
+#### On-screen keyboard and context
+When a new Venn module is created, a smaller version of the graphic above is shown in the upper left corner of the Surface; this provides hints to new users, reminders for returning users, and also informs the user that the keyboard commands are now active. Note that if you click elsewhere in your patch, the graphic will disappear, and this means those keyboard commands will no longer affect the Circles.
+
+Once you've learned the keyboard commands, you may wish to have it out of the way so more of the Surface is visible. Unset the option in the module's menu (**Show Keyboard Commands**) to replace the graphic with a much smaller indicator. The smaller indicator still serves the purpose of letting you know when the keyboard commands will (or will not) work.
+
+#### The Point
+The Point is a small white circle in the Surface that controls the signals sent by each of the Circles. The position of Point
+is a pair of X and Y voltages, where X = -5, Y = -5 is at the lower left corner and X = 5, Y = 5 is
+at the upper right corner.
+
+![X and Y controls](images/VennXY.png)
+
+Its position can be set (and moved) in a number of ways:
+* Clicking or dragging on the surface will move the Point to that position.
+* On the left side of Venn, there are a number of controls to move Point: 
+* * Inputs at the top for setting X and Y. If these are not set, then the last position set by clicking on the surface will be used.
+* * Below that, inputs with attenuverters are added to the values from the inputs (or last clicked position).
+* * And below that are outputs of the current position of Point.
+* Note that X and Y are independent of each other, meaning that you can, for example, use the inputs above to control the X position of Point, but control the Y solely by clicks on the surface.
+
+### Other Controls
+#### DISTANCE Output
+A polyphonic output with as many channels as the highest numbered Circle.
+
+Each channel is 0.0V when Point is outside of the corresponding Circle. The value ranges from
+0V to 10V as Point approaches the center. How quickly that value increases is affected by the DISTANCE Shape Knob.
+#### WITHIN Output
+A polyphonic output with as many channels as the highest numbered Circle.
+
+Each channel outputs 0V when Point is outside of it, and 10V gates when inside. You think of these as a gate signal for when the Point is inside a Circle.
+#### X and Y Outputs
+These are polyphonic outputs with as many channels as the highest numbered Circle. 
+
+The values of a channel reflect the relative distance from the center of a Circle. 
+* Each channel is 0V when the Point is outside the Circle. Values within the Circle range from -5V to 5V (but see the INV and OFST switches).
+* When Point is inside the Circle, then Point's horizontal or vertical distance from the center is divided by the radius of the Circle and muliplied by 5.
+* For example, if Point is at X = 3, and that's inside a Circle whose center is at X = 4 with a radius of 2.5, then X for that Circle's channel is (3 - 4) / 2.5 * 5 = -2.
+
+#### DISTANCE Shape Knob
+This parameter allows you to change how the DISTANCE value grows from 0V - 10V as Point approches the center.
+
+![Venn Shape Knob Effect Graph](images/VennDistanceShape.png)
+* At full left (-1), the curve looks like the red line; rapidly increasing at first, then growing far more slowly.
+* At center (0, the default), the curve looks like the yellow line; increasing linearly with distance.
+* At full right (1), the curve looks like the green line; growing inperceptively, then growing far more quickly very near to the center.
+
+#### INV Switches
+When set, INV inverts the corresponding signal:
+* For WITHIN, setting INV means that the value is 10.0 when Point is *outside* the Circle, and 0.0
+when inside the Circle.
+* For X, setting INV means that values increase as Point moves from right to left.
+* For Y, setting INV means that values increase as Point moves from top to bottom.
+
+#### OFST Switches
+When set, adds 5V to what would otherwise be output, so X or Y would output 0V - 10V instead of -5V - 5V.
+
+### Menu Options
+#### Randomize
+The Randomize menu option found on every module will, in Venn, also replace any existing Circles with a random set of new ones.
+#### Show Keyboard Commands
+As noted above, when set (the default), this will show the larger version of the editing keyboard commands. Unsetting it will replace it with a small icon.
+
+### Bypass Behavior
+If this module is bypassed, then all output values will be 0.0V. However, you can continue to
+edit the Surface, adding and changing Circles as you wish.
 
 ![Line Break image](images/Separator.png)
 
