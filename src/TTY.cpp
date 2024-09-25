@@ -223,6 +223,13 @@ struct TTY : Module {
     }
     return result;
   }
+
+  bool float_equal(float f1, float f2) {
+    static constexpr auto epsilon = 1.0e-05f;
+    if (std::fabs(f1 - f2) <= epsilon)
+        return true;
+    return std::fabs(f1 - f2) <= epsilon * fmax(std::fabs(f1), std::fabs(f2));
+  }
  
   void process(const ProcessArgs& args) override {
     bool paused = params[PAUSE_PARAM].getValue() > 0;
@@ -243,11 +250,11 @@ struct TTY : Module {
         tick_count = 0;
         if (inputs[V1_INPUT].isConnected()) {
           float v1 = inputs[V1_INPUT].getVoltage();
-          if (v1 != previous_v1) {  // TODO: use instead the minimum distance calculation.
+          if (!float_equal(v1, previous_v1)) {
             previous_v1 = v1;
             std::string str_value = std::to_string(v1);
             // Hmmmm; should I be comparing the string values instead? It would be
-            // odd to see the same string twice on a tighly changing value....
+            // odd to see the same string twice on a tightly changing value....
 
             // Add to buffer.
             std::string prefix(MakePrefix("V1"));
@@ -259,11 +266,11 @@ struct TTY : Module {
         }
         if (inputs[V2_INPUT].isConnected()) {
           float v2 = inputs[V2_INPUT].getVoltage();
-          if (v2 != previous_v2) {  // TODO: use instead the minimum distance calculation.
+          if (!float_equal(v2, previous_v2)) {
             previous_v2 = v2;
             std::string str_value = std::to_string(v2);
             // Hmmmm; should I be comparing the string values instead? It would be
-            // odd to see the same string twice on a tighly changing value....
+            // odd to see the same string twice on a tightly changing value....
 
             // Add to buffer.
             std::string prefix(MakePrefix("V2"));
