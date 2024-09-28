@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.17
-#### Date TBD
+#### September 28, 2024
 * Added **Venn**, a signal generator with an intuitive graphical control system. A single click can change as many as 64 signals (four polyphonic signals).
 * * Videos about Venn:
 * * * Introducation and [using as a mixer](https://www.youtube.com/watch?v=yvjIii_FKCs)
