@@ -6,6 +6,7 @@
 * * Videos about Venn:
 * * * Introduction and [using as a mixer](https://www.youtube.com/watch?v=yvjIii_FKCs)
 * * * Details about [editing and sonic neighborhoods](https://www.youtube.com/watch?v=Csc6DKv9wHI)
+* * * [Generating MIDI notes](https://www.youtube.com/watch?v=gOE4iCjMsH8) and moving Point at audio rate.
 * TTY can now display a timestamp on each line via a menu option.
 * Fixed a bug in Memory's file loading that would clip the end of the file when the file and Rack had different sample rates.
 * Added a menu option to Memory to load the last loaded file on module start (thanks, @jue). 
