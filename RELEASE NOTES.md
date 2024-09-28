@@ -4,7 +4,7 @@
 #### September 28, 2024
 * Added **Venn**, a signal generator with an intuitive graphical control system. A single click can change as many as 64 signals (four polyphonic signals).
 * * Videos about Venn:
-* * * Introducation and [using as a mixer](https://www.youtube.com/watch?v=yvjIii_FKCs)
+* * * Introduction and [using as a mixer](https://www.youtube.com/watch?v=yvjIii_FKCs)
 * * * Details about [editing and sonic neighborhoods](https://www.youtube.com/watch?v=Csc6DKv9wHI)
 * TTY can now display a timestamp on each line via a menu option.
 * Fixed a bug in Memory's file loading that would clip the end of the file when the file and Rack had different sample rates.
