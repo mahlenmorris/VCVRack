@@ -1012,7 +1012,7 @@ struct BasicallyTextField : STTextField {
   }
   
   // bgColor seems to have no effect if I don't do this. Drawing a background
-  // and then letting LedDisplayTextField draw the rest will fixes that.
+  // and then letting STTextField draw the rest fixes that.
   void draw(const DrawArgs& args) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 
@@ -1029,7 +1029,7 @@ struct BasicallyTextField : STTextField {
         int line_number = module->drv.errors[0].line - extended.lines_above;
         nvgBeginPath(args.vg);
         int topFudge = textOffset.y + 5;  // I'm just trying things until they work.
-        // textOffset is in ledDisplayTextField.
+        // textOffset is in STTextField.
         nvgRect(args.vg, 0, topFudge + 12 * (line_number - 1), box.size.x, 12);
         nvgFillColor(args.vg,
             module->blue_orange_light ? SCHEME_ORANGE : nvgRGB(128, 0, 0));

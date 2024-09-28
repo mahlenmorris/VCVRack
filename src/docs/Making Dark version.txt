@@ -1,0 +1,10 @@
+Notes on how to change a light version of a .svg file into a dark version.
+
+
+Background plate change from e8f1f2ff to 201e1eff.
+Black print (which may not have a set color) get Fill color set to edededff.
+Exclamation goes from alpha = FF to alpha = (hex)81.
+Any text written on the panel changes color. E.g., from BASICally, 
+          nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
+                                                             color::BLACK);
+

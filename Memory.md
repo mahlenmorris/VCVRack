@@ -129,6 +129,9 @@ LOAD Tipsy input will be relative to this folder.
 #### Load File
 Once the Load Folder has been selected, any files Memory thinks it can read (currently only .WAV files) will be listed here, and selecting one will
 immediately load it into the Memory.
+#### Load most recent file on module start
+If set, when the patch is loaded (or even when the module is duplicated), it will attempt to load
+in the last file that was loaded.
 #### Pick Folder for Saving
 Select a folder to Save .wav files to. Once this is done, any inputs to the SAVE Tipsy input will be relative to this folder.  
 #### Save to File...
