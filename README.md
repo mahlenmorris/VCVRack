@@ -3,7 +3,7 @@ Modules for use with VCV Rack 2.0, with an emphasis on generative and
 self-regulating structure. Exploring the region between random and static.
 
 ![All Modules image](images/TheFamily.png)
-![Memory Modules image](images/MemoryFamilySameHeight.png)
+![Memory Modules image](images/TheFamilyRowTwo.png)
 
 * [Memory System](Memory.md): A set of inter-related recording/playback modules with [their own documentation](Memory.md).
 * [BASICally](#basically): A simple, likely familiar procedural programming language within the context of VCV Rack.
