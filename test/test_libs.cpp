@@ -415,6 +415,33 @@ TEST(ParserTest, BooleanTest)
     EXPECT_EQ(0, lines->at(0).expr1.Compute());
 }
 
+TEST(ParserTest, TernaryTest)
+{
+    Driver drv;
+
+    EXPECT_EQ(0, drv.parse("foo = 5 > 3 ? 7 : 11"));
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(7, lines->at(0).expr1.Compute());
+
+    EXPECT_EQ(0, drv.parse("foo = 5 < 3 ? 7 : 11"));
+    lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(11, lines->at(0).expr1.Compute());
+
+    // Attempting to make sure I got the "right-to-left" precedence correct.
+    EXPECT_EQ(0, drv.parse("foo = not 5 < 3 ? 6 : 10"));
+    lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(6, lines->at(0).expr1.Compute());
+
+    // I should be able to nest them...
+    EXPECT_EQ(0, drv.parse("foo = 2 > 1 ?    7 > 5 ? 12 : 22   :   3 > 4 ? 32 : 42"));
+    lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_EQ(12, lines->at(0).expr1.Compute());
+}
+
 TEST(ParserTest, IfThenTest)
 {
     Driver drv;
