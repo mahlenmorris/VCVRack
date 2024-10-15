@@ -124,8 +124,9 @@ struct Venn : Module {
   // TODO: This should probably apply to all instances of Venn at once, but reading XTStyle,
   // it's more work than I want to do for V1.
   bool show_keyboard;
-  // Flag to VennNameTextField to update itself.
-  bool update_name_ui;
+  // Flag to VennWidget::step() to update any text fields.
+  // Indicates that something other than the UI has just changed circles.
+  bool update_text_widgets;
 
   Venn() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -243,7 +244,7 @@ struct Venn : Module {
       } 
     }
     circles_loaded = true;
-    update_name_ui = true;
+    update_text_widgets = true;
 
     json_t* keyboardJ = json_object_get(rootJ,  "show_keyboard");
     if (keyboardJ) {
@@ -268,7 +269,7 @@ struct Venn : Module {
     human_point.x = 0.0;
     human_point.y = 0.0;
     circles_loaded = true;
-    update_name_ui = true;
+    update_text_widgets = true;
   }
 
   float MyNormal() {
@@ -309,7 +310,7 @@ struct Venn : Module {
     human_point.x = random::uniform() * 9.6 - 4.8;
     human_point.y = random::uniform() * 9.6 - 4.8;
     circles_loaded = true;
-    update_name_ui = true;
+    update_text_widgets = true;
   }	
 
   void processBypass(const ProcessArgs& args) override {
@@ -509,7 +510,6 @@ struct VennCircleUndoRedoAction : history::ModuleAction {
         case DELETION: {
           module->circles[old_position] = old_circle;
           module->current_circle = old_position;
-          // TODO: need to tell state-holding widgets to update.
         }
         break;
         case CHANGE: {
@@ -522,6 +522,10 @@ struct VennCircleUndoRedoAction : history::ModuleAction {
         }
         break;
       }
+      // Need to tell state-holding widgets to update. But since the module doesn't
+      // hold pointers to the widgets, we can only set a flag.
+      module->update_text_widgets = true;
+
       module->circles_loaded = true;
     }
   }
@@ -543,9 +547,13 @@ struct VennCircleUndoRedoAction : history::ModuleAction {
         case ADDITION: {
           module->circles[new_position] = new_circle;
           module->current_circle = new_position;
-
         }
+        break;
       }
+      // Need to tell state-holding widgets to update. But since the module doesn't
+      // hold pointers to the widgets, we can only set a flag.
+      module->update_text_widgets = true;
+
       module->circles_loaded = true;
     }
   }
@@ -577,10 +585,6 @@ Principles for the UI:
 
 */
 
-/*
-I'm removing visible names for now. There are many edge cases to clear up, and names shouldn't
-block the initial release.
-
 // TODO: Places where this needs to be updated.
 // * When Module is first in context and there is already a selected circle.
 // * When randomized.
@@ -589,11 +593,9 @@ block the initial release.
 // OK, I think these four are fixed...
 // * Ugh, undo/redo....
 
-// Also, maybe filter out "\n" characters? Do we do that for Fermata/Basically titles?
-// In V2, maybe allow them and display accordingly. 
 struct VennNameTextField : TextField {
   Venn* module;
-  bool ignore_next_change = false;
+  //bool ignore_next_change = false;
 
   VennNameTextField() {
     multiline = true;
@@ -603,46 +605,14 @@ struct VennNameTextField : TextField {
     module = the_module;
   }
 
-  void step() override {
-    TextField::step();
-    if (module) {
-      if (!module->editing) {
-        ignore_next_change = true;
-        setText("");
-        return;
-      }
-      // See if this field needs updating.
-      if (module->update_name_ui) {
-        module->update_name_ui = false;
-        if (module->current_circle >= 0) {
-          setText(module->circles[module->current_circle].name);
-        }
-      }
-    }
-  }
-
-  void onChange(const ChangeEvent& e) override {
-    if (ignore_next_change) {
-      ignore_next_change = false;
-      return;
-    }
-    // Text in the widget has changed, update the circle.
-    if (module && (module->current_circle >= 0)) {
-      module->circles[module->current_circle].name = text;
-    }
-    // TODO: what's the undo/redo story here?
-  }
-
   void CircleUpdated(const std::string& name) {
     text = name;
   }
 };
 
-*/
-
 struct CircleDisplay : OpaqueWidget {
   Venn* module;
-  // VennNameTextField* name_widget;
+  VennNameTextField* name_widget;
   Vec last_hover_pos;
 
   CircleDisplay() {}
@@ -659,7 +629,6 @@ struct CircleDisplay : OpaqueWidget {
   };
 
   // Call this AFTER we've moved to a new circle.
-  /* Delaying names.
   void UpdateWidgets() {
     if (module && module->current_circle >= 0) {
       name_widget->CircleUpdated(module->circles[module->current_circle].name);
@@ -667,7 +636,6 @@ struct CircleDisplay : OpaqueWidget {
       name_widget->CircleUpdated("");
     }
   }
-  */
 
   // TODO: need something that notices when a wholesale change has happened (e.g., randomize)
   // and tell any widgets with state to update to new values.
@@ -716,7 +684,7 @@ struct CircleDisplay : OpaqueWidget {
                                    module->current_circle));
   }
 
-  void onHover (const HoverEvent&	e) override {
+  void onHover(const HoverEvent&	e) override {
     if (module && module->keystrokes_accepted) {
       // In case the user presses "f" to create a new circle, we note the current position.
       last_hover_pos = e.pos;
@@ -791,9 +759,7 @@ struct CircleDisplay : OpaqueWidget {
             }
             if (module->circles[curr].present) {
               module->current_circle = curr;
-              /* Delaying names.
               UpdateWidgets();
-              */
               break;
             }
           }
@@ -809,9 +775,7 @@ struct CircleDisplay : OpaqueWidget {
             }
             if (module->circles[curr].present) {
               module->current_circle = curr;
-              /* Delaying names.
               UpdateWidgets();
-              */
               break;
             }
           }
@@ -847,9 +811,7 @@ struct CircleDisplay : OpaqueWidget {
           if (!(module->circles[curr].present)) {
             module->circles[curr] = circle;
             module->current_circle = curr;
-            /* Delaying names.
             UpdateWidgets();
-            */
             added = true;
             break;
           }
@@ -877,18 +839,14 @@ struct CircleDisplay : OpaqueWidget {
             }
             if (module->circles[curr].present) {
               module->current_circle = curr;
-              /* Delaying names.
               UpdateWidgets();
-              */
               found_next = true;
               break;
             }
           }
           if (!found_next) {
             module->current_circle = -1;  // Indicate there is no currently selected circle.
-            /* Delaying names.
             UpdateWidgets();
-            */
           }
           APP->history->push(
             new VennCircleUndoRedoAction(module->id, old_circle,
@@ -1019,7 +977,6 @@ struct CircleDisplay : OpaqueWidget {
           nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
                           nvg_y(circle.y_center, bounding_box.x),
                           center_number.c_str(), NULL);
-           /* Delaying names.
           if (!circle.name.empty()) {
             nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
             // TODO: Break name into lines by spaces?
@@ -1028,7 +985,6 @@ struct CircleDisplay : OpaqueWidget {
                              circle.name.c_str(), NULL);
 
           }
-          */
         }
       }
 
@@ -1103,9 +1059,7 @@ struct VennKeyboardIcon : SvgWidget {
 
 struct VennWidget : ModuleWidget {
   CircleDisplay* display;
-  /* Delaying names.
   VennNameTextField* name_field;
-  */
 
   VennWidget(Venn* module) {
     setModule(module);
@@ -1154,21 +1108,17 @@ struct VennWidget : ModuleWidget {
     number->module = module;
     addChild(number);
 
-    /* Delaying names.
     name_field = createWidget<VennNameTextField>(mm2px(Vec(2.240, 66.0)));
     name_field->box.size = mm2px(Vec(26.0, 21.0));
     name_field->setModule(module);
     addChild(name_field);
-    */
 
     // The Circles.
     display = createWidget<CircleDisplay>(
       mm2px(Vec(31.0, 1.7)));
     display->box.size = mm2px(Vec(125.0, 125.0));
     display->module = module;
-    /* Delaying names.
     display->name_widget = name_field;
-    */
     addChild(display);
 
     VennKeyboardIcon* icon = createWidget<VennKeyboardIcon>(mm2px(Vec(1.0, 1.0)));
@@ -1180,16 +1130,35 @@ struct VennWidget : ModuleWidget {
     ModuleWidget::step();
     if (module) {
       Venn* module = dynamic_cast<Venn*>(this->module);
+      if (module->update_text_widgets) {
+        // The underlying circle has changed from the module thread.
+        // Reset the name_field.
+        module->update_text_widgets = false;
+        if (module->current_circle >= 0) {
+          name_field->setText(module->circles[module->current_circle].name);
+        }
+      }
+      
+      // Determine state of editing.
       Widget* selected = APP->event->selectedWidget;
       if (selected == this || selected == display) {
         module->editing = true;
         module->keystrokes_accepted = true;
-        /* Delaying names.
-
       } else if (selected == name_field) {
         module->editing = true;
         module->keystrokes_accepted = false;  // Text input field needs the keystrokes.
-        */
+
+        // Update name, if changed.
+        if (module->current_circle >= 0) {
+          if (module->circles[module->current_circle].name.compare(name_field->getText()) != 0) {
+            Circle old_circle = module->circles[module->current_circle];
+            module->circles[module->current_circle].name = name_field->getText();
+            APP->history->push(
+                new VennCircleUndoRedoAction(module->id, old_circle,
+                                             module->circles[module->current_circle],
+                                             module->current_circle));
+          }
+        }
       } else {
         module->editing = false;
         module->keystrokes_accepted = false;
