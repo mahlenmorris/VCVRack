@@ -412,20 +412,20 @@ namespace VENN {
     /// An auxiliary type to compute the largest semantic type.
     union union_type
     {
+      // assign
+      char dummy1[sizeof (Assignment)];
+
       // assignments
-      char dummy1[sizeof (Assignments)];
+      char dummy2[sizeof (Assignments)];
 
       // circle
-      char dummy2[sizeof (Circle)];
+      char dummy3[sizeof (Circle)];
 
       // circle_list
-      char dummy3[sizeof (CircleList)];
+      char dummy4[sizeof (CircleList)];
 
       // diagram
-      char dummy4[sizeof (Diagram)];
-
-      // numeric_assign
-      char dummy5[sizeof (NumericAssignment)];
+      char dummy5[sizeof (Diagram)];
 
       // "number"
       char dummy6[sizeof (float)];
@@ -436,7 +436,6 @@ namespace VENN {
       // "]"
       // "identifier"
       // "quoted_string"
-      // name
       char dummy7[sizeof (std::string)];
     };
 
@@ -529,9 +528,8 @@ namespace VENN {
         S_diagram = 11,                          // diagram
         S_circle_list = 12,                      // circle_list
         S_circle = 13,                           // circle
-        S_name = 14,                             // name
-        S_assignments = 15,                      // assignments
-        S_numeric_assign = 16                    // numeric_assign
+        S_assignments = 14,                      // assignments
+        S_assign = 15                            // assign
       };
     };
 
@@ -568,6 +566,10 @@ namespace VENN {
       {
         switch (this->kind ())
     {
+      case symbol_kind::S_assign: // assign
+        value.move< Assignment > (std::move (that.value));
+        break;
+
       case symbol_kind::S_assignments: // assignments
         value.move< Assignments > (std::move (that.value));
         break;
@@ -584,10 +586,6 @@ namespace VENN {
         value.move< Diagram > (std::move (that.value));
         break;
 
-      case symbol_kind::S_numeric_assign: // numeric_assign
-        value.move< NumericAssignment > (std::move (that.value));
-        break;
-
       case symbol_kind::S_NUMBER: // "number"
         value.move< float > (std::move (that.value));
         break;
@@ -598,7 +596,6 @@ namespace VENN {
       case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
-      case symbol_kind::S_name: // name
         value.move< std::string > (std::move (that.value));
         break;
 
@@ -621,6 +618,20 @@ namespace VENN {
 #else
       basic_symbol (typename Base::kind_type t, const location_type& l)
         : Base (t)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, Assignment&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const Assignment& v, const location_type& l)
+        : Base (t)
+        , value (v)
         , location (l)
       {}
 #endif
@@ -682,20 +693,6 @@ namespace VENN {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, NumericAssignment&& v, location_type&& l)
-        : Base (t)
-        , value (std::move (v))
-        , location (std::move (l))
-      {}
-#else
-      basic_symbol (typename Base::kind_type t, const NumericAssignment& v, const location_type& l)
-        : Base (t)
-        , value (v)
-        , location (l)
-      {}
-#endif
-
-#if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, float&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
@@ -747,6 +744,10 @@ namespace VENN {
         // Value type destructor.
 switch (yykind)
     {
+      case symbol_kind::S_assign: // assign
+        value.template destroy< Assignment > ();
+        break;
+
       case symbol_kind::S_assignments: // assignments
         value.template destroy< Assignments > ();
         break;
@@ -763,10 +764,6 @@ switch (yykind)
         value.template destroy< Diagram > ();
         break;
 
-      case symbol_kind::S_numeric_assign: // numeric_assign
-        value.template destroy< NumericAssignment > ();
-        break;
-
       case symbol_kind::S_NUMBER: // "number"
         value.template destroy< float > ();
         break;
@@ -777,7 +774,6 @@ switch (yykind)
       case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
-      case symbol_kind::S_name: // name
         value.template destroy< std::string > ();
         break;
 
@@ -1448,9 +1444,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 16,     ///< Last index in yytable_.
-      yynnts_ = 7,  ///< Number of nonterminal symbols.
-      yyfinal_ = 8 ///< Termination state number.
+      yylast_ = 15,     ///< Last index in yytable_.
+      yynnts_ = 6,  ///< Number of nonterminal symbols.
+      yyfinal_ = 6 ///< Termination state number.
     };
 
 
@@ -1477,6 +1473,10 @@ switch (yykind)
   {
     switch (this->kind ())
     {
+      case symbol_kind::S_assign: // assign
+        value.copy< Assignment > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_assignments: // assignments
         value.copy< Assignments > (YY_MOVE (that.value));
         break;
@@ -1493,10 +1493,6 @@ switch (yykind)
         value.copy< Diagram > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_numeric_assign: // numeric_assign
-        value.copy< NumericAssignment > (YY_MOVE (that.value));
-        break;
-
       case symbol_kind::S_NUMBER: // "number"
         value.copy< float > (YY_MOVE (that.value));
         break;
@@ -1507,7 +1503,6 @@ switch (yykind)
       case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
-      case symbol_kind::S_name: // name
         value.copy< std::string > (YY_MOVE (that.value));
         break;
 
@@ -1542,6 +1537,10 @@ switch (yykind)
     super_type::move (s);
     switch (this->kind ())
     {
+      case symbol_kind::S_assign: // assign
+        value.move< Assignment > (YY_MOVE (s.value));
+        break;
+
       case symbol_kind::S_assignments: // assignments
         value.move< Assignments > (YY_MOVE (s.value));
         break;
@@ -1558,10 +1557,6 @@ switch (yykind)
         value.move< Diagram > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_numeric_assign: // numeric_assign
-        value.move< NumericAssignment > (YY_MOVE (s.value));
-        break;
-
       case symbol_kind::S_NUMBER: // "number"
         value.move< float > (YY_MOVE (s.value));
         break;
@@ -1572,7 +1567,6 @@ switch (yykind)
       case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
-      case symbol_kind::S_name: // name
         value.move< std::string > (YY_MOVE (s.value));
         break;
 
@@ -1643,7 +1637,7 @@ switch (yykind)
 
 #line 11 "parser.yy"
 } // VENN
-#line 1647 "parser.hh"
+#line 1641 "parser.hh"
 
 
 

@@ -37,60 +37,46 @@
         <lhs>circle</lhs>
         <rhs>
           <symbol>&quot;[&quot;</symbol>
-          <symbol>name</symbol>
           <symbol>&quot;]&quot;</symbol>
           <symbol>assignments</symbol>
         </rhs>
       </rule>
       <rule number="5" usefulness="useful">
-        <lhs>circle</lhs>
+        <lhs>assignments</lhs>
         <rhs>
-          <symbol>&quot;[&quot;</symbol>
-          <symbol>&quot;]&quot;</symbol>
-          <symbol>assignments</symbol>
+          <symbol>assign</symbol>
         </rhs>
       </rule>
       <rule number="6" usefulness="useful">
-        <lhs>name</lhs>
-        <rhs>
-          <symbol>&quot;identifier&quot;</symbol>
-        </rhs>
-      </rule>
-      <rule number="7" usefulness="useful">
-        <lhs>name</lhs>
-        <rhs>
-          <symbol>name</symbol>
-          <symbol>&quot;identifier&quot;</symbol>
-        </rhs>
-      </rule>
-      <rule number="8" usefulness="useful">
-        <lhs>assignments</lhs>
-        <rhs>
-          <symbol>numeric_assign</symbol>
-        </rhs>
-      </rule>
-      <rule number="9" usefulness="useful">
         <lhs>assignments</lhs>
         <rhs>
           <symbol>assignments</symbol>
-          <symbol>numeric_assign</symbol>
+          <symbol>assign</symbol>
         </rhs>
       </rule>
-      <rule number="10" usefulness="useful">
-        <lhs>numeric_assign</lhs>
+      <rule number="7" usefulness="useful">
+        <lhs>assign</lhs>
         <rhs>
           <symbol>&quot;identifier&quot;</symbol>
           <symbol>&quot;=&quot;</symbol>
           <symbol>&quot;number&quot;</symbol>
         </rhs>
       </rule>
-      <rule number="11" usefulness="useful">
-        <lhs>numeric_assign</lhs>
+      <rule number="8" usefulness="useful">
+        <lhs>assign</lhs>
         <rhs>
           <symbol>&quot;identifier&quot;</symbol>
           <symbol>&quot;=&quot;</symbol>
           <symbol>&quot;-&quot;</symbol>
           <symbol>&quot;number&quot;</symbol>
+        </rhs>
+      </rule>
+      <rule number="9" usefulness="useful">
+        <lhs>assign</lhs>
+        <rhs>
+          <symbol>&quot;identifier&quot;</symbol>
+          <symbol>&quot;=&quot;</symbol>
+          <symbol>&quot;quoted_string&quot;</symbol>
         </rhs>
       </rule>
     </rules>
@@ -102,7 +88,7 @@
       <terminal symbol-number="5" token-number="260" name="&quot;[&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="6" token-number="261" name="&quot;]&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="7" token-number="262" name="&quot;identifier&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="8" token-number="263" name="&quot;quoted_string&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="8" token-number="263" name="&quot;quoted_string&quot;" type="std::string" usefulness="useful"/>
       <terminal symbol-number="9" token-number="264" name="&quot;number&quot;" type="float" usefulness="useful"/>
     </terminals>
     <nonterminals>
@@ -110,9 +96,8 @@
       <nonterminal symbol-number="11" name="diagram" type="Diagram" usefulness="useful"/>
       <nonterminal symbol-number="12" name="circle_list" type="CircleList" usefulness="useful"/>
       <nonterminal symbol-number="13" name="circle" type="Circle" usefulness="useful"/>
-      <nonterminal symbol-number="14" name="name" type="std::string" usefulness="useful"/>
-      <nonterminal symbol-number="15" name="assignments" type="Assignments" usefulness="useful"/>
-      <nonterminal symbol-number="16" name="numeric_assign" type="NumericAssignment" usefulness="useful"/>
+      <nonterminal symbol-number="14" name="assignments" type="Assignments" usefulness="useful"/>
+      <nonterminal symbol-number="15" name="assign" type="Assignment" usefulness="useful"/>
     </nonterminals>
   </grammar>
 
@@ -125,7 +110,6 @@
         <item rule-number="2" dot="0"/>
         <item rule-number="3" dot="0"/>
         <item rule-number="4" dot="0"/>
-        <item rule-number="5" dot="0"/>
       </itemset>
       <actions>
         <transitions>
@@ -143,15 +127,10 @@
     <state number="1">
       <itemset>
         <item rule-number="4" dot="1"/>
-        <item rule-number="5" dot="1"/>
-        <item rule-number="6" dot="0"/>
-        <item rule-number="7" dot="0"/>
       </itemset>
       <actions>
         <transitions>
           <transition type="shift" symbol="&quot;]&quot;" state="5"/>
-          <transition type="shift" symbol="&quot;identifier&quot;" state="6"/>
-          <transition type="goto" symbol="name" state="7"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -165,7 +144,7 @@
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="$end" state="8"/>
+          <transition type="shift" symbol="$end" state="6"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -178,13 +157,12 @@
         <item rule-number="1" dot="1"/>
         <item rule-number="3" dot="1"/>
         <item rule-number="4" dot="0"/>
-        <item rule-number="5" dot="0"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="$end" state="9"/>
+          <transition type="shift" symbol="$end" state="7"/>
           <transition type="shift" symbol="&quot;[&quot;" state="1"/>
-          <transition type="goto" symbol="circle" state="10"/>
+          <transition type="goto" symbol="circle" state="8"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -208,17 +186,18 @@
 
     <state number="5">
       <itemset>
-        <item rule-number="5" dot="2"/>
+        <item rule-number="4" dot="2"/>
+        <item rule-number="5" dot="0"/>
+        <item rule-number="6" dot="0"/>
+        <item rule-number="7" dot="0"/>
         <item rule-number="8" dot="0"/>
         <item rule-number="9" dot="0"/>
-        <item rule-number="10" dot="0"/>
-        <item rule-number="11" dot="0"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;identifier&quot;" state="11"/>
-          <transition type="goto" symbol="assignments" state="12"/>
-          <transition type="goto" symbol="numeric_assign" state="13"/>
+          <transition type="shift" symbol="&quot;identifier&quot;" state="9"/>
+          <transition type="goto" symbol="assignments" state="10"/>
+          <transition type="goto" symbol="assign" state="11"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -227,36 +206,6 @@
     </state>
 
     <state number="6">
-      <itemset>
-        <item rule-number="6" dot="1"/>
-      </itemset>
-      <actions>
-        <transitions/>
-        <errors/>
-        <reductions>
-          <reduction symbol="$default" rule="6" enabled="true"/>
-        </reductions>
-      </actions>
-      <solved-conflicts/>
-    </state>
-
-    <state number="7">
-      <itemset>
-        <item rule-number="4" dot="2"/>
-        <item rule-number="7" dot="1"/>
-      </itemset>
-      <actions>
-        <transitions>
-          <transition type="shift" symbol="&quot;]&quot;" state="14"/>
-          <transition type="shift" symbol="&quot;identifier&quot;" state="15"/>
-        </transitions>
-        <errors/>
-        <reductions/>
-      </actions>
-      <solved-conflicts/>
-    </state>
-
-    <state number="8">
       <itemset>
         <item rule-number="0" dot="2"/>
       </itemset>
@@ -270,7 +219,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="9">
+    <state number="7">
       <itemset>
         <item rule-number="1" dot="2"/>
       </itemset>
@@ -284,7 +233,7 @@
       <solved-conflicts/>
     </state>
 
-    <state number="10">
+    <state number="8">
       <itemset>
         <item rule-number="3" dot="2"/>
       </itemset>
@@ -298,14 +247,15 @@
       <solved-conflicts/>
     </state>
 
-    <state number="11">
+    <state number="9">
       <itemset>
-        <item rule-number="10" dot="1"/>
-        <item rule-number="11" dot="1"/>
+        <item rule-number="7" dot="1"/>
+        <item rule-number="8" dot="1"/>
+        <item rule-number="9" dot="1"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;=&quot;" state="16"/>
+          <transition type="shift" symbol="&quot;=&quot;" state="12"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -313,23 +263,38 @@
       <solved-conflicts/>
     </state>
 
-    <state number="12">
+    <state number="10">
       <itemset>
-        <item rule-number="5" dot="3">
+        <item rule-number="4" dot="3">
           <lookaheads>
             <symbol>$end</symbol>
             <symbol>&quot;[&quot;</symbol>
           </lookaheads>
         </item>
-        <item rule-number="9" dot="1"/>
-        <item rule-number="10" dot="0"/>
-        <item rule-number="11" dot="0"/>
+        <item rule-number="6" dot="1"/>
+        <item rule-number="7" dot="0"/>
+        <item rule-number="8" dot="0"/>
+        <item rule-number="9" dot="0"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;identifier&quot;" state="11"/>
-          <transition type="goto" symbol="numeric_assign" state="17"/>
+          <transition type="shift" symbol="&quot;identifier&quot;" state="9"/>
+          <transition type="goto" symbol="assign" state="13"/>
         </transitions>
+        <errors/>
+        <reductions>
+          <reduction symbol="$default" rule="4" enabled="true"/>
+        </reductions>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
+    <state number="11">
+      <itemset>
+        <item rule-number="5" dot="1"/>
+      </itemset>
+      <actions>
+        <transitions/>
         <errors/>
         <reductions>
           <reduction symbol="$default" rule="5" enabled="true"/>
@@ -338,15 +303,33 @@
       <solved-conflicts/>
     </state>
 
+    <state number="12">
+      <itemset>
+        <item rule-number="7" dot="2"/>
+        <item rule-number="8" dot="2"/>
+        <item rule-number="9" dot="2"/>
+      </itemset>
+      <actions>
+        <transitions>
+          <transition type="shift" symbol="&quot;-&quot;" state="14"/>
+          <transition type="shift" symbol="&quot;quoted_string&quot;" state="15"/>
+          <transition type="shift" symbol="&quot;number&quot;" state="16"/>
+        </transitions>
+        <errors/>
+        <reductions/>
+      </actions>
+      <solved-conflicts/>
+    </state>
+
     <state number="13">
       <itemset>
-        <item rule-number="8" dot="1"/>
+        <item rule-number="6" dot="2"/>
       </itemset>
       <actions>
         <transitions/>
         <errors/>
         <reductions>
-          <reduction symbol="$default" rule="8" enabled="true"/>
+          <reduction symbol="$default" rule="6" enabled="true"/>
         </reductions>
       </actions>
       <solved-conflicts/>
@@ -354,17 +337,11 @@
 
     <state number="14">
       <itemset>
-        <item rule-number="4" dot="3"/>
-        <item rule-number="8" dot="0"/>
-        <item rule-number="9" dot="0"/>
-        <item rule-number="10" dot="0"/>
-        <item rule-number="11" dot="0"/>
+        <item rule-number="8" dot="3"/>
       </itemset>
       <actions>
         <transitions>
-          <transition type="shift" symbol="&quot;identifier&quot;" state="11"/>
-          <transition type="goto" symbol="assignments" state="18"/>
-          <transition type="goto" symbol="numeric_assign" state="13"/>
+          <transition type="shift" symbol="&quot;number&quot;" state="17"/>
         </transitions>
         <errors/>
         <reductions/>
@@ -374,37 +351,7 @@
 
     <state number="15">
       <itemset>
-        <item rule-number="7" dot="2"/>
-      </itemset>
-      <actions>
-        <transitions/>
-        <errors/>
-        <reductions>
-          <reduction symbol="$default" rule="7" enabled="true"/>
-        </reductions>
-      </actions>
-      <solved-conflicts/>
-    </state>
-
-    <state number="16">
-      <itemset>
-        <item rule-number="10" dot="2"/>
-        <item rule-number="11" dot="2"/>
-      </itemset>
-      <actions>
-        <transitions>
-          <transition type="shift" symbol="&quot;-&quot;" state="19"/>
-          <transition type="shift" symbol="&quot;number&quot;" state="20"/>
-        </transitions>
-        <errors/>
-        <reductions/>
-      </actions>
-      <solved-conflicts/>
-    </state>
-
-    <state number="17">
-      <itemset>
-        <item rule-number="9" dot="2"/>
+        <item rule-number="9" dot="3"/>
       </itemset>
       <actions>
         <transitions/>
@@ -416,68 +363,29 @@
       <solved-conflicts/>
     </state>
 
-    <state number="18">
+    <state number="16">
       <itemset>
-        <item rule-number="4" dot="4">
-          <lookaheads>
-            <symbol>$end</symbol>
-            <symbol>&quot;[&quot;</symbol>
-          </lookaheads>
-        </item>
-        <item rule-number="9" dot="1"/>
-        <item rule-number="10" dot="0"/>
-        <item rule-number="11" dot="0"/>
-      </itemset>
-      <actions>
-        <transitions>
-          <transition type="shift" symbol="&quot;identifier&quot;" state="11"/>
-          <transition type="goto" symbol="numeric_assign" state="17"/>
-        </transitions>
-        <errors/>
-        <reductions>
-          <reduction symbol="$default" rule="4" enabled="true"/>
-        </reductions>
-      </actions>
-      <solved-conflicts/>
-    </state>
-
-    <state number="19">
-      <itemset>
-        <item rule-number="11" dot="3"/>
-      </itemset>
-      <actions>
-        <transitions>
-          <transition type="shift" symbol="&quot;number&quot;" state="21"/>
-        </transitions>
-        <errors/>
-        <reductions/>
-      </actions>
-      <solved-conflicts/>
-    </state>
-
-    <state number="20">
-      <itemset>
-        <item rule-number="10" dot="3"/>
+        <item rule-number="7" dot="3"/>
       </itemset>
       <actions>
         <transitions/>
         <errors/>
         <reductions>
-          <reduction symbol="$default" rule="10" enabled="true"/>
+          <reduction symbol="$default" rule="7" enabled="true"/>
         </reductions>
       </actions>
       <solved-conflicts/>
     </state>
 
-    <state number="21">
+    <state number="17">
       <itemset>
-        <item rule-number="11" dot="4"/>
+        <item rule-number="8" dot="4"/>
       </itemset>
       <actions>
         <transitions/>
         <errors/>
         <reductions>
-          <reduction symbol="$default" rule="11" enabled="true"/>
+          <reduction symbol="$default" rule="8" enabled="true"/>
         </reductions>
       </actions>
       <solved-conflicts/>

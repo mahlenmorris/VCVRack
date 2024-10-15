@@ -8,7 +8,7 @@ TEST(ParserTest, ParsesAtAll)
 {
     VennDriver drv;
 
-    EXPECT_EQ(0, drv.parse("[foo]\n x = 2\ny=-1 \n radius = 3.5"));
+    EXPECT_EQ(0, drv.parse("[]\n x = 2\ny=-1 \n radius = 3.5"));
     EXPECT_EQ(0, drv.errors.size());
     if (drv.errors.size() > 0) {
       std::cout << "\n" << drv.errors.at(0).to_string() << "\n";
@@ -22,7 +22,7 @@ TEST(ParserTest, BadVar1)
 {
     VennDriver drv;
 
-    EXPECT_EQ(1, drv.parse("[foo]\n x = 2\ny=-1 \n radius = 3.5\n bloont = 4.333"));
+    EXPECT_EQ(1, drv.parse("[]\n x = 2\ny=-1 \n radius = 3.5\n bloont = 4.333"));
     EXPECT_EQ(1, drv.errors.size());
     if (drv.errors.size() > 0) {
       std::cout << "\n" << drv.errors.at(0).to_string() << "\n";
@@ -36,7 +36,7 @@ TEST(ParserTest, BadVar2)
 {
     VennDriver drv;
 
-    EXPECT_EQ(1, drv.parse("[Bass Delay]\n x center = 2\ny=-1 \n radius = 3.5\n"));
+    EXPECT_EQ(1, drv.parse("[]\n x center = 2\ny=-1 \n radius = 3.5\n"));
     EXPECT_EQ(1, drv.errors.size());
     if (drv.errors.size() > 0) {
       std::cout << "\n" << drv.errors.at(0).to_string() << "\n";
@@ -47,7 +47,7 @@ TEST(ParserTest, TwoWordName)
 {
     VennDriver drv;
 
-    EXPECT_EQ(0, drv.parse("[Bass Delay]\n x = 2\ny=-1 \n radius = 3.5\n"));
+    EXPECT_EQ(0, drv.parse("[]\n x = 2\ny=-1 \n radius = 3.5\n name = \"Bass Delay\""));
     EXPECT_EQ(0, drv.errors.size());
     if (drv.errors.size() > 0) {
       std::cout << "\n" << drv.errors.at(0).to_string() << "\n";
@@ -61,15 +61,16 @@ TEST(ParserTest, ParsesMultipleCircles)
 {
     VennDriver drv;
     const char * text =
-      "[foo]\n"
+      "[]\n"
       " x = 2\n"
       "y=-1 \n"
       "radius = 3.5\n"
       "\n"
-      "[bar]\n"
+      "[]\n"
       " Radius = 2\n"
       "y=-1 \n"
-      "X = 3.5\n";
+      "X = 3.5\n"
+      "name = \"\"\n";
 
     EXPECT_EQ(0, drv.parse(text));
     EXPECT_EQ(0, drv.errors.size());

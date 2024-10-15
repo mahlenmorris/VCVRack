@@ -7,31 +7,47 @@
 class VennDriver;  // Circular includes if we try to include driver.h here.
 
 // Intermediate structures made while compiling.
-struct NumericAssignment {
+struct Assignment {
   std::string field_name;
   float value;
+  std::string str_value;
+  bool numeric;
 
-  static NumericAssignment NewAssignment(const std::string& attr, float value) {
-    NumericAssignment assign;
+  static Assignment NumericAssignment(const std::string& attr, float value) {
+    Assignment assign;
     assign.field_name.assign(attr);
     assign.value = value;
+    assign.numeric = true;
+    return assign;
+  }
+
+  static Assignment StringAssignment(const std::string& attr, const std::string& value) {
+    Assignment assign;
+    assign.field_name.assign(attr);
+
+    // Remove quotes at the ends.
+    if (!value.empty() && value.front() == '"' && value.back() == '"') {
+        assign.str_value = value.substr(1, value.length() - 2);
+    }
+
+    assign.numeric = false;
     return assign;
   }
 
   // Bison seems to require this if I use const references; I don't use it.
-  friend std::ostream& operator<<(std::ostream& os, const NumericAssignment &ex);
+  friend std::ostream& operator<<(std::ostream& os, const Assignment &ex);
 };
 
 struct Assignments {
-  std::vector<NumericAssignment> assignments;
+  std::vector<Assignment> assignments;
 
-  static Assignments NewAssignments(const NumericAssignment& first) {
+  static Assignments NewAssignments(const Assignment& first) {
     Assignments assign;
     assign.assignments.push_back(first);
     return assign;
   }
 
-  Assignments Add(const NumericAssignment& next) {
+  Assignments Add(const Assignment& next) {
     assignments.push_back(next);
     return *this;
   }
@@ -65,15 +81,15 @@ struct Circle {
 
   const std::string to_string() {
     std::string result("[");
-    /* Delaying names.
-    result.append(name);
-    */
     result.append("]\n");
 
     result.append(AnAssignment("x", x_center));
     result.append(AnAssignment("y", y_center));
     result.append(AnAssignment("radius", radius));
     result.append(AnAssignment("present", present ? 1 : 0));
+    result.append("name = \"");
+    result.append(name);  // TODO: do some character conversion, like \n -> "\n"?
+    result.append("\"\n");
     return result;
   }
 };

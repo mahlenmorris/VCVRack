@@ -15,7 +15,7 @@ Circle Circle::NewCircle(const std::string& name, const Assignments& fields, Ven
   Circle circle;
   circle.name.assign(name);
   circle.present = true;  // To allow me to read my development saves.
-  for (NumericAssignment assign : fields.assignments) {
+  for (Assignment assign : fields.assignments) {
     std::string lower_name;
     VennToLower(assign.field_name, &lower_name);
     if (lower_name.compare("x") == 0) {
@@ -26,6 +26,8 @@ Circle Circle::NewCircle(const std::string& name, const Assignments& fields, Ven
       circle.radius = assign.value;
     } else if (lower_name.compare("present") == 0) {
       circle.present = assign.value > 0;  // a boolean.
+    } else if (lower_name.compare("name") == 0) {
+      circle.name = assign.str_value;  // TODO: character conversion, like "\n" -> \n.
     } else {
       driver->AddError("I don't know what a '" + assign.field_name + "' is.");
     }
@@ -33,7 +35,7 @@ Circle Circle::NewCircle(const std::string& name, const Assignments& fields, Ven
   return circle;
 }
 
-std::ostream& operator<<(std::ostream& os, const NumericAssignment &ex) {
+std::ostream& operator<<(std::ostream& os, const Assignment &ex) {
   os << ex.field_name << " = " << ex.value;
   return os;
 }

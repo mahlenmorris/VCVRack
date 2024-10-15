@@ -49,19 +49,17 @@
 %token <std::string> IDENTIFIER "identifier"
 %token <std::string> QUOTED_STRING "quoted_string"
 %token <float> NUMBER "number"
-%nterm <NumericAssignment> numeric_assign
+%nterm <Assignment> assign
 %nterm <Assignments> assignments
 %nterm <Diagram> diagram
 %nterm <Circle> circle
 %nterm <CircleList> circle_list
-%nterm <std::string> name
 
 %printer { yyo << $$; } <*>;
 
 %%
 %start diagram;
 
-// This would likely change once we can define a path.
 diagram:
   circle_list YYEOF                    { drv.diagram.circles = $1.circles; }
 
@@ -70,21 +68,17 @@ circle_list:
 | circle_list circle                   { $$ = $1.Add($2); }
 
 circle:
-  "[" name "]" assignments             { $$ = Circle::NewCircle($2, $4, &drv); }
-| "[" "]" assignments                  { $$ = Circle::NewCircle("", $3, &drv); }
-
-name:
-  "identifier"                         { $$ = $1; }
-| name "identifier"                    { $$ = $1 + " " + $2; }
+  "[" "]" assignments                  { $$ = Circle::NewCircle("", $3, &drv); }
 
 assignments:
-  numeric_assign                       { $$ = Assignments::NewAssignments($1); }
-| assignments numeric_assign           { $$ = $1.Add($2); }
+  assign                               { $$ = Assignments::NewAssignments($1); }
+| assignments assign                   { $$ = $1.Add($2); }
 
-numeric_assign:
-  "identifier" "=" "number"            { $$ = NumericAssignment::NewAssignment($1, (float) $3); }
-| "identifier" "=" MINUS "number"      { $$ = NumericAssignment::NewAssignment($1, -1 * (float) $4); }
- 
+assign:
+  "identifier" "=" "number"            { $$ = Assignment::NumericAssignment($1, (float) $3); }
+| "identifier" "=" MINUS "number"      { $$ = Assignment::NumericAssignment($1, -1 * (float) $4); }
+| "identifier" "=" "quoted_string"     { $$ = Assignment::StringAssignment($1, $3); }
+
 %%
 
 void
