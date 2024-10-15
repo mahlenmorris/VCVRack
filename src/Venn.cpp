@@ -385,7 +385,6 @@ struct Venn : Module {
     outputs[X_POSITION_OUTPUT].setVoltage(point.x);
     outputs[Y_POSITION_OUTPUT].setVoltage(point.y);
 
-
     // Determine what values to output.
     // TODO: many optimizations, including doing nothing when neither point nor circles has changed.
     // TODO: Can SIMD library help me?
@@ -585,17 +584,8 @@ Principles for the UI:
 
 */
 
-// TODO: Places where this needs to be updated.
-// * When Module is first in context and there is already a selected circle.
-// * When randomized.
-// * When Module is no longer in context (should go blank).
-// * When has a value and is Reset.
-// OK, I think these four are fixed...
-// * Ugh, undo/redo....
-
 struct VennNameTextField : TextField {
   Venn* module;
-  //bool ignore_next_change = false;
 
   VennNameTextField() {
     multiline = true;
@@ -979,16 +969,31 @@ struct CircleDisplay : OpaqueWidget {
                           center_number.c_str(), NULL);
           if (!circle.name.empty()) {
             nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
-            // TODO: Break name into lines by spaces?
-            nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
-                             nvg_y(circle.y_center, bounding_box.x) + 5.0,
-                             circle.name.c_str(), NULL);
-
+            // Break name into lines by newlines.
+            std::vector<std::string> lines;
+            // Break this into words. Since I don't know the font,
+            // too much effort to predict length, and don't want to use a
+            // TextField.
+            // TODO: cache this computation by moving this elsewhere? This
+            // section only takes about 5 usec to run.
+            auto start = 0U;
+            auto end = circle.name.find('\n');
+            while (end != std::string::npos) {
+              lines.push_back(circle.name.substr(start, end - start));
+              start = end + 1;
+              end = circle.name.find('\n', start);
+            }
+            std::string last = circle.name.substr(start);
+            lines.push_back(last);
+            for (int i = 0; i < (int) lines.size(); i++) {
+              nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
+                      nvg_y(circle.y_center, bounding_box.x) + 5.0 + i * 10.0, lines[i].c_str(), NULL);
+            }
           }
         }
       }
 
-      // Draw the pointer (need a name for it).
+      // Draw the Point.
       nvgBeginPath(args.vg);
       nvgCircle(args.vg, nvg_x(point.x, bounding_box.x), nvg_y(point.y, bounding_box.x),
               pixels_per_volt * 0.15);
@@ -1108,7 +1113,7 @@ struct VennWidget : ModuleWidget {
     number->module = module;
     addChild(number);
 
-    name_field = createWidget<VennNameTextField>(mm2px(Vec(2.240, 66.0)));
+    name_field = createWidget<VennNameTextField>(mm2px(Vec(2.240, 69.0)));
     name_field->box.size = mm2px(Vec(26.0, 21.0));
     name_field->setModule(module);
     addChild(name_field);
