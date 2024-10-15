@@ -57,6 +57,20 @@ TEST(ParserTest, TwoWordName)
     EXPECT_EQ("Bass Delay", diagram->circles.at(0).name);
 }
 
+TEST(ParserTest, ThreeLineName)
+{
+    VennDriver drv;
+
+    EXPECT_EQ(0, drv.parse("[]\n x = 2\ny=-1 \n radius = 3.5\n name = \"Bass\nDelay\nMenace\""));
+    EXPECT_EQ(0, drv.errors.size());
+    if (drv.errors.size() > 0) {
+      std::cout << "\n" << drv.errors.at(0).to_string() << "\n";
+    }
+    Diagram* diagram = &(drv.diagram);
+    EXPECT_EQ(1, diagram->circles.size());
+    EXPECT_EQ("Bass\nDelay\nMenace", diagram->circles.at(0).name);
+}
+
 TEST(ParserTest, ParsesMultipleCircles)
 {
     VennDriver drv;
