@@ -2,6 +2,28 @@
 
 #include "parser-venn/driver.h"
 
+constexpr int VENN_COLOR_COUNT = 7;
+NVGcolor venn_colors[VENN_COLOR_COUNT] = {
+  SCHEME_RED,
+  SCHEME_BLUE,
+  SCHEME_ORANGE,
+  SCHEME_PURPLE,
+  SCHEME_GREEN,
+  SCHEME_CYAN,
+  SCHEME_WHITE
+};
+
+constexpr int VENN_COLOR_NAMES = 8;  // Number of names per color.
+constexpr const char* VENN_COLOR_ARRAY[VENN_COLOR_COUNT][VENN_COLOR_NAMES] = {
+  { "Scarlet", "Crimson", "Ruby", "Cherry", "Rose", "Vermilion", "Maroon", "Firetruck" }, 
+  { "Azure", "Navy", "Indigo", "Ocean", "Sky", "Blueberry", "Sapphire", "Bluebird" },
+  { "Tangerine", "Cinnamon", "Pumpkin", "Carrot", "Tiger", "Juice", "Fire", "Warm" },
+  { "Lavender", "Violet", "Lilac", "Amethyst", "Eggplant", "Grape", "Plum", "Royal" },
+  { "Jade", "Olive", "Lime", "Grass", "Tree", "Leaf", "Frog", "Lime" },
+  { "Aqua", "Calm", "Peace", "Serenity", "Clarity", "Turquoise", "Teal", "Seafoam" },
+  { "Ivory", "Cream", "Clean", "Simple", "Snow", "Cloud", "Milk", "Pearl" }
+};
+
 constexpr int PART_LEN = 18;
 constexpr const char* PARTS[PART_LEN] = {
   "Bass",
@@ -292,16 +314,17 @@ struct Venn : Module {
         circle.radius = MyNormal() * 3 + .1;
         circle.present = true;
         // Random names are delightful.
-        // I'll allow them to range in length from 1 to three words, just to see how they look.
+        // I'll allow them to range in length from 1 to 3 words, just to see how they look.
         // Thanks to @disquiet for suggesting I add evocative color names.
-        std::string the_name(PARTS[(int) std::floor(random::uniform() * PART_LEN)]);
-        if (random::uniform() > 0.1) {
+        std::string the_name;
+        if (random::uniform() > 0.5) {
+          the_name.append(VENN_COLOR_ARRAY[i % VENN_COLOR_COUNT][(int) std::floor(random::uniform() * VENN_COLOR_NAMES)]);
+          the_name.append(" ");
+        }
+        the_name.append(PARTS[(int) std::floor(random::uniform() * PART_LEN)]);
+        if (random::uniform() > 0.5) {
           the_name.append(" ");
           the_name.append(EFFECTS[(int) (random::uniform() * sizeof(EFFECT_LEN))]);
-          if (random::uniform() > 0.7) {
-            the_name.append(" ");
-            the_name.append(EFFECTS[(int) (random::uniform() * sizeof(EFFECT_LEN))]);
-          }
         }
         circle.name = the_name;
         circles[i] = circle;
@@ -606,17 +629,6 @@ struct CircleDisplay : OpaqueWidget {
   Vec last_hover_pos;
 
   CircleDisplay() {}
-
-  static constexpr int COLOR_COUNT = 7;
-  NVGcolor colors[COLOR_COUNT] = {
-    SCHEME_RED,
-    SCHEME_BLUE,
-    SCHEME_ORANGE,
-    SCHEME_PURPLE,
-    SCHEME_GREEN,
-    SCHEME_CYAN,
-    SCHEME_WHITE
-  };
 
   // Call this AFTER we've moved to a new circle.
   void UpdateWidgets() {
@@ -948,7 +960,7 @@ struct CircleDisplay : OpaqueWidget {
           nvgBeginPath(args.vg);
           nvgCircle(args.vg, nvg_x(circle.x_center, bounding_box.x), nvg_y(circle.y_center, bounding_box.x),
                   pixels_per_volt * circle.radius);
-          NVGcolor circle_color = colors[index % COLOR_COUNT];
+          NVGcolor circle_color = venn_colors[index % VENN_COLOR_COUNT];
           if (solo && current_circle != index) {
             // Dim the muted circles.
             circle_color = nvgTransRGBAf(circle_color, 0.3);
@@ -958,7 +970,7 @@ struct CircleDisplay : OpaqueWidget {
           nvgStroke(args.vg);
           
           // Now draw the text in the center.
-          nvgFillColor(args.vg, colors[index % COLOR_COUNT]);
+          nvgFillColor(args.vg, venn_colors[index % VENN_COLOR_COUNT]);
           nvgFontSize(args.vg, index == current_circle && currently_editing ? 15 : 13);
           nvgFontFaceId(args.vg, font->handle);
           // Place in the center.
