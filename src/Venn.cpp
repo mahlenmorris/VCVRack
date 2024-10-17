@@ -615,6 +615,10 @@ struct VennNameTextField : STTextField {
   VennNameTextField() {
     module = nullptr;
     this->text = &venn_text;
+    fontPath = asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf");
+    fontSize = 10.0f;
+    textOffset = math::Vec(0, 0);  // Put closer to corner than default.
+
   }
 
   void setModule(Venn* the_module) {

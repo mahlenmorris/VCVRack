@@ -46,6 +46,7 @@ struct STTextFieldSelectAllItem : ui::MenuItem {
 STTextField::STTextField() {
   allow_text_entry = true;
   fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+  fontSize = 12.0f;
   textOffset = math::Vec(3, 3);
   color = nvgRGB(0xff, 0xd7, 0x14);
   bgColor = nvgRGB(0x00, 0x00, 0x00);
@@ -227,7 +228,7 @@ void STTextField::draw(const DrawArgs& args) {
       if (text != nullptr) {
         myBndIconLabelCaret(args.vg,
           textOffset.x, textOffset.y, box.size.x - 2 * textOffset.x,
-          color, 12, font->handle, text->c_str() + extended.CharsAbove(),
+          color, fontSize, font->handle, text->c_str() + extended.CharsAbove(),
           highlightColor, begin, end);
       }
 
@@ -482,7 +483,7 @@ int STTextField::getTextPosition(math::Vec mousePos) {
   int textPos = bndIconLabelTextPosition(APP->window->vg,
     textOffset.x, textOffset.y,
     box.size.x - 2 * textOffset.x, box.size.y - 2 * textOffset.y,
-    -1, 12, text->c_str() + extended.CharsAbove(), mousePos.x, mousePos.y);
+    -1, fontSize, text->c_str() + extended.CharsAbove(), mousePos.x, mousePos.y);
   bndSetFont(APP->window->uiFont->handle);
   return textPos + extended.CharsAbove();
 }
