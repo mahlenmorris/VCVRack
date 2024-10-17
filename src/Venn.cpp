@@ -1,6 +1,7 @@
 #include "plugin.hpp"
 
 #include "parser-venn/driver.h"
+#include "st_textfield.hpp"
 
 constexpr int VENN_COLOR_COUNT = 7;
 NVGcolor venn_colors[VENN_COLOR_COUNT] = {
@@ -607,19 +608,48 @@ Principles for the UI:
 
 */
 
-struct VennNameTextField : TextField {
+struct VennNameTextField : STTextField {
   Venn* module;
+  std::string venn_text;
 
   VennNameTextField() {
-    multiline = true;
+    module = nullptr;
+    this->text = &venn_text;
   }
 
   void setModule(Venn* the_module) {
     module = the_module;
   }
 
+  // bgColor seems to have no effect if I don't do this. Drawing a background
+  // and then letting STTextField draw the rest fixes that.
+  // TODO: Make STTextfield actually use bgColor.
+  void draw(const DrawArgs& args) override {
+    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+
+    // background only
+    nvgBeginPath(args.vg);
+    nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
+    nvgFillColor(args.vg, bgColor);
+    nvgFill(args.vg);
+
+    if (module && module->editing && module->current_circle >= 0) {
+      STTextField::draw(args);  // Draw text.
+    }
+    nvgResetScissor(args.vg);
+  }
+
   void CircleUpdated(const std::string& name) {
-    text = name;
+    text->assign(name);
+  }
+
+  std::string getText() {
+    return *text;
+  }
+
+  void setText(const std::string& new_text) {
+    text->assign(new_text);
+    // TODO: probably need to call updatedText in STTextField?
   }
 };
 
@@ -1115,7 +1145,6 @@ struct VennWidget : ModuleWidget {
           MediumSimpleLight<WhiteLight>>>(mm2px(Vec(166.582, 77.655)), module, Venn::OFST_X_PARAM, Venn::OFST_X_LIGHT));
     addParam(createLightParamCentered<VCVLightLatch<
           MediumSimpleLight<WhiteLight>>>(mm2px(Vec(178.17, 77.655)), module, Venn::OFST_Y_PARAM, Venn::OFST_Y_LIGHT));
-
 
     // Information about the currently selected circle.
     // Lining up vertically with the black box around the X/Y outputs.
