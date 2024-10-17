@@ -37,7 +37,7 @@ constexpr const char* PARTS[PART_LEN] = {
   "Tympani",
   "Flute",
   "Grit",
-  "Airiness",
+  "Air",
   "Choir",
   "Theremin",
   "Gamelan",
@@ -616,9 +616,13 @@ struct VennNameTextField : STTextField {
     module = nullptr;
     this->text = &venn_text;
     fontPath = asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf");
-    fontSize = 10.0f;
-    textOffset = math::Vec(0, 0);  // Put closer to corner than default.
+    fontSize = 12.0f;
+    color = SCHEME_WHITE;
+    bgColor = SCHEME_BLACK;
 
+    textOffset = math::Vec(0, -2);  // Put closer to corner than default.
+
+    extended.Initialize(3, 1);  // Much shorter window.
   }
 
   void setModule(Venn* the_module) {
@@ -1159,7 +1163,7 @@ struct VennWidget : ModuleWidget {
     addChild(number);
 
     name_field = createWidget<VennNameTextField>(mm2px(Vec(2.240, 69.0)));
-    name_field->box.size = mm2px(Vec(26.0, 21.0));
+    name_field->box.size = mm2px(Vec(26.0, 10.0));
     name_field->setModule(module);
     addChild(name_field);
 
