@@ -112,3 +112,17 @@ TEST(ParserTest, NoName)
     ASSERT_EQ(1, diagram->circles.size());
     EXPECT_EQ("", diagram->circles.at(0).name);
 }
+
+TEST(ParserTest, SimpleExpression)
+{
+    VennDriver drv;
+    const char * text = "3.14159";
+
+    EXPECT_EQ(0, drv.parse(text));
+    EXPECT_EQ(0, drv.errors.size());
+    if (drv.errors.size() > 0) {
+      std::cout << "\n" << drv.errors.at(0).to_string() << "\n";
+    }
+    Expression* exp = &(drv.exp);
+    ASSERT_FLOAT_EQ(3.14159, exp->Compute());
+}

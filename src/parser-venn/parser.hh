@@ -424,8 +424,8 @@ namespace VENN {
       // circle_list
       char dummy4[sizeof (CircleList)];
 
-      // diagram
-      char dummy5[sizeof (Diagram)];
+      // exp
+      char dummy5[sizeof (Expression)];
 
       // "number"
       char dummy6[sizeof (float)];
@@ -525,11 +525,12 @@ namespace VENN {
         S_QUOTED_STRING = 8,                     // "quoted_string"
         S_NUMBER = 9,                            // "number"
         S_YYACCEPT = 10,                         // $accept
-        S_diagram = 11,                          // diagram
+        S_meta_start = 11,                       // meta_start
         S_circle_list = 12,                      // circle_list
         S_circle = 13,                           // circle
         S_assignments = 14,                      // assignments
-        S_assign = 15                            // assign
+        S_assign = 15,                           // assign
+        S_exp = 16                               // exp
       };
     };
 
@@ -582,8 +583,8 @@ namespace VENN {
         value.move< CircleList > (std::move (that.value));
         break;
 
-      case symbol_kind::S_diagram: // diagram
-        value.move< Diagram > (std::move (that.value));
+      case symbol_kind::S_exp: // exp
+        value.move< Expression > (std::move (that.value));
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -679,13 +680,13 @@ namespace VENN {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, Diagram&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, Expression&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const Diagram& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const Expression& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -760,8 +761,8 @@ switch (yykind)
         value.template destroy< CircleList > ();
         break;
 
-      case symbol_kind::S_diagram: // diagram
-        value.template destroy< Diagram > ();
+      case symbol_kind::S_exp: // exp
+        value.template destroy< Expression > ();
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -1445,8 +1446,8 @@ switch (yykind)
     enum
     {
       yylast_ = 15,     ///< Last index in yytable_.
-      yynnts_ = 6,  ///< Number of nonterminal symbols.
-      yyfinal_ = 6 ///< Termination state number.
+      yynnts_ = 7,  ///< Number of nonterminal symbols.
+      yyfinal_ = 8 ///< Termination state number.
     };
 
 
@@ -1489,8 +1490,8 @@ switch (yykind)
         value.copy< CircleList > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_diagram: // diagram
-        value.copy< Diagram > (YY_MOVE (that.value));
+      case symbol_kind::S_exp: // exp
+        value.copy< Expression > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -1553,8 +1554,8 @@ switch (yykind)
         value.move< CircleList > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_diagram: // diagram
-        value.move< Diagram > (YY_MOVE (s.value));
+      case symbol_kind::S_exp: // exp
+        value.move< Expression > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -1637,7 +1638,7 @@ switch (yykind)
 
 #line 11 "parser.yy"
 } // VENN
-#line 1641 "parser.hh"
+#line 1642 "parser.hh"
 
 
 

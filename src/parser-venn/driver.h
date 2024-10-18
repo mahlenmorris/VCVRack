@@ -52,11 +52,18 @@ struct Error {
 class VennDriver
 {
 public:
+  // This Driver can parser two different kinds of objects,
+  // Diagrams and Expressions.
   // The Venn module Diagram being constructed.
   Diagram diagram;
+  // Expression we just parsed.
+  Expression exp;
 
   // List of syntax errors found before parser gave up.
   std::vector<Error> errors;
+
+  // Knows how to create various kinds of Expression objects.
+  ExpressionFactory factory;
 
   // Whether to generate parser debug traces.
   bool trace_parsing;

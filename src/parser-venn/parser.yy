@@ -51,17 +51,21 @@
 %token <float> NUMBER "number"
 %nterm <Assignment> assign
 %nterm <Assignments> assignments
-%nterm <Diagram> diagram
 %nterm <Circle> circle
 %nterm <CircleList> circle_list
+%nterm <Expression> exp
+%nterm meta_start
 
 %printer { yyo << $$; } <*>;
 
 %%
-%start diagram;
+%start meta_start;
 
-diagram:
+// We can parse a 'diagram' or just an 'exp'.
+// This reduces the number of copies of the Expression parsing code.
+meta_start:
   circle_list YYEOF                    { drv.diagram.circles = $1.circles; }
+| exp YYEOF                            { drv.exp = $1; }
 
 circle_list:
   circle                               { $$ = CircleList::NewCircleList($1); }
@@ -78,6 +82,9 @@ assign:
   "identifier" "=" "number"            { $$ = Assignment::NumericAssignment($1, (float) $3); }
 | "identifier" "=" MINUS "number"      { $$ = Assignment::NumericAssignment($1, -1 * (float) $4); }
 | "identifier" "=" "quoted_string"     { $$ = Assignment::StringAssignment($1, $3); }
+
+exp:
+  "number"                             { $$ = drv.factory.Number((float) $1); }
 
 %%
 
