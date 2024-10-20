@@ -229,7 +229,7 @@ namespace VENN {
         break;
 
       case symbol_kind::S_exp: // exp
-        value.YY_MOVE_OR_COPY< Expression > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< VennExpression > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -302,7 +302,7 @@ namespace VENN {
         break;
 
       case symbol_kind::S_exp: // exp
-        value.move< Expression > (YY_MOVE (that.value));
+        value.move< VennExpression > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -375,7 +375,7 @@ namespace VENN {
         break;
 
       case symbol_kind::S_exp: // exp
-        value.copy< Expression > (that.value);
+        value.copy< VennExpression > (that.value);
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -447,7 +447,7 @@ namespace VENN {
         break;
 
       case symbol_kind::S_exp: // exp
-        value.move< Expression > (that.value);
+        value.move< VennExpression > (that.value);
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -742,7 +742,7 @@ namespace VENN {
 
       case symbol_kind::S_exp: // exp
 #line 84 "parser.yy"
-                 { yyo << yysym.value.template as < Expression > (); }
+                 { yyo << yysym.value.template as < VennExpression > (); }
 #line 747 "parser.cc"
         break;
 
@@ -1000,7 +1000,7 @@ namespace VENN {
         break;
 
       case symbol_kind::S_exp: // exp
-        yylhs.value.emplace< Expression > ();
+        yylhs.value.emplace< VennExpression > ();
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -1069,7 +1069,7 @@ namespace VENN {
 
   case 3: // meta_start: exp $end
 #line 93 "parser.yy"
-                                       { drv.exp = yystack_[1].value.as < Expression > (); }
+                                       { drv.exp = yystack_[1].value.as < VennExpression > (); }
 #line 1074 "parser.cc"
     break;
 
@@ -1123,97 +1123,97 @@ namespace VENN {
 
   case 12: // exp: "number"
 #line 120 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.Number((float) yystack_[0].value.as < float > ()); }
+                                       { yylhs.value.as < VennExpression > () = drv.factory.Number((float) yystack_[0].value.as < float > ()); }
 #line 1128 "parser.cc"
     break;
 
   case 13: // exp: "note"
 #line 121 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.Note(yystack_[0].value.as < std::string > ()); }
+                                       { yylhs.value.as < VennExpression > () = drv.factory.Note(yystack_[0].value.as < std::string > ()); }
 #line 1134 "parser.cc"
     break;
 
   case 14: // exp: "-" "number"
 #line 122 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.Number(-1 * (float) yystack_[0].value.as < float > ());}
+                                       { yylhs.value.as < VennExpression > () = drv.factory.Number(-1 * (float) yystack_[0].value.as < float > ());}
 #line 1140 "parser.cc"
     break;
 
   case 15: // exp: "not" exp
 #line 123 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.Not(yystack_[0].value.as < Expression > ());}
+                                       { yylhs.value.as < VennExpression > () = drv.factory.Not(yystack_[0].value.as < VennExpression > ());}
 #line 1146 "parser.cc"
     break;
 
   case 16: // exp: "identifier"
 #line 124 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.Variable(yystack_[0].value.as < std::string > (), &drv); }
+                                       { yylhs.value.as < VennExpression > () = drv.factory.Variable(yystack_[0].value.as < std::string > (), &drv); }
 #line 1152 "parser.cc"
     break;
 
   case 17: // exp: exp "+" exp
 #line 125 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
+                                       { yylhs.value.as < VennExpression > () = drv.factory.CreateBinOp(yystack_[2].value.as < VennExpression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < VennExpression > ()); }
 #line 1158 "parser.cc"
     break;
 
   case 18: // exp: exp "-" exp
 #line 126 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
+                                       { yylhs.value.as < VennExpression > () = drv.factory.CreateBinOp(yystack_[2].value.as < VennExpression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < VennExpression > ()); }
 #line 1164 "parser.cc"
     break;
 
   case 19: // exp: exp "*" exp
 #line 127 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
+                                       { yylhs.value.as < VennExpression > () = drv.factory.CreateBinOp(yystack_[2].value.as < VennExpression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < VennExpression > ()); }
 #line 1170 "parser.cc"
     break;
 
   case 20: // exp: exp "/" exp
 #line 128 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
+                                       { yylhs.value.as < VennExpression > () = drv.factory.CreateBinOp(yystack_[2].value.as < VennExpression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < VennExpression > ()); }
 #line 1176 "parser.cc"
     break;
 
   case 21: // exp: exp "comparison" exp
 #line 129 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
+                                       { yylhs.value.as < VennExpression > () = drv.factory.CreateBinOp(yystack_[2].value.as < VennExpression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < VennExpression > ()); }
 #line 1182 "parser.cc"
     break;
 
   case 22: // exp: exp "and" exp
 #line 130 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
+                                       { yylhs.value.as < VennExpression > () = drv.factory.CreateBinOp(yystack_[2].value.as < VennExpression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < VennExpression > ()); }
 #line 1188 "parser.cc"
     break;
 
   case 23: // exp: exp "or" exp
 #line 131 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
+                                       { yylhs.value.as < VennExpression > () = drv.factory.CreateBinOp(yystack_[2].value.as < VennExpression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < VennExpression > ()); }
 #line 1194 "parser.cc"
     break;
 
   case 24: // exp: "oneargfunc" "(" exp ")"
 #line 132 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.OneArgFunc(yystack_[3].value.as < std::string > (), yystack_[1].value.as < Expression > ()); }
+                                       { yylhs.value.as < VennExpression > () = drv.factory.OneArgFunc(yystack_[3].value.as < std::string > (), yystack_[1].value.as < VennExpression > ()); }
 #line 1200 "parser.cc"
     break;
 
   case 25: // exp: "twoargfunc" "(" exp "," exp ")"
 #line 133 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.TwoArgFunc(yystack_[5].value.as < std::string > (), yystack_[3].value.as < Expression > (), yystack_[1].value.as < Expression > ()); }
+                                       { yylhs.value.as < VennExpression > () = drv.factory.TwoArgFunc(yystack_[5].value.as < std::string > (), yystack_[3].value.as < VennExpression > (), yystack_[1].value.as < VennExpression > ()); }
 #line 1206 "parser.cc"
     break;
 
   case 26: // exp: exp "?" exp ":" exp
 #line 134 "parser.yy"
-                                       { yylhs.value.as < Expression > () = drv.factory.TernaryFunc(yystack_[4].value.as < Expression > (), yystack_[2].value.as < Expression > (), yystack_[0].value.as < Expression > ()); }
+                                       { yylhs.value.as < VennExpression > () = drv.factory.TernaryFunc(yystack_[4].value.as < VennExpression > (), yystack_[2].value.as < VennExpression > (), yystack_[0].value.as < VennExpression > ()); }
 #line 1212 "parser.cc"
     break;
 
   case 27: // exp: "(" exp ")"
 #line 135 "parser.yy"
-                                       { yylhs.value.as < Expression > () = yystack_[1].value.as < Expression > (); }
+                                       { yylhs.value.as < VennExpression > () = yystack_[1].value.as < VennExpression > (); }
 #line 1218 "parser.cc"
     break;
 

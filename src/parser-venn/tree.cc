@@ -8,34 +8,34 @@
 #include "driver.h"
 
 // TODO: remove unneeded items in this map.
-std::unordered_map<std::string, Expression::Operation> ExpressionFactory::string_to_operation = {
-  {"+", Expression::PLUS},
-  {"-", Expression::MINUS},
-  {"*", Expression::TIMES},
-  {"/", Expression::DIVIDE},
-  {"==", Expression::EQUAL},
-  {"!=", Expression::NOT_EQUAL},
-  {">", Expression::GT},
-  {">=", Expression::GTE},
-  {"<", Expression::LT},
-  {"<=", Expression::LTE},
-  {"and", Expression::AND},
-  {"or", Expression::OR},
-  {"abs", Expression::ABS},
-  {"ceiling", Expression::CEILING},
-  {"floor", Expression::FLOOR},
-  {"log2", Expression::LOG2},
-  {"loge", Expression::LOGE},
-  {"log10", Expression::LOG10},
-  {"sign", Expression::SIGN},
-  {"sin", Expression::SIN},
-  {"mod", Expression::MOD},
-  {"max", Expression::MAX},
-  {"min", Expression::MIN},
-  {"pow", Expression::POW}
+std::unordered_map<std::string, VennExpression::Operation> VennExpressionFactory::string_to_operation = {
+  {"+", VennExpression::PLUS},
+  {"-", VennExpression::MINUS},
+  {"*", VennExpression::TIMES},
+  {"/", VennExpression::DIVIDE},
+  {"==", VennExpression::EQUAL},
+  {"!=", VennExpression::NOT_EQUAL},
+  {">", VennExpression::GT},
+  {">=", VennExpression::GTE},
+  {"<", VennExpression::LT},
+  {"<=", VennExpression::LTE},
+  {"and", VennExpression::AND},
+  {"or", VennExpression::OR},
+  {"abs", VennExpression::ABS},
+  {"ceiling", VennExpression::CEILING},
+  {"floor", VennExpression::FLOOR},
+  {"log2", VennExpression::LOG2},
+  {"loge", VennExpression::LOGE},
+  {"log10", VennExpression::LOG10},
+  {"sign", VennExpression::SIGN},
+  {"sin", VennExpression::SIN},
+  {"mod", VennExpression::MOD},
+  {"max", VennExpression::MAX},
+  {"min", VennExpression::MIN},
+  {"pow", VennExpression::POW}
 };
 
-std::unordered_map<std::string, float> note_to_volt_same_octave = {
+std::unordered_map<std::string, float> VennExpressionFactory::note_to_volt_same_octave = {
   {"c", 0.0},
   {"c#", 0.08333333},
   {"db", 0.08333333},
@@ -54,12 +54,6 @@ std::unordered_map<std::string, float> note_to_volt_same_octave = {
   {"bb", 0.8333333},
   {"b", 0.91666663}
 };
-
-void ToLower(const std::string &mixed, std::string *lower) {
-  lower->resize(mixed.size());
-  std::transform(mixed.begin(), mixed.end(),
-                 lower->begin(), ::tolower);
-}
 
 void VennToLower(const std::string &mixed, std::string *lower) {
   lower->resize(mixed.size());
@@ -122,7 +116,7 @@ std::ostream& operator<<(std::ostream& os, const Diagram &ex) {
   return os;
 }
 
-float Expression::Compute() {
+float VennExpression::Compute() {
   switch (type) {
     case NUMBER: return float_value;
     case BINOP: return binop_compute();
@@ -151,13 +145,13 @@ float Expression::Compute() {
 }
 
 // TODO: Not clear I need this.
-std::ostream& operator<<(std::ostream& os, const Expression &ex) {
+std::ostream& operator<<(std::ostream& os, const VennExpression &ex) {
   os << ex.to_string();
   return os;
 }
 
 // TODO: Not clear I need this.
-std::string Expression::to_string() const {
+std::string VennExpression::to_string() const {
   switch (type) {
     case NUMBER: return "NumberExpression(" + std::to_string(float_value) + ")";
     case BINOP: return "BinOpExpression(" + std::to_string(operation) + ", " +
@@ -169,22 +163,22 @@ std::string Expression::to_string() const {
   }
 }
 
-bool Expression::is_zero(float value) {
+bool VennExpression::is_zero(float value) {
   return std::fabs(value) <= std::numeric_limits<float>::epsilon();
 }
 
-bool Expression::float_equal(float f1, float f2) {
+bool VennExpression::float_equal(float f1, float f2) {
     static constexpr auto epsilon = 1.0e-05f;
     if (std::fabs(f1 - f2) <= epsilon)
         return true;
     return std::fabs(f1 - f2) <= epsilon * fmax(std::fabs(f1), std::fabs(f2));
 }
 
-float Expression::bool_to_float(bool value) {
+float VennExpression::bool_to_float(bool value) {
   return (value ? 1.0f : 0.0f);
 }
 
-float Expression::binop_compute() {
+float VennExpression::binop_compute() {
   float lhs = subexpressions[0].Compute();
   float rhs = subexpressions[1].Compute();
   switch (operation) {
@@ -215,11 +209,11 @@ float Expression::binop_compute() {
 // logX(y) functions don't have useful values for Y <= 0.
 // So we'll return 0. This function turns any Y <= 0 into 1, thus causing
 // a log function to return 0.
-float SafeLogArg(float arg) {
-  return (arg < 0.0f || Expression::is_zero(arg)) ? 1.0f : arg;
+float VennExpression::SafeLogArg(float arg) {
+  return (arg < 0.0f || VennExpression::is_zero(arg)) ? 1.0f : arg;
 }
 
-float Expression::one_arg_compute(float arg1) {
+float VennExpression::one_arg_compute(float arg1) {
   switch (operation) {
     case ABS: return std::abs(arg1);
     case CEILING: return ceil(arg1);
@@ -228,13 +222,13 @@ float Expression::one_arg_compute(float arg1) {
     case LOGE: return log(SafeLogArg(arg1));
     case LOG10: return log10(SafeLogArg(arg1));
     case SIGN: return (std::signbit(arg1) ? -1.0f :
-                       (Expression::is_zero(arg1) ? 0.0f: 1.0f));
+                       (VennExpression::is_zero(arg1) ? 0.0f: 1.0f));
     case SIN: return sin(arg1);
     default: return 3.45678f;
   }
 }
 
-float Expression::two_arg_compute(float arg1, float arg2) {
+float VennExpression::two_arg_compute(float arg1, float arg2) {
   switch (operation) {
     case MOD: return fmod(arg1, arg2);
     case MAX: return fmax(arg1, arg2);
@@ -244,18 +238,18 @@ float Expression::two_arg_compute(float arg1, float arg2) {
   }
 }
 
-Expression ExpressionFactory::Not(const Expression &expr) {
-  Expression ex;
-  ex.type = Expression::NOT;
+VennExpression VennExpressionFactory::Not(const VennExpression &expr) {
+  VennExpression ex;
+  ex.type = VennExpression::NOT;
   ex.subexpressions.push_back(expr);
   return ex;
 }
 
-Expression ExpressionFactory::Note(const std::string &note_name) {
-  Expression ex;
-  ex.type = Expression::NUMBER;
+VennExpression VennExpressionFactory::Note(const std::string &note_name) {
+  VennExpression ex;
+  ex.type = VennExpression::NUMBER;
   std::string lower;
-  ToLower(note_name, &lower);
+  VennToLower(note_name, &lower);
   // split into name and octave
   int octave;
   std::string name;
@@ -280,67 +274,67 @@ Expression ExpressionFactory::Note(const std::string &note_name) {
   return ex;
 }
 
-Expression ExpressionFactory::Number(float the_value) {
-  Expression ex;
-  ex.type = Expression::NUMBER;
+VennExpression VennExpressionFactory::Number(float the_value) {
+  VennExpression ex;
+  ex.type = VennExpression::NUMBER;
   ex.float_value = the_value;
   return ex;
 }
 
-Expression ExpressionFactory::OneArgFunc(const std::string &func_name,
-                                         const Expression &arg1) {
-  Expression ex;
-  ex.type = Expression::ONEARGFUNC;
+VennExpression VennExpressionFactory::OneArgFunc(const std::string &func_name,
+                                         const VennExpression &arg1) {
+  VennExpression ex;
+  ex.type = VennExpression::ONEARGFUNC;
   std::string lower;
-  ToLower(func_name, &lower);
+  VennToLower(func_name, &lower);
   ex.operation = string_to_operation.at(lower);
   ex.subexpressions.push_back(arg1);
   return ex;
 }
 
-Expression ExpressionFactory::TwoArgFunc(const std::string &func_name,
-                                         const Expression &arg1,
-                                         const Expression &arg2) {
-  Expression ex;
-  ex.type = Expression::TWOARGFUNC;
+VennExpression VennExpressionFactory::TwoArgFunc(const std::string &func_name,
+                                         const VennExpression &arg1,
+                                         const VennExpression &arg2) {
+  VennExpression ex;
+  ex.type = VennExpression::TWOARGFUNC;
   std::string lower;
-  ToLower(func_name, &lower);
+  VennToLower(func_name, &lower);
   ex.operation = string_to_operation.at(lower);
   ex.subexpressions.push_back(arg1);
   ex.subexpressions.push_back(arg2);
   return ex;
 }
 
-Expression ExpressionFactory::TernaryFunc(const Expression &condition, const Expression &if_true,
-                                          const Expression &if_false){
-  Expression ex;
-  ex.type = Expression::TERNARYFUNC;
+VennExpression VennExpressionFactory::TernaryFunc(const VennExpression &condition, const VennExpression &if_true,
+                                          const VennExpression &if_false){
+  VennExpression ex;
+  ex.type = VennExpression::TERNARYFUNC;
   ex.subexpressions.push_back(condition);
   ex.subexpressions.push_back(if_true);
   ex.subexpressions.push_back(if_false);
   return ex;
 }
 
-Expression ExpressionFactory::CreateBinOp(const Expression &lhs,
+VennExpression VennExpressionFactory::CreateBinOp(const VennExpression &lhs,
                                           const std::string &op_string,
-                                          const Expression &rhs) {
-  Expression ex;
-  ex.type = Expression::BINOP;
+                                          const VennExpression &rhs) {
+  VennExpression ex;
+  ex.type = VennExpression::BINOP;
   ex.subexpressions.push_back(lhs);
   ex.subexpressions.push_back(rhs);
   std::string lower;
-  ToLower(op_string, &lower);
+  VennToLower(op_string, &lower);
   ex.operation = string_to_operation.at(lower);
   return ex;
 }
 
 // Venn has a restricted number of variables, unlike BASICally.
-Expression ExpressionFactory::Variable(const char *var_name, VennDriver* driver) {
-  Expression ex;
-  ex.type = Expression::VARIABLE;
+VennExpression VennExpressionFactory::Variable(const char *var_name, VennDriver* driver) {
+  VennExpression ex;
+  ex.type = VennExpression::VARIABLE;
   // Intentionally copying the name.
   std::string copied(var_name);
-  ToLower(copied, &(ex.name));
+  VennToLower(copied, &(ex.name));
   if (driver->IsVariableName(ex.name.c_str())) {
     ex.variable_ptr = driver->GetVarFromName(ex.name.c_str());
   } else {
@@ -351,12 +345,12 @@ Expression ExpressionFactory::Variable(const char *var_name, VennDriver* driver)
 }
 
 // The parser seems to need many variants of Variable.
-Expression ExpressionFactory::Variable(const std::string &expr, VennDriver* driver) {
+VennExpression VennExpressionFactory::Variable(const std::string &expr, VennDriver* driver) {
   // Intentionally copying the name.
   return Variable(expr.c_str(), driver);
 }
 
-Expression ExpressionFactory::Variable(char* var_name, VennDriver* driver) {
+VennExpression VennExpressionFactory::Variable(char* var_name, VennDriver* driver) {
   // Intentionally copying the name, since I'm not confident the char* is
   // valid for long.
   return Variable(std::string(var_name).c_str(), driver);

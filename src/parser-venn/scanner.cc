@@ -783,9 +783,9 @@ static const flex_int16_t yy_chk[248] =
 
 static const flex_int16_t yy_rule_linenum[26] =
     {   0,
-      119,  120,  121,  122,  123,  124,  125,  126,  127,  128,
-      129,  130,  131,  132,  133,  134,  135,  136,  137,  138,
-      139,  140,  141,  142,  143
+      123,  124,  125,  126,  127,  128,  129,  130,  131,  132,
+      133,  134,  135,  136,  137,  138,  139,  140,  141,  142,
+      143,  144,  145,  146,  147
     } ;
 
 /* The intent behind this definition is that it'll catch
@@ -888,12 +888,16 @@ static const flex_int16_t yy_rule_linenum[26] =
   // A number symbol corresponding to the value in S.
   VENN::Parser::symbol_type
   make_NUMBER (const std::string &s, const VENN::Parser::location_type& loc);
-#line 891 "scanner.cc"
-#line 108 "scanner.ll"
+
+  // I would have preferred to have patterns for variable names and field names,
+  // since they are both known at compile time, but "x" and "y" are in both sets,
+  // and thus cannot be disambiguated (at least, not easily.)
+#line 895 "scanner.cc"
+#line 112 "scanner.ll"
   // Code run each time a pattern is matched.
   #define YY_USER_ACTION  loc.columns (yyleng);
-#line 895 "scanner.cc"
-#line 896 "scanner.cc"
+#line 899 "scanner.cc"
+#line 900 "scanner.cc"
 
 #define INITIAL 0
 
@@ -1218,16 +1222,16 @@ YY_DECL
 
 	{
 /* %% [7.0] user's declarations go here */
-#line 111 "scanner.ll"
+#line 115 "scanner.ll"
 
 
-#line 114 "scanner.ll"
+#line 118 "scanner.ll"
   // A handy shortcut to the location held by the driver.
   //VENN::location& loc = drv.location;
   // Code run each time venn_yylex is called.
   loc.step ();
 
-#line 1230 "scanner.cc"
+#line 1234 "scanner.cc"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -1305,144 +1309,144 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 119 "scanner.ll"
+#line 123 "scanner.ll"
 loc.step ();
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 120 "scanner.ll"
+#line 124 "scanner.ll"
 loc.lines (yyleng); loc.step ();
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 121 "scanner.ll"
+#line 125 "scanner.ll"
 // Comments, skip over. Hint: '.' will not match \n. But location might need fixing.
 	YY_BREAK
 case 4:
 /* rule 4 can match eol */
 YY_RULE_SETUP
-#line 122 "scanner.ll"
+#line 126 "scanner.ll"
 return VENN::Parser::make_QUOTED_STRING  (yytext, loc);  // Will this grab newlines?
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 123 "scanner.ll"
+#line 127 "scanner.ll"
 return VENN::Parser::make_MINUS  (yytext, loc);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 124 "scanner.ll"
+#line 128 "scanner.ll"
 return VENN::Parser::make_PLUS   (yytext, loc);
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 125 "scanner.ll"
+#line 129 "scanner.ll"
 return VENN::Parser::make_STAR   (yytext, loc);
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 126 "scanner.ll"
+#line 130 "scanner.ll"
 return VENN::Parser::make_SLASH  (yytext, loc);
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 127 "scanner.ll"
+#line 131 "scanner.ll"
 return VENN::Parser::make_LPAREN (yytext, loc);
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 128 "scanner.ll"
+#line 132 "scanner.ll"
 return VENN::Parser::make_RPAREN (yytext, loc);
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 129 "scanner.ll"
+#line 133 "scanner.ll"
 return VENN::Parser::make_ASSIGN (yytext, loc);
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 130 "scanner.ll"
+#line 134 "scanner.ll"
 return VENN::Parser::make_LBRACKET (yytext, loc);
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 131 "scanner.ll"
+#line 135 "scanner.ll"
 return VENN::Parser::make_RBRACKET (yytext, loc);
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 132 "scanner.ll"
+#line 136 "scanner.ll"
 return VENN::Parser::make_COMMA  (yytext, loc);
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 133 "scanner.ll"
+#line 137 "scanner.ll"
 return VENN::Parser::make_QUESTION(yytext, loc);
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 134 "scanner.ll"
+#line 138 "scanner.ll"
 return VENN::Parser::make_COLON  (yytext, loc);
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 135 "scanner.ll"
+#line 139 "scanner.ll"
 return VENN::Parser::make_AND    (yytext, loc);
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 136 "scanner.ll"
+#line 140 "scanner.ll"
 return VENN::Parser::make_NOT    (yytext, loc);
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 137 "scanner.ll"
+#line 141 "scanner.ll"
 return VENN::Parser::make_OR     (yytext, loc);
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 138 "scanner.ll"
+#line 142 "scanner.ll"
 return make_NUMBER (yytext, loc);
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 139 "scanner.ll"
+#line 143 "scanner.ll"
 return VENN::Parser::make_ONEARGFUNC (yytext, loc);
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 140 "scanner.ll"
+#line 144 "scanner.ll"
 return VENN::Parser::make_TWOARGFUNC (yytext, loc);
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 141 "scanner.ll"
+#line 145 "scanner.ll"
 return VENN::Parser::make_COMPARISON (yytext, loc);
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 142 "scanner.ll"
+#line 146 "scanner.ll"
 return VENN::Parser::make_IDENTIFIER (yytext, loc);
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 143 "scanner.ll"
+#line 147 "scanner.ll"
 {
              throw VENN::Parser::syntax_error
                (loc, "invalid character: " + std::string(yytext));
 }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 147 "scanner.ll"
+#line 151 "scanner.ll"
 return VENN::Parser::make_YYEOF (loc);
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 148 "scanner.ll"
+#line 152 "scanner.ll"
 ECHO;
 	YY_BREAK
-#line 1445 "scanner.cc"
+#line 1449 "scanner.cc"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2713,7 +2717,7 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 /* %ok-for-header */
 
-#line 148 "scanner.ll"
+#line 152 "scanner.ll"
 
 
 VENN::Parser::symbol_type

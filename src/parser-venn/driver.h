@@ -90,16 +90,16 @@ public:
   // The Venn module Diagram being constructed.
   Diagram diagram;
   // _OR_
-  // Expression we just parsed.
-  Expression exp;
+  // VennExpression we just parsed.
+  VennExpression exp;
 
   // List of syntax errors found before parser gave up.
   std::vector<Error> errors;
 
   VennVariables variables;
 
-  // Knows how to create various kinds of Expression objects.
-  ExpressionFactory factory;
+  // Knows how to create various kinds of VennExpression objects.
+  VennExpressionFactory factory;
 
   // Whether to generate parser debug traces.
   bool trace_parsing;

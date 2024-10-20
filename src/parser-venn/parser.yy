@@ -78,7 +78,7 @@
 %nterm <Assignments> assignments
 %nterm <Circle> circle
 %nterm <CircleList> circle_list
-%nterm <Expression> exp
+%nterm <VennExpression> exp
 %nterm meta_start
 
 %printer { yyo << $$; } <*>;
@@ -87,7 +87,7 @@
 %start meta_start;
 
 // We can parse a 'diagram' or just an 'exp'.
-// This reduces the number of copies of the Expression parsing code.
+// This reduces the number of copies of the expression parsing code.
 meta_start:
   circle_list YYEOF                    { drv.diagram.circles = $1.circles; }
 | exp YYEOF                            { drv.exp = $1; }

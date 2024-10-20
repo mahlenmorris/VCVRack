@@ -123,7 +123,7 @@ struct Diagram {
 
 class VennDriver;
 // Base class for computing expressions.
-class Expression {
+class VennExpression {
  public:
   enum Type {
     NUMBER,  // 3, 4.5, -283823
@@ -168,19 +168,13 @@ class Expression {
   float* variable_ptr;
 
   std::string name;
-  std::vector<Expression> subexpressions;
+  std::vector<VennExpression> subexpressions;
 
   static std::unordered_map<std::string, float> note_to_volt_octave_4;
-  Expression() : variable_ptr{nullptr} {}
+  VennExpression() : variable_ptr{nullptr} {}
 
-  // Compute the float numeric result of this Expression.
+  // Compute the float numeric result of this VennExpression.
   float Compute();
-
-  // Compute the string version of this expression.
-  std::string ComputeString();
-  // Determine if this Expression can Compute() different results depending on
-  // INn or any other volatile source (e.g., a random() function.)
-  bool Volatile();
 
   static bool is_zero(float value);
 
@@ -188,35 +182,40 @@ class Expression {
   static bool float_equal(float f1, float f2);
 
   // Bison seems to require this; I don't use it.
-  friend std::ostream& operator<<(std::ostream& os, const Expression &ex);
+  friend std::ostream& operator<<(std::ostream& os, const VennExpression &ex);
   std::string to_string() const;
  private:
+  // logX(y) functions don't have useful values for Y <= 0.
+  // So we'll return 0. This function turns any Y <= 0 into 1, thus causing
+  // a log function to return 0.
+  float SafeLogArg(float arg);
   float bool_to_float(bool value);
   float binop_compute();
   float one_arg_compute(float arg1);
   float two_arg_compute(float arg1, float arg2);
 };
 
-class ExpressionFactory {
+class VennExpressionFactory {
  public:
-  Expression Not(const Expression &expr);
-  Expression Note(const std::string &note_name);
-  Expression Number(float the_value);
-  Expression OneArgFunc(const std::string &func_name,
-                        const Expression &arg1);
-  Expression TwoArgFunc(const std::string &func_name,
-                        const Expression &arg1, const Expression &arg2);
-  Expression TernaryFunc(const Expression &condition, const Expression &if_true,
-                         const Expression &if_false);
-  Expression CreateBinOp(const Expression &lhs,
-                         const std::string &op_string,
-                         const Expression &rhs);
-  Expression Variable(const char *var_name, VennDriver* driver);
+  VennExpression Not(const VennExpression &expr);
+  VennExpression Note(const std::string &note_name);
+  VennExpression Number(float the_value);
+  VennExpression OneArgFunc(const std::string &func_name,
+                            const VennExpression &arg1);
+  VennExpression TwoArgFunc(const std::string &func_name,
+                            const VennExpression &arg1, const VennExpression &arg2);
+  VennExpression TernaryFunc(const VennExpression &condition, const VennExpression &if_true,
+                             const VennExpression &if_false);
+  VennExpression CreateBinOp(const VennExpression &lhs,
+                             const std::string &op_string,
+                             const VennExpression &rhs);
+  VennExpression Variable(const char *var_name, VennDriver* driver);
   // The parser seems to need many variants of Variable.
-  Expression Variable(const std::string &expr, VennDriver* driver);
-  Expression Variable(char * var_name, VennDriver* driver);
+  VennExpression Variable(const std::string &expr, VennDriver* driver);
+  VennExpression Variable(char * var_name, VennDriver* driver);
  private:
-  static std::unordered_map<std::string, Expression::Operation> string_to_operation;
+  static std::unordered_map<std::string, VennExpression::Operation> string_to_operation;
+  static std::unordered_map<std::string, float> note_to_volt_same_octave;
 };
 
 

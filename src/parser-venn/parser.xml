@@ -257,7 +257,7 @@
       <nonterminal symbol-number="39" name="circle" type="Circle" usefulness="useful"/>
       <nonterminal symbol-number="40" name="assignments" type="Assignments" usefulness="useful"/>
       <nonterminal symbol-number="41" name="assign" type="Assignment" usefulness="useful"/>
-      <nonterminal symbol-number="42" name="exp" type="Expression" usefulness="useful"/>
+      <nonterminal symbol-number="42" name="exp" type="VennExpression" usefulness="useful"/>
     </nonterminals>
   </grammar>
 

@@ -425,7 +425,7 @@ namespace VENN {
       char dummy4[sizeof (CircleList)];
 
       // exp
-      char dummy5[sizeof (Expression)];
+      char dummy5[sizeof (VennExpression)];
 
       // "number"
       char dummy6[sizeof (float)];
@@ -661,7 +661,7 @@ namespace VENN {
         break;
 
       case symbol_kind::S_exp: // exp
-        value.move< Expression > (std::move (that.value));
+        value.move< VennExpression > (std::move (that.value));
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -782,13 +782,13 @@ namespace VENN {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, Expression&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, VennExpression&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const Expression& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const VennExpression& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -864,7 +864,7 @@ switch (yykind)
         break;
 
       case symbol_kind::S_exp: // exp
-        value.template destroy< Expression > ();
+        value.template destroy< VennExpression > ();
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -2010,7 +2010,7 @@ switch (yykind)
         break;
 
       case symbol_kind::S_exp: // exp
-        value.copy< Expression > (YY_MOVE (that.value));
+        value.copy< VennExpression > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -2099,7 +2099,7 @@ switch (yykind)
         break;
 
       case symbol_kind::S_exp: // exp
-        value.move< Expression > (YY_MOVE (s.value));
+        value.move< VennExpression > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_NUMBER: // "number"
