@@ -41,14 +41,39 @@
 %define api.token.prefix {TOK_}
 %token <std::string>
   ASSIGN  "="
+  ABS     "abs"
+  AND     "and"
+  CEILING "ceiling"
+  LOG2    "log2"
+  LOGE    "loge"
+  LOG10   "log10"
+  MAX     "max"
+  MIN     "min"
+  NOT     "not"
+  OR      "or"
+  POW     "pow"
+  SIGN    "sign"
+  SIN     "sin"
   MINUS   "-"
+  PLUS    "+"
+  STAR    "*"
+  SLASH   "/"
+  LPAREN  "("
+  RPAREN  ")"
   LBRACKET "["
   RBRACKET "]"
+  COMMA   ","
+  QUESTION "?"
+  COLON   ":"
 ;
 
 %token <std::string> IDENTIFIER "identifier"
 %token <std::string> QUOTED_STRING "quoted_string"
 %token <float> NUMBER "number"
+%token <std::string> NOTE "note"
+%token <std::string> ONEARGFUNC "oneargfunc"
+%token <std::string> TWOARGFUNC "twoargfunc"
+%token <std::string> COMPARISON "comparison"
 %nterm <Assignment> assign
 %nterm <Assignments> assignments
 %nterm <Circle> circle
@@ -79,12 +104,35 @@ assignments:
 | assignments assign                   { $$ = $1.Add($2); }
 
 assign:
-  "identifier" "=" "number"            { $$ = Assignment::NumericAssignment($1, (float) $3); }
-| "identifier" "=" MINUS "number"      { $$ = Assignment::NumericAssignment($1, -1 * (float) $4); }
-| "identifier" "=" "quoted_string"     { $$ = Assignment::StringAssignment($1, $3); }
+  "identifier" "=" "number"           { $$ = Assignment::NumericAssignment($1, (float) $3); }
+| "identifier" "=" MINUS "number"     { $$ = Assignment::NumericAssignment($1, -1 * (float) $4); }
+| "identifier" "=" "quoted_string"    { $$ = Assignment::StringAssignment($1, $3); }
+
+%right "?" ":";
+%left "or";
+%left "and";
+%left COMPARISON;
+%left "+" "-";
+%left "*" "/";
+%precedence NEG;   /* unary minus or "not" */
 
 exp:
   "number"                             { $$ = drv.factory.Number((float) $1); }
+| "note"                               { $$ = drv.factory.Note($1); }
+| MINUS "number" %prec NEG             { $$ = drv.factory.Number(-1 * (float) $2);}
+| "not" exp %prec NEG                  { $$ = drv.factory.Not($2);}
+| "identifier"                         { $$ = drv.factory.Variable($1, &drv); }
+| exp "+" exp                          { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| exp "-" exp                          { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| exp "*" exp                          { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| exp "/" exp                          { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| exp COMPARISON exp                   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| exp "and" exp                        { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| exp "or" exp                         { $$ = drv.factory.CreateBinOp($1, $2, $3); }
+| "oneargfunc" "(" exp ")"             { $$ = drv.factory.OneArgFunc($1, $3); }
+| "twoargfunc" "(" exp "," exp ")"     { $$ = drv.factory.TwoArgFunc($1, $3, $5); }
+| exp "?" exp ":" exp                  { $$ = drv.factory.TernaryFunc($1, $3, $5); }
+| "(" exp ")"                          { $$ = $2; }
 
 %%
 

@@ -66,7 +66,7 @@ struct Circle {
 
   Circle() : x_center{0.0}, y_center{0.0}, radius{0.0} {}
 
-  // Must be defined in tree.cc, because it actually uses Driver.
+  // Must be defined in tree.cc, because it actually uses VennDriver.
   static Circle NewCircle(const std::string& name, const Assignments& fields, VennDriver* driver);
 
   // Bison seems to require this if I use const references; I don't use it.
@@ -121,7 +121,7 @@ struct Diagram {
   friend std::ostream& operator<<(std::ostream& os, const Diagram &ex);
 };
 
-class Driver;
+class VennDriver;
 // Base class for computing expressions.
 class Expression {
  public:
@@ -199,13 +199,9 @@ class Expression {
 
 class ExpressionFactory {
  public:
- /*
   Expression Not(const Expression &expr);
   Expression Note(const std::string &note_name);
- */
   Expression Number(float the_value);
- /*
-  Expression Quoted(const std::string &quoted);
   Expression OneArgFunc(const std::string &func_name,
                         const Expression &arg1);
   Expression TwoArgFunc(const std::string &func_name,
@@ -215,11 +211,10 @@ class ExpressionFactory {
   Expression CreateBinOp(const Expression &lhs,
                          const std::string &op_string,
                          const Expression &rhs);
-  Expression Variable(const char *var_name, Driver* driver);
+  Expression Variable(const char *var_name, VennDriver* driver);
   // The parser seems to need many variants of Variable.
-  Expression Variable(const std::string &expr, Driver* driver);
-  Expression Variable(char * var_name, Driver* driver);
- */
+  Expression Variable(const std::string &expr, VennDriver* driver);
+  Expression Variable(char * var_name, VennDriver* driver);
  private:
   static std::unordered_map<std::string, Expression::Operation> string_to_operation;
 };

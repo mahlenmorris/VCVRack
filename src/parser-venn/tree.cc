@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <vector>
 #include "driver.h"
 
@@ -33,6 +34,32 @@ std::unordered_map<std::string, Expression::Operation> ExpressionFactory::string
   {"min", Expression::MIN},
   {"pow", Expression::POW}
 };
+
+std::unordered_map<std::string, float> note_to_volt_same_octave = {
+  {"c", 0.0},
+  {"c#", 0.08333333},
+  {"db", 0.08333333},
+  {"d", 0.16666666},
+  {"d#", 0.24999999},
+  {"eb", 0.24999999},
+  {"e", 0.33333332},
+  {"f", 0.41666665},
+  {"f#", 0.49999998},
+  {"gb", 0.49999998},
+  {"g", 0.58333331},
+  {"g#", 0.66666664},
+  {"ab", 0.66666664},
+  {"a", 0.74999997},
+  {"a#", 0.8333333},
+  {"bb", 0.8333333},
+  {"b", 0.91666663}
+};
+
+void ToLower(const std::string &mixed, std::string *lower) {
+  lower->resize(mixed.size());
+  std::transform(mixed.begin(), mixed.end(),
+                 lower->begin(), ::tolower);
+}
 
 void VennToLower(const std::string &mixed, std::string *lower) {
   lower->resize(mixed.size());
@@ -217,9 +244,121 @@ float Expression::two_arg_compute(float arg1, float arg2) {
   }
 }
 
+Expression ExpressionFactory::Not(const Expression &expr) {
+  Expression ex;
+  ex.type = Expression::NOT;
+  ex.subexpressions.push_back(expr);
+  return ex;
+}
+
+Expression ExpressionFactory::Note(const std::string &note_name) {
+  Expression ex;
+  ex.type = Expression::NUMBER;
+  std::string lower;
+  ToLower(note_name, &lower);
+  // split into name and octave
+  int octave;
+  std::string name;
+  // Number at end might be two chars long, in the case of -1 or 10.
+  if (lower.size() == 4 || (lower.size() == 3 && (
+      lower[1] != '#' && lower[1] != 'b'))) {
+    name = lower.substr(0, lower.size() - 2);
+    octave = strtol(lower.c_str() + lower.size() - 2, NULL, 10);
+  } else {
+    name = lower.substr(0, lower.size() - 1);
+    octave = strtol(lower.c_str() + lower.size() - 1, NULL, 10);
+  }
+  auto found = note_to_volt_same_octave.find(name);
+  // This can happen. Current regex can accept invalid values like b#.
+  // TODO: maybe fix the regex?
+  if (found != note_to_volt_same_octave.end()) {
+    ex.float_value = found->second + octave - 4;
+  } else {
+    // Invalid name.
+    ex.float_value = 0.0f;
+  }
+  return ex;
+}
+
 Expression ExpressionFactory::Number(float the_value) {
   Expression ex;
   ex.type = Expression::NUMBER;
   ex.float_value = the_value;
   return ex;
 }
+
+Expression ExpressionFactory::OneArgFunc(const std::string &func_name,
+                                         const Expression &arg1) {
+  Expression ex;
+  ex.type = Expression::ONEARGFUNC;
+  std::string lower;
+  ToLower(func_name, &lower);
+  ex.operation = string_to_operation.at(lower);
+  ex.subexpressions.push_back(arg1);
+  return ex;
+}
+
+Expression ExpressionFactory::TwoArgFunc(const std::string &func_name,
+                                         const Expression &arg1,
+                                         const Expression &arg2) {
+  Expression ex;
+  ex.type = Expression::TWOARGFUNC;
+  std::string lower;
+  ToLower(func_name, &lower);
+  ex.operation = string_to_operation.at(lower);
+  ex.subexpressions.push_back(arg1);
+  ex.subexpressions.push_back(arg2);
+  return ex;
+}
+
+Expression ExpressionFactory::TernaryFunc(const Expression &condition, const Expression &if_true,
+                                          const Expression &if_false){
+  Expression ex;
+  ex.type = Expression::TERNARYFUNC;
+  ex.subexpressions.push_back(condition);
+  ex.subexpressions.push_back(if_true);
+  ex.subexpressions.push_back(if_false);
+  return ex;
+}
+
+Expression ExpressionFactory::CreateBinOp(const Expression &lhs,
+                                          const std::string &op_string,
+                                          const Expression &rhs) {
+  Expression ex;
+  ex.type = Expression::BINOP;
+  ex.subexpressions.push_back(lhs);
+  ex.subexpressions.push_back(rhs);
+  std::string lower;
+  ToLower(op_string, &lower);
+  ex.operation = string_to_operation.at(lower);
+  return ex;
+}
+
+// Venn has a restricted number of variables, unlike BASICally.
+Expression ExpressionFactory::Variable(const char *var_name, VennDriver* driver) {
+  Expression ex;
+  ex.type = Expression::VARIABLE;
+  // Intentionally copying the name.
+  std::string copied(var_name);
+  ToLower(copied, &(ex.name));
+  if (driver->IsVariableName(ex.name.c_str())) {
+    ex.variable_ptr = driver->GetVarFromName(ex.name.c_str());
+  } else {
+    // Make a compile error. Though this shouldn't happen if the compiler is correct.
+    driver->AddError("There is no variable called '" + copied + "'.");
+  }
+  return ex;
+}
+
+// The parser seems to need many variants of Variable.
+Expression ExpressionFactory::Variable(const std::string &expr, VennDriver* driver) {
+  // Intentionally copying the name.
+  return Variable(expr.c_str(), driver);
+}
+
+Expression ExpressionFactory::Variable(char* var_name, VennDriver* driver) {
+  // Intentionally copying the name, since I'm not confident the char* is
+  // valid for long.
+  return Variable(std::string(var_name).c_str(), driver);
+}
+

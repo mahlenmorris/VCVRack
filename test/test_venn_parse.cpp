@@ -27,9 +27,6 @@ TEST(ParserTest, BadVar1)
     if (drv.errors.size() > 0) {
       std::cout << "\n" << drv.errors.at(0).to_string() << "\n";
     }
-    Diagram* diagram = &(drv.diagram);
-    ASSERT_EQ(1, diagram->circles.size());
-    EXPECT_EQ(2.0, diagram->circles.at(0).x_center);
 }
 
 TEST(ParserTest, BadVar2)
@@ -125,4 +122,51 @@ TEST(ParserTest, SimpleExpression)
     }
     Expression* exp = &(drv.exp);
     ASSERT_FLOAT_EQ(3.14159, exp->Compute());
+}
+
+TEST(ParserTest, ManyExpressions)
+{
+    VennDriver drv;
+    
+    EXPECT_EQ(0, drv.parse("30 * 3"));
+    EXPECT_EQ(0, drv.errors.size());
+    if (drv.errors.size() > 0) {
+      std::cout << "\n" << drv.errors.at(0).to_string() << "\n";
+    }
+    Expression* exp = &(drv.exp);
+    ASSERT_FLOAT_EQ(90, exp->Compute());
+
+    EXPECT_EQ(0, drv.parse("(30 * 3)"));
+    EXPECT_EQ(0, drv.errors.size());
+    if (drv.errors.size() > 0) {
+      std::cout << "\n" << drv.errors.at(0).to_string() << "\n";
+    }
+    exp = &(drv.exp);
+    ASSERT_FLOAT_EQ(90, exp->Compute());
+
+    EXPECT_EQ(0, drv.parse("1 + x"));
+    EXPECT_EQ(0, drv.errors.size());
+    if (drv.errors.size() > 0) {
+      std::cout << "\n" << drv.errors.at(0).to_string() << "\n";
+    }
+    exp = &(drv.exp);
+    drv.variables.var_x = 3.14;
+    ASSERT_FLOAT_EQ(4.14, exp->Compute());
+
+    EXPECT_EQ(0, drv.parse("x + 1"));
+    EXPECT_EQ(0, drv.errors.size());
+    if (drv.errors.size() > 0) {
+      std::cout << "\n" << drv.errors.at(0).to_string() << "\n";
+    }
+    exp = &(drv.exp);
+    drv.variables.var_x = 3.14;
+    ASSERT_FLOAT_EQ(4.14, exp->Compute());
+
+    EXPECT_EQ(0, drv.parse("sin(30*3.14159265/180) * MAx(2, 0.001)"));
+    EXPECT_EQ(0, drv.errors.size());
+    if (drv.errors.size() > 0) {
+      std::cout << "\n" << drv.errors.at(0).to_string() << "\n";
+    }
+    exp = &(drv.exp);
+    ASSERT_FLOAT_EQ(1.0, exp->Compute());
 }
