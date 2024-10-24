@@ -3,6 +3,9 @@
 #include "parser-venn/driver.h"
 #include "st_textfield.hpp"
 
+#include <chrono>   
+#include <thread>
+
 constexpr int VENN_COLOR_COUNT = 7;
 NVGcolor venn_colors[VENN_COLOR_COUNT] = {
   SCHEME_RED,
@@ -103,6 +106,7 @@ struct Venn : Module {
 		Y_DISTANCE_OUTPUT,
  		X_POSITION_OUTPUT,
 		Y_POSITION_OUTPUT,
+    MATH1_OUTPUT,
     OUTPUTS_LEN
   };
   enum LightId {
@@ -112,6 +116,64 @@ struct Venn : Module {
 		OFST_X_LIGHT,
 		OFST_Y_LIGHT,
     LIGHTS_LEN
+  };
+
+  // Class devoted to handling the lengthy (compared to single sample)
+  // process of compiling code for expressions.
+  struct CompilationThread {
+    VennDriver* driver;
+    bool shutdown;
+    bool initiate_compile;
+    std::string text;  // Text to compile.
+    bool running;  // TRUE if still compiling, false if completed.
+    bool useful; // TRUE if last completed compile created something for module to use.
+    // Product of a successful compilation.
+    VennExpression result_exp;
+
+    explicit CompilationThread(VennDriver* drv) : driver{drv} {
+      running = false;
+      useful = false;
+      shutdown = false;
+      initiate_compile = false;
+    }
+
+    void Halt() {
+      shutdown = true;
+      initiate_compile = false;
+    }
+
+    void StartNewCompile(const std::string &new_text, int circle) {
+      running = true;  // Tells caller not to use previous result.
+      text = new_text;
+      initiate_compile = true;
+    }
+
+    // If compilation succeeds, sets flag saying so and prepares vectors
+    // of main_blocks and expression_blocks for module to use later.
+    void Compile() {
+      while (!shutdown) {
+        if (initiate_compile) {
+          running = true;
+          useful = false;
+          // 'text' might get changed during compilation which would be bad.
+          // Let's copy it and send that.
+          std::string stable_text(text);
+          bool compiles = !driver->parse(stable_text);
+          if (compiles) {
+            result_exp = driver->exp;  // Should COPY it.
+            useful = true;
+          }
+          initiate_compile = false;
+          running = false;  // Signals caller to pick up result.
+        }
+        // It seems like I need a tiny sleep here to allow join() to work
+        // on this thread?
+        // TODO: maybe make this longer, like 10ms?
+        if (!shutdown) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+      }
+    }
   };
 
   // The array of circles.
@@ -151,6 +213,13 @@ struct Venn : Module {
   // Indicates that something other than the UI has just changed circles.
   bool update_text_widgets;
 
+  // For compiling expressions.
+  VennDriver driver;
+  CompilationThread* compiler;
+  std::thread* compile_thread;
+  bool compile_in_progress = false;
+
+
   Venn() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configParam(EXP_LIN_LOG_PARAM, -1.f, 1.f, 0.f, "Controls the speed that DISTANCE increases. At -1, it grows early, 0 is linear, 1 grows slowly.");
@@ -168,6 +237,7 @@ struct Venn : Module {
 		configOutput(Y_POSITION_OUTPUT, "The current Y coordinate of the point (-5V -> 5V). Useful for recording point gestures and performances.");
 		configOutput(X_DISTANCE_OUTPUT, "Within a circle, varies linearly from left to right, polyphonic");
 		configOutput(Y_DISTANCE_OUTPUT, "Within a circle, varies linearly from bottom to top, polyphonic");
+		configOutput(MATH1_OUTPUT, "Outputs values based on per-circle formulas, polyphonic");
 
     configSwitch(INV_X_PARAM, 0, 1, 0, "Invert",
                  {"Increases as point moves to the right", "Increases as point moves to the left"});
@@ -196,8 +266,27 @@ struct Venn : Module {
     show_keyboard = true;  // For new instances, we are true.
     // TODO: could menu choice be a default for all instances?
     // Once user has learned it, it applies to all.
+
+    // For compiling typed-in expressions.
+    compile_in_progress = false;
+    compiler = new CompilationThread(&driver);
+    compile_thread = new std::thread(&CompilationThread::Compile, compiler);
   }
   
+  ~Venn() {
+    // A LOT of this would be better handled with shared_ptr.
+    if (compiler) {
+      compiler->Halt();
+    }
+    if (compile_thread) {
+      compile_thread->join();
+      delete compile_thread;
+    }
+    if (compiler) {
+      delete compiler;
+    }
+  }
+
   // Turns a set of shapes into a text string that we can parse later to recreate the shapes.
   std::string to_string(Circle the_circles[16]) {
     std::string result;
@@ -631,7 +720,7 @@ struct VennNameTextField : STTextField {
 
   // bgColor seems to have no effect if I don't do this. Drawing a background
   // and then letting STTextField draw the rest fixes that.
-  // TODO: Make STTextfield actually use bgColor.
+  // TODO: Make STTextField actually use bgColor. Or draw background color on templates.
   void draw(const DrawArgs& args) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 
@@ -1057,6 +1146,59 @@ struct CircleDisplay : OpaqueWidget {
 	}
 };
 
+struct VennMath1TextField : STTextField {
+  Venn* module;
+  std::string math1_text;
+
+  VennMath1TextField() {
+    module = nullptr;
+    this->text = &math1_text;
+    fontPath = asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf");
+    fontSize = 12.0f;
+    color = SCHEME_WHITE;
+    bgColor = SCHEME_BLACK;
+
+    textOffset = math::Vec(0, -2);  // Put closer to corner than default.
+
+    extended.Initialize(3, 1);  // Much shorter window.
+  }
+
+  void setModule(Venn* the_module) {
+    module = the_module;
+  }
+
+  // bgColor seems to have no effect if I don't do this. Drawing a background
+  // and then letting STTextField draw the rest fixes that.
+  // TODO: Make STTextField actually use bgColor. Or draw background color on templates.
+  void draw(const DrawArgs& args) override {
+    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+
+    // background only
+    nvgBeginPath(args.vg);
+    nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
+    nvgFillColor(args.vg, bgColor);
+    nvgFill(args.vg);
+
+    if (module && module->editing && module->current_circle >= 0) {
+      STTextField::draw(args);  // Draw text.
+    }
+    nvgResetScissor(args.vg);
+  }
+
+  void CircleUpdated(const std::string& name) {
+    text->assign(name);
+  }
+
+  std::string getText() {
+    return *text;
+  }
+
+  void setText(const std::string& new_text) {
+    text->assign(new_text);
+    // TODO: probably need to call updatedText in STTextField?
+  }
+};
+
 // Just the tiny window showing which circle is currently selected, if any.
 struct VennNumberDisplayWidget : TransparentWidget {
   Venn* module;
@@ -1142,6 +1284,7 @@ struct VennWidget : ModuleWidget {
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 30.162)), module, Venn::WITHIN_GATE_OUTPUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(166.582, 47.286)), module, Venn::X_DISTANCE_OUTPUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 47.286)), module, Venn::Y_DISTANCE_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 92.963)), module, Venn::MATH1_OUTPUT));
 
     addParam(createLightParamCentered<VCVLightLatch<
           MediumSimpleLight<WhiteLight>>>(mm2px(Vec(166.582, 28.78)), module, Venn::INV_WITHIN_PARAM, Venn::INV_WITHIN_LIGHT));
