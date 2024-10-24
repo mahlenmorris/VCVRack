@@ -1008,14 +1008,17 @@ struct CircleDisplay : OpaqueWidget {
     float x[6] = {0.062705, -2.653372, 2.517570, 3.260226, -2.121736, 0.974539};
     float y[6] = {-0.411569, 2.684878, 4.339533, -0.208806, -2.508809, -4.108777};
     float radius[6] = {1.742869, 4.004038, 2.987639, 2.559288, 2.169408, 3.424444};
-
+    const char * names[6] = {"Delay", "Melody Speed", "Melody Crunch", "Reverb Space",
+                             "Noise Pad", "Float\nSparkle"};
     for (int i = 0; i < 6; ++i) {
       Circle circle;
       circle.x_center = x[i];
       circle.y_center = y[i];
       circle.radius = radius[i];
       circle.present = true;
+      circle.name = names[i];
       circs[i] = circle;
+
     }
   }
 
