@@ -80,6 +80,19 @@ struct Circle {
     return result;
   }  
 
+  // Replaces any \n in the text with a newline.
+  // This allows us to do the reverse when we output the
+  // text version of the diagram.
+  void setNameFromDiagram(const char* new_name) {
+    name = new_name;
+
+    size_t pos = 0;
+    while ((pos = name.find("\\n", pos)) != std::string::npos) {
+        name.replace(pos, 2, "\n");
+        pos += 1; // Move past the replaced part
+    }
+  }
+
   const std::string to_string() {
     std::string result("[");
     result.append("]\n");
@@ -89,7 +102,14 @@ struct Circle {
     result.append(AnAssignment("radius", radius));
     result.append(AnAssignment("present", present ? 1 : 0));
     result.append("name = \"");
-    result.append(name);  // TODO: do some character conversion, like \n -> "\n"?
+    std::string new_name = name;
+
+    size_t pos = 0;
+    while ((pos = new_name.find("\n", pos)) != std::string::npos) {
+        new_name.replace(pos, 1, "\\n");
+        pos += 2; // Move past the replaced part
+    }
+    result.append(new_name);
     result.append("\"\n");
     return result;
   }

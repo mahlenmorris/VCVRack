@@ -77,7 +77,7 @@ Circle Circle::NewCircle(const std::string& name, const Assignments& fields, Ven
     } else if (lower_name.compare("present") == 0) {
       circle.present = assign.value > 0;  // a boolean.
     } else if (lower_name.compare("name") == 0) {
-      circle.name = assign.str_value;  // TODO: character conversion, like "\n" -> \n.
+      circle.setNameFromDiagram(assign.str_value.c_str());  // TODO: character conversion, like "\n" -> \n.
     } else {
       driver->AddError("I don't know what a '" + assign.field_name + "' is.");
     }
