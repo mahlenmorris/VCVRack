@@ -19,6 +19,7 @@
 
 #ifndef DRIVER_H
 #define DRIVER_H
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -96,7 +97,7 @@ public:
   // List of syntax errors found before parser gave up.
   std::vector<Error> errors;
 
-  VennVariables variables;
+  std::shared_ptr<VennVariables> variables;
 
   // Knows how to create various kinds of VennExpression objects.
   VennExpressionFactory factory;
@@ -108,7 +109,7 @@ public:
   // The token's location used by the scanner.
   VENN::location location;
 
-  VennDriver();
+  VennDriver(std::shared_ptr<VennVariables> const& vars);
   ~VennDriver();
 
   // Reset the state of all variables to zero/empty.
@@ -117,13 +118,13 @@ public:
   }
 
   bool IsVariableName(const char * var_name) {
-    return variables.IsVariableName(var_name);
+    return variables->IsVariableName(var_name);
   }
 
   // Will throw exception if name not found, use IsVariableName prior
   // to calling.
   float* GetVarFromName(const char * var_name) {
-    return variables.GetVarFromName(var_name);
+    return variables->GetVarFromName(var_name);
   }
 
   // Run the parser on the text of string f.  Return 0 on success.

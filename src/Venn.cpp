@@ -213,12 +213,13 @@ struct Venn : Module {
   // Indicates that something other than the UI has just changed circles.
   bool update_text_widgets;
 
-  // For compiling expressions.
-  VennDriver driver;
-  CompilationThread* compiler;
-  std::thread* compile_thread;
-  bool compile_in_progress = false;
-
+  // For evaluating expressions.
+  std::shared_ptr<VennVariables> variables;
+  VennExpression math1_expressions[16];
+  // VennDriver driver;
+  // CompilationThread* compiler;
+  // std::thread* compile_thread;
+  // bool compile_in_progress = false;
 
   Venn() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -268,12 +269,16 @@ struct Venn : Module {
     // Once user has learned it, it applies to all.
 
     // For compiling typed-in expressions.
+    variables = std::make_shared<VennVariables>();
+  /*
     compile_in_progress = false;
     compiler = new CompilationThread(&driver);
     compile_thread = new std::thread(&CompilationThread::Compile, compiler);
+  */
   }
   
   ~Venn() {
+    /*
     // A LOT of this would be better handled with shared_ptr.
     if (compiler) {
       compiler->Halt();
@@ -285,6 +290,7 @@ struct Venn : Module {
     if (compiler) {
       delete compiler;
     }
+    */
   }
 
   // Turns a set of shapes into a text string that we can parse later to recreate the shapes.
@@ -340,7 +346,8 @@ struct Venn : Module {
     if (diagramJ) {
       circles_loaded = false;
       std::string diagram = json_string_value(diagramJ);
-      VennDriver driver;
+      std::shared_ptr<VennVariables> vars = std::make_shared<VennVariables>();
+      VennDriver driver(vars);
       if (driver.parse(diagram) != 0) {
         WARN("Compile Failure:\n%s", diagram.c_str());
       }
@@ -496,7 +503,9 @@ struct Venn : Module {
 
     // We have now determined the postion of "point".
     outputs[X_POSITION_OUTPUT].setVoltage(point.x);
+    *variables->GetVarFromName("pointx") = point.x;
     outputs[Y_POSITION_OUTPUT].setVoltage(point.y);
+    *variables->GetVarFromName("pointy") = point.y;
 
     // Determine what values to output.
     // TODO: many optimizations, including doing nothing when neither point nor circles has changed.
@@ -506,6 +515,7 @@ struct Venn : Module {
     outputs[WITHIN_GATE_OUTPUT].setChannels(live_circle_count);
     outputs[X_DISTANCE_OUTPUT].setChannels(live_circle_count);
     outputs[Y_DISTANCE_OUTPUT].setChannels(live_circle_count);
+    outputs[MATH1_OUTPUT].setChannels(live_circle_count);
 
     float exp_lin_log = params[EXP_LIN_LOG_PARAM].getValue();
     float scaling = 1.0;
@@ -523,8 +533,15 @@ struct Venn : Module {
     bool invert_x = params[INV_X_PARAM].getValue();
     bool offset_y = params[OFST_Y_PARAM].getValue();
     bool invert_y = params[INV_Y_PARAM].getValue();
+    *variables->GetVarFromName("leftx") =  -5 * (invert_x ? -1 : 1) + (offset_x ? 5.0 : 0.0);
+    *variables->GetVarFromName("rightx") = 5 * (invert_x ? -1 : 1) + (offset_x ? 5.0 : 0.0);
+    *variables->GetVarFromName("topy") = 5 * (invert_y ? -1 : 1) + (offset_y ? 5.0 : 0.0);
+    *variables->GetVarFromName("bottomy") = -5 * (invert_y ? -1 : 1) + (offset_y ? 5.0 : 0.0);
+    // Iterate through the circles.
     for (size_t channel = 0; channel < live_circle_count; channel++) {
       const Circle& circle = circles[channel];
+      float x = 0.0f, y = 0.0f, within = 0.0f, distance = 0.0f;
+
       // If solo-ing, make sure that only solo channel gets computed.
       if (circle.present && (!solo || (int) channel == current_circle)) {
         // All of the outputs care if we are in the circle or not, so we always compute it,
@@ -534,41 +551,40 @@ struct Venn : Module {
 
         // Despite my intution, sqrt() is probably cheap enough now to not try and replace it
         // with an approximation.
-        float distance = sqrt(x_distance * x_distance + y_distance * y_distance);
-        if (distance > circle.radius) {
-          outputs[DISTANCE_OUTPUT].setVoltage(0.0f, channel);
-          outputs[WITHIN_GATE_OUTPUT].setVoltage(invert_gate ? 10.0f : 0.0f, channel);
-          // An odd default value for X and Y, since it is the same value as being in line with the center.
-          // TODO: is there a better choice? Should it be affected by offset_x|y?
-          outputs[X_DISTANCE_OUTPUT].setVoltage(0.0f, channel);
-          outputs[Y_DISTANCE_OUTPUT].setVoltage(0.0f, channel);
+        float distance_actual = sqrt(x_distance * x_distance + y_distance * y_distance);
+        if (distance_actual > circle.radius) {
+          within = invert_gate ? 10.0f : 0.0f;
         } else {
-          outputs[WITHIN_GATE_OUTPUT].setVoltage(invert_gate ? 0.0f : 10.0f, channel);
-          if (outputs[DISTANCE_OUTPUT].isConnected()) {
-            float value = (1 - distance / circle.radius);
-            // Since 1.0 is the default, skip the call to pow() if not needed.
-            if (scaling != 1.0) {
-              value = pow(value, scaling);
-            }
-            outputs[DISTANCE_OUTPUT].setVoltage(value * 10, channel);            
-          }
+          // Compute the values of within, distance, x, and y.
+          within = invert_gate ? 0.0f : 10.0f;
 
-          if (outputs[X_DISTANCE_OUTPUT].isConnected()) {
-            outputs[X_DISTANCE_OUTPUT].setVoltage(
-              x_distance / circle.radius * 5.0 * (invert_x? -1.0 : 1.0) + (offset_x ? 5.0 : 0.0), channel);
+          float value = (1 - distance_actual / circle.radius);
+          // Since 1.0 is the default, skip the call to pow() if not needed.
+          if (scaling != 1.0) {
+            value = pow(value, scaling);
           }
-          if (outputs[Y_DISTANCE_OUTPUT].isConnected()) {
-            outputs[Y_DISTANCE_OUTPUT].setVoltage(
-              y_distance / circle.radius * 5.0 * (invert_y ? -1.0 : 1.0) + (offset_y ? 5.0 : 0.0), channel);
-          }
+          distance = value * 10;            
+
+          x = x_distance / circle.radius * 5.0 * (invert_x ? -1.0 : 1.0) + (offset_x ? 5.0 : 0.0);
+          y = y_distance / circle.radius * 5.0 * (invert_y ? -1.0 : 1.0) + (offset_y ? 5.0 : 0.0);
         }
-      } else {
-        outputs[DISTANCE_OUTPUT].setVoltage(0.0f, channel);
-        outputs[WITHIN_GATE_OUTPUT].setVoltage(0.0f, channel);
-        outputs[X_DISTANCE_OUTPUT].setVoltage(0.0f, channel);
-        outputs[Y_DISTANCE_OUTPUT].setVoltage(0.0f, channel);
+      }
+      outputs[DISTANCE_OUTPUT].setVoltage(distance, channel);
+      outputs[WITHIN_GATE_OUTPUT].setVoltage(within, channel);
+      outputs[X_DISTANCE_OUTPUT].setVoltage(x, channel);
+      outputs[Y_DISTANCE_OUTPUT].setVoltage(y, channel);
+      // If solo-ing, make sure that only solo channel gets computed.
+      if (outputs[MATH1_OUTPUT].isConnected()) {
+        if (circle.present && (!solo || (int) channel == current_circle)) {
+          *variables->GetVarFromName("distance") = distance;
+          *variables->GetVarFromName("within") = within;
+          *variables->GetVarFromName("x") = x;
+          *variables->GetVarFromName("y") = y;
+          outputs[MATH1_OUTPUT].setVoltage(math1_expressions[channel].Compute(), channel);
+        }
       }
     }
+
     // Lights.
     lights[INV_WITHIN_LIGHT].setBrightness(params[INV_WITHIN_PARAM].getValue());
     lights[INV_X_LIGHT].setBrightness(params[INV_X_PARAM].getValue());
@@ -708,9 +724,7 @@ struct VennNameTextField : STTextField {
     fontSize = 12.0f;
     color = SCHEME_WHITE;
     bgColor = SCHEME_BLACK;
-
     textOffset = math::Vec(0, -2);  // Put closer to corner than default.
-
     extended.Initialize(3, 1);  // Much shorter window.
   }
 
@@ -750,9 +764,91 @@ struct VennNameTextField : STTextField {
   }
 };
 
+struct VennMath1TextField : STTextField {
+  Venn* module;
+  std::string math1_text;
+  std::shared_ptr<VennDriver> driver;
+
+  VennMath1TextField() {
+    module = nullptr;
+    this->text = &math1_text;
+    fontPath = asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf");
+    fontSize = 12.0f;
+    color = SCHEME_WHITE;
+    bgColor = SCHEME_BLACK;
+
+    textOffset = math::Vec(0, -2);  // Put closer to corner than default.
+
+    extended.Initialize(3, 1);  // Much shorter window.
+  }
+
+  void setModule(Venn* the_module) {
+    module = the_module;
+    if (module) {
+      driver = std::make_shared<VennDriver>(module->variables);
+    }
+  }
+
+  // bgColor seems to have no effect if I don't do this. Drawing a background
+  // and then letting STTextField draw the rest fixes that.
+  // TODO: Make STTextField actually use bgColor. Or draw background color on templates.
+  void draw(const DrawArgs& args) override {
+    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+
+    // background only
+    nvgBeginPath(args.vg);
+    nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
+    nvgFillColor(args.vg, bgColor);
+    nvgFill(args.vg);
+
+    if (module && module->editing && module->current_circle >= 0) {
+      STTextField::draw(args);  // Draw text.
+    }
+    nvgResetScissor(args.vg);
+  }
+
+  void CircleUpdated(const std::string& name) {
+    math1_text.assign(name);
+  }
+
+  std::string getText() {
+    return *text;
+  }
+
+  void setText(const std::string& new_text) {
+    text->assign(new_text);
+    // TODO: probably need to call updatedText in STTextField?
+  }
+  
+  // User has updated the text.
+  // NOTA BENE: This is a risky idea, but I'm going to try doing the compile
+  // inside the UI thread here.
+  void onChange(const ChangeEvent& e) override {
+    if (module) {
+      // Sometimes the text isn't actually different? If I don't check
+      // this, I might get spurious history events.
+      // TODO: do I need this check anymore?
+      if (driver->parse(math1_text) == 0) {
+        // Success.
+        module->math1_expressions[module->current_circle] = driver->exp;
+      } else {
+
+
+
+        // TODO: DO NOT SUBMIT!
+        // WARN("Failed to compile '%s'", math1_text.c_str());
+
+
+      }
+    }
+  }
+
+};
+
 struct CircleDisplay : OpaqueWidget {
   Venn* module;
   VennNameTextField* name_widget;
+  VennMath1TextField* math1_widget;
   Vec last_hover_pos;
 
   CircleDisplay() {}
@@ -761,14 +857,12 @@ struct CircleDisplay : OpaqueWidget {
   void UpdateWidgets() {
     if (module && module->current_circle >= 0) {
       name_widget->CircleUpdated(module->circles[module->current_circle].name);
+      math1_widget->CircleUpdated(module->circles[module->current_circle].math1);
     } else {
       name_widget->CircleUpdated("");
+      math1_widget->CircleUpdated("");
     }
   }
-
-  // TODO: need something that notices when a wholesale change has happened (e.g., randomize)
-  // and tell any widgets with state to update to new values.
-
 
   // Move point to current location if left clicked.
   void onButton(const ButtonEvent& e) override {
@@ -1149,59 +1243,6 @@ struct CircleDisplay : OpaqueWidget {
 	}
 };
 
-struct VennMath1TextField : STTextField {
-  Venn* module;
-  std::string math1_text;
-
-  VennMath1TextField() {
-    module = nullptr;
-    this->text = &math1_text;
-    fontPath = asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf");
-    fontSize = 12.0f;
-    color = SCHEME_WHITE;
-    bgColor = SCHEME_BLACK;
-
-    textOffset = math::Vec(0, -2);  // Put closer to corner than default.
-
-    extended.Initialize(3, 1);  // Much shorter window.
-  }
-
-  void setModule(Venn* the_module) {
-    module = the_module;
-  }
-
-  // bgColor seems to have no effect if I don't do this. Drawing a background
-  // and then letting STTextField draw the rest fixes that.
-  // TODO: Make STTextField actually use bgColor. Or draw background color on templates.
-  void draw(const DrawArgs& args) override {
-    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-
-    // background only
-    nvgBeginPath(args.vg);
-    nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
-    nvgFillColor(args.vg, bgColor);
-    nvgFill(args.vg);
-
-    if (module && module->editing && module->current_circle >= 0) {
-      STTextField::draw(args);  // Draw text.
-    }
-    nvgResetScissor(args.vg);
-  }
-
-  void CircleUpdated(const std::string& name) {
-    text->assign(name);
-  }
-
-  std::string getText() {
-    return *text;
-  }
-
-  void setText(const std::string& new_text) {
-    text->assign(new_text);
-    // TODO: probably need to call updatedText in STTextField?
-  }
-};
-
 // Just the tiny window showing which circle is currently selected, if any.
 struct VennNumberDisplayWidget : TransparentWidget {
   Venn* module;
@@ -1260,6 +1301,7 @@ struct VennKeyboardIcon : SvgWidget {
 struct VennWidget : ModuleWidget {
   CircleDisplay* display;
   VennNameTextField* name_field;
+  VennMath1TextField* math1_field;
 
   VennWidget(Venn* module) {
     setModule(module);
@@ -1313,12 +1355,18 @@ struct VennWidget : ModuleWidget {
     name_field->setModule(module);
     addChild(name_field);
 
+    math1_field = createWidget<VennMath1TextField>(mm2px(Vec(2.240, 81.0)));
+    math1_field->box.size = mm2px(Vec(26.0, 10.0));
+    math1_field->setModule(module);
+    addChild(math1_field);
+
     // The Circles.
     display = createWidget<CircleDisplay>(
       mm2px(Vec(31.0, 1.7)));
     display->box.size = mm2px(Vec(125.0, 125.0));
     display->module = module;
     display->name_widget = name_field;
+    display->math1_widget = math1_field;
     addChild(display);
 
     VennKeyboardIcon* icon = createWidget<VennKeyboardIcon>(mm2px(Vec(1.0, 1.0)));
@@ -1336,6 +1384,7 @@ struct VennWidget : ModuleWidget {
         module->update_text_widgets = false;
         if (module->current_circle >= 0) {
           name_field->setText(module->circles[module->current_circle].name);
+          math1_field->setText(module->circles[module->current_circle].math1);
         }
       }
       
@@ -1359,6 +1408,20 @@ struct VennWidget : ModuleWidget {
                                              module->current_circle));
           }
         }
+      } else if (selected == math1_field) {
+        module->editing = true;
+        module->keystrokes_accepted = false;  // Text input field needs the keystrokes.
+        // Update math1, if changed.
+        if (module->current_circle >= 0) {
+          if (module->circles[module->current_circle].math1.compare(math1_field->getText()) != 0) {
+            Circle old_circle = module->circles[module->current_circle];
+            module->circles[module->current_circle].math1 = math1_field->getText();
+            APP->history->push(
+                new VennCircleUndoRedoAction(module->id, old_circle,
+                                             module->circles[module->current_circle],
+                                             module->current_circle));
+          }
+        }
       } else {
         module->editing = false;
         module->keystrokes_accepted = false;
@@ -1371,7 +1434,7 @@ struct VennWidget : ModuleWidget {
     if (display) {
       display->onSelectKey(e);
     }
-  } 
+  }
 
   void appendContextMenu(Menu* menu) override {
     Venn* module = dynamic_cast<Venn*>(this->module);

@@ -62,6 +62,7 @@ struct Circle {
   // 0, 0 is lower left corner; 10, 10 is upper right.
   float radius;
   std::string name;
+  std::string math1;
   bool present;  // Not deleted.
 
   Circle() : x_center{0.0}, y_center{0.0}, radius{0.0} {}
@@ -83,14 +84,29 @@ struct Circle {
   // Replaces any \n in the text with a newline.
   // This allows us to do the reverse when we output the
   // text version of the diagram.
-  void setNameFromDiagram(const char* new_name) {
-    name = new_name;
+  static std::string ReplaceWithNewline(const char* new_name) {
+    std::string temp = new_name;
 
     size_t pos = 0;
-    while ((pos = name.find("\\n", pos)) != std::string::npos) {
-        name.replace(pos, 2, "\n");
+    while ((pos = temp.find("\\n", pos)) != std::string::npos) {
+        temp.replace(pos, 2, "\n");
         pos += 1; // Move past the replaced part
     }
+    return temp;
+  }
+
+  // Replaces any newline in the text with a "\n".
+  // This allows us to do the reverse when we output the
+  // text version of the diagram.
+  static std::string ReplaceWithSlashN(const char* new_name) {
+    std::string temp = new_name;
+
+    size_t pos = 0;
+    while ((pos = temp.find("\n", pos)) != std::string::npos) {
+        temp.replace(pos, 1, "\\n");
+        pos += 2; // Move past the replaced part
+    }
+    return temp;
   }
 
   const std::string to_string() {
@@ -102,14 +118,7 @@ struct Circle {
     result.append(AnAssignment("radius", radius));
     result.append(AnAssignment("present", present ? 1 : 0));
     result.append("name = \"");
-    std::string new_name = name;
-
-    size_t pos = 0;
-    while ((pos = new_name.find("\n", pos)) != std::string::npos) {
-        new_name.replace(pos, 1, "\\n");
-        pos += 2; // Move past the replaced part
-    }
-    result.append(new_name);
+    result.append(ReplaceWithSlashN(name.c_str()));
     result.append("\"\n");
     return result;
   }
@@ -191,7 +200,9 @@ class VennExpression {
   std::vector<VennExpression> subexpressions;
 
   static std::unordered_map<std::string, float> note_to_volt_octave_4;
-  VennExpression() : variable_ptr{nullptr} {}
+  // Default VennExpression is the number 0.0f. Means we can run a default
+  // VennExpression safely.
+  VennExpression() : type(NUMBER), float_value(0.0f), variable_ptr{nullptr} {}
 
   // Compute the float numeric result of this VennExpression.
   float Compute();
