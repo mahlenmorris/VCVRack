@@ -132,6 +132,27 @@ float VennExpression::Compute() {
                              subexpressions[1].Compute());
     }
     break;
+    case LIMIT: {
+      float low = subexpressions[1].Compute();
+      float high = subexpressions[2].Compute();
+      if (low > high) {
+        float temp = high;
+        high = low;
+        low = temp;
+      }
+      return fmax(fmin(subexpressions[0].Compute(), high), low);
+    }
+    break;
+    case SCALE: {
+      float originStart = subexpressions[1].Compute();
+      float originEnd = subexpressions[2].Compute();
+      float destStart = subexpressions[3].Compute();
+      float destEnd = subexpressions[4].Compute();
+      double scale = SafeDivide(destEnd - destStart, originEnd - originStart);
+      double offset = -originStart * scale + destStart;
+      return subexpressions[0].Compute() * scale + offset;
+    }
+    break;
     case TERNARYFUNC: {
       if (is_zero(subexpressions[0].Compute())) {
         return subexpressions[2].Compute();
@@ -178,6 +199,15 @@ float VennExpression::bool_to_float(bool value) {
   return (value ? 1.0f : 0.0f);
 }
 
+float VennExpression::SafeDivide(float lhs, float rhs) {
+  // If number is close enough to zero, don't divide by it.
+  if (is_zero(rhs)) {
+    return 0.0f;
+  } else {
+    return lhs / rhs;
+  }
+}
+
 float VennExpression::binop_compute() {
   float lhs = subexpressions[0].Compute();
   float rhs = subexpressions[1].Compute();
@@ -187,15 +217,7 @@ float VennExpression::binop_compute() {
     case PLUS: return lhs + rhs;
     case MINUS: return lhs - rhs;
     case TIMES: return lhs * rhs;
-    case DIVIDE: {
-      // If number is close enough to zero, don't divide by it.
-      if (is_zero(rhs)) {
-        return 0.0f;
-      } else {
-        return lhs / rhs;
-      }
-    }
-    break;
+    case DIVIDE: return SafeDivide(lhs, rhs);
     case EQUAL: return bool_to_float(float_equal(lhs, rhs));
     case NOT_EQUAL: return bool_to_float(!float_equal(lhs, rhs));
     case GT: return bool_to_float(lhs > rhs);
@@ -302,6 +324,29 @@ VennExpression VennExpressionFactory::TwoArgFunc(const std::string &func_name,
   ex.operation = string_to_operation.at(lower);
   ex.subexpressions.push_back(arg1);
   ex.subexpressions.push_back(arg2);
+  return ex;
+}
+
+VennExpression VennExpressionFactory::Limit(const VennExpression &value, const VennExpression &start,
+                      const VennExpression &end) {
+  VennExpression ex;
+  ex.type = VennExpression::LIMIT;
+  ex.subexpressions.push_back(value);
+  ex.subexpressions.push_back(start);
+  ex.subexpressions.push_back(end);
+  return ex;
+}
+
+VennExpression VennExpressionFactory::Scale(const VennExpression &value,
+                     const VennExpression &originStart, const VennExpression &originEnd,
+                     const VennExpression &destStart, const VennExpression &destEnd) {
+  VennExpression ex;
+  ex.type = VennExpression::SCALE;
+  ex.subexpressions.push_back(value);
+  ex.subexpressions.push_back(originStart);
+  ex.subexpressions.push_back(originEnd);
+  ex.subexpressions.push_back(destStart);
+  ex.subexpressions.push_back(destEnd);
   return ex;
 }
 

@@ -138,6 +138,8 @@ blank [ \t\r]
 "and"      return VENN::Parser::make_AND    (yytext, loc);
 "not"      return VENN::Parser::make_NOT    (yytext, loc);
 "or"       return VENN::Parser::make_OR     (yytext, loc);
+"limit"    return VENN::Parser::make_LIMIT  (yytext, loc);
+"scale"    return VENN::Parser::make_SCALE  (yytext, loc);
 {float}    return make_NUMBER (yytext, loc);
 {oneargfunc} return VENN::Parser::make_ONEARGFUNC (yytext, loc);
 {twoargfunc} return VENN::Parser::make_TWOARGFUNC (yytext, loc);

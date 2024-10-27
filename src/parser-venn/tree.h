@@ -161,6 +161,8 @@ class VennExpression {
     NOT,      // not bool
     ONEARGFUNC, // operation (subexpressions[0])
     TWOARGFUNC, // func2(subexpressions[0], subexpressions[1])
+    LIMIT,
+    SCALE,
     TERNARYFUNC, // subexpressions[0] ? subexpressions[1] : subexpressions[2]
   };
   Type type;
@@ -208,6 +210,7 @@ class VennExpression {
   float Compute();
 
   static bool is_zero(float value);
+  static float SafeDivide(float lhs, float rhs);
 
   // Don't force users to understand that comparing floats is hard.
   static bool float_equal(float f1, float f2);
@@ -235,6 +238,11 @@ class VennExpressionFactory {
                             const VennExpression &arg1);
   VennExpression TwoArgFunc(const std::string &func_name,
                             const VennExpression &arg1, const VennExpression &arg2);
+  VennExpression Limit(const VennExpression &value, const VennExpression &start,
+                       const VennExpression &end);
+  VennExpression Scale(const VennExpression &value,
+                       const VennExpression &originStart, const VennExpression &originEnd,
+                       const VennExpression &destStart, const VennExpression &destEnd);
   VennExpression TernaryFunc(const VennExpression &condition, const VennExpression &if_true,
                              const VennExpression &if_false);
   VennExpression CreateBinOp(const VennExpression &lhs,

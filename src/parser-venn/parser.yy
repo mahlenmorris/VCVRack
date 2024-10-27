@@ -44,6 +44,7 @@
   ABS     "abs"
   AND     "and"
   CEILING "ceiling"
+  LIMIT   "limit"
   LOG2    "log2"
   LOGE    "loge"
   LOG10   "log10"
@@ -52,6 +53,7 @@
   NOT     "not"
   OR      "or"
   POW     "pow"
+  SCALE   "scale"
   SIGN    "sign"
   SIN     "sin"
   MINUS   "-"
@@ -131,6 +133,8 @@ exp:
 | exp "or" exp                         { $$ = drv.factory.CreateBinOp($1, $2, $3); }
 | "oneargfunc" "(" exp ")"             { $$ = drv.factory.OneArgFunc($1, $3); }
 | "twoargfunc" "(" exp "," exp ")"     { $$ = drv.factory.TwoArgFunc($1, $3, $5); }
+| "limit" "(" exp "," exp "," exp ")"  { $$ = drv.factory.Limit($3, $5, $7); }
+| "scale" "(" exp "," exp "," exp "," exp "," exp ")"  { $$ = drv.factory.Scale($3, $5, $7, $9, $11); }
 | exp "?" exp ":" exp                  { $$ = drv.factory.TernaryFunc($1, $3, $5); }
 | "(" exp ")"                          { $$ = $2; }
 
