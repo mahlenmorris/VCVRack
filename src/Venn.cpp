@@ -540,7 +540,7 @@ struct Venn : Module {
     // Iterate through the circles.
     for (size_t channel = 0; channel < live_circle_count; channel++) {
       const Circle& circle = circles[channel];
-      float x = 0.0f, y = 0.0f, within = 0.0f, distance = 0.0f;
+      float x = 0.0f, y = 0.0f, within = 0.0f, distance = 0.0f, math1 = 0.0f;
 
       // If solo-ing, make sure that only solo channel gets computed.
       if (circle.present && (!solo || (int) channel == current_circle)) {
@@ -580,8 +580,9 @@ struct Venn : Module {
           *variables->GetVarFromName("within") = within;
           *variables->GetVarFromName("x") = x;
           *variables->GetVarFromName("y") = y;
-          outputs[MATH1_OUTPUT].setVoltage(math1_expressions[channel].Compute(), channel);
+          math1 = math1_expressions[channel].Compute();
         }
+        outputs[MATH1_OUTPUT].setVoltage(math1, channel);
       }
     }
 
