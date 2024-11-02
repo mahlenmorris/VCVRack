@@ -78,6 +78,8 @@ Circle Circle::NewCircle(const std::string& name, const Assignments& fields, Ven
       circle.present = assign.value > 0;  // a boolean.
     } else if (lower_name.compare("name") == 0) {
       circle.name = ReplaceWithNewline(assign.str_value.c_str());
+    } else if (lower_name.compare("math1") == 0) {
+      circle.math1 = ReplaceWithNewline(assign.str_value.c_str());
     } else {
       driver->AddError("I don't know what a '" + assign.field_name + "' is.");
     }

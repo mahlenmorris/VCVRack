@@ -346,13 +346,13 @@ struct Venn : Module {
     if (diagramJ) {
       circles_loaded = false;
       std::string diagram = json_string_value(diagramJ);
-      std::shared_ptr<VennVariables> vars = std::make_shared<VennVariables>();
-      VennDriver driver(vars);
+      VennDriver driver(variables);
       if (driver.parse(diagram) != 0) {
         WARN("Compile Failure:\n%s", diagram.c_str());
       }
       ClearAllCircles();
-      for (int i = 0; i < std::min(16, (int) driver.diagram.circles.size()); ++i) {
+      live_circle_count = std::min(16, (int) driver.diagram.circles.size()) + 1;
+      for (int i = 0; i < (int) live_circle_count - 1; ++i) {
         circles[i] = driver.diagram.circles.at(i);
       }
       json_t* currentJ = json_object_get(rootJ, "current");
@@ -360,7 +360,24 @@ struct Venn : Module {
         current_circle = json_integer_value(currentJ);
       } else {
         current_circle = driver.diagram.circles.size() > 0 ? 0 : -1;
-      } 
+      }
+
+      // So we've copied all the circles in place, but we haven't created the Expressions
+      // yet. Now we can do that.
+      for (int i = 0; i < (int) live_circle_count - 1; ++i) {
+        WARN("math1 = '%s'", circles[i].math1.c_str());
+        if (!circles[i].math1.empty()) {
+          if (driver.parse(circles[i].math1) == 0) {  // Compiles!
+            math1_expressions[i] = driver.exp;
+              WARN("Compile worked?");
+              WARN("%s", math1_expressions[i].to_string().c_str());
+          } else {
+            if (driver.errors.size() > 0) {
+              WARN("Compile Failed:\n%s", driver.errors[0].message.c_str());
+            }
+          }
+        }
+      }
     }
     circles_loaded = true;
     update_text_widgets = true;
@@ -824,23 +841,38 @@ struct VennMath1TextField : STTextField {
   // User has updated the text.
   // NOTA BENE: This is a risky idea, but I'm going to try doing the compile
   // inside the UI thread here.
+  // TODO: as a test to see how bad an idea this is, I could pause for a bit here instead.
+  // Just do some pointless effort for a while.
   void onChange(const ChangeEvent& e) override {
     if (module) {
       // Sometimes the text isn't actually different? If I don't check
       // this, I might get spurious history events.
-      // TODO: do I need this check anymore?
-      if (driver->parse(math1_text) == 0) {
-        // Success.
-        module->math1_expressions[module->current_circle] = driver->exp;
+      // TODO: do I need to actually check that the string has really changed anymore?
+
+
+      //auto start = std::chrono::high_resolution_clock::now();
+
+
+      if (math1_text.empty()) {
+        VennExpression inactive;
+        module->math1_expressions[module->current_circle] = inactive;
       } else {
+        if (driver->parse(math1_text) == 0) {
+          // Success.
+          module->math1_expressions[module->current_circle] = driver->exp;
+        } else {
 
 
 
-        // TODO: DO NOT SUBMIT!
-        // WARN("Failed to compile '%s'", math1_text.c_str());
+          // TODO: DO NOT SUBMIT!
+          // WARN("Failed to compile '%s'", math1_text.c_str());
 
 
+        }
       }
+      // auto elapsed = std::chrono::high_resolution_clock::now() - start;
+      // WARN("Compiling\n%s\ntook %lld micros", math1_text.c_str(),
+      //     std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count());
     }
   }
 
@@ -1381,7 +1413,7 @@ struct VennWidget : ModuleWidget {
       Venn* module = dynamic_cast<Venn*>(this->module);
       if (module->update_text_widgets) {
         // The underlying circle has changed from the module thread.
-        // Reset the name_field.
+        // Reset the string *_field's.
         module->update_text_widgets = false;
         if (module->current_circle >= 0) {
           name_field->setText(module->circles[module->current_circle].name);

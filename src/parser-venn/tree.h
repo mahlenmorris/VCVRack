@@ -120,6 +120,9 @@ struct Circle {
     result.append("name = \"");
     result.append(ReplaceWithSlashN(name.c_str()));
     result.append("\"\n");
+    result.append("math1 = \"");
+    result.append(ReplaceWithSlashN(math1.c_str()));
+    result.append("\"\n");
     return result;
   }
 };
@@ -202,7 +205,8 @@ class VennExpression {
   std::vector<VennExpression> subexpressions;
 
   static std::unordered_map<std::string, float> note_to_volt_octave_4;
-  // Default VennExpression is the number 0.0f. Means we can run a default
+  
+  // Default VennExpression is the number 0.0f. Means we can Compute() a default
   // VennExpression safely.
   VennExpression() : type(NUMBER), float_value(0.0f), variable_ptr{nullptr} {}
 
