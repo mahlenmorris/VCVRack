@@ -141,6 +141,7 @@ blank [ \t\r]
 "limit"    return VENN::Parser::make_LIMIT  (yytext, loc);
 "scale"    return VENN::Parser::make_SCALE  (yytext, loc);
 {float}    return make_NUMBER (yytext, loc);
+{note}     return VENN::Parser::make_NOTE (yytext, loc);
 {oneargfunc} return VENN::Parser::make_ONEARGFUNC (yytext, loc);
 {twoargfunc} return VENN::Parser::make_TWOARGFUNC (yytext, loc);
 {comparison} return VENN::Parser::make_COMPARISON (yytext, loc);
