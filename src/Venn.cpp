@@ -782,6 +782,113 @@ struct VennNameTextField : STTextField {
   }
 };
 
+struct VennErrorWidget;
+struct VennErrorTooltip : ui::Tooltip {
+  VennErrorWidget* errorWidget;
+  std::string error_text;
+
+  VennErrorTooltip(const std::string &text) : error_text{text} {}
+
+  void step() override;
+};
+
+struct VennErrorWidget : widget::OpaqueWidget {
+  std::shared_ptr<VennDriver> driver;
+  VennErrorTooltip* tooltip;
+
+  VennErrorWidget() {
+    tooltip = NULL;
+  }
+
+  void setDriver(std::shared_ptr<VennDriver> the_driver) {
+    driver = the_driver;
+  }
+
+  void onEnter(const EnterEvent & e) override {
+    create_tooltip();
+  }
+
+  void onLeave(const LeaveEvent & e) override {
+    destroy_tooltip();
+  }
+
+  void create_tooltip() {
+    if (!settings::tooltips)
+      return;
+    if (tooltip)  // Already exists.
+      return;
+    if (!driver)
+      return;
+    std::string tip_text;
+    if (driver->errors.size() == 0) {
+      tip_text = "Program compiles!";
+    } else {
+      Error err = driver->errors[0];
+      // Remove "syntax error, " from message.
+      std::string msg = err.message;
+      if (msg.rfind("syntax error, ", 0) == 0) {
+        msg = msg.substr(14);
+      }
+      tip_text = msg;
+    }
+    VennErrorTooltip* new_tooltip = new VennErrorTooltip(tip_text);
+    new_tooltip->errorWidget = this;
+    APP->scene->addChild(new_tooltip);
+    tooltip = new_tooltip;
+  }
+
+  void destroy_tooltip() {
+    if (!tooltip)
+      return;
+    APP->scene->removeChild(tooltip);
+    delete tooltip;
+    tooltip = NULL;
+  }
+
+  void drawLayer(const DrawArgs& args, int layer) override {
+    if (layer == 1) {
+      Rect r = box.zeroPos();
+      Vec bounding_box = r.getBottomRight();
+      bool good = (driver) ? driver->errors.size() == 0 : true;
+      // Fill the rectangle with either blue or orange.
+      // For color blind users, these are better choices than green/red.
+      NVGcolor main_color =
+          (good ? SCHEME_GREEN : color::RED);
+      nvgBeginPath(args.vg);
+      nvgRect(args.vg, 0.5, 0.5,
+              bounding_box.x - 1.0f, bounding_box.y - 1.0f);
+      nvgFillColor(args.vg, main_color);
+      nvgFill(args.vg);
+      std::string fontPath;
+      fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+      std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
+      if (font) {
+        nvgFillColor(args.vg,
+           (good ? color::BLACK : color::WHITE));
+        nvgFontSize(args.vg, 13);
+        nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
+        nvgFontFaceId(args.vg, font->handle);
+        nvgTextLetterSpacing(args.vg, -1);
+
+        std::string text = (good ? "Good" : "Fix");
+        // Place on the line just off the left edge.
+        nvgText(args.vg, bounding_box.x / 2, 0, text.c_str(), NULL);
+      }
+    }
+    Widget::drawLayer(args, layer);
+  }
+};
+
+void VennErrorTooltip::step() {
+  text = error_text;
+  Tooltip::step();
+  // Position at bottom-right of parameter
+  box.pos = errorWidget->getAbsoluteOffset(errorWidget->box.size).round();
+  // Fit inside parent (copied from Tooltip.cpp)
+  assert(parent);
+  box = box.nudge(parent->box.zeroPos());
+}
+
 struct VennMath1TextField : STTextField {
   Venn* module;
   std::string math1_text;
@@ -800,10 +907,11 @@ struct VennMath1TextField : STTextField {
     extended.Initialize(3, 1);  // Much shorter window.
   }
 
-  void setModule(Venn* the_module) {
+  void setModule(Venn* the_module, VennErrorWidget* error_widget) {
     module = the_module;
     if (module) {
       driver = std::make_shared<VennDriver>(module->variables);
+      error_widget->setDriver(driver);
     }
   }
 
@@ -851,7 +959,6 @@ struct VennMath1TextField : STTextField {
 
 
       //auto start = std::chrono::high_resolution_clock::now();
-
 
       if (math1_text.empty()) {
         VennExpression inactive;
@@ -1388,9 +1495,15 @@ struct VennWidget : ModuleWidget {
     name_field->setModule(module);
     addChild(name_field);
 
+    // Compilation status and error message access.
+    VennErrorWidget* math1_error_display = createWidget<VennErrorWidget>(mm2px(
+        Vec(2.240, 94.0)));
+    math1_error_display->box.size = mm2px(Vec(8.0, 4.0));
+    addChild(math1_error_display);
+
     math1_field = createWidget<VennMath1TextField>(mm2px(Vec(2.240, 81.0)));
     math1_field->box.size = mm2px(Vec(26.0, 10.0));
-    math1_field->setModule(module);
+    math1_field->setModule(module, math1_error_display);
     addChild(math1_field);
 
     // The Circles.
