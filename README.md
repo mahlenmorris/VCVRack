@@ -1230,6 +1230,7 @@ Forester 2022 does a *LOT* more than Venn, and you should certainly take a look 
 * Using Venn to [control the panning and mixing](youtube.com/watch?v=yvjIii_FKCs) of four audio signals.
 * A detailed look at [editing the Circles](https://www.youtube.com/watch?v=Csc6DKv9wHI&t=6s) and using Venn to create [sonic neighborhoods](https://www.youtube.com/watch?v=Csc6DKv9wHI&t=139s).
 * [Generating MIDI notes](https://www.youtube.com/watch?v=gOE4iCjMsH8) and moving Point at audio rate. I don't show it here, but try moving Point with your own sounds...
+* [Omri Cohen](https://www.youtube.com/@OmriCohen-Music) demonstrates using Venn in [one of his videos](https://youtu.be/QeuiSSYwI1I?si=jHnXk3oZFpmK63D-).
 
 ### Uses
 * With a single gesture, change multiple aspects of a single sound, or change the mix
