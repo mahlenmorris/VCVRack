@@ -60,6 +60,8 @@ Most modules treat the Memory audio data as a circular loop; typically, moving p
 * [Loading Files into Memory](https://www.youtube.com/watch?v=MvuQLtUkY4w)
 * [Loading and Saving in Memory](https://www.youtube.com/watch?v=fw6dk4pGn1s)
 
+There are *many* more videos for these modules listed at [the top of this manual](#the-memory-modules-for-vcv-rack).
+
 ### Position and signal voltage
 There are knobs, inputs, and outputs that all correspond to positions within the Memory. Since there is no standard way to send a "time" within VCV, and especially since
 Memory buffers can be quite a bit larger than 10 seconds, I decided to just map 0-10 to whatever the length of the buffere is. All of them work the same way:
@@ -208,6 +210,8 @@ line connected to the left edge of the Depict screen.
 * [Fade on Move menu option](https://www.youtube.com/watch?v=dOsupn0-Mxw)
 * [V/Oct SPEED menu option](https://www.youtube.com/watch?v=kGKmS2WjqIs)
 
+There are *many* more videos for these modules listed at [the top of this manual](#the-memory-modules-for-vcv-rack).
+
 ### Uses
 * To listen to audio recorded into the Memory, attach the OUT (Left and Right) outputs to a mixer. Or better yet, put a few Ruminates in different locations and/or different speeds and mix them together.
 * Try playing the same audio at different speeds an octave apart. I find that making one Ruminate run at SPEED 1 and others run at, say, 2.0 or 0.5 or .25 works as a nice starting place. 
@@ -275,7 +279,9 @@ short line, not connected to either edge.
 * [Fixation as Highly Controllable Granular Synth](https://www.youtube.com/watch?v=jzkOs-odrig)
 * [Playing Melodies with Short Samples](https://www.youtube.com/watch?v=rDCgencIVIY)
 
-NOTE: These were made while Fixation was being developed, and so the module may look different from how it does now.
+There are *many* more videos for these modules listed at [the top of this manual](#the-memory-modules-for-vcv-rack).
+
+NOTE: These videos were made while Fixation was being developed, and so the module will look different from how it does now.
 
 ### Controls
 
