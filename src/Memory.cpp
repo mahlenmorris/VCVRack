@@ -11,14 +11,6 @@
 #include "buffered.hpp"
 #include "smoother.h"
 #include "tipsy_utils.h"
-#include "NoLockQueue.h"
-
-// Here because AudioFile.h uses this.
-struct StringQueue {
-  // 30 lines of log messages from File I/O operations.
-  SpScLockFreeQueue<std::string, 30> lines;
-};
-
 // WAV/AIFF library.
 #include "AudioFile.h"
 
@@ -52,25 +44,7 @@ static constexpr size_t recvBufferSize{1024 * 64};
 // NoLockQueue, with a single writer and reader.
 // All queues are owned by the module.
 
-// First, a data structure for background threads to communicate with the module.
-// This is less something to DO and more of a channel of communications
-// between two threads.
-enum FileIOCompleted {
-  IN_PROGRESS,
-  LOAD_COMPLETED,
-  SAVE_COMPLETED
-};
-
-
-struct FileOperationReporting {
-  FileIOCompleted completed;
-  StringQueue log_messages;
-
-  FileOperationReporting() : completed{IN_PROGRESS} {}
-};
-
-// Second, the Tasks that get passed from thread to thread.
-
+// PrepareTask's and BufferTask's (inbuffered.h) get passed from thread to thread.
 struct PrepareTask {
   enum Type {
     LOAD_DIRECTORY_SET,  // str1 is the directory name.
@@ -137,48 +111,6 @@ struct BufferToModuleQueue {
 struct ModuleToPrepareQueue {
   // Queue is limited to ten items, just so we cannot get absurdly far behind.
   SpScLockFreeQueue<PrepareTask*, 10> tasks;
-};
-
-struct BufferTask {
-  enum Type {
-    SAVE_FILE,     // str1 is the full path and name. For this queue so as to prevent 
-                   // REPLACE_AUDIO happening while saving.
-    REPLACE_AUDIO  // new_left_array and new_right_array.
-  };
-  Type type;
-  std::string str1;
-  float* new_left_array;
-  float* new_right_array;
-  int sample_count;
-  double seconds;
-  FileOperationReporting* status;  // Owned by module.
-  
-  BufferTask(const Type the_type) : type{the_type},
-                                    new_left_array{nullptr}, new_right_array{nullptr},
-                                    status{nullptr} {}
-
-  ~BufferTask() {
-    // Don't delete new_(left|right)_array, surely pointed to by something else.
-  }
-
-  static BufferTask* SaveFileTask(FileOperationReporting* status, const std::string& file_path) {
-    BufferTask* task = new BufferTask(SAVE_FILE);
-    task->status = status;
-    task->str1 = file_path;
-    return task;
-  }
-
-  static BufferTask* ReplaceTask(float* new_left, float* new_right, FileOperationReporting* status,
-                                 int sample_count, double seconds) {
-    BufferTask* task = new BufferTask(REPLACE_AUDIO);
-    task->new_left_array = new_left;
-    task->new_right_array = new_right;
-    task->status = status;
-    task->sample_count = sample_count;
-    task->seconds = seconds;
-    return task;
-  }
-  
 };
 
 struct PrepareToBufferQueue {
@@ -704,10 +636,6 @@ struct Memory : BufferedModule {
     configInput(TIPSY_SAVE_INPUT, "Tipsy text input to save contents to named file");
     configOutput(SAVE_TRIGGER_OUTPUT, "Sends a trigger when file save has completed");
     configOutput(TIPSY_LOGGING_OUTPUT, "Logging of File events; connect to a TTY TEXT input");
-
-    // Setting an initial Buffer object.
-    std::shared_ptr<Buffer> temp = std::make_shared<Buffer>();
-    (*getHandle()).buffer.swap(temp);
 
     buffer_change_worker = new BufferChangeThread(getHandle(), &prepare_buffer_queue,
                                                   &module_buffer_queue, &buffer_module_queue);

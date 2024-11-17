@@ -140,6 +140,12 @@ struct BufferHandle {
 struct BufferedModule : Module {
   BufferHandle handle;
 
+  BufferedModule() {
+    // Setting an initial Buffer object, just so there always is one.
+    std::shared_ptr<Buffer> temp = std::make_shared<Buffer>();
+    handle.buffer.swap(temp);
+  }
+
   BufferHandle* getHandle() {
     return &handle;
   }
@@ -179,6 +185,58 @@ struct PositionedModule : Module {
 bool ModelHasColor(Model* model);
 bool IsNonMemoryEnsembleModel(Model* model);
 std::shared_ptr<Buffer> findClosestMemory(Module* leftModule);
+
+// Structs used in the process of replacing the contents of a Buffer.
+// Adding Brainwash module required having this be more visible.
+
+// My modified AudioFile.h uses this.
+struct StringQueue {
+  // 30 lines of log messages from File I/O operations.
+  SpScLockFreeQueue<std::string, 30> lines;
+};
+
+// A data structure for background threads to communicate with the module.
+// This is less something to DO and more of a channel of communications
+// between two threads.
+enum FileIOCompleted {
+  IN_PROGRESS,
+  LOAD_COMPLETED,
+  SAVE_COMPLETED
+};
+
+struct FileOperationReporting {
+  FileIOCompleted completed;
+  StringQueue log_messages;
+
+  FileOperationReporting() : completed{IN_PROGRESS} {}
+};
+
+// Class for scheduling large changes to the Buffer.
+struct BufferTask {
+  enum Type {
+    SAVE_FILE,     // str1 is the full path and name. For this queue so as to prevent 
+                   // REPLACE_AUDIO happening while saving.
+    REPLACE_AUDIO  // new_left_array and new_right_array.
+  };
+  Type type;
+  std::string str1;
+  float* new_left_array;
+  float* new_right_array;
+  int sample_count;
+  double seconds;
+  FileOperationReporting* status;  // Owned by module.
+  
+  BufferTask(const Type the_type) : type{the_type},
+                                    new_left_array{nullptr}, new_right_array{nullptr},
+                                    status{nullptr} {}
+
+  ~BufferTask();
+
+  static BufferTask* SaveFileTask(FileOperationReporting* status, const std::string& file_path);
+
+  static BufferTask* ReplaceTask(float* new_left, float* new_right, FileOperationReporting* status,
+                                 int sample_count, double seconds);
+};
 
 struct TimestampField : OpaqueWidget {
   TimestampField() {
