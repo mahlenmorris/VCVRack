@@ -100,20 +100,15 @@ struct BrainwashWidget : ModuleWidget {
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.35, 87.408)), module,
                                              Brainwash::RECORD_GATE_INPUT));
 
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(14.638, 110.525)), module,
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(14.638, 107.525)), module,
                                              Brainwash::LEFT_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(14.638, 120.844)), module,
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(14.638, 117.844)), module,
                                              Brainwash::RIGHT_INPUT));
 
-    /*
-    // TODO: ConnectedLight assumes that we have a position, which we do not!
-    ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
-      mm2px(Vec(12.7, 3.2)), module, Brainwash::CONNECTED_LIGHT);
-    connect_light->pos_module = module;
-    addChild(connect_light);
-    */ 
+    // Our light is not colored, since we don't have a position in Depict.
+    addChild(createLightCentered<MediumLight<WhiteLight>>(mm2px(Vec(12.7, 3.2)),
+                 module, Brainwash::CONNECTED_LIGHT));
   }
-
 };
 
 

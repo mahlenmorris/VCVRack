@@ -25,7 +25,8 @@ bool IsNonMemoryEnsembleModel(Model* model) {
   return ((model == modelRuminate) ||
           (model == modelFixation) ||
           (model == modelDepict) ||
-          (model == modelEmbellish));
+          (model == modelEmbellish) ||
+          (model == modelBrainwash));
 }
 
 bool Buffer::IsValid() {

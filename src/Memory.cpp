@@ -44,7 +44,7 @@ static constexpr size_t recvBufferSize{1024 * 64};
 // NoLockQueue, with a single writer and reader.
 // All queues are owned by the module.
 
-// PrepareTask's and BufferTask's (inbuffered.h) get passed from thread to thread.
+// PrepareTask's and BufferTask's (in buffered.h) get passed from thread to thread.
 struct PrepareTask {
   enum Type {
     LOAD_DIRECTORY_SET,  // str1 is the directory name.
