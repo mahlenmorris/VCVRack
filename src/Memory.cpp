@@ -197,7 +197,48 @@ struct BufferChangeThread {
     buffer->waveform.normalize_factor = 10.0f / window_size;
   }
 
+  void ReplaceAudio(std::shared_ptr<Buffer> buffer, BufferTask* task) {
+    // Buffer is unavailable during this interval.
+    buffer->length = 0;
+    buffer->seconds = 0.0;
+    // And mark every sector dirty.
+    buffer->full_scan = true;
+
+    if (buffer->left_array != nullptr) {
+      // TODO: perhaps better to delay these deletions a bit?
+      // Might help protect threads unaware that buffer is invalid
+      // from accessing freed RAM.
+      delete buffer->left_array;
+    }
+    buffer->left_array = task->new_left_array;
+    if (buffer->right_array != nullptr) {
+      delete buffer->right_array;
+    }
+    buffer->right_array = task->new_right_array;
+
+    buffer->length = task->sample_count;
+    buffer->seconds = task->seconds;
+    // Tell world we're done, IFF we have a status. WIPE's and RESET's don't.
+    if (task->status != nullptr) {
+      task->status->completed = LOAD_COMPLETED;
+    }
+    delete task;
+
+    WARN("length = %d", buffer->length);
+    WARN("seconds = %f", buffer->seconds);
+
+    // There's no reason I can come up with to let there be a click between
+    // the end and the beginning of the buffer.
+    // So if I suspect there will be one, add a Smooth to get rid of it.
+    if (abs(buffer->left_array[0] - buffer->left_array[buffer->length - 1]) > 0.1 ||
+        abs(buffer->right_array[0] - buffer->right_array[buffer->length - 1]) > 0.1) {
+      Smooth* new_smooth = new Smooth(0, true);
+        buffer->smooths.additions.push(new_smooth);
+    }
+  }
+
   void Work() {
+    // We deal with multiple work queues in this loop.
     while (!shutdown) {
       std::shared_ptr<Buffer> buffer = handle->buffer;
       if (buffer) {
@@ -279,44 +320,30 @@ struct BufferChangeThread {
           while (prepare_buffer_queue->tasks.pop(task) && !shutdown) {
             switch (task->type) {
               case BufferTask::REPLACE_AUDIO: {
-                // Buffer is unavailable during this interval.
-                buffer->length = 0;
-                buffer->seconds = 0.0;
-                // And mark every sector dirty.
-                buffer->full_scan = true;
-
-                if (buffer->left_array != nullptr) {
-                  // TODO: perhaps better to delay these deletions a bit?
-                  // Might help protect threads unaware that buffer is invalid
-                  // from accessing freed RAM.
-                  delete buffer->left_array;
-                }
-                buffer->left_array = task->new_left_array;
-                if (buffer->right_array != nullptr) {
-                  delete buffer->right_array;
-                }
-                buffer->right_array = task->new_right_array;
-
-                buffer->length = task->sample_count;
-                buffer->seconds = task->seconds;
-                // Tell world we're done, IFF we have a status. WIPE's and RESET's don't.
-                if (task->status != nullptr) {
-                  task->status->completed = LOAD_COMPLETED;
-                }
-                delete task;
-
-                // There's no reason I can come up with to let there be a click between
-                // the end and the beginning of the buffer.
-                // So if I suspect there will be one, add a Smooth to get rid of it.
-                if (abs(buffer->left_array[0] - buffer->left_array[buffer->length - 1]) > 0.1 ||
-                    abs(buffer->right_array[0] - buffer->right_array[buffer->length - 1]) > 0.1) {
-                  Smooth* new_smooth = new Smooth(0, true);
-                   buffer->smooths.additions.push(new_smooth);
-                }
+                ReplaceAudio(buffer, task);
               }
               break;
               case BufferTask::SAVE_FILE: {
                 WARN("There should not be a SAVE_FILE task on the prepare_buffer_queue!");
+                delete task;
+              }
+              break;
+            }
+          }
+        } 
+
+        if (buffer->replacements.queue.size() > 0) {
+          BufferTask* task;
+          while (buffer->replacements.queue.pop(task) && !shutdown) {
+            switch (task->type) {
+              case BufferTask::REPLACE_AUDIO: {
+                WARN("Sending REPLACE_AUDIO task from replacements queue...");
+                WARN("receiver says replace_task->sample_count = %d", task->sample_count);
+                ReplaceAudio(buffer, task);
+              }
+              break;
+              case BufferTask::SAVE_FILE: {
+                WARN("There should not be a SAVE_FILE task on the 'replacements' queue!");
                 delete task;
               }
               break;
@@ -568,7 +595,7 @@ struct Memory : BufferedModule {
   bool buffer_initialized = false;
   bool init_in_progress = false;
 
-  // Threads and workers for doing long tasks
+  // Threads and workers for doing long tasks.
   BufferChangeThread* buffer_change_worker;
   std::thread* buffer_change_thread;
   // For tasks that don't directly change the Buffer, but might send changes to the

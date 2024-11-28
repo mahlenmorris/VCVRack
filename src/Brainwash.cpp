@@ -1,6 +1,106 @@
 #include "plugin.hpp"
 
+#include <thread>
+
 #include "buffered.hpp"
+
+struct BrainwashThread {
+  bool shutdown;
+  float sample_rate;
+  int max_sample_count;
+
+  // These are the fixed-size buffers that get recorded to initially.
+  float* static_left;
+  float* static_right;
+
+  // Setting this to a number above zero initiates a transfer.
+  // The 0-offset of the last sample to copy. 
+  int endpoint_position;
+  std::shared_ptr<Buffer> buffer;
+
+  BrainwashThread() : shutdown{false}, sample_rate{0.0f}, max_sample_count{0},
+                      static_left{nullptr}, static_right{nullptr},
+                      endpoint_position{-1} {}
+
+  ~BrainwashThread() {
+    Halt();
+    if (static_left != nullptr) {
+      delete static_left;
+    }
+    if (static_right != nullptr) {
+      delete static_right;
+    }
+  }
+
+  void Halt() {
+    shutdown = true;
+  }
+
+  void SetRate(float rate) {
+    sample_rate = rate;
+  }
+
+  void InitiateReplacement(int endpoint_position, std::shared_ptr<Buffer> buffer) {
+    this->endpoint_position = std::min(endpoint_position, max_sample_count - 1);
+    this->buffer = buffer;
+  }
+
+  void RecordSample(int position, float left, float right) {
+    if (position >= max_sample_count) {
+      return;
+    }
+    static_left[position] = left;
+    static_right[position] = right;
+  }
+
+  void Work() {
+    while (!shutdown) {
+      if (static_left == nullptr) { // Not yet assigned.
+        if (sample_rate > 1.0) {  // sample rate has been set
+          // We can make the fixed buffers now.
+          // Defaulting to 1 minute maximum.
+          int sample_count = std::round(60 * sample_rate);
+          max_sample_count = sample_count;
+          static_left = new float[sample_count];
+          static_right = new float[sample_count];
+        }
+      } else if (endpoint_position > 0) {
+        // Create new buffer to send to Memory.
+        size_t length = endpoint_position + 1;
+        float* new_left = new float[length];
+        float* new_right = new float[length];
+        // These allocs can take a small bit of time, check that we aren't being shut down.
+        if (shutdown) {
+          delete[] new_left;
+          delete[] new_right;
+          return;
+        }
+        // Copies from zero to last position.
+        memcpy(new_left, static_left, sizeof(float) * length);
+        memcpy(new_right, static_right, sizeof(float) * length);
+
+        // Now add to queue for Memory to consume.
+        BufferTask* replace_task = BufferTask::ReplaceTask(
+          new_left, new_right, nullptr,  // nullptr for status indicates we don't need FileIO status info.
+          endpoint_position + 1, (endpoint_position + 1) / sample_rate);  
+        if (!(buffer->replacements.queue.push(replace_task))) {
+          delete replace_task->new_left_array;
+          delete replace_task->new_right_array;
+          delete replace_task;  // Queue is full, shed load.
+        }
+        endpoint_position = -1;
+        WARN("BufferTask sent!");
+        WARN("sender says replace_task->sample_count = %d", replace_task->sample_count);
+      }
+
+      // It seems like I need a tiny sleep here to allow join() to work
+      // on this thread.
+      if (!shutdown) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
+    }
+  }
+};
 
 struct Brainwash : Module {
   enum ParamId {
@@ -31,8 +131,15 @@ struct Brainwash : Module {
   // Always 0.0 <= playback_position < 2 * length when Bouncing.
   int recording_position;
 
+  // For background thread.
+  BrainwashThread* worker;
+  std::thread* thread;
+
   // For detecting the Gate that controls recording.
   dsp::SchmittTrigger recordTrigger;
+
+  // Set if we were recording in the previous process() call.
+  bool was_recording;
 
   Brainwash() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -43,6 +150,21 @@ struct Brainwash : Module {
     configInput(RIGHT_INPUT, "Right");
 
     recording_position = -1;
+
+    was_recording = false;
+    worker = new BrainwashThread();
+    thread = new std::thread(&BrainwashThread::Work, worker);
+  }
+
+  ~Brainwash() {
+    if (worker != nullptr) {
+      worker->Halt();
+      if (thread != nullptr) {
+        thread->join();
+        delete thread;
+      }
+      delete worker;
+    }
   }
 
   void process(const ProcessArgs& args) override {
@@ -50,11 +172,14 @@ struct Brainwash : Module {
     // the time this won't change.
     // The number of modules it needs to go through does seem to increase the
     // CPU consummed by the module.
-    if (--find_memory_countdown <= 0) {
-      // One sixtieth of a second.
-      find_memory_countdown = (int) (args.sampleRate / 60);
+    if (args.sampleRate > 1.0) {
+      worker->SetRate(args.sampleRate);
+      if (--find_memory_countdown <= 0) {
+        // One sixtieth of a second.
+        find_memory_countdown = (int) (args.sampleRate / 60);
 
-      buffer = findClosestMemory(getLeftExpander().module);
+        buffer = findClosestMemory(getLeftExpander().module);
+      }
     }
 
     bool connected = (buffer != nullptr) && buffer->IsValid();
@@ -68,12 +193,21 @@ struct Brainwash : Module {
       bool recording = (params[RECORD_BUTTON_PARAM].getValue() > 0.1f) ||
                      recordTrigger.isHigh();
 
-
-      if (recording) {  // Still recording.
-        lights[RECORD_BUTTON_LIGHT].setBrightness(1.0f);
-      } else {
-        lights[RECORD_BUTTON_LIGHT].setBrightness(0.0f);
+      if (recording && !was_recording) {
+        // Starting from the top.
+        recording_position = -1;
+      } else if (!recording && was_recording) {
+        // Recording done, send it!
+        WARN("Initiated brainwash at position %d", recording_position);
+        worker->InitiateReplacement(recording_position, buffer);
       }
+      was_recording = recording;
+      if (recording) {
+        ++recording_position;
+        worker->RecordSample(recording_position,
+            inputs[LEFT_INPUT].getVoltage(), inputs[RIGHT_INPUT].getVoltage());
+      }
+      lights[RECORD_BUTTON_LIGHT].setBrightness(recording ? 1.0f : 0.0f);
     }
     lights[CONNECTED_LIGHT].setBrightness(connected ? 1.0f : 0.0f);
   }
