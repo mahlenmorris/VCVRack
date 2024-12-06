@@ -89,8 +89,8 @@ struct BrainwashThread {
           delete replace_task;  // Queue is full, shed load.
         }
         endpoint_position = -1;
-        WARN("BufferTask sent!");
-        WARN("sender says replace_task->sample_count = %d", replace_task->sample_count);
+        //WARN("BufferTask sent!");
+        //WARN("sender says replace_task->sample_count = %d", replace_task->sample_count);
       }
 
       // It seems like I need a tiny sleep here to allow join() to work
@@ -198,7 +198,7 @@ struct Brainwash : Module {
         recording_position = -1;
       } else if (!recording && was_recording) {
         // Recording done, send it!
-        WARN("Initiated brainwash at position %d", recording_position);
+        //WARN("Initiated brainwash at position %d", recording_position);
         worker->InitiateReplacement(recording_position, buffer);
       }
       was_recording = recording;

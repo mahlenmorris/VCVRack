@@ -130,6 +130,7 @@ struct BufferChangeThread {
   PrepareToBufferQueue* prepare_buffer_queue;
   ModuleToBufferQueue* module_buffer_queue;
   BufferToModuleQueue* buffer_module_queue;
+  std::vector<FileOperationReporting*>* reporters;
   float sample_rate;
 
   bool shutdown;
@@ -138,10 +139,11 @@ struct BufferChangeThread {
 
   BufferChangeThread(BufferHandle* the_handle, PrepareToBufferQueue* prepare_buffer_queue,
                      ModuleToBufferQueue* module_buffer_queue,
-                     BufferToModuleQueue* buffer_module_queue) :
+                     BufferToModuleQueue* buffer_module_queue,
+                     std::vector<FileOperationReporting*>* reporters) :
       handle{the_handle}, prepare_buffer_queue{prepare_buffer_queue},
       module_buffer_queue{module_buffer_queue},
-      buffer_module_queue{buffer_module_queue}, sample_rate{0.0f}, shutdown{false} {}
+      buffer_module_queue{buffer_module_queue}, reporters{reporters}, sample_rate{0.0f}, shutdown{false} {}
 
   void Halt() {
     shutdown = true;
@@ -224,8 +226,8 @@ struct BufferChangeThread {
     }
     delete task;
 
-    WARN("length = %d", buffer->length);
-    WARN("seconds = %f", buffer->seconds);
+    //WARN("length = %d", buffer->length);
+    //WARN("seconds = %f", buffer->seconds);
 
     // There's no reason I can come up with to let there be a click between
     // the end and the beginning of the buffer.
@@ -337,9 +339,19 @@ struct BufferChangeThread {
           while (buffer->replacements.queue.pop(task) && !shutdown) {
             switch (task->type) {
               case BufferTask::REPLACE_AUDIO: {
-                WARN("Sending REPLACE_AUDIO task from replacements queue...");
-                WARN("receiver says replace_task->sample_count = %d", task->sample_count);
+                //WARN("Sending REPLACE_AUDIO task from replacements queue...");
+                //WARN("receiver says replace_task->sample_count = %d", task->sample_count);
+                // Now that we are within Memory, we can add a LOG 
+                FileOperationReporting* reporter = new FileOperationReporting();
+                task->status = reporter;
+                // Sooo, technically this adds a second writer to this structure that is only thread safe with one writer.
+                reporters->push_back(reporter);
+                reporter->log_messages.lines.push(
+                  "Brainwash replaced Memory with a new recording that is " +
+                  std::to_string(task->seconds) + " seconds long."
+                );
                 ReplaceAudio(buffer, task);
+                reporter->completed = LOAD_COMPLETED;
               }
               break;
               case BufferTask::SAVE_FILE: {
@@ -665,7 +677,8 @@ struct Memory : BufferedModule {
     configOutput(TIPSY_LOGGING_OUTPUT, "Logging of File events; connect to a TTY TEXT input");
 
     buffer_change_worker = new BufferChangeThread(getHandle(), &prepare_buffer_queue,
-                                                  &module_buffer_queue, &buffer_module_queue);
+                                                  &module_buffer_queue, &buffer_module_queue,
+                                                  &reporters);
     buffer_change_thread = new std::thread(&BufferChangeThread::Work, buffer_change_worker);
     prepare_worker = new PrepareThread(&module_prepare_queue, &prepare_buffer_queue);
     prepare_thread = new std::thread(&PrepareThread::Work, prepare_worker);
