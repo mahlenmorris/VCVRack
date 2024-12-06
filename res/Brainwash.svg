@@ -9,36 +9,13 @@
    sodipodi:docname="Brainwash.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:cc="http://creativecommons.org/ns#"
    xmlns:dc="http://purl.org/dc/elements/1.1/">
   <defs
-     id="defs2">
-    <linearGradient
-       inkscape:collect="always"
-       id="linearGradient4220">
-      <stop
-         style="stop-color:#453de4;stop-opacity:1;"
-         offset="0"
-         id="stop4216" />
-      <stop
-         style="stop-color:#de29e3;stop-opacity:1;"
-         offset="1"
-         id="stop4218" />
-    </linearGradient>
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient4220"
-       id="linearGradient4224"
-       x1="3.0705891"
-       y1="52.040237"
-       x2="17.007809"
-       y2="52.040237"
-       gradientUnits="userSpaceOnUse" />
-  </defs>
+     id="defs2" />
   <sodipodi:namedview
      id="base"
      pagecolor="#ffffff"
@@ -47,21 +24,21 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2.0000001"
-     inkscape:cx="-70.749996"
-     inkscape:cy="184.99999"
+     inkscape:cx="40.499998"
+     inkscape:cy="266.74999"
      inkscape:document-units="mm"
-     inkscape:current-layer="g1684"
+     inkscape:current-layer="layer1"
      showgrid="false"
      units="mm"
      inkscape:snap-bbox="true"
      inkscape:snap-page="true"
      inkscape:bbox-nodes="false"
      inkscape:snap-bbox-edge-midpoints="false"
-     inkscape:window-width="2560"
-     inkscape:window-height="1369"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
-     inkscape:window-maximized="1"
+     inkscape:window-width="1256"
+     inkscape:window-height="1360"
+     inkscape:window-x="20"
+     inkscape:window-y="23"
+     inkscape:window-maximized="0"
      inkscape:snap-bbox-midpoints="true"
      inkscape:snap-nodes="false"
      inkscape:document-rotation="0"
@@ -96,10 +73,10 @@
        aria-label="!"
        transform="matrix(1.1167128,-0.15549235,0.12836675,1.3252781,-4.8437299,165.39159)"
        id="text912"
-       style="font-style:normal;font-weight:normal;font-size:127.426px;line-height:1.25;font-family:sans-serif;display:inline;fill:url(#linearGradient4224);fill-opacity:1;stroke:none;stroke-width:3.18552;stroke-miterlimit:4;stroke-dasharray:none">
+       style="font-style:normal;font-weight:normal;font-size:127.426px;line-height:1.25;font-family:sans-serif;display:inline;fill:#5e79df;fill-opacity:1;stroke:none;stroke-width:3.18552;stroke-miterlimit:4;stroke-dasharray:none">
       <path
          d="M 17.007808,5.7176488 15.390095,72.852735 H 4.8127414 L 3.070589,5.7176488 Z M 16.385611,98.362823 H 3.6927863 V 85.234461 H 16.385611 Z"
-         style="display:inline;fill:url(#linearGradient4224);fill-opacity:1;stroke-width:3.18552;stroke-miterlimit:4;stroke-dasharray:none"
+         style="display:inline;fill:#5e79df;fill-opacity:1;stroke-width:3.18552;stroke-miterlimit:4;stroke-dasharray:none"
          id="path1767" />
     </g>
   </g>
