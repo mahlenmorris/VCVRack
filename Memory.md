@@ -335,7 +335,8 @@ Note that this will likely NOT be precisely the same as when a CLOCK is received
 #### PLAY Input and Button
 Fixation will playback audio if either the button has been pressed into the Playing position or a while a positive gate is being received by the PLAY input.
 
-The button will be lit only if the playhead is actively playing back audio. For example, it will be unlit when 
+The button will be lit only if the playhead is actively playing back audio. For example, in the "CLOCK starts COUNT repeats of size LENGTH" style, it will be unlit
+after COUNT repeats have completed. 
 #### SPEED Input and Knob
 The speed that the playback head is traveling is the *sum* of the SPEED Input and Knob value. If you want the SPEED Input to completely control the speed, set the Knob value to zero.
 
