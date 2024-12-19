@@ -68,7 +68,8 @@ struct Fixation : PositionedModule {
     // count_reached == the count of repeats has hit the limit.
     // style_changed == just starting, or style has changed.
 
-    // NO_PLAY -> WAITING on [start_play] && STYLE (0, 2)
+    // NO_PLAY -> WAITING on [start_play] && STYLE (0, 2) && !clock_event
+    // NO_PLAY -> FADE_UP on [start_play] && STYLE (0, 2) && clock_event
     // NO_PLAY -> FADE_UP on [start_play] && STYLE (1)
     // 
     // WAITING -> FADE_UP on [CLOCK] && STYLE (0, 2)
