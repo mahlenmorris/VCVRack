@@ -337,7 +337,7 @@ struct Fixation : PositionedModule {
               play_state = FADE_UP;
               length_countdown = GetLength(args);
             } else {
-              play_state = WAITING;
+              play_state = clock_event ? FADE_UP : WAITING;
             }
           }
         }
