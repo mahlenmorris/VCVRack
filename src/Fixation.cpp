@@ -68,8 +68,8 @@ struct Fixation : PositionedModule {
     // count_reached == the count of repeats has hit the limit.
     // style_changed == just starting, or style has changed.
 
-    // NO_PLAY -> WAITING on [start_play] && STYLE (0, 2) && !clock_event
-    // NO_PLAY -> FADE_UP on [start_play] && STYLE (0, 2) && clock_event
+    // NO_PLAY -> WAITING on [start_play] && STYLE (0, 2) && ![CLOCK]
+    // NO_PLAY -> FADE_UP on [start_play] && STYLE (0, 2) && [CLOCK]
     // NO_PLAY -> FADE_UP on [start_play] && STYLE (1)
     // 
     // WAITING -> FADE_UP on [CLOCK] && STYLE (0, 2)
@@ -338,7 +338,19 @@ struct Fixation : PositionedModule {
               play_state = FADE_UP;
               length_countdown = GetLength(args);
             } else {
-              play_state = clock_event ? FADE_UP : WAITING;
+              if (clock_event) { // in case PLAY_GATE and CLOCK are same sample.
+                // This is a clone of the code from WAITING state.
+
+                // Since we don't need to fade down, we can TRIG now.
+                trig_generator.trigger(1e-3f);
+                play_state = FADE_UP;
+                playback_position = GetPosition();
+                length_in_samples  = GetLength(args);
+                length_countdown = length_in_samples;
+                repeat_count = 0;
+              } else {
+                play_state = WAITING;
+              }
             }
           }
         }
@@ -533,6 +545,7 @@ struct Fixation : PositionedModule {
     }
     lights[CONNECTED_LIGHT].setBrightness(connected ? 1.0f : 0.0f);
 
+  // DO NOT SUBMIT!
   /*
   if (play_state != prev_play_state) {
     constexpr const char* state_names[] = {
