@@ -7,6 +7,7 @@ void init(Plugin* p) {
 
   // Add modules here
   p->addModel(modelBasically);
+  p->addModel(modelBrainwash);
   p->addModel(modelDepict);
   p->addModel(modelDrifter);
   p->addModel(modelEmbellish);

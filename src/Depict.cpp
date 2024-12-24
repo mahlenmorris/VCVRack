@@ -315,6 +315,7 @@ struct DepictWidget : ModuleWidget {
     display->module = module;
     addChild(display);
 
+    // Our light is not colored, since we don't have a position in Depict.
     addChild(createLightCentered<MediumLight<WhiteLight>>(mm2px(Vec(15.240, 3.0)),
                  module, Depict::CONNECTED_LIGHT));
   }
