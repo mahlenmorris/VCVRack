@@ -32,6 +32,8 @@ And these videos discuss Fixation in particular:
 * [Fixation as Highly Controllable Granular Synth](https://www.youtube.com/watch?v=jzkOs-odrig)
 * [Playing Melodies with Short Samples](https://www.youtube.com/watch?v=rDCgencIVIY)
 
+And here's a short [demonstration from Omri Cohen](https://www.youtube.com/watch?v=AjKC7IPgZZM&t=767s) using these modules.
+
 The documentation for the *other* Stochastic Telegraph modules can [be found here](README.md).
 
 # The Memory Ensemble
