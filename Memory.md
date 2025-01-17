@@ -148,13 +148,18 @@ Brainwash records audio while RECORD is engaged, and when RECORD is released, wh
 
 More than one Brainwash can be used in the same ensemble, but ending recording in two or more Brainwash's at roughly the same time has unpredictable results. 
 ### Uses
-* To record audio onto the Memory, replacing the entire contents of the Memory (and changing the length of the Memory).
+* To record audio (from the L and R inputs) onto the Memory, replacing the entire contents of the Memory (and changing the length of the Memory).
+
 ### Controls
 
 #### RECORD Input
-Accepts a gate signal. While the signal is high, Brainwash will invisibly record the audio entering through the L & R inputs. When the signal goes low, whatever was recorded becomes the new contents of the Memory.
+Accepts a gate signal.
+* While the signal is high, Brainwash will invisibly record the audio entering through the L & R inputs.
+* When the signal goes low, whatever was recorded becomes the new contents of the Memory.
 #### RECORD Button
-A latched button that is recording when lit, and stops recording and sends what it recorded to the Memory.
+A latched button to manually control recording.
+* Clicked the first time, the button will light up and any signal received from L and R will be stored inside Brainwash.
+* Clicked again, and the button will go dark. The contents of Brainwash's internal storage will very quickly replace the entire contents of Memory, and change the length of Memory to be whatever the recorded length was.
 #### L & R Input
 The Left and Right inputs that are saved and sent to the Memory.
 

@@ -1,5 +1,11 @@
 # Release Notes
 
+### 2.0.18
+#### Date TBD
+* New Memory module, [Brainwash](https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#brainwash), which can be told to record up to 60 seconds of audio
+and then replace the contents of Memory when recording is completed.
+* Fixed bug in Fixation when CLOCK and PLAY input both receive triggers at the same moment. (thanks reina!).
+
 ### 2.0.17
 #### September 28, 2024
 * Added **Venn**, a signal generator with an intuitive graphical control system. A single click can change as many as 64 signals (four polyphonic signals).
@@ -119,7 +125,6 @@ range -10 <= x <= 10. Useful for debugging scripts.
 
 ### 2.0.5
 #### January 9, 2023
-
 * Many UI changes:
   * STYLE knob is smaller, elements moved.
   * Now have nine INx ports instead of six.
@@ -154,5 +159,4 @@ Initial release of [Fuse](https://github.com/mahlenmorris/VCVRack/blob/main/READ
 
 ### 2.0.0
 #### April 13, 2022
-
 Initial release of [Drifter](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#drifter).
