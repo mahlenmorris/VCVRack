@@ -6,6 +6,8 @@
 and then replace the contents of Memory when recording is completed.
 * Fixed bug in Fixation when CLOCK and PLAY input both receive triggers at the same moment. (thanks reina!).
 
+I should mention that Brainwash doesn't feel complete to me yet, so I'll openly invite people to make suggestions for how to make it more useful for kinds of music that benefit from it.
+
 ### 2.0.17
 #### September 28, 2024
 * Added **Venn**, a signal generator with an intuitive graphical control system. A single click can change as many as 64 signals (four polyphonic signals).
