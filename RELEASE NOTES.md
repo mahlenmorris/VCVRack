@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.18
-#### Date TBD
+#### January 18, 2025
 * New Memory module, [Brainwash](https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#brainwash), which can be told to record up to 60 seconds of audio
 and then replace the contents of Memory when recording is completed.
 * Fixed bug in Fixation when CLOCK and PLAY input both receive triggers at the same moment. (thanks reina!).
