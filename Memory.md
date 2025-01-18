@@ -11,6 +11,7 @@ and resized. *Always* the left-most module in any Memory ensemble.
 * [Embellish](#embellish): Records stereo signals sent to it, but simultaneously plays back the 
 audio signal under the head. This makes sound-on-sound, effects passes, and the building up of 
 sound over time straighforward.
+* [Brainwash](#brainwash): Records stereo signals sent to it internally while RECORD is set, overwriting the entirety of Memory when RECORD is released.
 * [Ruminate](#ruminate): Plays back audio buffer at a large variety of speeds, most easily over the whole Memory.
 * [Fixation](#fixation): Also plays back audio from the Memory, but with an emphasis on playing smaller sections and with repetition.
 
@@ -45,7 +46,7 @@ Each non-Memory module has a small light near the top edge of the module; when a
 
 A typical starting place for a Memory Ensemble is one each of:
 * [Memory](#memory) - the storage for the audio data.
-* [Embellish](#embellish) - writes audio to Memory. But a Memory can load audio from a .WAV file, so not strictly required.
+* [Embellish](#embellish) or [Brainwash](#brainwash) - writes audio to Memory. But a Memory can load audio from a .WAV file, so not strictly required.
 * [Ruminate](#ruminate) or [Fixation](#fixation) - Plays audio from the content of Memory.
 * [Depict](#depict) - Visualizer for the state of Memory and the movement of the Embellish, Ruminate, and Fixation heads. Not required, but really helpful to understand what's happening. 
 
@@ -142,7 +143,30 @@ Select a folder to Save .wav files to. Once this is done, any inputs to the SAVE
 A standard dialog box to save files with will appear. The entire current contents of the Memory buffer will be saved as a WAV file.
 
 ### Known Limitations
-* Putting noise into the LOAD and SAVE Tipsy inputs can crash VCV Rack.
+* Putting noise into the LOAD or SAVE Tipsy inputs can crash VCV Rack.
+
+# Brainwash
+Brainwash records audio while RECORD is engaged, and when RECORD is released, what was recorded becomes the new contents of the attached Memory. A Brainwash can record no more than sixty seconds of audio; if RECORD is engaged for longer than that, then the Memory will become the last 60 seconds the Brainwash heard.
+
+More than one Brainwash can be used in the same ensemble, but ending recording in two or more Brainwash's at roughly the same time has unpredictable results. 
+### Uses
+* To record audio (from the L and R inputs) onto the Memory, replacing the entire contents of the Memory (and changing the length of the Memory).
+
+### Controls
+
+#### RECORD Input
+Accepts a gate signal.
+* While the signal is high, Brainwash will invisibly record the audio entering through the L & R inputs.
+* When the signal goes low, whatever was recorded becomes the new contents of the Memory.
+#### RECORD Button
+A latched button to manually control recording.
+* Clicked the first time, the button will light up and any signal received from L and R will be stored inside Brainwash.
+* Clicked again, and the button will go dark. The contents of Brainwash's internal storage will very quickly replace the entire contents of Memory, and change the length of Memory to be whatever the recorded length was.
+#### L & R Input
+The Left and Right inputs that are saved and sent to the Memory.
+
+### Bypass Behavior
+If Bypass is enabled, Brainwash will stop recording internally.
 
 # Depict
 A module for displaying both a representation of the audio data in Memory and showing the positions of the Embellish, Fixation, and Ruminate heads.
@@ -176,7 +200,7 @@ More than one Embellish can be used in the same ensemble.
 
 #### BOUNCE Button
 When unlit, when the head hits the edge of Memory, it will loop around to the other edge and continue.
-WHen lit, the head will "bounce" off the edges of Memory, which will result in it recording in reverse even though REV is off.
+When lit, the head will "bounce" off the edges of Memory, which will result in it recording in reverse even though REV is off.
 #### REV Button
 Unlike Ruminate, Embellish runs only at one speed, but can operate in forward and reverse.
 #### Position ADJUST Slider
@@ -221,7 +245,7 @@ There are *many* more videos for these modules listed at [the top of this manual
 
 #### BOUNCE Button
 When unlit, when the head hits the edge of Memory, it will loop around to the other edge and continue.
-WHen lit, the head will "bounce" off the edges of Memory, which will result in it playing in reverse even though the speed is positive.
+When lit, the head will "bounce" off the edges of Memory, which will result in it playing in reverse even though the speed is positive.
 #### Position ADJUST Slider
 ADJUST is a self-centering slider that allows you to manually move the playback head within the memory. Note that audio output and head movement will stop until the ADJUST slider is released.
 #### Position SET Input

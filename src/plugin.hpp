@@ -8,6 +8,7 @@ extern Plugin* pluginInstance;
 
 // Declare each Model, defined in each module source file.
 extern Model* modelBasically;
+extern Model* modelBrainwash;
 extern Model* modelDepict;
 extern Model* modelDrifter;
 extern Model* modelEmbellish;

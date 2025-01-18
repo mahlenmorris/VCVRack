@@ -25,7 +25,8 @@ bool IsNonMemoryEnsembleModel(Model* model) {
   return ((model == modelRuminate) ||
           (model == modelFixation) ||
           (model == modelDepict) ||
-          (model == modelEmbellish));
+          (model == modelEmbellish) ||
+          (model == modelBrainwash));
 }
 
 bool Buffer::IsValid() {
@@ -110,4 +111,25 @@ void Buffer::Set(int position, float left, float right, long long module_id) {
     }
   }
 }
+  
+BufferTask::~BufferTask() {
+  // Don't delete new_(left|right)_array, surely pointed to by something else.
+}
 
+BufferTask* BufferTask::SaveFileTask(FileOperationReporting* status, const std::string& file_path) {
+  BufferTask* task = new BufferTask(SAVE_FILE);
+  task->status = status;
+  task->str1 = file_path;
+  return task;
+}
+
+BufferTask* BufferTask::ReplaceTask(
+  float* new_left, float* new_right, FileOperationReporting* status, int sample_count, double seconds) {
+  BufferTask* task = new BufferTask(REPLACE_AUDIO);
+  task->new_left_array = new_left;
+  task->new_right_array = new_right;
+  task->status = status;
+  task->sample_count = sample_count;
+  task->seconds = seconds;
+  return task;
+}  

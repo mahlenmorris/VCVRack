@@ -5,7 +5,7 @@ self-regulating structure. Exploring the region between random and static.
 ![All Modules image](images/TheFamily.png)
 ![Memory Modules image](images/TheFamilyRowTwo.png)
 
-* [Memory System](Memory.md): A set of inter-related recording/playback modules with [their own documentation](Memory.md).
+* [Memory System](Memory.md): A set of six inter-related recording/playback modules with [their own documentation](Memory.md).
 * [BASICally](#basically): A simple, likely familiar procedural programming language within the context of VCV Rack.
 * [Drifter](#drifter): Creates sequences of values that can slowly (or quickly) vary, like a series of points doing random walks connected into a series.
 * [Fermata](#fermata): A text editor and labeling module. Write much longer text notes. Resizable, scrolls, font choices, and more. Or just add some visual emphasis,
