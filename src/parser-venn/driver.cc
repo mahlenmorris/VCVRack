@@ -7,8 +7,8 @@ Derived from the Driver for calc++, a Bison example program.
 #include "driver.h"
 #include "parser.hh"
 
-VennDriver::VennDriver()
-  : trace_parsing (false), trace_scanning (false)
+VennDriver::VennDriver(std::shared_ptr<VennVariables> const& vars)
+  : variables(vars), trace_parsing(false), trace_scanning(false)
 {
 }
 
