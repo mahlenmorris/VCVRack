@@ -208,7 +208,7 @@ class VennExpression {
   
   // Default VennExpression is the number 0.0f. Means we can Compute() a default
   // VennExpression safely.
-  VennExpression() : type(NUMBER), float_value(0.0f), variable_ptr{nullptr} {}
+  VennExpression() : type(NUMBER), operation{PLUS}, float_value(0.0f), variable_ptr{nullptr} {}
 
   // Compute the float numeric result of this VennExpression.
   float Compute();

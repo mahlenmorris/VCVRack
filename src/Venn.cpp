@@ -212,6 +212,9 @@ struct Venn : Module {
   // Flag to VennWidget::step() to update any text fields.
   // Indicates that something other than the UI has just changed circles.
   bool update_text_widgets;
+  // Menu item to only compute MATH1 items when WITHIN a circle.
+  // Obviates the need to surround everything with "within ? value : 0".
+  bool only_compute_math1_within;
 
   // For evaluating expressions.
   std::shared_ptr<VennVariables> variables;
@@ -267,6 +270,7 @@ struct Venn : Module {
     show_keyboard = true;  // For new instances, we are true.
     // TODO: could menu choice be a default for all instances?
     // Once user has learned it, it applies to all.
+    only_compute_math1_within = true;
 
     // For compiling typed-in expressions.
     variables = std::make_shared<VennVariables>();
@@ -326,7 +330,9 @@ struct Venn : Module {
     json_decref(saved_point);
     json_object_set_new(rootJ, "current", json_integer(current_circle));
 
-    json_object_set_new(rootJ, "show_keyboard", json_integer(show_keyboard ? 1 :0));
+    json_object_set_new(rootJ, "show_keyboard", json_integer(show_keyboard ? 1 : 0));
+    json_object_set_new(rootJ, "only_compute_math1_within",
+        json_integer(only_compute_math1_within ? 1 :0));
     return rootJ;
   }
 
@@ -385,6 +391,10 @@ struct Venn : Module {
     json_t* keyboardJ = json_object_get(rootJ,  "show_keyboard");
     if (keyboardJ) {
       show_keyboard = json_integer_value(keyboardJ) > 0;
+    }
+    json_t* only_compute_math1_withinJ = json_object_get(rootJ,  "only_compute_math1_within");
+    if (only_compute_math1_withinJ) {
+      only_compute_math1_within = json_integer_value(only_compute_math1_withinJ) > 0;
     }
   }
 
@@ -558,6 +568,7 @@ struct Venn : Module {
     for (size_t channel = 0; channel < live_circle_count; channel++) {
       const Circle& circle = circles[channel];
       float x = 0.0f, y = 0.0f, within = 0.0f, distance = 0.0f, math1 = 0.0f;
+      bool within_state = false;
 
       // If solo-ing, make sure that only solo channel gets computed.
       if (circle.present && (!solo || (int) channel == current_circle)) {
@@ -572,6 +583,7 @@ struct Venn : Module {
         if (distance_actual > circle.radius) {
           within = invert_gate ? 10.0f : 0.0f;
         } else {
+          within_state = true;
           // Compute the values of within, distance, x, and y.
           within = invert_gate ? 0.0f : 10.0f;
 
@@ -593,11 +605,13 @@ struct Venn : Module {
       // If solo-ing, make sure that only solo channel gets computed.
       if (outputs[MATH1_OUTPUT].isConnected()) {
         if (circle.present && (!solo || (int) channel == current_circle)) {
-          *variables->GetVarFromName("distance") = distance;
-          *variables->GetVarFromName("within") = within;
-          *variables->GetVarFromName("x") = x;
-          *variables->GetVarFromName("y") = y;
-          math1 = math1_expressions[channel].Compute();
+          if (within_state || !only_compute_math1_within) {
+            *variables->GetVarFromName("distance") = distance;
+            *variables->GetVarFromName("within") = within;
+            *variables->GetVarFromName("x") = x;
+            *variables->GetVarFromName("y") = y;
+            math1 = math1_expressions[channel].Compute();
+          }
         }
         outputs[MATH1_OUTPUT].setVoltage(math1, channel);
       }
@@ -961,6 +975,10 @@ struct VennMath1TextField : STTextField {
       //auto start = std::chrono::high_resolution_clock::now();
 
       if (math1_text.empty()) {
+        if (!(driver->errors.empty())) {
+          // So that if user removes all text, the error widget reads "Good".
+          driver->errors.clear();
+        }
         VennExpression inactive;
         module->math1_expressions[module->current_circle] = inactive;
       } else {
@@ -1586,6 +1604,8 @@ struct VennWidget : ModuleWidget {
     Venn* module = dynamic_cast<Venn*>(this->module);
     menu->addChild(createBoolPtrMenuItem("Show Keyboard Commands", "",
                                          &(module->show_keyboard)));
+    menu->addChild(createBoolPtrMenuItem("Only Compute MATH1 for a circle when inside it", "",
+                                         &(module->only_compute_math1_within)));
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel("Inspired by Leafcutter John's 'Forester' instrument."));
   }
