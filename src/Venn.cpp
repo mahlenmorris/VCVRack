@@ -530,9 +530,7 @@ struct Venn : Module {
 
     // We have now determined the postion of "point".
     outputs[X_POSITION_OUTPUT].setVoltage(point.x);
-    *variables->GetVarFromName("pointx") = point.x;
     outputs[Y_POSITION_OUTPUT].setVoltage(point.y);
-    *variables->GetVarFromName("pointy") = point.y;
 
     // Determine what values to output.
     // TODO: many optimizations, including doing nothing when neither point nor circles has changed.
@@ -560,10 +558,15 @@ struct Venn : Module {
     bool invert_x = params[INV_X_PARAM].getValue();
     bool offset_y = params[OFST_Y_PARAM].getValue();
     bool invert_y = params[INV_Y_PARAM].getValue();
-    *variables->GetVarFromName("leftx") =  -5 * (invert_x ? -1 : 1) + (offset_x ? 5.0 : 0.0);
-    *variables->GetVarFromName("rightx") = 5 * (invert_x ? -1 : 1) + (offset_x ? 5.0 : 0.0);
-    *variables->GetVarFromName("topy") = 5 * (invert_y ? -1 : 1) + (offset_y ? 5.0 : 0.0);
-    *variables->GetVarFromName("bottomy") = -5 * (invert_y ? -1 : 1) + (offset_y ? 5.0 : 0.0);
+    if (outputs[MATH1_OUTPUT].isConnected()) {
+      // These can only matter if we are computing MATH1 outputs.
+      *variables->GetVarFromEnum(VennVariables::VAR_POINTX) = point.x;
+      *variables->GetVarFromEnum(VennVariables::VAR_POINTY) = point.y;
+      *variables->GetVarFromEnum(VennVariables::VAR_LEFTX) =  -5 * (invert_x ? -1 : 1) + (offset_x ? 5.0 : 0.0);
+      *variables->GetVarFromEnum(VennVariables::VAR_RIGHTX) = 5 * (invert_x ? -1 : 1) + (offset_x ? 5.0 : 0.0);
+      *variables->GetVarFromEnum(VennVariables::VAR_TOPY) = 5 * (invert_y ? -1 : 1) + (offset_y ? 5.0 : 0.0);
+      *variables->GetVarFromEnum(VennVariables::VAR_BOTTOMY) = -5 * (invert_y ? -1 : 1) + (offset_y ? 5.0 : 0.0);
+    }
     // Iterate through the circles.
     for (size_t channel = 0; channel < live_circle_count; channel++) {
       const Circle& circle = circles[channel];
@@ -602,14 +605,14 @@ struct Venn : Module {
       outputs[WITHIN_GATE_OUTPUT].setVoltage(within, channel);
       outputs[X_DISTANCE_OUTPUT].setVoltage(x, channel);
       outputs[Y_DISTANCE_OUTPUT].setVoltage(y, channel);
-      // If solo-ing, make sure that only solo channel gets computed.
       if (outputs[MATH1_OUTPUT].isConnected()) {
+        // If solo-ing, make sure that only solo channel gets computed.
         if (circle.present && (!solo || (int) channel == current_circle)) {
           if (within_state || !only_compute_math1_within) {
-            *variables->GetVarFromName("distance") = distance;
-            *variables->GetVarFromName("within") = within;
-            *variables->GetVarFromName("x") = x;
-            *variables->GetVarFromName("y") = y;
+            *variables->GetVarFromEnum(VennVariables::VAR_DISTANCE) = distance;
+            *variables->GetVarFromEnum(VennVariables::VAR_WITHIN) = within;
+            *variables->GetVarFromEnum(VennVariables::VAR_X) = x;
+            *variables->GetVarFromEnum(VennVariables::VAR_Y) = y;
             math1 = math1_expressions[channel].Compute();
           }
         }

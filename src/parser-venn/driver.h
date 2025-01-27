@@ -57,7 +57,25 @@ struct VennVariables {
   float var_x, var_y, var_distance, var_within, var_pointx, var_pointy;
   float var_leftx, var_rightx, var_topy, var_bottomy;
 
+  // We need to access these every sample, so need a more efficient way than an
+  // unordered_map.
+
+  enum VennVars {
+    VAR_X,
+    VAR_Y,
+    VAR_DISTANCE,
+    VAR_WITHIN,
+    VAR_POINTX,
+    VAR_POINTY,
+    VAR_LEFTX,
+    VAR_RIGHTX,
+    VAR_TOPY,
+    VAR_BOTTOMY,
+    VAR_LEN
+  };
+
   std::unordered_map<std::string, float*> name_to_variable;
+  float* enum_to_variable[VAR_LEN];
 
   VennVariables() {
     name_to_variable["x"] = &var_x;
@@ -70,6 +88,17 @@ struct VennVariables {
     name_to_variable["rightx"] = &var_rightx;
     name_to_variable["topy"] = &var_topy;
     name_to_variable["bottomy"] = &var_bottomy;
+
+    enum_to_variable[VAR_X] = &var_x;
+    enum_to_variable[VAR_Y] = &var_y;
+    enum_to_variable[VAR_DISTANCE] = &var_distance;
+    enum_to_variable[VAR_WITHIN] = &var_within;
+    enum_to_variable[VAR_POINTX] = &var_pointx;
+    enum_to_variable[VAR_POINTY] = &var_pointy;
+    enum_to_variable[VAR_LEFTX] = &var_leftx;
+    enum_to_variable[VAR_RIGHTX] = &var_rightx;
+    enum_to_variable[VAR_TOPY] = &var_topy;
+    enum_to_variable[VAR_BOTTOMY] = &var_bottomy;
   }
 
   bool IsVariableName(const char * var_name) {
@@ -80,6 +109,9 @@ struct VennVariables {
     return name_to_variable.at(var_name);
   }
 
+  float* GetVarFromEnum(VennVars name) {
+    return enum_to_variable[name];
+  }
 };
 
 // Conducting the whole scanning and parsing of Calc++.
