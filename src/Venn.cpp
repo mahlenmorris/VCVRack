@@ -1364,7 +1364,12 @@ struct CircleDisplay : OpaqueWidget {
           nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
                           nvg_y(circle.y_center, bounding_box.x),
                           center_number.c_str(), NULL);
-          if (!circle.name.empty()) {
+          // If we can find some text to put in it, we can add a name.
+          std::string name(circle.name);
+          if (name.empty()) {
+            name = circle.math1;
+          } 
+          if (!name.empty()) {
             nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
             // Break name into lines by newlines.
             std::vector<std::string> lines;
@@ -1374,13 +1379,13 @@ struct CircleDisplay : OpaqueWidget {
             // TODO: cache this computation by moving this elsewhere? This
             // section only takes about 5 usec to run.
             auto start = 0U;
-            auto end = circle.name.find('\n');
+            auto end = name.find('\n');
             while (end != std::string::npos) {
-              lines.push_back(circle.name.substr(start, end - start));
+              lines.push_back(name.substr(start, end - start));
               start = end + 1;
-              end = circle.name.find('\n', start);
+              end = name.find('\n', start);
             }
-            std::string last = circle.name.substr(start);
+            std::string last = name.substr(start);
             lines.push_back(last);
             for (int i = 0; i < (int) lines.size(); i++) {
               nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
