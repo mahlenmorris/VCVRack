@@ -1615,6 +1615,42 @@ struct VennWidget : ModuleWidget {
     menu->addChild(createBoolPtrMenuItem("Only Compute MATH1 for a circle when inside it", "",
                                          &(module->only_compute_math1_within)));
     menu->addChild(new MenuSeparator);
+        // Now add math functions.
+    // description, inserted text.
+    std::string math_funcs[] = {
+      "Math operators: +, -, *, /",
+      "b ? t : f - returns t if b is 'true' or non-zero, f otherwise",
+      "Bool operators: ==, !=, >, >=, <, <=, and, or, not",
+      "Notes: c#3, B1, Gb2",
+      "Overall: pointx, pointy, leftx, rightx, topy, bottomy",
+      "Per circle: distance, within, x, y",
+      "limit(a, b, c) - returns 'a' but between b and c",
+      "scale(a, b, c, d, e) - scales a in b-c range to d-e range",
+      "abs(k) - this number without a negative sign",
+      "ceiling(k) - integer value at or above k",
+      "floor(k) - integer value at or below k",
+      "log2(k) - Base 2 logarithm of k; 0 for k <= 0",
+      "loge(k) - Natural logarithm of k; 0 for k <= 0",
+      "log10(k) - Base 10 logarithm of k; 0 for k <= 0",
+      "max(k, m) - larger of k or m",
+      "min(k, m) - smaller of k or m",
+      "mod(k, m) - remainder after dividing k by m",
+      "pow(k, m) - k to the power of m",
+      "sign(k) - -1, 0, or 1, depending on the sign of k",
+      "sin(k) - sine of k, which is in radians",
+    };
+    MenuItem* math_menu = createSubmenuItem("Math Cheat Sheet", "",
+      [=](Menu* menu) {
+          for (auto line : math_funcs) {
+            menu->addChild(createMenuItem(line, "",
+              [=]() { }
+            ));
+          }
+      }
+    );
+    menu->addChild(math_menu);
+
+    menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel("Inspired by Leafcutter John's 'Forester' instrument."));
   }
 };
