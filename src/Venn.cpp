@@ -1516,18 +1516,18 @@ struct VennWidget : ModuleWidget {
     number->module = module;
     addChild(number);
 
-    name_field = createWidget<VennNameTextField>(mm2px(Vec(2.240, 69.0)));
+    name_field = createWidget<VennNameTextField>(mm2px(Vec(2.240, 71.0)));
     name_field->box.size = mm2px(Vec(26.0, 10.0));
     name_field->setModule(module);
     addChild(name_field);
 
     // Compilation status and error message access.
     VennErrorWidget* math1_error_display = createWidget<VennErrorWidget>(mm2px(
-        Vec(2.240, 94.0)));
+        Vec(20.4, 81.0)));
     math1_error_display->box.size = mm2px(Vec(8.0, 4.0));
     addChild(math1_error_display);
 
-    math1_field = createWidget<VennMath1TextField>(mm2px(Vec(2.240, 81.0)));
+    math1_field = createWidget<VennMath1TextField>(mm2px(Vec(2.240, 85.0)));
     math1_field->box.size = mm2px(Vec(26.0, 10.0));
     math1_field->setModule(module, math1_error_display);
     addChild(math1_field);
