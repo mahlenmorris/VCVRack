@@ -618,7 +618,7 @@ struct DrifterDisplay : LedDisplay {
       bool unipolar;
       NVGcolor outputColor, inputColor;
       bool input_connected;
-      float domain_value;
+      float domain_value = 0.0;
 
       if (module && module->initialized && moduleWidget) {
         unipolar = module->getOffsetUnipolar();
