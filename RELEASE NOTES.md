@@ -1,6 +1,6 @@
 # Release Notes
 
-### 2.0.19
+### 2.0.20
 #### Date TBD
 * Added the ternery '?:' operator to BASICally. For example:
 ```
@@ -15,6 +15,9 @@ can now be written as:
 OUT1 = foo >=2 ? IN1 : 0
 ```
 
+### 2.0.19
+#### Date TBD
+* Fixed crashing bug in Brainwash (triggered sometimes by a race condition when PLAY input is high when the patch is loaded.)
 
 ### 2.0.18
 #### January 18, 2025
