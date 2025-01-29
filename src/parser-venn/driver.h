@@ -17,9 +17,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
-#ifndef DRIVER_HH
-#define DRIVER_HH
+#ifndef DRIVER_H
+#define DRIVER_H
+#include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "tree.h"
 #include "parser.hh"
@@ -48,15 +50,89 @@ struct Error {
   }
 };
 
+// This constitutes the variable space for all of our expressions.
+// Unlike BASICally, the user cannot create variables; they can only
+// get their values, which are set by the module.
+struct VennVariables {
+  float var_x, var_y, var_distance, var_within, var_pointx, var_pointy;
+  float var_leftx, var_rightx, var_topy, var_bottomy;
+
+  // We need to access these every sample, so need a more efficient way than an
+  // unordered_map.
+
+  enum VennVars {
+    VAR_X,
+    VAR_Y,
+    VAR_DISTANCE,
+    VAR_WITHIN,
+    VAR_POINTX,
+    VAR_POINTY,
+    VAR_LEFTX,
+    VAR_RIGHTX,
+    VAR_TOPY,
+    VAR_BOTTOMY,
+    VAR_LEN
+  };
+
+  std::unordered_map<std::string, float*> name_to_variable;
+  float* enum_to_variable[VAR_LEN];
+
+  VennVariables() {
+    name_to_variable["x"] = &var_x;
+    name_to_variable["y"] = &var_y;
+    name_to_variable["distance"] = &var_distance;
+    name_to_variable["within"] = &var_within;
+    name_to_variable["pointx"] = &var_pointx;
+    name_to_variable["pointy"] = &var_pointy;
+    name_to_variable["leftx"] = &var_leftx;
+    name_to_variable["rightx"] = &var_rightx;
+    name_to_variable["topy"] = &var_topy;
+    name_to_variable["bottomy"] = &var_bottomy;
+
+    enum_to_variable[VAR_X] = &var_x;
+    enum_to_variable[VAR_Y] = &var_y;
+    enum_to_variable[VAR_DISTANCE] = &var_distance;
+    enum_to_variable[VAR_WITHIN] = &var_within;
+    enum_to_variable[VAR_POINTX] = &var_pointx;
+    enum_to_variable[VAR_POINTY] = &var_pointy;
+    enum_to_variable[VAR_LEFTX] = &var_leftx;
+    enum_to_variable[VAR_RIGHTX] = &var_rightx;
+    enum_to_variable[VAR_TOPY] = &var_topy;
+    enum_to_variable[VAR_BOTTOMY] = &var_bottomy;
+  }
+
+  bool IsVariableName(const char * var_name) {
+    return name_to_variable.find(var_name) != name_to_variable.end();
+  }
+
+  float* GetVarFromName(const char * var_name) {
+    return name_to_variable.at(var_name);
+  }
+
+  float* GetVarFromEnum(VennVars name) {
+    return enum_to_variable[name];
+  }
+};
+
 // Conducting the whole scanning and parsing of Calc++.
 class VennDriver
 {
 public:
+  // This Driver can parser two different kinds of objects,
+  // Diagrams and Expressions.
   // The Venn module Diagram being constructed.
   Diagram diagram;
+  // _OR_
+  // VennExpression we just parsed.
+  VennExpression exp;
 
   // List of syntax errors found before parser gave up.
   std::vector<Error> errors;
+
+  std::shared_ptr<VennVariables> variables;
+
+  // Knows how to create various kinds of VennExpression objects.
+  VennExpressionFactory factory;
 
   // Whether to generate parser debug traces.
   bool trace_parsing;
@@ -65,12 +141,22 @@ public:
   // The token's location used by the scanner.
   VENN::location location;
 
-  VennDriver();
+  VennDriver(std::shared_ptr<VennVariables> const& vars);
   ~VennDriver();
 
   // Reset the state of all variables to zero/empty.
   void Clear() {
     diagram.circles.clear();
+  }
+
+  bool IsVariableName(const char * var_name) {
+    return variables->IsVariableName(var_name);
+  }
+
+  // Will throw exception if name not found, use IsVariableName prior
+  // to calling.
+  float* GetVarFromName(const char * var_name) {
+    return variables->GetVarFromName(var_name);
   }
 
   // Run the parser on the text of string f.  Return 0 on success.
@@ -86,4 +172,4 @@ public:
 };
 
 
-#endif // ! DRIVER_HH
+#endif // ! DRIVER_H

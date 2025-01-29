@@ -1409,6 +1409,13 @@ struct MemoryWidget : ModuleWidget {
     menu_item_save_file->text = "Save to File...";  
     menu_item_save_file->module = module;
     menu->addChild(menu_item_save_file);
+
+    // Be a little clearer how to make this module do anything.
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createMenuLabel(
+      "Put any of these modules directly to my right: Depict, Embellish, "));
+    menu->addChild(createMenuLabel(
+      "Fixation, and Ruminate. See my User Manual for details and usage videos."));
   }
 };
 
