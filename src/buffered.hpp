@@ -263,11 +263,11 @@ struct TimestampField : OpaqueWidget {
       if (seconds < 60) {
         // display "seconds.hundreths"
         int value = trunc(sec_position * 100);
-        snprintf(text_buffer, 10, "%02d.%02d", value / 100, value % 100);
+        snprintf(text_buffer, 10, "%02u.%02u", (value / 100), value % 100);
       } else {
         // TODO: this hasn't really been tested.
         int value = trunc(sec_position);
-        snprintf(text_buffer, 10, "%d:%02d", value / 60, value % 60);
+        snprintf(text_buffer, 10, "%u:%02u", value / 60, value % 60);
       }
       std::string result(text_buffer);
 
