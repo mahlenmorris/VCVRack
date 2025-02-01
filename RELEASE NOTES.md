@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.19
-#### Date TBD
+#### February 1, 2025
 * Fixed crashing bug in Brainwash (triggered sometimes by a race condition when PLAY input is high when the patch is loaded.)
 
 ### 2.0.18
