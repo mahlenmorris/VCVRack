@@ -46,7 +46,7 @@ struct BrainwashThread {
   }
 
   void RecordSample(int position, float left, float right) {
-    if (position >= max_sample_count) {
+    if (position >= max_sample_count || static_right == nullptr) {
       return;
     }
     static_left[position] = left;

@@ -1,5 +1,9 @@
 # Release Notes
 
+### 2.0.19
+#### February 1, 2025
+* Fixed crashing bug in Brainwash (triggered sometimes by a race condition when PLAY input is high when the patch is loaded.)
+
 ### 2.0.18
 #### January 18, 2025
 * New Memory module, [Brainwash](https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#brainwash), which can be told to record up to 60 seconds of audio
