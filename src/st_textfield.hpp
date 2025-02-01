@@ -19,7 +19,6 @@ struct TTYQueue {
 struct STTextField : OpaqueWidget {
   // From LedDisplayTextField.
   std::string fontPath;
-  float fontSize;
   math::Vec textOffset;
   NVGcolor color;
   NVGcolor bgColor;

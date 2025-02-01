@@ -30,7 +30,6 @@ class Expression {
     ONEARGFUNC, // operation (subexpressions[0])
     ONEPORTFUNC, // operation (port)
     TWOARGFUNC, // func2(subexpressions[0], subexpressions[1])
-    TERNARYFUNC, // subexpressions[0] ? subexpressions[1] : subexpressions[2]
     STRINGFUNC  // Depends on function.
   };
   Type type;
@@ -132,8 +131,6 @@ class ExpressionFactory {
                          Driver* driver);
   Expression TwoArgFunc(const std::string &func_name,
                         const Expression &arg1, const Expression &arg2);
-  Expression TernaryFunc(const Expression &condition, const Expression &if_true,
-                         const Expression &if_false);
   Expression CreateBinOp(const Expression &lhs,
                          const std::string &op_string,
                          const Expression &rhs);

@@ -1,20 +1,5 @@
 # Release Notes
 
-### 2.0.20
-#### Date TBD
-* Added the ternery '?:' operator to BASICally. For example:
-```
-IF foo >= 2 THEN
-  OUT1 = IN1
-ELSE
-  OUT1 = 0
-END IF
-```
-can now be written as:
-```
-OUT1 = foo >=2 ? IN1 : 0
-```
-
 ### 2.0.19
 #### Date TBD
 * Fixed crashing bug in Brainwash (triggered sometimes by a race condition when PLAY input is high when the patch is loaded.)

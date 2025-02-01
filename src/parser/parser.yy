@@ -91,8 +91,6 @@
   RBRACKET "]"
   COMMA   ","
   DOLLAR  "$"
-  QUESTION "?"
-  COLON   ":"
 ;
 
 %token <std::string> IDENTIFIER "identifier"
@@ -217,7 +215,6 @@ reset_statement:
 wait_statement:
   "wait" exp            { $$ = Line::Wait($2); }
 
-%right "?" ":";
 %left "or";
 %left "and";
 %left COMPARISON;
@@ -245,13 +242,12 @@ exp:
 | exp COMPARISON exp   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
 | exp "and" exp { $$ = drv.factory.CreateBinOp($1, $2, $3); }
 | exp "or" exp  { $$ = drv.factory.CreateBinOp($1, $2, $3); }
-| "zeroargfunc" "(" ")"          {$$ = drv.factory.ZeroArgFunc($1);}
-| "connected" "(" "in_port" ")"  {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
+| "zeroargfunc" "(" ")" { $$ = drv.factory.ZeroArgFunc($1); }
+| "connected" "(" "in_port" ")" {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
 | "connected" "(" "out_port" ")" {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
-| "trigger"   "(" "in_port" ")"  {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
-| "oneargfunc" "(" exp ")"       {$$ = drv.factory.OneArgFunc($1, $3);}
-| "twoargfunc" "(" exp "," exp ")" {$$ = drv.factory.TwoArgFunc($1, $3, $5);}
-| exp "?" exp ":" exp            {$$ = drv.factory.TernaryFunc($1, $3, $5);}
+| "trigger"   "(" "in_port" ")" {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
+| "oneargfunc" "(" exp ")" { $$ = drv.factory.OneArgFunc($1, $3); }
+| "twoargfunc" "(" exp "," exp ")" { $$ = drv.factory.TwoArgFunc($1, $3, $5); }
 | "(" exp ")"   { $$ = $2; }
 
 /* Similar (ambiguous?) to expression_list, but seems to work! */

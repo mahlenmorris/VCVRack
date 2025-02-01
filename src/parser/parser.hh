@@ -500,8 +500,6 @@ namespace yy {
       // "]"
       // ","
       // "$"
-      // "?"
-      // ":"
       // "identifier"
       // "quoted_string"
       // "note"
@@ -616,19 +614,17 @@ namespace yy {
     TOK_RBRACKET = 52,             // "]"
     TOK_COMMA = 53,                // ","
     TOK_DOLLAR = 54,               // "$"
-    TOK_QUESTION = 55,             // "?"
-    TOK_COLON = 56,                // ":"
-    TOK_IDENTIFIER = 57,           // "identifier"
-    TOK_QUOTED_STRING = 58,        // "quoted_string"
-    TOK_NUMBER = 59,               // "number"
-    TOK_NOTE = 60,                 // "note"
-    TOK_IN_PORT = 61,              // "in_port"
-    TOK_OUT_PORT = 62,             // "out_port"
-    TOK_ZEROARGFUNC = 63,          // "zeroargfunc"
-    TOK_ONEARGFUNC = 64,           // "oneargfunc"
-    TOK_TWOARGFUNC = 65,           // "twoargfunc"
-    TOK_COMPARISON = 66,           // "comparison"
-    TOK_NEG = 67                   // NEG
+    TOK_IDENTIFIER = 55,           // "identifier"
+    TOK_QUOTED_STRING = 56,        // "quoted_string"
+    TOK_NUMBER = 57,               // "number"
+    TOK_NOTE = 58,                 // "note"
+    TOK_IN_PORT = 59,              // "in_port"
+    TOK_OUT_PORT = 60,             // "out_port"
+    TOK_ZEROARGFUNC = 61,          // "zeroargfunc"
+    TOK_ONEARGFUNC = 62,           // "oneargfunc"
+    TOK_TWOARGFUNC = 63,           // "twoargfunc"
+    TOK_COMPARISON = 64,           // "comparison"
+    TOK_NEG = 65                   // NEG
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -645,7 +641,7 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 68, ///< Number of tokens.
+        YYNTOKENS = 66, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -702,43 +698,41 @@ namespace yy {
         S_RBRACKET = 52,                         // "]"
         S_COMMA = 53,                            // ","
         S_DOLLAR = 54,                           // "$"
-        S_QUESTION = 55,                         // "?"
-        S_COLON = 56,                            // ":"
-        S_IDENTIFIER = 57,                       // "identifier"
-        S_QUOTED_STRING = 58,                    // "quoted_string"
-        S_NUMBER = 59,                           // "number"
-        S_NOTE = 60,                             // "note"
-        S_IN_PORT = 61,                          // "in_port"
-        S_OUT_PORT = 62,                         // "out_port"
-        S_ZEROARGFUNC = 63,                      // "zeroargfunc"
-        S_ONEARGFUNC = 64,                       // "oneargfunc"
-        S_TWOARGFUNC = 65,                       // "twoargfunc"
-        S_COMPARISON = 66,                       // "comparison"
-        S_NEG = 67,                              // NEG
-        S_YYACCEPT = 68,                         // $accept
-        S_program = 69,                          // program
-        S_blocks = 70,                           // blocks
-        S_block = 71,                            // block
-        S_main_block = 72,                       // main_block
-        S_zero_or_more_statements = 73,          // zero_or_more_statements
-        S_one_or_more_statements = 74,           // one_or_more_statements
-        S_statement = 75,                        // statement
-        S_array_assignment = 76,                 // array_assignment
-        S_assignment = 77,                       // assignment
-        S_clear_statement = 78,                  // clear_statement
-        S_continue_statement = 79,               // continue_statement
-        S_exit_statement = 80,                   // exit_statement
-        S_for_statement = 81,                    // for_statement
-        S_elseif_group = 82,                     // elseif_group
-        S_elseif_clause = 83,                    // elseif_clause
-        S_if_statement = 84,                     // if_statement
-        S_print_statement = 85,                  // print_statement
-        S_reset_statement = 86,                  // reset_statement
-        S_wait_statement = 87,                   // wait_statement
-        S_expression_list = 88,                  // expression_list
-        S_exp = 89,                              // exp
-        S_string_list = 90,                      // string_list
-        S_string_exp = 91                        // string_exp
+        S_IDENTIFIER = 55,                       // "identifier"
+        S_QUOTED_STRING = 56,                    // "quoted_string"
+        S_NUMBER = 57,                           // "number"
+        S_NOTE = 58,                             // "note"
+        S_IN_PORT = 59,                          // "in_port"
+        S_OUT_PORT = 60,                         // "out_port"
+        S_ZEROARGFUNC = 61,                      // "zeroargfunc"
+        S_ONEARGFUNC = 62,                       // "oneargfunc"
+        S_TWOARGFUNC = 63,                       // "twoargfunc"
+        S_COMPARISON = 64,                       // "comparison"
+        S_NEG = 65,                              // NEG
+        S_YYACCEPT = 66,                         // $accept
+        S_program = 67,                          // program
+        S_blocks = 68,                           // blocks
+        S_block = 69,                            // block
+        S_main_block = 70,                       // main_block
+        S_zero_or_more_statements = 71,          // zero_or_more_statements
+        S_one_or_more_statements = 72,           // one_or_more_statements
+        S_statement = 73,                        // statement
+        S_array_assignment = 74,                 // array_assignment
+        S_assignment = 75,                       // assignment
+        S_clear_statement = 76,                  // clear_statement
+        S_continue_statement = 77,               // continue_statement
+        S_exit_statement = 78,                   // exit_statement
+        S_for_statement = 79,                    // for_statement
+        S_elseif_group = 80,                     // elseif_group
+        S_elseif_clause = 81,                    // elseif_clause
+        S_if_statement = 82,                     // if_statement
+        S_print_statement = 83,                  // print_statement
+        S_reset_statement = 84,                  // reset_statement
+        S_wait_statement = 85,                   // wait_statement
+        S_expression_list = 86,                  // expression_list
+        S_exp = 87,                              // exp
+        S_string_list = 88,                      // string_list
+        S_string_exp = 89                        // string_exp
       };
     };
 
@@ -871,8 +865,6 @@ namespace yy {
       case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_COMMA: // ","
       case symbol_kind::S_DOLLAR: // "$"
-      case symbol_kind::S_QUESTION: // "?"
-      case symbol_kind::S_COLON: // ":"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
       case symbol_kind::S_NOTE: // "note"
@@ -1140,8 +1132,6 @@ switch (yykind)
       case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_COMMA: // ","
       case symbol_kind::S_DOLLAR: // "$"
-      case symbol_kind::S_QUESTION: // "?"
-      case symbol_kind::S_COLON: // ":"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
       case symbol_kind::S_NOTE: // "note"
@@ -2157,36 +2147,6 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_QUESTION (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_QUESTION, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_QUESTION (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_QUESTION, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_COLON (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_COLON, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_COLON (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_COLON, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
       make_IDENTIFIER (std::string v, location_type l)
       {
         return symbol_type (token::TOK_IDENTIFIER, std::move (v), std::move (l));
@@ -2693,7 +2653,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 686,     ///< Last index in yytable_.
+      yylast_ = 621,     ///< Last index in yytable_.
       yynnts_ = 24,  ///< Number of nonterminal symbols.
       yyfinal_ = 60 ///< Termination state number.
     };
@@ -2818,8 +2778,6 @@ switch (yykind)
       case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_COMMA: // ","
       case symbol_kind::S_DOLLAR: // "$"
-      case symbol_kind::S_QUESTION: // "?"
-      case symbol_kind::S_COLON: // ":"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
       case symbol_kind::S_NOTE: // "note"
@@ -2959,8 +2917,6 @@ switch (yykind)
       case symbol_kind::S_RBRACKET: // "]"
       case symbol_kind::S_COMMA: // ","
       case symbol_kind::S_DOLLAR: // "$"
-      case symbol_kind::S_QUESTION: // "?"
-      case symbol_kind::S_COLON: // ":"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
       case symbol_kind::S_NOTE: // "note"
@@ -3039,7 +2995,7 @@ switch (yykind)
 
 
 } // yy
-#line 3043 "parser.hh"
+#line 2999 "parser.hh"
 
 
 

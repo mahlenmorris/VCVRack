@@ -474,14 +474,8 @@ struct RuminateWidget : ModuleWidget {
                                           &module->fade_on_move));
     menu->addChild(createBoolPtrMenuItem("Use Speed as V/Oct", "",
                                           &module->speed_is_voct));
-
-    // Be a little clearer how to make this module do anything.
-    menu->addChild(new MenuSeparator);
-    menu->addChild(createMenuLabel(
-      "Ruminate only works when touching a group of modules with a Memory"));
-    menu->addChild(createMenuLabel(
-      "module to the left. See my User Manual for details and usage videos."));
   }
+
 };
 
 Model* modelRuminate = createModel<Ruminate, RuminateWidget>("Ruminate");

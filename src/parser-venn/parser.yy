@@ -41,103 +41,50 @@
 %define api.token.prefix {TOK_}
 %token <std::string>
   ASSIGN  "="
-  ABS     "abs"
-  AND     "and"
-  CEILING "ceiling"
-  LIMIT   "limit"
-  LOG2    "log2"
-  LOGE    "loge"
-  LOG10   "log10"
-  MAX     "max"
-  MIN     "min"
-  NOT     "not"
-  OR      "or"
-  POW     "pow"
-  SCALE   "scale"
-  SIGN    "sign"
-  SIN     "sin"
   MINUS   "-"
-  PLUS    "+"
-  STAR    "*"
-  SLASH   "/"
-  LPAREN  "("
-  RPAREN  ")"
   LBRACKET "["
   RBRACKET "]"
-  COMMA   ","
-  QUESTION "?"
-  COLON   ":"
 ;
 
 %token <std::string> IDENTIFIER "identifier"
 %token <std::string> QUOTED_STRING "quoted_string"
 %token <float> NUMBER "number"
-%token <std::string> NOTE "note"
-%token <std::string> ONEARGFUNC "oneargfunc"
-%token <std::string> TWOARGFUNC "twoargfunc"
-%token <std::string> COMPARISON "comparison"
-%nterm <Assignment> assign
+%nterm <NumericAssignment> numeric_assign
 %nterm <Assignments> assignments
+%nterm <Diagram> diagram
 %nterm <Circle> circle
 %nterm <CircleList> circle_list
-%nterm <VennExpression> exp
-%nterm meta_start
+%nterm <std::string> name
 
 %printer { yyo << $$; } <*>;
 
 %%
-%start meta_start;
+%start diagram;
 
-// We can parse a 'diagram' or just an 'exp'.
-// This reduces the number of copies of the expression parsing code.
-meta_start:
+// This would likely change once we can define a path.
+diagram:
   circle_list YYEOF                    { drv.diagram.circles = $1.circles; }
-| exp YYEOF                            { drv.exp = $1; }
 
 circle_list:
   circle                               { $$ = CircleList::NewCircleList($1); }
 | circle_list circle                   { $$ = $1.Add($2); }
 
 circle:
-  "[" "]" assignments                  { $$ = Circle::NewCircle("", $3, &drv); }
+  "[" name "]" assignments             { $$ = Circle::NewCircle($2, $4, &drv); }
+| "[" "]" assignments                  { $$ = Circle::NewCircle("", $3, &drv); }
+
+name:
+  "identifier"                         { $$ = $1; }
+| name "identifier"                    { $$ = $1 + " " + $2; }
 
 assignments:
-  assign                               { $$ = Assignments::NewAssignments($1); }
-| assignments assign                   { $$ = $1.Add($2); }
+  numeric_assign                       { $$ = Assignments::NewAssignments($1); }
+| assignments numeric_assign           { $$ = $1.Add($2); }
 
-assign:
-  "identifier" "=" "number"           { $$ = Assignment::NumericAssignment($1, (float) $3); }
-| "identifier" "=" MINUS "number"     { $$ = Assignment::NumericAssignment($1, -1 * (float) $4); }
-| "identifier" "=" "quoted_string"    { $$ = Assignment::StringAssignment($1, $3); }
-
-%right "?" ":";
-%left "or";
-%left "and";
-%left COMPARISON;
-%left "+" "-";
-%left "*" "/";
-%precedence NEG;   /* unary minus or "not" */
-
-exp:
-  "number"                             { $$ = drv.factory.Number((float) $1); }
-| "note"                               { $$ = drv.factory.Note($1); }
-| MINUS "number" %prec NEG             { $$ = drv.factory.Number(-1 * (float) $2);}
-| "not" exp %prec NEG                  { $$ = drv.factory.Not($2);}
-| "identifier"                         { $$ = drv.factory.Variable($1, &drv); }
-| exp "+" exp                          { $$ = drv.factory.CreateBinOp($1, $2, $3); }
-| exp "-" exp                          { $$ = drv.factory.CreateBinOp($1, $2, $3); }
-| exp "*" exp                          { $$ = drv.factory.CreateBinOp($1, $2, $3); }
-| exp "/" exp                          { $$ = drv.factory.CreateBinOp($1, $2, $3); }
-| exp COMPARISON exp                   { $$ = drv.factory.CreateBinOp($1, $2, $3); }
-| exp "and" exp                        { $$ = drv.factory.CreateBinOp($1, $2, $3); }
-| exp "or" exp                         { $$ = drv.factory.CreateBinOp($1, $2, $3); }
-| "oneargfunc" "(" exp ")"             { $$ = drv.factory.OneArgFunc($1, $3); }
-| "twoargfunc" "(" exp "," exp ")"     { $$ = drv.factory.TwoArgFunc($1, $3, $5); }
-| "limit" "(" exp "," exp "," exp ")"  { $$ = drv.factory.Limit($3, $5, $7); }
-| "scale" "(" exp "," exp "," exp "," exp "," exp ")"  { $$ = drv.factory.Scale($3, $5, $7, $9, $11); }
-| exp "?" exp ":" exp                  { $$ = drv.factory.TernaryFunc($1, $3, $5); }
-| "(" exp ")"                          { $$ = $2; }
-
+numeric_assign:
+  "identifier" "=" "number"            { $$ = NumericAssignment::NewAssignment($1, (float) $3); }
+| "identifier" "=" MINUS "number"      { $$ = NumericAssignment::NewAssignment($1, -1 * (float) $4); }
+ 
 %%
 
 void

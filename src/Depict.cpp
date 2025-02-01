@@ -319,18 +319,6 @@ struct DepictWidget : ModuleWidget {
     addChild(createLightCentered<MediumLight<WhiteLight>>(mm2px(Vec(15.240, 3.0)),
                  module, Depict::CONNECTED_LIGHT));
   }
-
-  void appendContextMenu(Menu* menu) override {
-    Depict* module = dynamic_cast<Depict*>(this->module);
-    assert(module);
-
-    // Be a little clearer how to make this module do anything.
-    menu->addChild(new MenuSeparator);
-    menu->addChild(createMenuLabel(
-      "Depict only works when touching a group of modules with a Memory"));
-    menu->addChild(createMenuLabel(
-      "module to the left. See my User Manual for details and usage videos."));
-  }
 };
 
 

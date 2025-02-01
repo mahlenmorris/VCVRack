@@ -452,17 +452,6 @@ struct EmbellishWidget : ModuleWidget {
     addChild(connect_light);
   }
 
-  void appendContextMenu(Menu* menu) override {
-    Embellish* module = dynamic_cast<Embellish*>(this->module);
-    assert(module);
-
-    // Be a little clearer how to make this module do anything.
-    menu->addChild(new MenuSeparator);
-    menu->addChild(createMenuLabel(
-      "Embellish only works when touching a group of modules with a Memory"));
-    menu->addChild(createMenuLabel(
-      "module to the left. See my User Manual for details and usage videos."));
-  }
 };
 
 

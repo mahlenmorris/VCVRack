@@ -115,14 +115,6 @@ float Expression::Compute() {
                              subexpressions[1].Compute());
     }
     break;
-    case TERNARYFUNC: {
-      if (is_zero(subexpressions[0].Compute())) {
-        return subexpressions[2].Compute();
-      } else {
-        return subexpressions[1].Compute();
-      }
-    }
-    break;
     case STRING_VARIABLE:
     case STRINGFUNC: {
       // This should never happen, compiler should prevent this.
@@ -221,11 +213,9 @@ bool Expression::Volatile() {
     case TWOARGFUNC:
     case BINOP: {
       // Must ensure both get called to complete volatile_deps!
-      return subexpressions[0].Volatile() || subexpressions[1].Volatile();
-    }
-    case TERNARYFUNC: {
-      return subexpressions[0].Volatile() || subexpressions[1].Volatile() ||
-             subexpressions[2].Volatile();
+      bool lhs = subexpressions[0].Volatile();
+      bool rhs = subexpressions[1].Volatile();
+      return lhs || rhs;
     }
     case ARRAY_VARIABLE: return subexpressions[0].Volatile();
     case VARIABLE: {
@@ -459,16 +449,6 @@ Expression ExpressionFactory::TwoArgFunc(const std::string &func_name,
   ex.env = env;  // Sometimes we need this.
   ex.subexpressions.push_back(arg1);
   ex.subexpressions.push_back(arg2);
-  return ex;
-}
-
-Expression ExpressionFactory::TernaryFunc(const Expression &condition, const Expression &if_true,
-                                          const Expression &if_false){
-  Expression ex;
-  ex.type = Expression::TERNARYFUNC;
-  ex.subexpressions.push_back(condition);
-  ex.subexpressions.push_back(if_true);
-  ex.subexpressions.push_back(if_false);
   return ex;
 }
 
