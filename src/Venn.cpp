@@ -371,17 +371,18 @@ struct Venn : Module {
       // So we've copied all the circles in place, but we haven't created the Expressions
       // yet. Now we can do that.
       for (int i = 0; i < (int) live_circle_count - 1; ++i) {
-        WARN("math1 = '%s'", circles[i].math1.c_str());
+        // WARN("math1 = '%s'", circles[i].math1.c_str());
         if (!circles[i].math1.empty()) {
           if (driver.parse(circles[i].math1) == 0) {  // Compiles!
             math1_expressions[i] = driver.exp;
-              WARN("Compile worked?");
-              WARN("%s", math1_expressions[i].to_string().c_str());
-          } else {
+            //  WARN("Compile worked?");
+            //  WARN("%s", math1_expressions[i].to_string().c_str());
+          } /*
+           else {
             if (driver.errors.size() > 0) {
               WARN("Compile Failed:\n%s", driver.errors[0].message.c_str());
             }
-          }
+          } */
         }
       }
     }
@@ -959,7 +960,14 @@ struct VennMath1TextField : STTextField {
   }
 
   void setText(const std::string& new_text) {
+    bool equal = text->compare(new_text) == 0;
     text->assign(new_text);
+    if (!equal) {
+      // if the text has changed, then I should call onChange() to recompile.
+      ChangeEvent dummy;
+      onChange(dummy);
+    }
+
     // TODO: probably need to call updatedText in STTextField?
   }
   
