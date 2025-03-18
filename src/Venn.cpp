@@ -80,6 +80,39 @@ static const char* EFFECTS[EFFECT_LEN] = {
   "Dissonance"
 };
 
+constexpr int VARIABLES_LEN = 6;
+static const char* VARIABLES[VARIABLES_LEN] = {
+  "pointx",
+  "pointy",
+  "distance",
+  "within",
+  "x",
+  "y"
+};
+
+constexpr int SINGLE_ARG_LEN = 6;
+static const char* SINGLE_FUNCS[SINGLE_ARG_LEN] = {
+  "abs",
+  "ceiling",
+  "floor",
+  "log2",
+  "sign",
+  "sin"
+};
+
+constexpr int BOOL_OP_LEN = 6;
+static const char* BOOL_OPS[BOOL_OP_LEN] = {
+  "==",
+  ">=",
+  "<=",
+  "<",
+  ">",
+  "!="
+};
+
+std::string notes("abcdefg");
+std::string simple_operators("+-*/");
+
 struct Venn : Module {
   enum ParamId {
 		EXP_LIN_LOG_PARAM,
@@ -118,6 +151,7 @@ struct Venn : Module {
     LIGHTS_LEN
   };
 
+  /*
   // Class devoted to handling the lengthy (compared to single sample)
   // process of compiling code for expressions.
   struct CompilationThread {
@@ -175,6 +209,7 @@ struct Venn : Module {
       }
     }
   };
+  */
 
   // The array of circles.
   Circle circles[16];
@@ -423,6 +458,131 @@ struct Venn : Module {
     return (random::uniform() + random::uniform()) / 2.0f; 
   }
 
+  enum RandomMathGen {
+    CONSTANT,
+    NOTE,
+    VARIABLE,
+    BIN_OP,  // Should never be between two CONSTANTs
+    BOOL_OP,
+    BOOL,
+    TERNERY,  // bool ? exp : exp
+    SINGLE_ARG_FUNC,  // No need to demo two arg functions
+    LIMIT,    // Good to demo.
+    SCALE,    // Good to demo
+    EXPRESSION
+  };
+
+  // Given a sorted list of points on (0, 1) and a matching list of RandomMathGen values,
+  // pick a random number in (0, 1) and return the corresponding RandomMathGen.
+  // The last element of dist[] must be 1.0, which marks the end of the array.
+  // e.g. :
+  // RandomPick({0.3, 0.5, 0.85, 1.0}, {CONSTANT, NOTE, VARIABLE, SINGLE_ARG_FUNC})
+  // gives a 30% chance of CONSTANT, a 20% of NOTE, a 35% chance of VARIABLE,
+  // and a 15% chance of SINGLE_ARG_FUNC.
+  RandomMathGen RandomPick(float dist[], RandomMathGen choices[]) {
+    float choice = random::uniform();
+    int pick = 0;
+    for (; dist[pick] < 0.99; pick++) {
+      if (choice <= dist[pick]) {
+        return choices[pick];
+      }
+    }
+    return choices[pick];
+  }
+
+  // By no means does this produce the full range of possible expressions!
+  // It's simply here to suggest people look at what this can do.
+  std::string RandomMath(RandomMathGen choice) {
+    switch (choice) {
+      case CONSTANT: {
+        char result[10];
+        std::snprintf(result, 10, "%.2f", random::uniform() * 10 - 5.0);
+        return result;
+      }
+      case NOTE: {
+        std::string note(notes.substr((int) (random::uniform() * 7), 1));
+        note.append(std::to_string((int) (random::uniform() * 4 + 2)));
+        return note;
+      }
+      case VARIABLE: return VARIABLES[(int) (random::uniform() * VARIABLES_LEN)];
+      case BIN_OP: {
+        std::string result(RandomMath(VARIABLE));
+        result.append(" ");
+        result.append(simple_operators.substr((int) (random::uniform() * 4), 1));
+        result.append(" ");
+        result.append(RandomMath(CONSTANT));
+        return result;      
+      }
+      case BOOL_OP: {
+        std::string result(RandomMath(VARIABLE));
+        result.append(" ");
+        result.append(BOOL_OPS[(int) (random::uniform() * BOOL_OP_LEN)]);
+        result.append(" ");
+        result.append(RandomMath(CONSTANT));
+        return result;      
+      }
+      case BOOL: {
+        if (random::uniform() < 0.5) {
+          return "within";
+        } else {
+          return RandomMath(BOOL_OP);
+        }
+      }
+      case TERNERY: {
+        std::string result(RandomMath(BOOL));
+        result.append(" ? ");
+        static float probs[] = {0.1, 0.2, 0.5, 0.9, 1.0};
+        static RandomMathGen action[] = {NOTE, VARIABLE, BIN_OP, SINGLE_ARG_FUNC, CONSTANT};
+        result.append(RandomMath(RandomPick(probs, action)));
+        result.append(" : ");
+        result.append(RandomMath(RandomPick(probs, action)));
+        return result;
+      }
+      case SINGLE_ARG_FUNC: {
+        std::string result(SINGLE_FUNCS[(int) (random::uniform() * SINGLE_ARG_LEN)]);
+        result.append("(");
+        result.append(RandomMath(BIN_OP));
+        result.append(")");
+        return result;
+      }
+      case LIMIT: {
+        std::string result("limit(");
+        static float probs[] = {0.2, 0.5, 1.0};
+        static RandomMathGen action[] = {VARIABLE, BIN_OP, SINGLE_ARG_FUNC};
+        result.append(RandomMath(RandomPick(probs, action)));
+        result.append(", ");
+        result.append(RandomMath(CONSTANT));
+        result.append(", ");
+        result.append(RandomMath(CONSTANT));
+        result.append(")");
+        return result;
+      }
+      case SCALE: {
+        std::string result("scale(");
+        static float probs[] = {0.2, 0.5, 1.0};
+        static RandomMathGen action[] = {VARIABLE, BIN_OP, SINGLE_ARG_FUNC};
+        result.append(RandomMath(RandomPick(probs, action)));
+        result.append(", ");
+        result.append(RandomMath(CONSTANT));
+        result.append(", ");
+        result.append(RandomMath(CONSTANT));
+        result.append(", ");
+        result.append(RandomMath(CONSTANT));
+        result.append(", ");
+        result.append(RandomMath(CONSTANT));
+        result.append(")");
+        return result;
+      }
+      case EXPRESSION: {
+        static float probs[] = {0.1, 0.2, 0.3, 0.4, 0.7, 0.95, 1.0};
+        static RandomMathGen result[] = {NOTE, TERNERY, LIMIT, SCALE, BIN_OP, SINGLE_ARG_FUNC, CONSTANT};
+        return RandomMath(RandomPick(probs, result));
+      }
+      default:
+        return "";
+    }
+  }
+
   void onRandomize(const RandomizeEvent& e) override {
     Module::onRandomize(e);
 
@@ -432,6 +592,9 @@ struct Venn : Module {
     current_circle = -1;
     solo = false;
     ClearAllCircles();
+
+    std::shared_ptr<VennDriver> driver = std::make_shared<VennDriver>(variables);
+
     for (int i = 0; i < count; ++i) {
         Circle circle;
         circle.x_center = random::uniform() * 9.6 - 4.8;  
@@ -452,6 +615,13 @@ struct Venn : Module {
           the_name.append(EFFECTS[(int) (random::uniform() * sizeof(EFFECT_LEN))]);
         }
         circle.name = the_name;
+
+        // Random MATH1 (demos what they can be, I hope).
+        std::string random_math(RandomMath(EXPRESSION));
+        if (driver->parse(random_math) == 0) {
+          circle.math1 = random_math;
+          math1_expressions[i] = driver->exp;
+        }
         circles[i] = circle;
     }
     current_circle = 0;
