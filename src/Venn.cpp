@@ -715,7 +715,9 @@ struct Venn : Module {
 
     float exp_lin_log = params[EXP_LIN_LOG_PARAM].getValue();
     float scaling = 1.0;
-    if (outputs[DISTANCE_OUTPUT].isConnected()) {
+    // Need to compute distance correctly if DISTANCE or MATH1 is connected.
+    if ((outputs[DISTANCE_OUTPUT].isConnected()) ||
+        (outputs[MATH1_OUTPUT].isConnected())) {
       // If we are from -1 - 0, we want to scale it to 0.1 - 1.
       if (exp_lin_log != 0.0) {
         scaling = rack::math::rescale(-1 * fabs(exp_lin_log), -1, 0, .1, 1);
@@ -893,6 +895,18 @@ struct VennCircleUndoRedoAction : history::ModuleAction {
   }
 };
 
+// Forward Declaration, so the text fields can point to them.
+struct VennNameTextField;
+struct VennMath1TextField;
+
+struct WidgetUpdater {
+  Venn* module;
+  VennNameTextField* name_widget = nullptr;
+  VennMath1TextField* math1_widget = nullptr;
+
+  void UpdateWidgets();
+};
+
 /*
 Principles for the UI:
 * There are these states for the editor:
@@ -922,6 +936,7 @@ Principles for the UI:
 struct VennNameTextField : STTextField {
   Venn* module;
   std::string venn_text;
+  WidgetUpdater* widget_updater;
 
   VennNameTextField() {
     module = nullptr;
@@ -955,6 +970,54 @@ struct VennNameTextField : STTextField {
     }
     nvgResetScissor(args.vg);
   }
+
+    // There are a few keys that we want to accept here, rather than in the STTextField.
+    void onSelectKey(const SelectKeyEvent& e) override {
+      if (!module->circles_loaded) {
+        // Don't edit circles if we're in the middle of loading them!
+        return;
+      }
+      bool my_key = false;  // Set if key was intended for this layer of key press interpretation.
+      if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) { 
+        // TAB -> next
+        if (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == 0) {
+          if (module->live_circle_count > 0) {
+            for (int curr = module->current_circle + 1; curr != module->current_circle; curr++) {
+              if (curr >= 16) {
+                curr = 0;
+              }
+              if (module->circles[curr].present) {
+                module->current_circle = curr;
+                widget_updater->UpdateWidgets();
+                break;
+              }
+            }
+          }
+          my_key = true;
+          e.consume(this);
+        }
+        // SHIFT-TAB -> prev
+        if (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT) {
+          if (module->live_circle_count > 0) {
+            for (int curr = module->current_circle - 1; curr != module->current_circle; curr--) {
+              if (curr < 0) {
+                curr = 16 - 1;
+              }
+              if (module->circles[curr].present) {
+                module->current_circle = curr;
+                widget_updater->UpdateWidgets();
+                break;
+              }
+            }
+          }
+          my_key = true;
+          e.consume(this);
+        }
+      }
+      if (!my_key) {
+        STTextField::onSelectKey(e);
+      }
+    }  
 
   void CircleUpdated(const std::string& name) {
     text->assign(name);
@@ -1081,6 +1144,7 @@ struct VennMath1TextField : STTextField {
   Venn* module;
   std::string math1_text;
   std::shared_ptr<VennDriver> driver;
+  WidgetUpdater* widget_updater;
 
   VennMath1TextField() {
     module = nullptr;
@@ -1100,6 +1164,54 @@ struct VennMath1TextField : STTextField {
     if (module) {
       driver = std::make_shared<VennDriver>(module->variables);
       error_widget->setDriver(driver);
+    }
+  }
+
+  // There are a few keys that we want to accept here, rather than in the STTextField.
+  void onSelectKey(const SelectKeyEvent& e) override {
+    if (!module->circles_loaded) {
+      // Don't edit circles if we're in the middle of loading them!
+      return;
+    }
+    bool my_key = false;  // Set if key was intended for this layer of key press interpretation.
+    if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) { 
+      // TAB -> next
+      if (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == 0) {
+        if (module->live_circle_count > 0) {
+          for (int curr = module->current_circle + 1; curr != module->current_circle; curr++) {
+            if (curr >= 16) {
+              curr = 0;
+            }
+            if (module->circles[curr].present) {
+              module->current_circle = curr;
+              widget_updater->UpdateWidgets();
+              break;
+            }
+          }
+        }
+        my_key = true;
+        e.consume(this);
+      }
+      // SHIFT-TAB-> prev
+      if (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT) {
+        if (module->live_circle_count > 0) {
+          for (int curr = module->current_circle - 1; curr != module->current_circle; curr--) {
+            if (curr < 0) {
+              curr = 16 - 1;
+            }
+            if (module->circles[curr].present) {
+              module->current_circle = curr;
+              widget_updater->UpdateWidgets();
+              break;
+            }
+          }
+        }
+        my_key = true;
+        e.consume(this);
+      }
+    }
+    if (!my_key) {
+      STTextField::onSelectKey(e);
     }
   }
 
@@ -1184,24 +1296,30 @@ struct VennMath1TextField : STTextField {
 
 };
 
+void WidgetUpdater::UpdateWidgets() {
+  if (!name_widget) {
+    WARN("name_widget not set.");
+    return;
+  }
+  if (!math1_widget) {
+    WARN("math1_widget not set.");
+    return;
+  }
+  if (module && module->current_circle >= 0) {
+    name_widget->CircleUpdated(module->circles[module->current_circle].name);
+    math1_widget->CircleUpdated(module->circles[module->current_circle].math1);
+  } else {
+    name_widget->CircleUpdated("");
+    math1_widget->CircleUpdated("");
+  }
+}    
+
 struct CircleDisplay : OpaqueWidget {
   Venn* module;
-  VennNameTextField* name_widget;
-  VennMath1TextField* math1_widget;
   Vec last_hover_pos;
+  WidgetUpdater* widget_updater;
 
   CircleDisplay() {}
-
-  // Call this AFTER we've moved to a new circle.
-  void UpdateWidgets() {
-    if (module && module->current_circle >= 0) {
-      name_widget->CircleUpdated(module->circles[module->current_circle].name);
-      math1_widget->CircleUpdated(module->circles[module->current_circle].math1);
-    } else {
-      name_widget->CircleUpdated("");
-      math1_widget->CircleUpdated("");
-    }
-  }
 
   // Move point to current location if left clicked.
   void onButton(const ButtonEvent& e) override {
@@ -1312,8 +1430,9 @@ struct CircleDisplay : OpaqueWidget {
         }
       }
       // Selecting which Circle.
-      // Z - previous
-      if (e.keyName == "z" && (e.mods & RACK_MOD_CTRL) == 0) {
+      // Z or SHIFT-TAB - previous
+      if ((e.keyName == "z" && (e.mods & RACK_MOD_CTRL) == 0) || 
+          (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT)) {
         if (module->live_circle_count > 0) {
           for (int curr = module->current_circle - 1; curr != module->current_circle; curr--) {
             if (curr < 0) {
@@ -1321,15 +1440,16 @@ struct CircleDisplay : OpaqueWidget {
             }
             if (module->circles[curr].present) {
               module->current_circle = curr;
-              UpdateWidgets();
+              widget_updater->UpdateWidgets();
               break;
             }
           }
         }
         e.consume(this);
       }
-      // C - next
-      if (e.keyName == "c" && (e.mods & RACK_MOD_CTRL) == 0) {
+      // C or TAB - next
+      if ((e.keyName == "c" && (e.mods & RACK_MOD_CTRL) == 0) ||
+          (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == 0)) {
         if (module->live_circle_count > 0) {
           for (int curr = module->current_circle + 1; curr != module->current_circle; curr++) {
             if (curr >= 16) {
@@ -1337,7 +1457,7 @@ struct CircleDisplay : OpaqueWidget {
             }
             if (module->circles[curr].present) {
               module->current_circle = curr;
-              UpdateWidgets();
+              widget_updater->UpdateWidgets();
               break;
             }
           }
@@ -1373,7 +1493,7 @@ struct CircleDisplay : OpaqueWidget {
           if (!(module->circles[curr].present)) {
             module->circles[curr] = circle;
             module->current_circle = curr;
-            UpdateWidgets();
+            widget_updater->UpdateWidgets();
             added = true;
             break;
           }
@@ -1401,14 +1521,14 @@ struct CircleDisplay : OpaqueWidget {
             }
             if (module->circles[curr].present) {
               module->current_circle = curr;
-              UpdateWidgets();
+              widget_updater->UpdateWidgets();
               found_next = true;
               break;
             }
           }
           if (!found_next) {
             module->current_circle = -1;  // Indicate there is no currently selected circle.
-            UpdateWidgets();
+            widget_updater->UpdateWidgets();
           }
           APP->history->push(
             new VennCircleUndoRedoAction(module->id, old_circle,
@@ -1455,7 +1575,7 @@ struct CircleDisplay : OpaqueWidget {
     }
   }
 
-  // By using drawLayer() instead of draw(), this becomes a glowing Depict
+  // By using drawLayer() instead of draw(), this becomes a glowing display
   // when the "room lights" are turned down. That seems correct to me.
   void drawLayer(const DrawArgs& args, int layer) override {
     if (layer == 1) {
@@ -1646,6 +1766,7 @@ struct VennWidget : ModuleWidget {
   CircleDisplay* display;
   VennNameTextField* name_field;
   VennMath1TextField* math1_field;
+  WidgetUpdater widget_updater;
 
   VennWidget(Venn* module) {
     setModule(module);
@@ -1686,6 +1807,8 @@ struct VennWidget : ModuleWidget {
     addParam(createLightParamCentered<VCVLightLatch<
           MediumSimpleLight<WhiteLight>>>(mm2px(Vec(178.17, 77.655)), module, Venn::OFST_Y_PARAM, Venn::OFST_Y_LIGHT));
 
+    widget_updater.module = module;
+    
     // Information about the currently selected circle.
     // Lining up vertically with the black box around the X/Y outputs.
     VennNumberDisplayWidget* number = createWidget<VennNumberDisplayWidget>(mm2px(Vec(10.0, 58.6)));
@@ -1698,6 +1821,7 @@ struct VennWidget : ModuleWidget {
     name_field->box.size = mm2px(Vec(26.0, 10.0));
     name_field->setModule(module);
     addChild(name_field);
+    widget_updater.name_widget = name_field;
 
     // Compilation status and error message access.
     VennErrorWidget* math1_error_display = createWidget<VennErrorWidget>(mm2px(
@@ -1709,14 +1833,19 @@ struct VennWidget : ModuleWidget {
     math1_field->box.size = mm2px(Vec(26.0, 10.0));
     math1_field->setModule(module, math1_error_display);
     addChild(math1_field);
+    widget_updater.math1_widget = math1_field;
+
+    // Allows pressing TAB or SHIFT-TAB in the name or math1 text fields to
+    // rotate through the circles.
+    name_field->widget_updater = &widget_updater;
+    math1_field->widget_updater = &widget_updater;
 
     // The Circles.
     display = createWidget<CircleDisplay>(
       mm2px(Vec(31.0, 1.7)));
     display->box.size = mm2px(Vec(125.0, 125.0));
     display->module = module;
-    display->name_widget = name_field;
-    display->math1_widget = math1_field;
+    display->widget_updater = &widget_updater;
     addChild(display);
 
     VennKeyboardIcon* icon = createWidget<VennKeyboardIcon>(mm2px(Vec(1.0, 1.0)));
