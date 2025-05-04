@@ -14,6 +14,26 @@ can now be written as:
 ```
 OUT1 = foo >=2 ? IN1 : 0
 ```
+* In Venn, each Circle can now have a name associated with it, making the display more understandable.
+* In Venn, each Circle can now have an arbitrarily complicate formula associated with it, and the computed values become
+the polyphonic MATH1 output port. Examples of formula include:
+* * "0.125"
+* * "c#2" - that is, the V/OCT value for a C sharp in octave 2
+* Simple computed values:
+* * "bb2 + 0.02" - a slightly sharp Bflat in octave 2.
+* * "x / 2" - the value of the X value for this Circle, but divided by two.
+* * "(x * y / 10) - 1" - use both the X and Y values for this Circle.
+* * "pointx + pointy" - pointx and pointy are the X and Y values of the Point (i.e., the little white circle you move).
+* Use built-in functions:
+* * "sign(x) * .1" - have the values -0.1 or 0.1, depending on which side of the Circle the Point is on.
+* * "min(distance, 5.4)" - be the smaller of the DISTANCE value or 5.4.
+* * "limit(distance, 5.4, 8.3)" - be the value of DISTANCE, but never less than 5.4 or more than 8.3.
+* * "scale(x, leftx, rightx, -2.3, -1.2)" - instead of X's normal range, scale it so that
+ the left edge X is -2.3 and the right edge is -1.2.
+* Use simple logic to determine values:
+* * "within ? 1.4 : 3.11" - if WITHIN is not zero, return 1.4; if WITHIN is zero, return 3.11.
+* * "x < 1 ? 0.2 : sin(x)" - if X is less than 1, return 0.2, otherwise return sin(x).
+  
 
 ### 2.0.19
 #### February 1, 2025
