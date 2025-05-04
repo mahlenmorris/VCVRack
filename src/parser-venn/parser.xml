@@ -250,46 +250,47 @@
       <terminal symbol-number="4" token-number="259" name="&quot;abs&quot;" type="std::string" usefulness="unused-in-grammar"/>
       <terminal symbol-number="5" token-number="260" name="&quot;and&quot;" type="std::string" usefulness="useful" prec="3" assoc="left"/>
       <terminal symbol-number="6" token-number="261" name="&quot;ceiling&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="7" token-number="262" name="&quot;limit&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="8" token-number="263" name="&quot;log2&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="9" token-number="264" name="&quot;loge&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="10" token-number="265" name="&quot;log10&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="11" token-number="266" name="&quot;max&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="12" token-number="267" name="&quot;min&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="13" token-number="268" name="&quot;not&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="14" token-number="269" name="&quot;or&quot;" type="std::string" usefulness="useful" prec="2" assoc="left"/>
-      <terminal symbol-number="15" token-number="270" name="&quot;pow&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="16" token-number="271" name="&quot;scale&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="17" token-number="272" name="&quot;sign&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="18" token-number="273" name="&quot;sin&quot;" type="std::string" usefulness="unused-in-grammar"/>
-      <terminal symbol-number="19" token-number="274" name="&quot;-&quot;" type="std::string" usefulness="useful" prec="5" assoc="left"/>
-      <terminal symbol-number="20" token-number="275" name="&quot;+&quot;" type="std::string" usefulness="useful" prec="5" assoc="left"/>
-      <terminal symbol-number="21" token-number="276" name="&quot;*&quot;" type="std::string" usefulness="useful" prec="6" assoc="left"/>
-      <terminal symbol-number="22" token-number="277" name="&quot;/&quot;" type="std::string" usefulness="useful" prec="6" assoc="left"/>
-      <terminal symbol-number="23" token-number="278" name="&quot;(&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="24" token-number="279" name="&quot;)&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="25" token-number="280" name="&quot;[&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="26" token-number="281" name="&quot;]&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="27" token-number="282" name="&quot;,&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="28" token-number="283" name="&quot;?&quot;" type="std::string" usefulness="useful" prec="1" assoc="right"/>
-      <terminal symbol-number="29" token-number="284" name="&quot;:&quot;" type="std::string" usefulness="useful" prec="1" assoc="right"/>
-      <terminal symbol-number="30" token-number="285" name="&quot;identifier&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="31" token-number="286" name="&quot;quoted_string&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="32" token-number="287" name="&quot;number&quot;" type="float" usefulness="useful"/>
-      <terminal symbol-number="33" token-number="288" name="&quot;note&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="34" token-number="289" name="&quot;oneargfunc&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="35" token-number="290" name="&quot;twoargfunc&quot;" type="std::string" usefulness="useful"/>
-      <terminal symbol-number="36" token-number="291" name="&quot;comparison&quot;" type="std::string" usefulness="useful" prec="4" assoc="left"/>
-      <terminal symbol-number="37" token-number="292" name="NEG" type="" usefulness="useful" prec="7" assoc="precedence"/>
+      <terminal symbol-number="7" token-number="262" name="&quot;floor&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="8" token-number="263" name="&quot;limit&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="9" token-number="264" name="&quot;log2&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="10" token-number="265" name="&quot;loge&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="11" token-number="266" name="&quot;log10&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="12" token-number="267" name="&quot;max&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="13" token-number="268" name="&quot;min&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="14" token-number="269" name="&quot;not&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="15" token-number="270" name="&quot;or&quot;" type="std::string" usefulness="useful" prec="2" assoc="left"/>
+      <terminal symbol-number="16" token-number="271" name="&quot;pow&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="17" token-number="272" name="&quot;scale&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="18" token-number="273" name="&quot;sign&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="19" token-number="274" name="&quot;sin&quot;" type="std::string" usefulness="unused-in-grammar"/>
+      <terminal symbol-number="20" token-number="275" name="&quot;-&quot;" type="std::string" usefulness="useful" prec="5" assoc="left"/>
+      <terminal symbol-number="21" token-number="276" name="&quot;+&quot;" type="std::string" usefulness="useful" prec="5" assoc="left"/>
+      <terminal symbol-number="22" token-number="277" name="&quot;*&quot;" type="std::string" usefulness="useful" prec="6" assoc="left"/>
+      <terminal symbol-number="23" token-number="278" name="&quot;/&quot;" type="std::string" usefulness="useful" prec="6" assoc="left"/>
+      <terminal symbol-number="24" token-number="279" name="&quot;(&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="25" token-number="280" name="&quot;)&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="26" token-number="281" name="&quot;[&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="27" token-number="282" name="&quot;]&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="28" token-number="283" name="&quot;,&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="29" token-number="284" name="&quot;?&quot;" type="std::string" usefulness="useful" prec="1" assoc="right"/>
+      <terminal symbol-number="30" token-number="285" name="&quot;:&quot;" type="std::string" usefulness="useful" prec="1" assoc="right"/>
+      <terminal symbol-number="31" token-number="286" name="&quot;identifier&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="32" token-number="287" name="&quot;quoted_string&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="33" token-number="288" name="&quot;number&quot;" type="float" usefulness="useful"/>
+      <terminal symbol-number="34" token-number="289" name="&quot;note&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="35" token-number="290" name="&quot;oneargfunc&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="36" token-number="291" name="&quot;twoargfunc&quot;" type="std::string" usefulness="useful"/>
+      <terminal symbol-number="37" token-number="292" name="&quot;comparison&quot;" type="std::string" usefulness="useful" prec="4" assoc="left"/>
+      <terminal symbol-number="38" token-number="293" name="NEG" type="" usefulness="useful" prec="7" assoc="precedence"/>
     </terminals>
     <nonterminals>
-      <nonterminal symbol-number="38" name="$accept" type="" usefulness="useful"/>
-      <nonterminal symbol-number="39" name="meta_start" type="" usefulness="useful"/>
-      <nonterminal symbol-number="40" name="circle_list" type="CircleList" usefulness="useful"/>
-      <nonterminal symbol-number="41" name="circle" type="Circle" usefulness="useful"/>
-      <nonterminal symbol-number="42" name="assignments" type="Assignments" usefulness="useful"/>
-      <nonterminal symbol-number="43" name="assign" type="Assignment" usefulness="useful"/>
-      <nonterminal symbol-number="44" name="exp" type="VennExpression" usefulness="useful"/>
+      <nonterminal symbol-number="39" name="$accept" type="" usefulness="useful"/>
+      <nonterminal symbol-number="40" name="meta_start" type="" usefulness="useful"/>
+      <nonterminal symbol-number="41" name="circle_list" type="CircleList" usefulness="useful"/>
+      <nonterminal symbol-number="42" name="circle" type="Circle" usefulness="useful"/>
+      <nonterminal symbol-number="43" name="assignments" type="Assignments" usefulness="useful"/>
+      <nonterminal symbol-number="44" name="assign" type="Assignment" usefulness="useful"/>
+      <nonterminal symbol-number="45" name="exp" type="VennExpression" usefulness="useful"/>
     </nonterminals>
   </grammar>
 

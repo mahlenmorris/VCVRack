@@ -1946,7 +1946,7 @@ struct VennWidget : ModuleWidget {
       "sign(k) - -1, 0, or 1, depending on the sign of k",
       "sin(k) - sine of k, which is in radians",
     };
-    MenuItem* math_menu = createSubmenuItem("Math Cheat Sheet", "",
+    MenuItem* math_menu = createSubmenuItem("MATH Cheat Sheet", "",
       [=](Menu* menu) {
           for (auto line : math_funcs) {
             menu->addChild(createMenuItem(line, "",

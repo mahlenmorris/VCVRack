@@ -434,6 +434,7 @@ namespace VENN {
       // "abs"
       // "and"
       // "ceiling"
+      // "floor"
       // "limit"
       // "log2"
       // "loge"
@@ -520,37 +521,38 @@ namespace VENN {
     TOK_ABS = 4,                   // "abs"
     TOK_AND = 5,                   // "and"
     TOK_CEILING = 6,               // "ceiling"
-    TOK_LIMIT = 7,                 // "limit"
-    TOK_LOG2 = 8,                  // "log2"
-    TOK_LOGE = 9,                  // "loge"
-    TOK_LOG10 = 10,                // "log10"
-    TOK_MAX = 11,                  // "max"
-    TOK_MIN = 12,                  // "min"
-    TOK_NOT = 13,                  // "not"
-    TOK_OR = 14,                   // "or"
-    TOK_POW = 15,                  // "pow"
-    TOK_SCALE = 16,                // "scale"
-    TOK_SIGN = 17,                 // "sign"
-    TOK_SIN = 18,                  // "sin"
-    TOK_MINUS = 19,                // "-"
-    TOK_PLUS = 20,                 // "+"
-    TOK_STAR = 21,                 // "*"
-    TOK_SLASH = 22,                // "/"
-    TOK_LPAREN = 23,               // "("
-    TOK_RPAREN = 24,               // ")"
-    TOK_LBRACKET = 25,             // "["
-    TOK_RBRACKET = 26,             // "]"
-    TOK_COMMA = 27,                // ","
-    TOK_QUESTION = 28,             // "?"
-    TOK_COLON = 29,                // ":"
-    TOK_IDENTIFIER = 30,           // "identifier"
-    TOK_QUOTED_STRING = 31,        // "quoted_string"
-    TOK_NUMBER = 32,               // "number"
-    TOK_NOTE = 33,                 // "note"
-    TOK_ONEARGFUNC = 34,           // "oneargfunc"
-    TOK_TWOARGFUNC = 35,           // "twoargfunc"
-    TOK_COMPARISON = 36,           // "comparison"
-    TOK_NEG = 37                   // NEG
+    TOK_FLOOR = 7,                 // "floor"
+    TOK_LIMIT = 8,                 // "limit"
+    TOK_LOG2 = 9,                  // "log2"
+    TOK_LOGE = 10,                 // "loge"
+    TOK_LOG10 = 11,                // "log10"
+    TOK_MAX = 12,                  // "max"
+    TOK_MIN = 13,                  // "min"
+    TOK_NOT = 14,                  // "not"
+    TOK_OR = 15,                   // "or"
+    TOK_POW = 16,                  // "pow"
+    TOK_SCALE = 17,                // "scale"
+    TOK_SIGN = 18,                 // "sign"
+    TOK_SIN = 19,                  // "sin"
+    TOK_MINUS = 20,                // "-"
+    TOK_PLUS = 21,                 // "+"
+    TOK_STAR = 22,                 // "*"
+    TOK_SLASH = 23,                // "/"
+    TOK_LPAREN = 24,               // "("
+    TOK_RPAREN = 25,               // ")"
+    TOK_LBRACKET = 26,             // "["
+    TOK_RBRACKET = 27,             // "]"
+    TOK_COMMA = 28,                // ","
+    TOK_QUESTION = 29,             // "?"
+    TOK_COLON = 30,                // ":"
+    TOK_IDENTIFIER = 31,           // "identifier"
+    TOK_QUOTED_STRING = 32,        // "quoted_string"
+    TOK_NUMBER = 33,               // "number"
+    TOK_NOTE = 34,                 // "note"
+    TOK_ONEARGFUNC = 35,           // "oneargfunc"
+    TOK_TWOARGFUNC = 36,           // "twoargfunc"
+    TOK_COMPARISON = 37,           // "comparison"
+    TOK_NEG = 38                   // NEG
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -567,7 +569,7 @@ namespace VENN {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 38, ///< Number of tokens.
+        YYNTOKENS = 39, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -576,44 +578,45 @@ namespace VENN {
         S_ABS = 4,                               // "abs"
         S_AND = 5,                               // "and"
         S_CEILING = 6,                           // "ceiling"
-        S_LIMIT = 7,                             // "limit"
-        S_LOG2 = 8,                              // "log2"
-        S_LOGE = 9,                              // "loge"
-        S_LOG10 = 10,                            // "log10"
-        S_MAX = 11,                              // "max"
-        S_MIN = 12,                              // "min"
-        S_NOT = 13,                              // "not"
-        S_OR = 14,                               // "or"
-        S_POW = 15,                              // "pow"
-        S_SCALE = 16,                            // "scale"
-        S_SIGN = 17,                             // "sign"
-        S_SIN = 18,                              // "sin"
-        S_MINUS = 19,                            // "-"
-        S_PLUS = 20,                             // "+"
-        S_STAR = 21,                             // "*"
-        S_SLASH = 22,                            // "/"
-        S_LPAREN = 23,                           // "("
-        S_RPAREN = 24,                           // ")"
-        S_LBRACKET = 25,                         // "["
-        S_RBRACKET = 26,                         // "]"
-        S_COMMA = 27,                            // ","
-        S_QUESTION = 28,                         // "?"
-        S_COLON = 29,                            // ":"
-        S_IDENTIFIER = 30,                       // "identifier"
-        S_QUOTED_STRING = 31,                    // "quoted_string"
-        S_NUMBER = 32,                           // "number"
-        S_NOTE = 33,                             // "note"
-        S_ONEARGFUNC = 34,                       // "oneargfunc"
-        S_TWOARGFUNC = 35,                       // "twoargfunc"
-        S_COMPARISON = 36,                       // "comparison"
-        S_NEG = 37,                              // NEG
-        S_YYACCEPT = 38,                         // $accept
-        S_meta_start = 39,                       // meta_start
-        S_circle_list = 40,                      // circle_list
-        S_circle = 41,                           // circle
-        S_assignments = 42,                      // assignments
-        S_assign = 43,                           // assign
-        S_exp = 44                               // exp
+        S_FLOOR = 7,                             // "floor"
+        S_LIMIT = 8,                             // "limit"
+        S_LOG2 = 9,                              // "log2"
+        S_LOGE = 10,                             // "loge"
+        S_LOG10 = 11,                            // "log10"
+        S_MAX = 12,                              // "max"
+        S_MIN = 13,                              // "min"
+        S_NOT = 14,                              // "not"
+        S_OR = 15,                               // "or"
+        S_POW = 16,                              // "pow"
+        S_SCALE = 17,                            // "scale"
+        S_SIGN = 18,                             // "sign"
+        S_SIN = 19,                              // "sin"
+        S_MINUS = 20,                            // "-"
+        S_PLUS = 21,                             // "+"
+        S_STAR = 22,                             // "*"
+        S_SLASH = 23,                            // "/"
+        S_LPAREN = 24,                           // "("
+        S_RPAREN = 25,                           // ")"
+        S_LBRACKET = 26,                         // "["
+        S_RBRACKET = 27,                         // "]"
+        S_COMMA = 28,                            // ","
+        S_QUESTION = 29,                         // "?"
+        S_COLON = 30,                            // ":"
+        S_IDENTIFIER = 31,                       // "identifier"
+        S_QUOTED_STRING = 32,                    // "quoted_string"
+        S_NUMBER = 33,                           // "number"
+        S_NOTE = 34,                             // "note"
+        S_ONEARGFUNC = 35,                       // "oneargfunc"
+        S_TWOARGFUNC = 36,                       // "twoargfunc"
+        S_COMPARISON = 37,                       // "comparison"
+        S_NEG = 38,                              // NEG
+        S_YYACCEPT = 39,                         // $accept
+        S_meta_start = 40,                       // meta_start
+        S_circle_list = 41,                      // circle_list
+        S_circle = 42,                           // circle
+        S_assignments = 43,                      // assignments
+        S_assign = 44,                           // assign
+        S_exp = 45                               // exp
       };
     };
 
@@ -678,6 +681,7 @@ namespace VENN {
       case symbol_kind::S_ABS: // "abs"
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_CEILING: // "ceiling"
+      case symbol_kind::S_FLOOR: // "floor"
       case symbol_kind::S_LIMIT: // "limit"
       case symbol_kind::S_LOG2: // "log2"
       case symbol_kind::S_LOGE: // "loge"
@@ -883,6 +887,7 @@ switch (yykind)
       case symbol_kind::S_ABS: // "abs"
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_CEILING: // "ceiling"
+      case symbol_kind::S_FLOOR: // "floor"
       case symbol_kind::S_LIMIT: // "limit"
       case symbol_kind::S_LOG2: // "log2"
       case symbol_kind::S_LOGE: // "loge"
@@ -1193,6 +1198,21 @@ switch (yykind)
       make_CEILING (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOK_CEILING, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_FLOOR (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_FLOOR, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_FLOOR (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_FLOOR, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -2004,7 +2024,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 275,     ///< Last index in yytable_.
+      yylast_ = 300,     ///< Last index in yytable_.
       yynnts_ = 7,  ///< Number of nonterminal symbols.
       yyfinal_ = 24 ///< Termination state number.
     };
@@ -2061,6 +2081,7 @@ switch (yykind)
       case symbol_kind::S_ABS: // "abs"
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_CEILING: // "ceiling"
+      case symbol_kind::S_FLOOR: // "floor"
       case symbol_kind::S_LIMIT: // "limit"
       case symbol_kind::S_LOG2: // "log2"
       case symbol_kind::S_LOGE: // "loge"
@@ -2152,6 +2173,7 @@ switch (yykind)
       case symbol_kind::S_ABS: // "abs"
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_CEILING: // "ceiling"
+      case symbol_kind::S_FLOOR: // "floor"
       case symbol_kind::S_LIMIT: // "limit"
       case symbol_kind::S_LOG2: // "log2"
       case symbol_kind::S_LOGE: // "loge"
@@ -2251,7 +2273,7 @@ switch (yykind)
 
 #line 11 "parser.yy"
 } // VENN
-#line 2255 "parser.hh"
+#line 2277 "parser.hh"
 
 
 
