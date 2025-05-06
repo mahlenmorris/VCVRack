@@ -33,7 +33,7 @@ the polyphonic MATH1 output port. Examples of formula include:
 * Use simple logic to determine values:
 * * "within ? 1.4 : 3.11" - if WITHIN is not zero, return 1.4; if WITHIN is zero, return 3.11.
 * * "x < 1 ? 0.2 : sin(x)" - if X is less than 1, return 0.2, otherwise return sin(x).
-  
+* Add presets and triangle venn-wave.
 
 ### 2.0.19
 #### February 1, 2025
