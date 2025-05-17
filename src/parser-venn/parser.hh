@@ -412,58 +412,31 @@ namespace VENN {
     /// An auxiliary type to compute the largest semantic type.
     union union_type
     {
-      // assign
-      char dummy1[sizeof (Assignment)];
-
       // assignments
-      char dummy2[sizeof (Assignments)];
+      char dummy1[sizeof (Assignments)];
 
       // circle
-      char dummy3[sizeof (Circle)];
+      char dummy2[sizeof (Circle)];
 
       // circle_list
-      char dummy4[sizeof (CircleList)];
+      char dummy3[sizeof (CircleList)];
 
-      // exp
-      char dummy5[sizeof (VennExpression)];
+      // diagram
+      char dummy4[sizeof (Diagram)];
+
+      // numeric_assign
+      char dummy5[sizeof (NumericAssignment)];
 
       // "number"
       char dummy6[sizeof (float)];
 
       // "="
-      // "abs"
-      // "and"
-      // "ceiling"
-      // "floor"
-      // "limit"
-      // "log2"
-      // "loge"
-      // "log10"
-      // "max"
-      // "min"
-      // "not"
-      // "or"
-      // "pow"
-      // "scale"
-      // "sign"
-      // "sin"
       // "-"
-      // "+"
-      // "*"
-      // "/"
-      // "("
-      // ")"
       // "["
       // "]"
-      // ","
-      // "?"
-      // ":"
       // "identifier"
       // "quoted_string"
-      // "note"
-      // "oneargfunc"
-      // "twoargfunc"
-      // "comparison"
+      // name
       char dummy7[sizeof (std::string)];
     };
 
@@ -518,41 +491,12 @@ namespace VENN {
     TOK_YYerror = 1,               // error
     TOK_YYUNDEF = 2,               // "invalid token"
     TOK_ASSIGN = 3,                // "="
-    TOK_ABS = 4,                   // "abs"
-    TOK_AND = 5,                   // "and"
-    TOK_CEILING = 6,               // "ceiling"
-    TOK_FLOOR = 7,                 // "floor"
-    TOK_LIMIT = 8,                 // "limit"
-    TOK_LOG2 = 9,                  // "log2"
-    TOK_LOGE = 10,                 // "loge"
-    TOK_LOG10 = 11,                // "log10"
-    TOK_MAX = 12,                  // "max"
-    TOK_MIN = 13,                  // "min"
-    TOK_NOT = 14,                  // "not"
-    TOK_OR = 15,                   // "or"
-    TOK_POW = 16,                  // "pow"
-    TOK_SCALE = 17,                // "scale"
-    TOK_SIGN = 18,                 // "sign"
-    TOK_SIN = 19,                  // "sin"
-    TOK_MINUS = 20,                // "-"
-    TOK_PLUS = 21,                 // "+"
-    TOK_STAR = 22,                 // "*"
-    TOK_SLASH = 23,                // "/"
-    TOK_LPAREN = 24,               // "("
-    TOK_RPAREN = 25,               // ")"
-    TOK_LBRACKET = 26,             // "["
-    TOK_RBRACKET = 27,             // "]"
-    TOK_COMMA = 28,                // ","
-    TOK_QUESTION = 29,             // "?"
-    TOK_COLON = 30,                // ":"
-    TOK_IDENTIFIER = 31,           // "identifier"
-    TOK_QUOTED_STRING = 32,        // "quoted_string"
-    TOK_NUMBER = 33,               // "number"
-    TOK_NOTE = 34,                 // "note"
-    TOK_ONEARGFUNC = 35,           // "oneargfunc"
-    TOK_TWOARGFUNC = 36,           // "twoargfunc"
-    TOK_COMPARISON = 37,           // "comparison"
-    TOK_NEG = 38                   // NEG
+    TOK_MINUS = 4,                 // "-"
+    TOK_LBRACKET = 5,              // "["
+    TOK_RBRACKET = 6,              // "]"
+    TOK_IDENTIFIER = 7,            // "identifier"
+    TOK_QUOTED_STRING = 8,         // "quoted_string"
+    TOK_NUMBER = 9                 // "number"
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -569,54 +513,25 @@ namespace VENN {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 39, ///< Number of tokens.
+        YYNTOKENS = 10, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
         S_YYUNDEF = 2,                           // "invalid token"
         S_ASSIGN = 3,                            // "="
-        S_ABS = 4,                               // "abs"
-        S_AND = 5,                               // "and"
-        S_CEILING = 6,                           // "ceiling"
-        S_FLOOR = 7,                             // "floor"
-        S_LIMIT = 8,                             // "limit"
-        S_LOG2 = 9,                              // "log2"
-        S_LOGE = 10,                             // "loge"
-        S_LOG10 = 11,                            // "log10"
-        S_MAX = 12,                              // "max"
-        S_MIN = 13,                              // "min"
-        S_NOT = 14,                              // "not"
-        S_OR = 15,                               // "or"
-        S_POW = 16,                              // "pow"
-        S_SCALE = 17,                            // "scale"
-        S_SIGN = 18,                             // "sign"
-        S_SIN = 19,                              // "sin"
-        S_MINUS = 20,                            // "-"
-        S_PLUS = 21,                             // "+"
-        S_STAR = 22,                             // "*"
-        S_SLASH = 23,                            // "/"
-        S_LPAREN = 24,                           // "("
-        S_RPAREN = 25,                           // ")"
-        S_LBRACKET = 26,                         // "["
-        S_RBRACKET = 27,                         // "]"
-        S_COMMA = 28,                            // ","
-        S_QUESTION = 29,                         // "?"
-        S_COLON = 30,                            // ":"
-        S_IDENTIFIER = 31,                       // "identifier"
-        S_QUOTED_STRING = 32,                    // "quoted_string"
-        S_NUMBER = 33,                           // "number"
-        S_NOTE = 34,                             // "note"
-        S_ONEARGFUNC = 35,                       // "oneargfunc"
-        S_TWOARGFUNC = 36,                       // "twoargfunc"
-        S_COMPARISON = 37,                       // "comparison"
-        S_NEG = 38,                              // NEG
-        S_YYACCEPT = 39,                         // $accept
-        S_meta_start = 40,                       // meta_start
-        S_circle_list = 41,                      // circle_list
-        S_circle = 42,                           // circle
-        S_assignments = 43,                      // assignments
-        S_assign = 44,                           // assign
-        S_exp = 45                               // exp
+        S_MINUS = 4,                             // "-"
+        S_LBRACKET = 5,                          // "["
+        S_RBRACKET = 6,                          // "]"
+        S_IDENTIFIER = 7,                        // "identifier"
+        S_QUOTED_STRING = 8,                     // "quoted_string"
+        S_NUMBER = 9,                            // "number"
+        S_YYACCEPT = 10,                         // $accept
+        S_diagram = 11,                          // diagram
+        S_circle_list = 12,                      // circle_list
+        S_circle = 13,                           // circle
+        S_name = 14,                             // name
+        S_assignments = 15,                      // assignments
+        S_numeric_assign = 16                    // numeric_assign
       };
     };
 
@@ -653,10 +568,6 @@ namespace VENN {
       {
         switch (this->kind ())
     {
-      case symbol_kind::S_assign: // assign
-        value.move< Assignment > (std::move (that.value));
-        break;
-
       case symbol_kind::S_assignments: // assignments
         value.move< Assignments > (std::move (that.value));
         break;
@@ -669,8 +580,12 @@ namespace VENN {
         value.move< CircleList > (std::move (that.value));
         break;
 
-      case symbol_kind::S_exp: // exp
-        value.move< VennExpression > (std::move (that.value));
+      case symbol_kind::S_diagram: // diagram
+        value.move< Diagram > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_numeric_assign: // numeric_assign
+        value.move< NumericAssignment > (std::move (that.value));
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -678,39 +593,12 @@ namespace VENN {
         break;
 
       case symbol_kind::S_ASSIGN: // "="
-      case symbol_kind::S_ABS: // "abs"
-      case symbol_kind::S_AND: // "and"
-      case symbol_kind::S_CEILING: // "ceiling"
-      case symbol_kind::S_FLOOR: // "floor"
-      case symbol_kind::S_LIMIT: // "limit"
-      case symbol_kind::S_LOG2: // "log2"
-      case symbol_kind::S_LOGE: // "loge"
-      case symbol_kind::S_LOG10: // "log10"
-      case symbol_kind::S_MAX: // "max"
-      case symbol_kind::S_MIN: // "min"
-      case symbol_kind::S_NOT: // "not"
-      case symbol_kind::S_OR: // "or"
-      case symbol_kind::S_POW: // "pow"
-      case symbol_kind::S_SCALE: // "scale"
-      case symbol_kind::S_SIGN: // "sign"
-      case symbol_kind::S_SIN: // "sin"
       case symbol_kind::S_MINUS: // "-"
-      case symbol_kind::S_PLUS: // "+"
-      case symbol_kind::S_STAR: // "*"
-      case symbol_kind::S_SLASH: // "/"
-      case symbol_kind::S_LPAREN: // "("
-      case symbol_kind::S_RPAREN: // ")"
       case symbol_kind::S_LBRACKET: // "["
       case symbol_kind::S_RBRACKET: // "]"
-      case symbol_kind::S_COMMA: // ","
-      case symbol_kind::S_QUESTION: // "?"
-      case symbol_kind::S_COLON: // ":"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
-      case symbol_kind::S_NOTE: // "note"
-      case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
-      case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
-      case symbol_kind::S_COMPARISON: // "comparison"
+      case symbol_kind::S_name: // name
         value.move< std::string > (std::move (that.value));
         break;
 
@@ -733,20 +621,6 @@ namespace VENN {
 #else
       basic_symbol (typename Base::kind_type t, const location_type& l)
         : Base (t)
-        , location (l)
-      {}
-#endif
-
-#if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, Assignment&& v, location_type&& l)
-        : Base (t)
-        , value (std::move (v))
-        , location (std::move (l))
-      {}
-#else
-      basic_symbol (typename Base::kind_type t, const Assignment& v, const location_type& l)
-        : Base (t)
-        , value (v)
         , location (l)
       {}
 #endif
@@ -794,13 +668,27 @@ namespace VENN {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, VennExpression&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, Diagram&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const VennExpression& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const Diagram& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, NumericAssignment&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const NumericAssignment& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -859,10 +747,6 @@ namespace VENN {
         // Value type destructor.
 switch (yykind)
     {
-      case symbol_kind::S_assign: // assign
-        value.template destroy< Assignment > ();
-        break;
-
       case symbol_kind::S_assignments: // assignments
         value.template destroy< Assignments > ();
         break;
@@ -875,8 +759,12 @@ switch (yykind)
         value.template destroy< CircleList > ();
         break;
 
-      case symbol_kind::S_exp: // exp
-        value.template destroy< VennExpression > ();
+      case symbol_kind::S_diagram: // diagram
+        value.template destroy< Diagram > ();
+        break;
+
+      case symbol_kind::S_numeric_assign: // numeric_assign
+        value.template destroy< NumericAssignment > ();
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -884,39 +772,12 @@ switch (yykind)
         break;
 
       case symbol_kind::S_ASSIGN: // "="
-      case symbol_kind::S_ABS: // "abs"
-      case symbol_kind::S_AND: // "and"
-      case symbol_kind::S_CEILING: // "ceiling"
-      case symbol_kind::S_FLOOR: // "floor"
-      case symbol_kind::S_LIMIT: // "limit"
-      case symbol_kind::S_LOG2: // "log2"
-      case symbol_kind::S_LOGE: // "loge"
-      case symbol_kind::S_LOG10: // "log10"
-      case symbol_kind::S_MAX: // "max"
-      case symbol_kind::S_MIN: // "min"
-      case symbol_kind::S_NOT: // "not"
-      case symbol_kind::S_OR: // "or"
-      case symbol_kind::S_POW: // "pow"
-      case symbol_kind::S_SCALE: // "scale"
-      case symbol_kind::S_SIGN: // "sign"
-      case symbol_kind::S_SIN: // "sin"
       case symbol_kind::S_MINUS: // "-"
-      case symbol_kind::S_PLUS: // "+"
-      case symbol_kind::S_STAR: // "*"
-      case symbol_kind::S_SLASH: // "/"
-      case symbol_kind::S_LPAREN: // "("
-      case symbol_kind::S_RPAREN: // ")"
       case symbol_kind::S_LBRACKET: // "["
       case symbol_kind::S_RBRACKET: // "]"
-      case symbol_kind::S_COMMA: // ","
-      case symbol_kind::S_QUESTION: // "?"
-      case symbol_kind::S_COLON: // ":"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
-      case symbol_kind::S_NOTE: // "note"
-      case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
-      case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
-      case symbol_kind::S_COMPARISON: // "comparison"
+      case symbol_kind::S_name: // name
         value.template destroy< std::string > ();
         break;
 
@@ -1018,8 +879,7 @@ switch (yykind)
       {
 #if !defined _MSC_VER || defined __clang__
         YY_ASSERT (tok == token::TOK_YYEOF
-                   || (token::TOK_YYerror <= tok && tok <= token::TOK_YYUNDEF)
-                   || tok == token::TOK_NEG);
+                   || (token::TOK_YYerror <= tok && tok <= token::TOK_YYUNDEF));
 #endif
       }
 #if 201103L <= YY_CPLUSPLUS
@@ -1043,8 +903,7 @@ switch (yykind)
 #endif
       {
 #if !defined _MSC_VER || defined __clang__
-        YY_ASSERT ((token::TOK_ASSIGN <= tok && tok <= token::TOK_QUOTED_STRING)
-                   || (token::TOK_NOTE <= tok && tok <= token::TOK_COMPARISON));
+        YY_ASSERT ((token::TOK_ASSIGN <= tok && tok <= token::TOK_QUOTED_STRING));
 #endif
       }
     };
@@ -1158,246 +1017,6 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_ABS (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_ABS, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_ABS (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_ABS, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_AND (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_AND, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_AND (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_AND, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_CEILING (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_CEILING, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_CEILING (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_CEILING, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_FLOOR (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_FLOOR, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_FLOOR (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_FLOOR, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_LIMIT (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_LIMIT, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_LIMIT (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_LIMIT, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_LOG2 (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_LOG2, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_LOG2 (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_LOG2, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_LOGE (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_LOGE, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_LOGE (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_LOGE, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_LOG10 (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_LOG10, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_LOG10 (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_LOG10, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_MAX (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_MAX, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_MAX (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_MAX, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_MIN (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_MIN, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_MIN (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_MIN, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_NOT (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_NOT, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_NOT (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_NOT, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_OR (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_OR, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_OR (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_OR, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_POW (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_POW, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_POW (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_POW, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_SCALE (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_SCALE, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_SCALE (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_SCALE, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_SIGN (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_SIGN, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_SIGN (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_SIGN, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_SIN (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_SIN, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_SIN (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_SIN, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
       make_MINUS (std::string v, location_type l)
       {
         return symbol_type (token::TOK_MINUS, std::move (v), std::move (l));
@@ -1408,81 +1027,6 @@ switch (yykind)
       make_MINUS (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOK_MINUS, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_PLUS (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_PLUS, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_PLUS (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_PLUS, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_STAR (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_STAR, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_STAR (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_STAR, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_SLASH (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_SLASH, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_SLASH (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_SLASH, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_LPAREN (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_LPAREN, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_LPAREN (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_LPAREN, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_RPAREN (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_RPAREN, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_RPAREN (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_RPAREN, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1513,51 +1057,6 @@ switch (yykind)
       make_RBRACKET (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOK_RBRACKET, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_COMMA (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_COMMA, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_COMMA (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_COMMA, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_QUESTION (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_QUESTION, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_QUESTION (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_QUESTION, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_COLON (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_COLON, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_COLON (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_COLON, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1603,81 +1102,6 @@ switch (yykind)
       make_NUMBER (const float& v, const location_type& l)
       {
         return symbol_type (token::TOK_NUMBER, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_NOTE (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_NOTE, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_NOTE (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_NOTE, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_ONEARGFUNC (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_ONEARGFUNC, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_ONEARGFUNC (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_ONEARGFUNC, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_TWOARGFUNC (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_TWOARGFUNC, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_TWOARGFUNC (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_TWOARGFUNC, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_COMPARISON (std::string v, location_type l)
-      {
-        return symbol_type (token::TOK_COMPARISON, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_COMPARISON (const std::string& v, const location_type& l)
-      {
-        return symbol_type (token::TOK_COMPARISON, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_NEG (location_type l)
-      {
-        return symbol_type (token::TOK_NEG, std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_NEG (const location_type& l)
-      {
-        return symbol_type (token::TOK_NEG, l);
       }
 #endif
 
@@ -1755,7 +1179,7 @@ switch (yykind)
     // Tables.
     // YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
     // STATE-NUM.
-    static const short yypact_[];
+    static const signed char yypact_[];
 
     // YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
     // Performed when YYTABLE does not specify something else to do.  Zero
@@ -1788,7 +1212,7 @@ switch (yykind)
 
 #if YYDEBUG
     // YYRLINE[YYN] -- Source line where rule number YYN was defined.
-    static const unsigned char yyrline_[];
+    static const signed char yyrline_[];
     /// Report on the debug stream that the rule \a r is going to be reduced.
     virtual void yy_reduce_print_ (int r) const;
     /// Print the state stack on the debug stream.
@@ -2024,9 +1448,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 300,     ///< Last index in yytable_.
+      yylast_ = 16,     ///< Last index in yytable_.
       yynnts_ = 7,  ///< Number of nonterminal symbols.
-      yyfinal_ = 24 ///< Termination state number.
+      yyfinal_ = 8 ///< Termination state number.
     };
 
 
@@ -2053,10 +1477,6 @@ switch (yykind)
   {
     switch (this->kind ())
     {
-      case symbol_kind::S_assign: // assign
-        value.copy< Assignment > (YY_MOVE (that.value));
-        break;
-
       case symbol_kind::S_assignments: // assignments
         value.copy< Assignments > (YY_MOVE (that.value));
         break;
@@ -2069,8 +1489,12 @@ switch (yykind)
         value.copy< CircleList > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_exp: // exp
-        value.copy< VennExpression > (YY_MOVE (that.value));
+      case symbol_kind::S_diagram: // diagram
+        value.copy< Diagram > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_numeric_assign: // numeric_assign
+        value.copy< NumericAssignment > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -2078,39 +1502,12 @@ switch (yykind)
         break;
 
       case symbol_kind::S_ASSIGN: // "="
-      case symbol_kind::S_ABS: // "abs"
-      case symbol_kind::S_AND: // "and"
-      case symbol_kind::S_CEILING: // "ceiling"
-      case symbol_kind::S_FLOOR: // "floor"
-      case symbol_kind::S_LIMIT: // "limit"
-      case symbol_kind::S_LOG2: // "log2"
-      case symbol_kind::S_LOGE: // "loge"
-      case symbol_kind::S_LOG10: // "log10"
-      case symbol_kind::S_MAX: // "max"
-      case symbol_kind::S_MIN: // "min"
-      case symbol_kind::S_NOT: // "not"
-      case symbol_kind::S_OR: // "or"
-      case symbol_kind::S_POW: // "pow"
-      case symbol_kind::S_SCALE: // "scale"
-      case symbol_kind::S_SIGN: // "sign"
-      case symbol_kind::S_SIN: // "sin"
       case symbol_kind::S_MINUS: // "-"
-      case symbol_kind::S_PLUS: // "+"
-      case symbol_kind::S_STAR: // "*"
-      case symbol_kind::S_SLASH: // "/"
-      case symbol_kind::S_LPAREN: // "("
-      case symbol_kind::S_RPAREN: // ")"
       case symbol_kind::S_LBRACKET: // "["
       case symbol_kind::S_RBRACKET: // "]"
-      case symbol_kind::S_COMMA: // ","
-      case symbol_kind::S_QUESTION: // "?"
-      case symbol_kind::S_COLON: // ":"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
-      case symbol_kind::S_NOTE: // "note"
-      case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
-      case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
-      case symbol_kind::S_COMPARISON: // "comparison"
+      case symbol_kind::S_name: // name
         value.copy< std::string > (YY_MOVE (that.value));
         break;
 
@@ -2145,10 +1542,6 @@ switch (yykind)
     super_type::move (s);
     switch (this->kind ())
     {
-      case symbol_kind::S_assign: // assign
-        value.move< Assignment > (YY_MOVE (s.value));
-        break;
-
       case symbol_kind::S_assignments: // assignments
         value.move< Assignments > (YY_MOVE (s.value));
         break;
@@ -2161,8 +1554,12 @@ switch (yykind)
         value.move< CircleList > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_exp: // exp
-        value.move< VennExpression > (YY_MOVE (s.value));
+      case symbol_kind::S_diagram: // diagram
+        value.move< Diagram > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_numeric_assign: // numeric_assign
+        value.move< NumericAssignment > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_NUMBER: // "number"
@@ -2170,39 +1567,12 @@ switch (yykind)
         break;
 
       case symbol_kind::S_ASSIGN: // "="
-      case symbol_kind::S_ABS: // "abs"
-      case symbol_kind::S_AND: // "and"
-      case symbol_kind::S_CEILING: // "ceiling"
-      case symbol_kind::S_FLOOR: // "floor"
-      case symbol_kind::S_LIMIT: // "limit"
-      case symbol_kind::S_LOG2: // "log2"
-      case symbol_kind::S_LOGE: // "loge"
-      case symbol_kind::S_LOG10: // "log10"
-      case symbol_kind::S_MAX: // "max"
-      case symbol_kind::S_MIN: // "min"
-      case symbol_kind::S_NOT: // "not"
-      case symbol_kind::S_OR: // "or"
-      case symbol_kind::S_POW: // "pow"
-      case symbol_kind::S_SCALE: // "scale"
-      case symbol_kind::S_SIGN: // "sign"
-      case symbol_kind::S_SIN: // "sin"
       case symbol_kind::S_MINUS: // "-"
-      case symbol_kind::S_PLUS: // "+"
-      case symbol_kind::S_STAR: // "*"
-      case symbol_kind::S_SLASH: // "/"
-      case symbol_kind::S_LPAREN: // "("
-      case symbol_kind::S_RPAREN: // ")"
       case symbol_kind::S_LBRACKET: // "["
       case symbol_kind::S_RBRACKET: // "]"
-      case symbol_kind::S_COMMA: // ","
-      case symbol_kind::S_QUESTION: // "?"
-      case symbol_kind::S_COLON: // ":"
       case symbol_kind::S_IDENTIFIER: // "identifier"
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
-      case symbol_kind::S_NOTE: // "note"
-      case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
-      case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
-      case symbol_kind::S_COMPARISON: // "comparison"
+      case symbol_kind::S_name: // name
         value.move< std::string > (YY_MOVE (s.value));
         break;
 
@@ -2273,7 +1643,7 @@ switch (yykind)
 
 #line 11 "parser.yy"
 } // VENN
-#line 2277 "parser.hh"
+#line 1647 "parser.hh"
 
 
 
