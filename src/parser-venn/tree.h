@@ -2,36 +2,53 @@
 #define TREE_H
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 class VennDriver;  // Circular includes if we try to include driver.h here.
 
 // Intermediate structures made while compiling.
-struct NumericAssignment {
+struct Assignment {
   std::string field_name;
   float value;
+  std::string str_value;
+  bool numeric;
 
-  static NumericAssignment NewAssignment(const std::string& attr, float value) {
-    NumericAssignment assign;
+  static Assignment NumericAssignment(const std::string& attr, float value) {
+    Assignment assign;
     assign.field_name.assign(attr);
     assign.value = value;
+    assign.numeric = true;
+    return assign;
+  }
+
+  static Assignment StringAssignment(const std::string& attr, const std::string& value) {
+    Assignment assign;
+    assign.field_name.assign(attr);
+
+    // Remove quotes at the ends.
+    if (!value.empty() && value.front() == '"' && value.back() == '"') {
+        assign.str_value = value.substr(1, value.length() - 2);
+    }
+
+    assign.numeric = false;
     return assign;
   }
 
   // Bison seems to require this if I use const references; I don't use it.
-  friend std::ostream& operator<<(std::ostream& os, const NumericAssignment &ex);
+  friend std::ostream& operator<<(std::ostream& os, const Assignment &ex);
 };
 
 struct Assignments {
-  std::vector<NumericAssignment> assignments;
+  std::vector<Assignment> assignments;
 
-  static Assignments NewAssignments(const NumericAssignment& first) {
+  static Assignments NewAssignments(const Assignment& first) {
     Assignments assign;
     assign.assignments.push_back(first);
     return assign;
   }
 
-  Assignments Add(const NumericAssignment& next) {
+  Assignments Add(const Assignment& next) {
     assignments.push_back(next);
     return *this;
   }
@@ -45,11 +62,12 @@ struct Circle {
   // 0, 0 is lower left corner; 10, 10 is upper right.
   float radius;
   std::string name;
+  std::string math1;
   bool present;  // Not deleted.
 
   Circle() : x_center{0.0}, y_center{0.0}, radius{0.0} {}
 
-  // Must be defined in tree.cc, because it actually uses Driver.
+  // Must be defined in tree.cc, because it actually uses VennDriver.
   static Circle NewCircle(const std::string& name, const Assignments& fields, VennDriver* driver);
 
   // Bison seems to require this if I use const references; I don't use it.
@@ -63,17 +81,48 @@ struct Circle {
     return result;
   }  
 
+  // Replaces any \n in the text with a newline.
+  // This allows us to do the reverse when we output the
+  // text version of the diagram.
+  static std::string ReplaceWithNewline(const char* new_name) {
+    std::string temp = new_name;
+
+    size_t pos = 0;
+    while ((pos = temp.find("\\n", pos)) != std::string::npos) {
+        temp.replace(pos, 2, "\n");
+        pos += 1; // Move past the replaced part
+    }
+    return temp;
+  }
+
+  // Replaces any newline in the text with a "\n".
+  // This allows us to do the reverse when we output the
+  // text version of the diagram.
+  static std::string ReplaceWithSlashN(const char* new_name) {
+    std::string temp = new_name;
+
+    size_t pos = 0;
+    while ((pos = temp.find("\n", pos)) != std::string::npos) {
+        temp.replace(pos, 1, "\\n");
+        pos += 2; // Move past the replaced part
+    }
+    return temp;
+  }
+
   const std::string to_string() {
     std::string result("[");
-    /* Delaying names.
-    result.append(name);
-    */
     result.append("]\n");
 
     result.append(AnAssignment("x", x_center));
     result.append(AnAssignment("y", y_center));
     result.append(AnAssignment("radius", radius));
     result.append(AnAssignment("present", present ? 1 : 0));
+    result.append("name = \"");
+    result.append(ReplaceWithSlashN(name.c_str()));
+    result.append("\"\n");
+    result.append("math1 = \"");
+    result.append(ReplaceWithSlashN(math1.c_str()));
+    result.append("\"\n");
     return result;
   }
 };
@@ -103,5 +152,114 @@ struct Diagram {
   // Bison seems to require this if I use const references; I don't use it.
   friend std::ostream& operator<<(std::ostream& os, const Diagram &ex);
 };
+
+class VennDriver;
+// Base class for computing expressions.
+class VennExpression {
+ public:
+  enum Type {
+    NUMBER,  // 3, 4.5, -283823
+    BINOP,   // plus, times
+    VARIABLE, // in1, out1, foo
+    NOT,      // not bool
+    ONEARGFUNC, // operation (subexpressions[0])
+    TWOARGFUNC, // func2(subexpressions[0], subexpressions[1])
+    LIMIT,
+    SCALE,
+    TERNARYFUNC, // subexpressions[0] ? subexpressions[1] : subexpressions[2]
+  };
+  Type type;
+  // Which method/operation is this?
+  enum Operation {
+    PLUS,
+    MINUS,
+    TIMES,
+    DIVIDE,
+    EQUAL,
+    NOT_EQUAL,
+    GT,
+    GTE,
+    LT,
+    LTE,
+    AND,
+    OR,
+    ABS,
+    CEILING,
+    FLOOR,
+    LOG2,
+    LOGE,
+    LOG10,
+    SIGN,
+    SIN,
+    MOD,
+    MAX,
+    MIN,
+    POW
+  };
+  Operation operation;
+  float float_value;
+  // Some variables are just pointers to a float (e.g., i, foo, etc.).
+  float* variable_ptr;
+
+  std::string name;
+  std::vector<VennExpression> subexpressions;
+
+  static std::unordered_map<std::string, float> note_to_volt_octave_4;
+  
+  // Default VennExpression is the number 0.0f. Means we can Compute() a default
+  // VennExpression safely.
+  VennExpression() : type(NUMBER), operation{PLUS}, float_value(0.0f), variable_ptr{nullptr} {}
+
+  // Compute the float numeric result of this VennExpression.
+  float Compute();
+
+  static bool is_zero(float value);
+  static float SafeDivide(float lhs, float rhs);
+
+  // Don't force users to understand that comparing floats is hard.
+  static bool float_equal(float f1, float f2);
+
+  // Bison seems to require this; I don't use it.
+  friend std::ostream& operator<<(std::ostream& os, const VennExpression &ex);
+  std::string to_string() const;
+ private:
+  // logX(y) functions don't have useful values for Y <= 0.
+  // So we'll return 0. This function turns any Y <= 0 into 1, thus causing
+  // a log function to return 0.
+  float SafeLogArg(float arg);
+  float bool_to_float(bool value);
+  float binop_compute();
+  float one_arg_compute(float arg1);
+  float two_arg_compute(float arg1, float arg2);
+};
+
+class VennExpressionFactory {
+ public:
+  VennExpression Not(const VennExpression &expr);
+  VennExpression Note(const std::string &note_name);
+  VennExpression Number(float the_value);
+  VennExpression OneArgFunc(const std::string &func_name,
+                            const VennExpression &arg1);
+  VennExpression TwoArgFunc(const std::string &func_name,
+                            const VennExpression &arg1, const VennExpression &arg2);
+  VennExpression Limit(const VennExpression &value, const VennExpression &start,
+                       const VennExpression &end);
+  VennExpression Scale(const VennExpression &value,
+                       const VennExpression &originStart, const VennExpression &originEnd,
+                       const VennExpression &destStart, const VennExpression &destEnd);
+  VennExpression TernaryFunc(const VennExpression &condition, const VennExpression &if_true,
+                             const VennExpression &if_false);
+  VennExpression CreateBinOp(const VennExpression &lhs,
+                             const std::string &op_string,
+                             const VennExpression &rhs);
+  VennExpression Variable(const char *var_name, VennDriver* driver);
+  // The parser seems to need many variants of Variable.
+  VennExpression Variable(const std::string &expr, VennDriver* driver);
+  VennExpression Variable(char * var_name, VennDriver* driver);
+ private:
+  static std::unordered_map<std::string, VennExpression::Operation> string_to_operation;
+  static std::unordered_map<std::string, float> note_to_volt_same_octave;
+};
+
 
 #endif // TREE_H

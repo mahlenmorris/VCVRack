@@ -128,6 +128,8 @@ any number by zero, while undefined in *mathematics*, is defined by *BASICally*
 to be 0.0.
 * **"<", "<=", ">" , ">=", "==", "!="** -- comparison operators. Most commonly used
 in IF-THEN[-ELSE] statements.
+* "condition **?** true_value **:** false_value" -- often known as the ternery operator, allows choices to be made based on comparisons of values.
+For example, "distance >= 2 ? 1.4 : 3.14" means if DISTANCE is two or more, return 1.4; otherwise, return 3.14.
 * **"and", "or", "not"** -- Boolean logic operators. For purposes of these, a zero
 value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 * Technical note: correct testing of equality or inequality in floating point numbers is [notoriously non-obvious to beginners](https://embeddeduse.com/2019/08/26/qt-compare-two-floats/) (and even experts). For example, in previous versions of BASICally, "3.1" does NOT equal "31 * .1"! As of version 2.0.14, BASICally uses an ever-so-slightly looser definition of equality, as described at the end of the essay linked above. For most uses this will work exactly as before and be less prone to surprises like this example. But if you find yourself comparing two numbers and you want differences of 0.00001V to matter, I'll suggest that instead of writing "a == b", you use "a <= b AND a >= b", which does not invoke the looser definition. 
@@ -1219,9 +1221,9 @@ which is a deep, interesting platform for dynamic algorithmic event triggering.
 ![Line Break image](images/Separator.png)
 
 # Venn
-Venn is a signal generator for VCV Rack. It creates up to 64 CV signals simultaneously with an intuitive and visually appealing interface.
+Venn is a signal generator for VCV Rack. With five output ports, each with up to sixteen signals each, it creates up to 80 CV signals simultaneously with an intuitive and visually appealing interface.
 
-Venn's UI is inspired by part of Leafcutter John's [Forester 2022](https://leafcutterjohn.com/forester-2022/) desktop sonic playground. 
+Venn's "circles+point" UI is inspired by part of Leafcutter John's [Forester 2022](https://leafcutterjohn.com/forester-2022/) desktop sonic playground.
 Forester 2022 does a *LOT* more than Venn, and you should certainly take a look at it. This is just my take on an innovative piece of Forester that I wanted to see in VCV Rack.
 
 ![Venn Overview](images/VennHeadline.png)
@@ -1238,7 +1240,7 @@ of several sounds or effects, or both at the same time.
 * Use it as a loose-as-you-like sequencer to send notes or events to other modules or connected MIDI
 instruments. The movement of the Point is highly controllable and can easily be made complex and yet non-random.
 * If you attach audio rate X+Y signals, you'll get droning sounds from the outputs.
-* Set up environments where signals that drive the position of the Point can vary the sound of a patch in numerous ways, like a process that takes two random numbers and turns them into a dozen slightly less random numbers.
+* Set up environments where signals that drive the position of the Point can vary the sound of a patch in numerous ways. You can think of Venn as a process that takes two random numbers and turns them into a dozen slightly less random, more controlled numbers.
 * Generating MIDI from the WITHIN gate.
 
 ## Controls
@@ -1255,18 +1257,76 @@ around the WASD keys familiar to anyone who has played games on a computer.
 These edits affect
 whichever Circle is currently **selected**; the currently selected Circle is shown in slightly thicker lines, and it's corresponding number is shown in a small window to the left of the Surface.
 
-Just to spell out those icons:
+To clarify those icons:
 * **F** - create a new Circle of slightly randomized size, centered on where the mouse cursor is currently hovering over the surface. That new Circle will now be the selected Circle.
 * **W/A/S/D** - move the selected Circle around the space.
 * **Q** - shrink the selected Circle
-* **E** - enlarge the selecetd Circle
-* **Z/C** - cycles through the Circles, selecting each in turn. **C** moves to the next higher numbered Circle, **Z** moves to lower numbers, and both gestures wrap around.
+* **E** - enlarge the selected Circle
+* **C/Z** or **TAB/SHIFT-TAB** - cycles through the Circles, selecting each in turn. **C** and **TAB** move to the next higher numbered Circle, **Z** and **SHIFT-TAB** move to lower numbers, and both gestures wrap around from the last circle to the first.
+* **X** - deletes the selected Circle.
 * **R** - this **solos** the selected Circle. Like soloing in a mixer, this turns off all of the other Circles, and only that Circle's output is non-zero in the outputs. You can still cycle through the Circles with **Z/C**, soloing each in turn. The display will show the muted Circles only faintly. Typing **R** again will turn off soloing, and all Circles will be registered in the outputs again.
 
 #### On-screen keyboard and context
 When a new Venn module is created, a smaller version of the graphic above is shown in the upper left corner of the Surface; this provides hints to new users, reminders for returning users, and also informs the user that the keyboard commands are now active. Note that if you click elsewhere in your patch, the graphic will disappear, and this means those keyboard commands will no longer affect the Circles.
 
 Once you've learned the keyboard commands, you may wish to have it out of the way so more of the Surface is visible. Unset the option in the module's menu (**Show Keyboard Commands**) to replace the graphic with a much smaller indicator. The smaller indicator still serves the purpose of letting you know when the keyboard commands will (or will not) work.
+
+##### Circle Names
+Each Circle can have a user-created name, which is shown underneath the Circle's number. This can, for example, make it easier to see at a glance which Circle controls what. When a Circle is selected, the current name for it is shown to the left of the Circle Surface in an editable text window. Editing text there immediately updates the text seen on the display.
+
+A couple notes:
+* While editing names, use **TAB** and **SHIFT-TAB** to rotate through the Circles.
+* If the name of a Circle is empty, but there is a non-empty MATH1 formula, then the formula will be displayed on the Surface instead of the name.
+* If the name of a Circle is getting wider than you like, you can separate the name into multiple lines by typing a newline/Enter in the name. That is, "Seductive Bass Line" looks like:
+
+![Name as single line](images/VennNameOneLine.png)
+
+but "Seductive[ENTER]Bass[ENTER]Line" looks like:
+
+![Name on three lines](images/VennNameThreeLines.png)
+
+##### Circle Math
+By themselves, the DISTANCE, WITHIN, X, and Y ports have only a few different value ranges (i.e., -5 -> 5, 0 -> 10, 5 -> -5, and 10 -> 0). There are many times when it would be preferable to have more subtle values for each circle.
+
+The MATH1 text field allows an arbitrary formula to be entered for each Circle, the output of which is polyphonically output from the MATH1 output port. Here are some examples to illustrate what these formulas can do:
+
+* A constant value:
+* * "0.125"
+* * "c#2" - that is, the V/OCT value for a C sharp in octave 2
+* Simple computed values:
+* * "bb2 + 0.02" - a slightly sharp Bflat in octave 2.
+* * "x / 2" - the value of the X value for this Circle, but divided by two.
+* * "(x * y / 10) - 1" - use both the X and Y values for this Circle.
+* * "pointx + pointy" - pointx and pointy are the X and Y values of the Point (i.e., the little white circle you move).
+* Use built-in functions:
+* * "sign(x) * .1" - have the values -0.1 or 0.1, depending on which side of the Circle the Point is on.
+* * "min(distance, 5.4)" - be the smaller of the DISTANCE value or 5.4.
+* * "limit(distance, 5.4, 8.3)" - be the value of DISTANCE, but never less than 5.4 or more than 8.3.
+* * "scale(x, leftx, rightx, -2.3, -1.2)" - instead of X's normal range, scale it so that
+ the left edge X is -2.3 and the right edge is -1.2.
+* Use simple logic to determine values:
+* * "within ? 1.4 : 3.11" - if WITHIN is not zero, return 1.4; if WITHIN is zero, return 3.11.
+* * "x < 1 ? 0.2 : sin(x)" - if X is less than 1, return 0.2, otherwise return sin(x).
+
+#### The Good/Fix Light
+The lit word just above the right side of the MATH1 text field indicates whether or not Venn has figured out how to turn your formula into instructions. If it looks like:
+
+![Good image](images/VennGood.png)
+
+then Venn can compute your formula. However if it looks like:
+
+![Fix image](images/VennFix.png)
+
+Then it cannot compute the formula as it stands.
+
+If you roll the mouse pointer over the "Fix", then Venn will attempt to
+describe the error it found.
+
+![Fix rollover message image](images/VennFixMessage.png)
+
+A couple notes:
+* While editing MATH1 formulas, use **TAB** and **SHIFT-TAB** to rotate through the Circles.
+* By default, the value of MATH1 is zero for a particular Circle when Point is not in that Circle. This is to reduce the CPU load. If, however, the value of MATH1 is important for a Circle even when Point is not in it, then open Venn's menu and unset the "Only Compute MATH1 for a circle when inside it" option.
 
 #### The Point
 The Point is a small white circle in the Surface that controls the signals sent by each of the Circles. The position of Point
@@ -1289,17 +1349,6 @@ A polyphonic output with as many channels as the highest numbered Circle.
 
 Each channel is 0.0V when Point is outside of the corresponding Circle. The value ranges from
 0V to 10V as Point approaches the center. How quickly that value increases is affected by the DISTANCE Shape Knob.
-#### WITHIN Output
-A polyphonic output with as many channels as the highest numbered Circle.
-
-Each channel outputs 0V when Point is outside of it, and 10V gates when inside. You think of these as a gate signal for when the Point is inside a Circle.
-#### X and Y Outputs
-These are polyphonic outputs with as many channels as the highest numbered Circle. 
-
-The values of a channel reflect the relative distance from the center of a Circle. 
-* Each channel is 0V when the Point is outside the Circle. Values within the Circle range from -5V to 5V (but see the INV and OFST switches).
-* When Point is inside the Circle, then Point's horizontal or vertical distance from the center is divided by the radius of the Circle and muliplied by 5.
-* For example, if Point is at X = 3, and that's inside a Circle whose center is at X = 4 with a radius of 2.5, then X for that Circle's channel is (3 - 4) / 2.5 * 5 = -2.
 
 #### DISTANCE Shape Knob
 This parameter allows you to change how the DISTANCE value grows from 0V - 10V as Point approches the center.
@@ -1308,6 +1357,19 @@ This parameter allows you to change how the DISTANCE value grows from 0V - 10V a
 * At full left (-1), the curve looks like the red line; rapidly increasing at first, then growing far more slowly.
 * At center (0, the default), the curve looks like the yellow line; increasing linearly with distance.
 * At full right (1), the curve looks like the green line; growing inperceptively, then growing far more quickly very near to the center.
+
+#### WITHIN Output
+A polyphonic output with as many channels as the highest numbered Circle.
+
+Each channel outputs 0V when Point is outside of it, and 10V gates when inside. You think of these as a gate signal for when the Point is inside a Circle.
+
+#### X and Y Outputs
+These are polyphonic outputs with as many channels as the highest numbered Circle. 
+
+The values of a channel reflect the relative distance from the center of a Circle. 
+* Each channel is 0V when the Point is outside the Circle. Values within the Circle range from -5V to 5V (but see the INV and OFST switches).
+* When Point is inside the Circle, then Point's horizontal or vertical distance from the center is divided by the radius of the Circle and muliplied by 5.
+* For example, if Point is at X = 3, and that's inside a Circle whose center is at X = 4 with a radius of 2.5, then X for that Circle's channel is (3 - 4) / 2.5 * 5 = -2.
 
 #### INV Switches
 When set, INV inverts the corresponding signal:
@@ -1319,11 +1381,64 @@ when inside the Circle.
 #### OFST Switches
 When set, adds 5V to what would otherwise be output, so X or Y would output 0V - 10V instead of -5V - 5V.
 
+#### MATH1 Output
+A polyphonic output with as many channels as the highest numbered Circle.
+
+Each channel computes the value of the MATH1 formula for that Circle, making this a source of arbitrarily customized values for each Circle. See the [description](#circle-math) and the [reference](#math1-formula-components) for details, or Randomize (see the module menu) a Venn to see examples.
+
+### MATH1 Formula Components
+NOTE: For reference while patching, a more succinct version of this info is visible in Venn's menu as "MATH Cheat Sheet".
+
+* [Scientific pitch notation](https://en.m.wikipedia.org/wiki/Scientific_pitch_notation) is supported (e.g., c4, Db2, d#8), turning them into
+V/OCT values. So you can use **c4**, send it to a VCO in the default position, and the VCO will output a tone at middle C.
+* Variables:
+* * Same for all Circles:
+* * * **pointx**, **pointy** - the X and Y position of the Point.
+* * * **leftx**, **rightx**, **topy**, **bottomy** - the maximum and minimum values for X or Y within a circle.
+ Especially useful for the 2nd and 3rd arguments to the **scale()** function. 
+* * Per Circle:
+* * * **distance**, **within**, **x**, **y** - the values for this particular Circle.
+
+The following are operators and functions you can use in mathematical
+expressions:
+* **"+", "-", "*", "/"** -- add, subtract, multiply, divide. Note that dividing
+any number by zero, while undefined in *mathematics*, is defined by *Venn*
+to be 0.0.
+* "condition **?** true_value **:** false_value" - often known as the ternery operator, allows choices to be made based on comparisons of values.
+For example, "distance >= 2 ? 1.4 : 3.14" means if DISTANCE is two or more, return 1.4; otherwise, return 3.14.
+* **"<", "<=", ">" , ">=", "==", "!="** -- comparison operators. Useful in the condition part of "condition ? true_value : false_value".
+* **"and", "or", "not"** -- Boolean logic operators. Handy for more complicated conditions in the ternery operator. For purposes of these, a zero
+value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
+* Technical note: correct testing of equality or inequality in floating point numbers is [notoriously non-obvious to beginners](https://embeddeduse.com/2019/08/26/qt-compare-two-floats/) (and even experts). Venn uses an ever-so-slightly looser definition of equality, as described at the end of the essay linked above. For most uses this will work exactly as before and be less prone to surprises like this example. But if you find yourself comparing two numbers and you want differences of 0.00001V to matter, I'll suggest that instead of writing "a == b", you use "a <= b AND a >= b", which does not invoke the looser definition. 
+
+### Math Functions
+
+| Function  | Meaning        | Examples |
+| --------- | -------------- | -------- |
+|**abs(a)**| absolute value | abs(2.1) == 2.1, abs(-2.1) == 2.1 |
+|**ceiling(a)**| integer value at or above a | ceiling(2.1) == 3, ceiling(-2.1) == -2 |
+|**floor(a)**|integer value at or below a|floor(2.1) == 2, floor(-2.1) == -3|
+|**limit(a, b, c)**|returns 'a' but forces it to be between b and c|limit(distance, 5, 8)|
+|**log2(a)**|Base 2 logarithm of a; returns zero for a <= 0|log2(8) == 3|
+|**loge(a)**|Natural logarithm of a; returns zero for a <= 0|loge(8) == 2.07944|
+|**log10(a)**|Base 10 logarithm of a; returns zero for a <= 0|log10(100) == 2|
+|**max(a, b)**|the larger of a or b|max(2.1, 2.3) == 2.3, max(2.1, -2.3) == 2.1
+|**min(a, b)**|the smaller of a or b|min(2.1, 2.3) == 2.1, min(2.1, -2.3) == -2.3
+|**mod(a, b)**|the remainder after dividing a by b. Will be negative only if a is negative|mod(10, 2.1) == 1.6
+|**pow(a, b)**|a to the power of b|pow(3, 2) == 9, pow(9, 0.5) == 3 |
+|**scale(a, b, c, d, e)**|scales a from b-c range to d-e range|scale(y, bottomy, topy, -5, -8)|
+|**sign(a)**|-1, 0, or 1, depending on the sign of a|sign(2.1) == 1, sign(-2.1) == -1, sign(0) = 0|
+|**sin(a)**|arithmetic sine of a, which is in radians| sin(30 * 0.0174533) == 0.5, sin(3.14159 / 2) == 1|
+
 ### Menu Options
 #### Randomize
-The Randomize menu option found on every module will, in Venn, also replace any existing Circles with a random set of new ones.
+The Randomize menu option found on every module will, in Venn, also replace any existing Circles with a random set of new ones. The Circles will also have randomly generated names and MATH1 formulas.
 #### Show Keyboard Commands
 As noted above, when set (the default), this will show the larger version of the editing keyboard commands. Unsetting it will replace it with a small icon.
+#### Only Compute MATH1 for a circle when inside it
+Defaults to true. By default, the value of MATH1 is zero for a particular Circle when Point is not in the Circle. This is to reduce the CPU load. If, however, the value of MATH1 is important for a Circle even when Point is not in it, then unset this menu option.
+#### MATH Cheat Sheet
+Just shows a brief reminder of all the functions and variable names Venn will recognize.
 
 ### Bypass Behavior
 If this module is bypassed, then all output values will be 0.0V. However, you can continue to

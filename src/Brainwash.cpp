@@ -6,7 +6,7 @@
 
 struct BrainwashThread {
   bool shutdown;
-  float sample_rate;
+  float sample_rate = 0.0;
   int max_sample_count;
 
   // These are the fixed-size buffers that get recorded to initially.

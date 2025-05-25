@@ -94,10 +94,17 @@
   // A number symbol corresponding to the value in S.
   VENN::Parser::symbol_type
   make_NUMBER (const std::string &s, const VENN::Parser::location_type& loc);
+
+  // I would have preferred to have patterns for variable names and field names,
+  // since they are both known at compile time, but "x" and "y" are in both sets,
+  // and thus cannot be disambiguated (at least, not easily.)
 %}
 
+note  [a-g][#b]?(-1|[0-9]|10)
 id    [a-zA-Z][a-zA-Z_0-9]*
-circle_params "x"|"y"|"radius"|"name"
+oneargfunc "abs"|"ceiling"|"floor"|"log2"|"loge"|"log10"|"sign"|"sin"
+twoargfunc "max"|"min"|"mod"|"pow"
+comparison "<"|"<="|">"|">="|"=="|"!="
 float ([0-9]*[.])?[0-9]+
 blank [ \t\r]
 
@@ -117,10 +124,27 @@ blank [ \t\r]
 "' ".*     // Comments, skip over. Hint: '.' will not match \n. But location might need fixing.
 \"[^"]*\"  return VENN::Parser::make_QUOTED_STRING  (yytext, loc);  // Will this grab newlines?
 "-"        return VENN::Parser::make_MINUS  (yytext, loc);
+"+"        return VENN::Parser::make_PLUS   (yytext, loc);
+"*"        return VENN::Parser::make_STAR   (yytext, loc);
+"/"        return VENN::Parser::make_SLASH  (yytext, loc);
+"("        return VENN::Parser::make_LPAREN (yytext, loc);
+")"        return VENN::Parser::make_RPAREN (yytext, loc);
 "="        return VENN::Parser::make_ASSIGN (yytext, loc);
 "["        return VENN::Parser::make_LBRACKET (yytext, loc);
 "]"        return VENN::Parser::make_RBRACKET (yytext, loc);
+","        return VENN::Parser::make_COMMA  (yytext, loc);
+"?"        return VENN::Parser::make_QUESTION(yytext, loc);
+":"        return VENN::Parser::make_COLON  (yytext, loc);
+"and"      return VENN::Parser::make_AND    (yytext, loc);
+"not"      return VENN::Parser::make_NOT    (yytext, loc);
+"or"       return VENN::Parser::make_OR     (yytext, loc);
+"limit"    return VENN::Parser::make_LIMIT  (yytext, loc);
+"scale"    return VENN::Parser::make_SCALE  (yytext, loc);
 {float}    return make_NUMBER (yytext, loc);
+{note}     return VENN::Parser::make_NOTE (yytext, loc);
+{oneargfunc} return VENN::Parser::make_ONEARGFUNC (yytext, loc);
+{twoargfunc} return VENN::Parser::make_TWOARGFUNC (yytext, loc);
+{comparison} return VENN::Parser::make_COMPARISON (yytext, loc);
 {id}       return VENN::Parser::make_IDENTIFIER (yytext, loc);
 .          {
              throw VENN::Parser::syntax_error
