@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.20
-#### Date TBD
+#### May 25, 2025
 * Added the ternery '?:' operator to BASICally. For example:
 ```
 IF foo >= 2 THEN
