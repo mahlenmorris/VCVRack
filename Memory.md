@@ -15,14 +15,20 @@ sound over time straighforward.
 * [Ruminate](#ruminate): Plays back audio buffer at a large variety of speeds, most easily over the whole Memory.
 * [Fixation](#fixation): Also plays back audio from the Memory, but with an emphasis on playing smaller sections and with repetition.
 
-A 15 minute video demonstrating some uses cases [is here](https://youtu.be/EKoMFsSqUo4). It demonstrates these simple patches:
+# Explanatory and Demonstration Videos
+
+Omri Cohen has made [a 34 minute tour-de-force video](https://www.youtube.com/watch?v=JyQDlhEvEPA) that explains these modules and many, many interesting techniques for combining them. I highly recommend it.
+
+My own 15 minute video demonstrating some uses cases [is here](https://youtu.be/EKoMFsSqUo4). (Note that this was recorded before Fixation and Brainwash existed.) It demonstrates these simple patches:
 * [Introduction](examples/Memory%20-%20ensemble%20basics.vcv)
 * [First Guitar Example](examples/Memory%20-%20guitar%20samples.vcv)
 * [Square Wave and Delay](examples/Memory%20-%20Delay%20Pass%20over%20Square%20Wave.vcv)
 * [Guitar Beat](examples/Memory%20-%20guitar%20sample%20beat.vcv)
 * [Live Recording](examples/Memory%20-%20record%20live.vcv)
 
-These videos demonstrate some other features of these modules:
+Note that this was recorded before Fixation and Brainwash existed.
+
+These later videos I've made demonstrate some other features of these modules:
 * [Fade on Move menu option](https://www.youtube.com/watch?v=dOsupn0-Mxw)
 * [V/Oct SPEED menu option](https://www.youtube.com/watch?v=kGKmS2WjqIs)
 * [Loading Files into Memory](https://www.youtube.com/watch?v=MvuQLtUkY4w)
@@ -33,7 +39,7 @@ And these videos discuss Fixation in particular:
 * [Fixation as Highly Controllable Granular Synth](https://www.youtube.com/watch?v=jzkOs-odrig)
 * [Playing Melodies with Short Samples](https://www.youtube.com/watch?v=rDCgencIVIY)
 
-And here's a short [demonstration from Omri Cohen](https://www.youtube.com/watch?v=AjKC7IPgZZM&t=767s) using these modules.
+And here's a couple of [shorter](https://www.youtube.com/watch?v=WQ9XN9qqOYI&t=14s) [demonstrations](https://www.youtube.com/watch?v=AjKC7IPgZZM&t=767s) from [Omri Cohen](https://www.youtube.com/@OmriCohen-Music) using these modules.
 
 The documentation for the *other* Stochastic Telegraph modules can [be found here](README.md).
 
@@ -420,7 +426,10 @@ community for greatly extending my silly idea to send text over a VCV cable and
 seeing far more value in it then I did. And for then doing the actual work of
 implementing it.
 
-And my deepest gratitude to Diane LeVan, for letting me ignore her and useful household projects
-for periods of time just to craft these things. I apologize for
+Thanks to [Omri Cohen](https://www.youtube.com/@OmriCohen-Music) for making some videos explaining these modules
+that far surpass my ability to do so.
+
+And my deepest gratitude to Diane LeVan, for letting me ignore her and actually useful household projects
+for periods of time just to create these things. I apologize for
 waking up with new ideas at 5AM, and for having a retirement hobby that
 is nearly impossible to even *start* describing to any of our friends.
