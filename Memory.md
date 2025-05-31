@@ -39,7 +39,9 @@ And these videos discuss Fixation in particular:
 * [Fixation as Highly Controllable Granular Synth](https://www.youtube.com/watch?v=jzkOs-odrig)
 * [Playing Melodies with Short Samples](https://www.youtube.com/watch?v=rDCgencIVIY)
 
-And here's a couple of [shorter](https://www.youtube.com/watch?v=WQ9XN9qqOYI&t=14s) [demonstrations](https://www.youtube.com/watch?v=AjKC7IPgZZM&t=767s) from [Omri Cohen](https://www.youtube.com/@OmriCohen-Music) using these modules.
+Here's a couple of [shorter](https://www.youtube.com/watch?v=WQ9XN9qqOYI&t=14s) [demonstrations](https://www.youtube.com/watch?v=AjKC7IPgZZM&t=767s) from [Omri Cohen](https://www.youtube.com/@OmriCohen-Music) using these modules.
+
+Here's a demonstration of a technique for [glitching a drum loop](https://youtu.be/kz3D2xjEqnY?si=AGD7G_KlP6RZ8WRJ) using the CURRENT from a Ruminate as a phasor that guides other phasors, by [AndreyaMakesMusic](https://www.youtube.com/@andreyamakesmusic).
 
 The documentation for the *other* Stochastic Telegraph modules can [be found here](README.md).
 
