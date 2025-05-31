@@ -33,6 +33,7 @@ struct Fermata : Module {
       json_object_set_new(rootJ, "font_choice",
                           json_stringn(font_choice.c_str(), font_choice.size()));
     }
+    json_object_set_new(rootJ, "font_size", json_integer(font_size));
     if (title_text.length() > 0) {
       json_object_set_new(rootJ, "title_text",
                           json_stringn(title_text.c_str(), title_text.size()));
@@ -53,6 +54,9 @@ struct Fermata : Module {
     json_t* screenJ = json_object_get(rootJ, "screen_colors");
     if (screenJ)
         screen_colors = json_integer_value(screenJ);
+    json_t* font_sizeJ = json_object_get(rootJ, "font_size");
+    if (font_sizeJ)
+        font_size = json_integer_value(font_sizeJ);
     json_t* font_choiceJ = json_object_get(rootJ, "font_choice");
     if (font_choiceJ) {
       font_choice = json_string_value(font_choiceJ);
@@ -88,6 +92,7 @@ struct Fermata : Module {
   int previous_cursor = 0;
   // Amber on Black is the default; it matches the !!!! decor perfectly.
   long long int screen_colors = 0xffc000000000;
+  int font_size = 12;
   // width (in "holes") of the whole module. Changed by the resize bar on the
   // right (within limits), and informs the size of the display and text field.
   // Saved in the json for the module.
@@ -424,6 +429,17 @@ struct FermataTextField : STTextField {
 
   long long int color_scheme;
 
+  void set_font_size(int font_size) {
+    fontSize = (float) font_size;
+    float line_count = floor(28 * (12.0 / fontSize));
+    // Arrived at by looking at examples, as I couldn't figure out a principled
+    // algorithm.
+    textOffset = math::Vec(3, (195.0 / line_count) - 4);
+
+    // At fontsize 12, it's 28 rows.
+    extended.Initialize(line_count, line_count >= 3 ? 1 : 0);  // Window Size depends on font size.
+  }
+
   NVGcolor int_to_color(int color) {
     return nvgRGB(color >> 16, (color & 0xff00) >> 8, color & 0xff);
   }
@@ -442,9 +458,11 @@ struct FermataTextField : STTextField {
     // If this is the module browser, 'module' will be null!
     if (module != nullptr) {
       this->text = &(module->text);
+      set_font_size(module->font_size);
     } else {
       // Show something inviting when being shown in the module browser.
       this->text = &module_browser_text;
+      set_font_size(12);  // TODO: make this larger, so preview is more appealing?
     }
     textUpdated();
   }
@@ -490,6 +508,10 @@ struct FermataTextField : STTextField {
       color_scheme = module->screen_colors;
       color = int_to_color(color_scheme >> 24);
       bgColor = int_to_color(color_scheme & 0xffffff);
+    }
+    if (module && (fabs(fontSize - module->font_size) > 0.1)) {
+      set_font_size(module->font_size);
+      frame_buffer->setDirty();
     }
     if (module && module->editor_refresh) {
       // TODO: is this checked often enough? I don't know when step()
@@ -580,7 +602,6 @@ struct FermataWidget : ModuleWidget {
     closed_title->module = module;
     closed_title->hide();  // Only shown when at smallest size.
     addChild(closed_title);
-
 
     // The FramebufferWidget that caches the appearence of the text, so we
     // don't have to keep redrawing it (and wasting UI CPU to do it).
@@ -691,6 +712,26 @@ struct FermataWidget : ModuleWidget {
      }
     );
     menu->addChild(color_menu);
+
+    // 28 * (12.0 / fontSize) = rows
+    // 12 / fontSize = rows / 28
+    // fontSize / 12 = 28 / rows
+    // fontSize = 28*12/rows
+    MenuItem* font_size_menu = createSubmenuItem("Visible Lines", "",
+      [=](Menu* menu) {
+          for (int lines = 28; lines >= 1; lines--) {
+            menu->addChild(createCheckMenuItem(std::to_string(lines), "",
+                [=]() {return lines == floor(336 / module->font_size);},
+                [=]() {module->font_size = floor(336 / lines);
+                       textField->set_font_size(module->font_size);
+                       module->RedrawText();
+                      }
+            ));
+          }
+      }
+    );
+    menu->addChild(font_size_menu);
+
 
     std::pair<std::string, std::string> fonts[] = {
       {"VCV font (like Notes)", "res/fonts/ShareTechMono-Regular.ttf"},
