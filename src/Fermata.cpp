@@ -207,7 +207,7 @@ struct FermataModuleResizeHandle : OpaqueWidget {
     Rect oldBox = mw->box;
     // Minimum and maximum number of holes we allow the module to be.
     const float minWidth = 3 * RACK_GRID_WIDTH;
-    const float maxWidth = 64 * RACK_GRID_WIDTH;
+    const float maxWidth = 300 * RACK_GRID_WIDTH;
     if (right) {
       newBox.size.x += deltaX;
       newBox.size.x = std::fmax(newBox.size.x, minWidth);
@@ -717,9 +717,27 @@ struct FermataWidget : ModuleWidget {
     // 12 / fontSize = rows / 28
     // fontSize / 12 = 28 / rows
     // fontSize = 28*12/rows
+
+    // We don't need every single possible line count; there's no useful
+    // difference between 25 and 26 lines.
+    int line_counts[] = {
+      28,
+      24,
+      21,
+      18,
+      14,
+      11,
+      8,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1
+    };
     MenuItem* font_size_menu = createSubmenuItem("Visible Lines", "",
       [=](Menu* menu) {
-          for (int lines = 28; lines >= 1; lines--) {
+          for (int lines : line_counts) {
             menu->addChild(createCheckMenuItem(std::to_string(lines), "",
                 [=]() {return lines == floor(336 / module->font_size);},
                 [=]() {module->font_size = floor(336 / lines);
