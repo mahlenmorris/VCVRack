@@ -500,10 +500,14 @@ struct TTYTextField : STTextField {
       fontSize = found->second.first;
       textOffset = math::Vec(3, (float) (found->second.second));
     }
+    // TTY prefers to put the cursor on the line after the last text,
+    // which makes much of the text window blank at large font sizes.
+    // TODO: maybe this has to do with the 2nd arg to extended.Initialize() below?
+    large_text_mode = visible_lines <= 6 ;
     // At fontsize 12, it's 28 rows.
     // When only a couple of lines high, scrolling before getting to top or bottom
     // is frustrating. 
-    extended.Initialize(visible_lines, visible_lines >= 3 ? 1 : 0);
+    extended.Initialize(visible_lines, visible_lines >= 6 ? 1 : 0);
   }
 
   NVGcolor int_to_color(int color) {

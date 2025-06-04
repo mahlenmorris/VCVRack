@@ -89,5 +89,5 @@ struct STTextField : OpaqueWidget {
   // For TTY. Adds the following lines to text, removes top lines if too long,
   // moves cursor if already at end.
   void make_additions(TTYQueue *additions);
-
+  bool large_text_mode;
 };
