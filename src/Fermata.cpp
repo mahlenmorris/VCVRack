@@ -33,7 +33,7 @@ struct Fermata : Module {
       json_object_set_new(rootJ, "font_choice",
                           json_stringn(font_choice.c_str(), font_choice.size()));
     }
-    json_object_set_new(rootJ, "font_size", json_integer(font_size));
+    json_object_set_new(rootJ, "visible_lines", json_integer(visible_lines));
     if (title_text.length() > 0) {
       json_object_set_new(rootJ, "title_text",
                           json_stringn(title_text.c_str(), title_text.size()));
@@ -54,9 +54,9 @@ struct Fermata : Module {
     json_t* screenJ = json_object_get(rootJ, "screen_colors");
     if (screenJ)
         screen_colors = json_integer_value(screenJ);
-    json_t* font_sizeJ = json_object_get(rootJ, "font_size");
-    if (font_sizeJ)
-        font_size = json_integer_value(font_sizeJ);
+    json_t* visible_linesJ = json_object_get(rootJ, "visible_lines");
+    if (visible_linesJ)
+        visible_lines = json_integer_value(visible_linesJ);
     json_t* font_choiceJ = json_object_get(rootJ, "font_choice");
     if (font_choiceJ) {
       font_choice = json_string_value(font_choiceJ);
@@ -92,7 +92,7 @@ struct Fermata : Module {
   int previous_cursor = 0;
   // Amber on Black is the default; it matches the !!!! decor perfectly.
   long long int screen_colors = 0xffc000000000;
-  int font_size = 12;
+  int visible_lines = 28;
   // width (in "holes") of the whole module. Changed by the resize bar on the
   // right (within limits), and informs the size of the display and text field.
   // Saved in the json for the module.
@@ -428,16 +428,27 @@ struct FermataTextField : STTextField {
   bool was_selected;
 
   long long int color_scheme;
+  std::unordered_map<int, std::pair<int, int>> lines_to_font_size_and_offset;
 
-  void set_font_size(int font_size) {
-    fontSize = (float) font_size;
-    float line_count = floor(28 * (12.0 / fontSize));
-    // Arrived at by looking at examples, as I couldn't figure out a principled
-    // algorithm.
-    textOffset = math::Vec(3, (195.0 / line_count) - 4);
+  FermataTextField() {
+    for (int index = 0; index < 13; index++) {
+      lines_to_font_size_and_offset.insert({LARGER_TEXT_INFO[index][0],
+         std::make_pair(LARGER_TEXT_INFO[index][1], LARGER_TEXT_INFO[index][2])});
+    }
+  }
 
+  void set_visible_lines(int visible_lines) {
+    std::unordered_map<int, std::pair<int, int>>::const_iterator found =
+       lines_to_font_size_and_offset.find(visible_lines);
+    if (found == lines_to_font_size_and_offset.end()) {
+      fontSize = 12;
+      textOffset = math::Vec(3, 3);
+    } else {
+      fontSize = found->second.first;
+      textOffset = math::Vec(3, (float) (found->second.second));
+    }
     // At fontsize 12, it's 28 rows.
-    extended.Initialize(line_count, line_count >= 3 ? 1 : 0);  // Window Size depends on font size.
+    extended.Initialize(visible_lines, visible_lines >= 3 ? 1 : 0);  // Window Size depends on font size.
   }
 
   NVGcolor int_to_color(int color) {
@@ -458,11 +469,11 @@ struct FermataTextField : STTextField {
     // If this is the module browser, 'module' will be null!
     if (module != nullptr) {
       this->text = &(module->text);
-      set_font_size(module->font_size);
+      set_visible_lines(module->visible_lines);
     } else {
       // Show something inviting when being shown in the module browser.
       this->text = &module_browser_text;
-      set_font_size(12);  // TODO: make this larger, so preview is more appealing?
+      set_visible_lines(28);  // TODO: make this larger, so preview is more appealing?
     }
     textUpdated();
   }
@@ -509,8 +520,8 @@ struct FermataTextField : STTextField {
       color = int_to_color(color_scheme >> 24);
       bgColor = int_to_color(color_scheme & 0xffffff);
     }
-    if (module && (fabs(fontSize - module->font_size) > 0.1)) {
-      set_font_size(module->font_size);
+    if (module && (fabs(fontSize - module->visible_lines) > 0.1)) {
+      set_visible_lines(module->visible_lines);
       frame_buffer->setDirty();
     }
     if (module && module->editor_refresh) {
@@ -718,37 +729,21 @@ struct FermataWidget : ModuleWidget {
     // fontSize / 12 = 28 / rows
     // fontSize = 28*12/rows
 
-    // We don't need every single possible line count; there's no useful
-    // difference between 25 and 26 lines.
-    int line_counts[] = {
-      28,
-      24,
-      21,
-      18,
-      14,
-      11,
-      8,
-      6,
-      5,
-      4,
-      3,
-      2,
-      1
-    };
-    MenuItem* font_size_menu = createSubmenuItem("Visible Lines", "",
+    MenuItem* visible_lines_menu = createSubmenuItem("Visible Lines", "",
       [=](Menu* menu) {
-          for (int lines : line_counts) {
+          for (int index = 0; index < 13; index++) {
+            int lines = LARGER_TEXT_INFO[index][0];
             menu->addChild(createCheckMenuItem(std::to_string(lines), "",
-                [=]() {return lines == floor(336 / module->font_size);},
-                [=]() {module->font_size = floor(336 / lines);
-                       textField->set_font_size(module->font_size);
+                [=]() {return lines == module->visible_lines;},
+                [=]() {module->visible_lines = lines;
+                       textField->set_visible_lines(module->visible_lines);
                        module->RedrawText();
                       }
             ));
           }
       }
     );
-    menu->addChild(font_size_menu);
+    menu->addChild(visible_lines_menu);
 
 
     std::pair<std::string, std::string> fonts[] = {
