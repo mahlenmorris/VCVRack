@@ -168,6 +168,15 @@ struct Basically : Module {
         return outputs->at(port.index).getVoltage();
       }
     }
+    float GetVoltage(const PortPointer &port, int channel) override {
+      // Within the program, channels are 1-16, but within the VCV API,
+      // they are 0 - 15.
+      if (port.port_type == PortPointer::INPUT) {
+        return inputs->at(port.index).getVoltage(channel - 1);
+      } else {
+        return outputs->at(port.index).getVoltage(channel - 1);
+      }
+    }
     void SetVoltage(const PortPointer &port, float value) override {
       if (port.port_type == PortPointer::INPUT) {
         inputs->at(port.index).setVoltage(value);

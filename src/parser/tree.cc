@@ -76,10 +76,20 @@ float Expression::Compute() {
     case BINOP: return binop_compute();
     case ARRAY_VARIABLE: {
       int index = (int) floor(subexpressions[0].Compute());
-      if ((index < 0) || (index >= (int) array_ptr->size())) {
-        return 0.0f;  // The default value if not in the array.
+      // IN* and OUT* accesses are different from other arrays.
+      
+      if (port.port_type == PortPointer::NOT_PORT) {
+        if ((index < 0) || (index >= (int) array_ptr->size())) {
+          return 0.0f;  // The default value if not in the array.
+        }
+        return array_ptr->at(index);
+      } else {
+        // Channels are numbered 1-16 (e.g., see the VCV modules.)
+        if ((index < 1) || (index > 16)) {
+          return 0.0f;  // The default value if not in the array.
+        }
+        return env->GetVoltage(port, index);
       }
-      return array_ptr->at(index);
     }
     break;
     case VARIABLE: {
@@ -492,7 +502,12 @@ Expression ExpressionFactory::ArrayVariable(const std::string &array_name,
   ex.type = Expression::ARRAY_VARIABLE;
   std::string lower;
   ToLower(array_name, &lower);
-  ex.array_ptr = driver->GetArrayFromName(lower);
+  if (driver->VarHasPort(lower)) {
+    ex.port = driver->GetPortFromName(lower);
+    ex.env = env;
+  } else {
+    ex.array_ptr = driver->GetArrayFromName(lower);
+  }
   ex.subexpressions.push_back(arg1);
   return ex;
 }

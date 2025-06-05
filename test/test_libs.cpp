@@ -10,6 +10,7 @@ struct TestEnvironment : Environment {
   std::unordered_map<int, bool> connected;
   std::unordered_map<int, float> outputs;
   std::unordered_map<int, float> inputs;
+  std::unordered_map<std::string, float> inAndChannel;
   bool clear_called = false;
   bool starting = false;
   // List of strings sent via Send().
@@ -21,6 +22,13 @@ struct TestEnvironment : Environment {
     inputs[2] = c;
     inputs[3] = d;
   }
+  void SetInAndChannel(int index, int channel, float value) {
+    std::string key;
+    key.append(std::to_string(index));
+    key.append("+");
+    key.append(std::to_string(channel));
+    inAndChannel[key] = value;
+  }
   void setConnected(int index, bool is_connected) {
     connected[index] = is_connected;
   }
@@ -30,6 +38,17 @@ struct TestEnvironment : Environment {
   float GetVoltage(const PortPointer &port) override {
     if (port.port_type == PortPointer::INPUT) {
       return inputs[port.index];
+    } else {
+      return outputs[port.index];
+    }
+  }
+  float GetVoltage(const PortPointer &port, int channel) override {
+    if (port.port_type == PortPointer::INPUT) {
+      std::string key;
+      key.append(std::to_string(port.index));
+      key.append("+");
+      key.append(std::to_string(channel));
+      return inAndChannel[key];
     } else {
       return outputs[port.index];
     }
@@ -189,6 +208,21 @@ TEST(ParserTest, SimpleTest)
     EXPECT_EQ("out1", lines->at(0).str1);
     EXPECT_FLOAT_EQ(1.5, lines->at(0).expr1.Compute());
     EXPECT_TRUE(lines->at(0).expr1.Volatile());
+}
+
+TEST(ParserTest, PolyphonicInputsTest)
+{
+    Driver drv;
+    drv.AddPortForName("in1", true, 0);
+    TestEnvironment test_env;
+    drv.SetEnvironment(&test_env);
+
+    test_env.SetInAndChannel(0, 2, 0.12345);
+
+    EXPECT_EQ(0, drv.parse("foo = IN1[2]\n"));
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_FLOAT_EQ(0.12345, lines->at(0).expr1.Compute());
 }
 
 TEST(ParserTest, FunctionTest)

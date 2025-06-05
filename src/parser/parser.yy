@@ -235,6 +235,7 @@ exp:
 | MINUS "number" %prec NEG { $$ = drv.factory.Number(-1 * (float) $2);}
 | "not" exp %prec NEG { $$ = drv.factory.Not($2);}
 | "in_port"     { $$ = drv.factory.Variable($1, &drv); }
+| "in_port" "[" exp "]" { $$ = drv.factory.ArrayVariable($1, $3, &drv); }
 | "out_port"    { $$ = drv.factory.Variable($1, &drv); }
 | "identifier"  { $$ = drv.factory.Variable($1, &drv); }
 | "identifier" "[" exp "]" { $$ = drv.factory.ArrayVariable($1, $3, &drv); }
