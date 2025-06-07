@@ -35,6 +35,8 @@ class Environment {
   // "channel" is a number from 1-16.
   virtual float GetVoltage(const PortPointer &port, int channel) = 0;
   virtual void SetVoltage(const PortPointer &port, float value) = 0;
+  // "channel" is a number from 1-16.
+  virtual void SetVoltage(const PortPointer &port, int channel, float value) = 0;
   virtual float SampleRate() = 0;
 
   // Since a Port can only be constructed at compile time, it should just

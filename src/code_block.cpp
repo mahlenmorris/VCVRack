@@ -21,6 +21,14 @@ void CodeBlock::SetVariableValue(float* variable_ptr,
   }
 }
 
+void CodeBlock::SetOUTSingleValue(const PortPointer &assign_port,
+    int channel, float value) {
+  if ((channel >= 1) && (channel <= 16)) {
+    environment->SetVoltage(assign_port, channel, value);
+  }  
+}
+
+
 float CodeBlock::GetVariableValue(float* variable_ptr,
     const PortPointer &port) {
   if (port.port_type == PortPointer::NOT_PORT) {
@@ -55,7 +63,15 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
     PCode* pcode = &(pcodes[current_line]);
     switch (pcode->type) {
       case PCode::ARRAY_ASSIGNMENT: {
-        pcode->DoArrayAssignment();
+        if (pcode->assign_port.port_type == PortPointer::OUTPUT) {
+          int channel = (int) floor(pcode->expr1.Compute());
+            if ((channel >= 1) && (channel <= 16)) {
+              environment->SetVoltage(pcode->assign_port, channel,
+                  pcode->expr2.Compute());
+            }
+        } else {  
+          pcode->DoArrayAssignment();
+        }
         current_line++;
       }
       break;

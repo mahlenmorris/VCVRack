@@ -171,6 +171,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
     case Line::ARRAY_ASSIGNMENT: {
       PCode assign;
       assign.type = PCode::ARRAY_ASSIGNMENT;
+      assign.assign_port = line.assign_port;
       assign.array_ptr = line.array_ptr;
       assign.expr1 = line.expr1;
       assign.expr2 = line.expr2;

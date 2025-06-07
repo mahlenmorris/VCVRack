@@ -189,6 +189,23 @@ struct Basically : Module {
         outputs->at(port.index).setVoltage(value);
       }
     }
+    void SetVoltage(const PortPointer &port, int channel, float value) override {
+      if (port.port_type == PortPointer::INPUT) {
+        inputs->at(port.index).setVoltage(value, channel - 1);
+        inputs->at(port.index).setChannels(
+            std::max(inputs->at(port.index).getChannels(), channel));
+      } else {
+        // Force output values to -10 <= x <= 10 range.
+        // Set in menu.
+        if (out_index_to_clamp->at(port.index)) {
+          value = clamp(value, -10.0f, 10.0f);
+        }
+        outputs->at(port.index).setVoltage(value, channel - 1);
+        outputs->at(port.index).setChannels(
+            std::max(outputs->at(port.index).getChannels(), channel));
+      }
+    }
+
     float SampleRate() override {
       return args->sampleRate;
     }
@@ -566,6 +583,15 @@ struct Basically : Module {
     outputs[OUT4_OUTPUT].setVoltage(0.0f);
     outputs[OUT5_OUTPUT].setVoltage(0.0f);
     outputs[OUT6_OUTPUT].setVoltage(0.0f);
+
+    // Now that I have polyphonic output, need to set channel count
+    // appropriately when bypassed.
+    outputs[OUT1_OUTPUT].setChannels(1);
+    outputs[OUT2_OUTPUT].setChannels(1);
+    outputs[OUT3_OUTPUT].setChannels(1);
+    outputs[OUT4_OUTPUT].setChannels(1);
+    outputs[OUT5_OUTPUT].setChannels(1);
+    outputs[OUT6_OUTPUT].setChannels(1);
   }
 
   void process(const ProcessArgs& args) override {

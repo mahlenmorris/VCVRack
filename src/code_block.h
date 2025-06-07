@@ -65,6 +65,10 @@ struct CodeBlock {
   // and these methods?
   void SetVariableValue(float* variable_ptr,
      const PortPointer &assign_port, float value);
+
+  // Just for setting values in an OUTn[]. "SingleValue" because this
+  // doesn't handle assigning multiple values to a range of an array.
+  void SetOUTSingleValue(const PortPointer &assign_port, int channel, float value);
   float GetVariableValue(float* variable_ptr, const PortPointer &port);
 
   // Only called when the global "running" status of the program is true.

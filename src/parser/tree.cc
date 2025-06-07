@@ -619,7 +619,11 @@ Line Line::ArrayAssignment(const std::string &variable_name,
   std::string lower;
   ToLower(variable_name, &lower);
   line.str1 = lower;  // Not required, but handy for troubleshooting.
-  line.array_ptr = driver->GetArrayFromName(lower);
+  if (driver->VarHasPort(lower)) {
+    line.assign_port = driver->GetPortFromName(lower);
+  } else {
+    line.array_ptr = driver->GetArrayFromName(lower);
+  }
   line.expr1 = index;
   line.expr2 = value;
   return line;

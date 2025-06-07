@@ -171,6 +171,7 @@ statement:
 array_assignment:
   "identifier" "[" exp "]" "=" exp  { $$ = Line::ArrayAssignment($1, $3, $6, &drv); }
 | "identifier" "[" exp "]" "=" "{" expression_list "}"  { $$ = Line::ArrayAssignment($1, $3, $7, &drv); }
+| "out_port" "[" exp "]" "=" exp { $$ = Line::ArrayAssignment($1, $3, $6, &drv); }
 | "identifier" "$" "[" exp "]" "=" exp  { $$ = Line::StringArrayAssignment($1, $4, $7, &drv); }
 | "identifier" "$" "[" exp "]" "=" string_exp  { $$ = Line::StringArrayAssignment($1, $4, $7, &drv); }
 | "identifier" "$" "[" exp "]" "=" "{" string_list "}"  { $$ = Line::StringArrayAssignment($1, $4, $8, &drv); }
