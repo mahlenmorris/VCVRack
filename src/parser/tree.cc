@@ -24,6 +24,7 @@ std::unordered_map<std::string, Expression::Operation> ExpressionFactory::string
   {"or", Expression::OR},
   {"abs", Expression::ABS},
   {"ceiling", Expression::CEILING},
+  {"channels", Expression::CHANNELS},
   {"connected", Expression::CONNECTED},
   {"floor", Expression::FLOOR},
   {"log2", Expression::LOG2},
@@ -114,6 +115,7 @@ float Expression::Compute() {
     break;
     case ONEPORTFUNC: {
       switch (operation) {
+        case CHANNELS: return env->GetChannels(port);
         case CONNECTED: return env->Connected(port);
         case TRIGGER: return env->Trigger(port) ? 1.0f : 0.0f;
         default: return -8.642f;
@@ -788,6 +790,17 @@ Line Line::Print(const std::string &port1, const ExpressionList &args,
   for (Expression exp : args.expressions) {
     line.expr_list.add(exp);
   }
+  return line;
+}
+
+Line Line::SetChannels(const std::string &port1,
+     const Expression &channels_expr, Driver* driver) {
+  Line line;
+  line.type = SET_CHANNELS;
+  std::string lower;
+  ToLower(port1, &lower);
+  line.assign_port = driver->GetPortFromName(lower);
+  line.expr1 = channels_expr;
   return line;
 }
 

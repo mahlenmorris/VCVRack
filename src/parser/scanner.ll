@@ -140,6 +140,7 @@ blank [ \t\r]
 "all"      return yy::Parser::make_ALL    (yytext, loc);
 "also"     return yy::Parser::make_ALSO   (yytext, loc);
 "and"      return yy::Parser::make_AND    (yytext, loc);
+"channels" return yy::Parser::make_CHANNELS (yytext, loc);
 "clear"    return yy::Parser::make_CLEAR  (yytext, loc);
 "connected" return yy::Parser::make_CONNECTED (yytext, loc);
 "continue" return yy::Parser::make_CONTINUE (yytext, loc);
@@ -155,6 +156,7 @@ blank [ \t\r]
 "or"       return yy::Parser::make_OR     (yytext, loc);
 "print"    return yy::Parser::make_PRINT  (yytext, loc);
 "reset"    return yy::Parser::make_RESET  (yytext, loc);
+"set_channels" return yy::Parser::make_SET_CHANNELS (yytext, loc);
 "step"     return yy::Parser::make_STEP   (yytext, loc);
 "then"     return yy::Parser::make_THEN   (yytext, loc);
 "to"       return yy::Parser::make_TO     (yytext, loc);

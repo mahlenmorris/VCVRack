@@ -31,9 +31,11 @@ struct PortPointer {
 
 class Environment {
  public:
+  virtual float GetChannels(const PortPointer &port) = 0;
   virtual float GetVoltage(const PortPointer &port) = 0;
   // "channel" is a number from 1-16.
   virtual float GetVoltage(const PortPointer &port, int channel) = 0;
+  virtual void SetChannels(const PortPointer &port, int channels) = 0;
   virtual void SetVoltage(const PortPointer &port, float value) = 0;
   // "channel" is a number from 1-16.
   virtual void SetVoltage(const PortPointer &port, int channel, float value) = 0;

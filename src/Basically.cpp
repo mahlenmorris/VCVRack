@@ -161,6 +161,22 @@ struct Basically : Module {
       starting = start;
     }
 
+    float GetChannels(const PortPointer &port) override {
+      if (port.port_type == PortPointer::INPUT) {
+        return inputs->at(port.index).getChannels();
+      } else {
+        return outputs->at(port.index).getChannels();
+      }
+    }
+
+    void SetChannels(const PortPointer &port, int channels) override {
+      if (port.port_type == PortPointer::INPUT) {
+        inputs->at(port.index).setChannels(channels);
+      } else {
+        outputs->at(port.index).setChannels(channels);
+      }
+    }
+
     float GetVoltage(const PortPointer &port) override {
       if (port.port_type == PortPointer::INPUT) {
         return inputs->at(port.index).getVoltage();

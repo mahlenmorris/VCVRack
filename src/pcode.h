@@ -39,7 +39,8 @@ struct PCode {
                  // And may have a list of variables later.
                  // TODO: Maybe make a Type for one-off commands?
     RESET,       // Like CLEAR, A command with no return value.
-    PRINT        // Sends strings to be sent out via a port.
+    PRINT,        // Sends strings to be sent out via a port.
+    SET_CHANNELS // Set number of polyphonic channels on OUTn ports.
   };
   Type type;
   std::string str1;

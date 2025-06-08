@@ -50,6 +50,7 @@ class Expression {
     OR,
     ABS,
     CEILING,
+    CHANNELS,
     CONNECTED,
     DEBUG,
     FLOOR,
@@ -205,8 +206,9 @@ struct Line {
     FORNEXT,           // for str1 = expr1 to expr2 state1 next
     IFTHEN,            // if expr1 then state1 [elseifs - state2] end if
     IFTHENELSE,        // if expr1 then state1 [elseifs - state3] else state2 end if
-    PRINT,             // print(out1, )
+    PRINT,             // print(out1, ...)
     RESET,             // Start all blocks from the top, as if newly compiled.
+    SET_CHANNELS,      // Set number of channels on an OUTn port.
     WAIT               // wait expr1
   };
   Type type;
@@ -277,6 +279,9 @@ struct Line {
 
   static Line Print(const std::string &port1, const ExpressionList &args,
                     Driver* driver);
+
+  static Line SetChannels(const std::string &port1,
+     const Expression &channels_expr, Driver* driver);
 
   static Line Reset();
 

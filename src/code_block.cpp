@@ -208,6 +208,16 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
         current_line++;
       }
       break;
+      case PCode::SET_CHANNELS: {
+        // Number of channels is an int from 1-16.
+        int channels = floor(pcode->expr1.Compute());
+        // Do nothing if outside valid range.
+        if ((channels >= 1) && (channels <= 16)) {
+          environment->SetChannels(pcode->assign_port, channels);
+        }
+        current_line++;
+      }
+      break;
     }
     // pcode->state is only set in a select few situations, like the assignment
     // before a FORLOOP.

@@ -427,5 +427,13 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       pcodes->push_back(print);
     }
     break;
+    case Line::SET_CHANNELS: {
+      PCode set_channels;
+      set_channels.type = PCode::SET_CHANNELS;
+      set_channels.assign_port = line.assign_port;  // Port we are sending text out of.
+      set_channels.expr1 = line.expr1;
+      pcodes->push_back(set_channels);
+    }
+    break;
   }
 }
