@@ -421,6 +421,36 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       }
     }
     break;
+    case Line::WHILE: {
+      // IFNOT
+      // statements
+      // WAIT 0
+      // RELATIVE_JUMP (back to the IFNOT).
+      PCode ifnot;
+      ifnot.type = PCode::IFNOT;
+      ifnot.expr1 = line.expr1;
+      pcodes->push_back(ifnot);
+      // Need to find this IFNOT PCode later, so I can fill in jump_count
+      // after adding all of the statements.
+      int ifnot_position = pcodes->size() - 1;
+      // TODO: changes to support EXIT WHILE and CONTINUE WHILE.
+      for (auto &loop_line : line.statements[0].lines) {
+        AddLineToPCode(loop_line, innermost_loop);
+      }
+
+      // Insert smallest possible WAIT.
+      pcodes->push_back(PCode::Wait(expression_factory.Number(0.0f)));
+
+      PCode jump_back;
+      jump_back.type = PCode::RELATIVE_JUMP;
+      // jump_count must be negative to go backwards in program to FORLOOP.
+      jump_back.jump_count = ifnot_position - pcodes->size();
+      pcodes->push_back(jump_back);
+      // Tell the IFNOT where to go when exiting loop.
+      pcodes->at(ifnot_position).jump_count =
+          pcodes->size() - ifnot_position;
+    }
+    break;
     case Line::PRINT: {
       PCode print;
       print.type = PCode::PRINT;

@@ -209,7 +209,8 @@ struct Line {
     PRINT,             // print(out1, ...)
     RESET,             // Start all blocks from the top, as if newly compiled.
     SET_CHANNELS,      // Set number of channels on an OUTn port.
-    WAIT               // wait expr1
+    WAIT,              // wait expr1
+    WHILE              // while ... end while
   };
   Type type;
   std::string str1;
@@ -288,6 +289,9 @@ struct Line {
 
   static Line Wait(const Expression &expr);
 
+  static Line While(const Expression &condition, const Statements &state,
+                    Driver* driver);
+  
   friend std::ostream& operator<<(std::ostream& os, Line line);
 };
 

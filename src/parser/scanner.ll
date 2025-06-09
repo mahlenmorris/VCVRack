@@ -164,6 +164,7 @@ blank [ \t\r]
 "trigger"  return yy::Parser::make_TRIGGER (yytext, loc);
 "wait"     return yy::Parser::make_WAIT   (yytext, loc);
 "when"     return yy::Parser::make_WHEN   (yytext, loc);
+"while"    return yy::Parser::make_WHILE   (yytext, loc);
 
 {note}     return yy::Parser::make_NOTE (yytext, loc);
 {float}    return make_NUMBER (yytext, loc);

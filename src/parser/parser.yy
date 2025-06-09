@@ -82,6 +82,7 @@
   TRIGGER "trigger"
   WAIT    "wait"
   WHEN    "when"
+  WHILE   "while"
   MINUS   "-"
   PLUS    "+"
   STAR    "*"
@@ -130,6 +131,7 @@
 %nterm <Line> procedure_call
 %nterm <Line> reset_statement
 %nterm <Line> wait_statement
+%nterm <Line> while_statement
 
 %printer { yyo << $$; } <*>;
 
@@ -170,6 +172,7 @@ statement:
 | procedure_call       { $$ = $1; }
 | reset_statement      { $$ = $1; }
 | wait_statement       { $$ = $1; }
+| while_statement      { $$ = $1; }
 
 array_assignment:
   "identifier" "[" exp "]" "=" exp  { $$ = Line::ArrayAssignment($1, $3, $6, &drv); }
@@ -223,6 +226,9 @@ reset_statement:
 
 wait_statement:
   "wait" exp            { $$ = Line::Wait($2); }
+
+while_statement:
+  "while" exp zero_or_more_statements "end" "while"  { $$ = Line::While($2, $3, &drv); }
 
 %right "?" ":";
 %left "or";

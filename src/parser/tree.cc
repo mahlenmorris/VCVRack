@@ -818,6 +818,15 @@ Line Line::Wait(const Expression &expr) {
   return line;
 }
 
+Line Line::While(const Expression &condition, const Statements &state,
+                  Driver* driver) {
+  Line line;
+  line.type = WHILE;
+  line.expr1 = condition;
+  line.statements.push_back(state);
+  return line;    
+}
+
 std::ostream& operator<<(std::ostream& os, Line line) {
   os << "Line(" << line.str1 << ", " << line.expr1.to_string() << ")";
   return os;
