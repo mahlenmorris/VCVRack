@@ -369,7 +369,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       // ASSIGNMENT var = Expression
       // FORLOOP (var, expr1, expr2)
       // statements
-      // WAIT 0
+      // WAIT 0 (iff wait_on_next is set)
       // RELATIVE_JUMP (back to FORLOOP).
       PCode assign = Assignment(line.str1, line.variable_ptr,
                                 line.assign_port, line.expr1);
@@ -397,8 +397,10 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       }
       // Remove from stack.
       loops.pop_back();  // TODO: confirm it is the "for" item we placed?
-      // Insert smallest possible WAIT.
-      pcodes->push_back(PCode::Wait(expression_factory.Number(0.0f)));
+      if (line.wait_on_next) {
+        // Insert smallest possible WAIT.
+        pcodes->push_back(PCode::Wait(expression_factory.Number(0.0f)));
+      }
       PCode jump_back;
       jump_back.type = PCode::RELATIVE_JUMP;
       // jump_count must be negative to go backwards in program to FORLOOP.

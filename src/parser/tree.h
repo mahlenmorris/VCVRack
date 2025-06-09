@@ -224,6 +224,7 @@ struct Line {
   Expression expr1, expr2, expr3;
   ExpressionList expr_list;
   std::vector<Statements> statements;
+  bool wait_on_next;  // to distinguish NEXT from NEXTHIGHCPU.
 
   static Line ArrayAssignment(const std::string &variable_name,
                               const Expression &index,
@@ -266,7 +267,7 @@ struct Line {
 
   static Line ForNext(const Line &assign, const Expression &limit,
                       const Expression &step, const Statements &state,
-                      Driver* driver);
+                      bool wait_on_next, Driver* driver);
 
   static Line IfThen(const Expression &bool_expr,
                      const Statements &then_state,

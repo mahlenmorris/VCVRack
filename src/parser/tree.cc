@@ -730,7 +730,7 @@ Line Line::Exit(const std::string &loop_type) {
 
 Line Line::ForNext(const Line &assign, const Expression &limit,
                    const Expression &step, const Statements &state,
-                   Driver* driver) {
+                   bool wait_on_next, Driver* driver) {
   Line line;
   line.type = FORNEXT;
   line.str1 = assign.str1;
@@ -744,6 +744,7 @@ Line Line::ForNext(const Line &assign, const Expression &limit,
   line.expr2 = limit;
   line.expr3 = step;
   line.statements.push_back(state);
+  line.wait_on_next = wait_on_next;
   return line;
 }
 

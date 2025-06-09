@@ -152,6 +152,7 @@ blank [ \t\r]
 "for"      return yy::Parser::make_FOR    (yytext, loc);
 "if"       return yy::Parser::make_IF     (yytext, loc);
 "next"     return yy::Parser::make_NEXT   (yytext, loc);
+"nexthighcpu" return yy::Parser::make_NEXTHIGHCPU   (yytext, loc);
 "not"      return yy::Parser::make_NOT    (yytext, loc);
 "or"       return yy::Parser::make_OR     (yytext, loc);
 "print"    return yy::Parser::make_PRINT  (yytext, loc);

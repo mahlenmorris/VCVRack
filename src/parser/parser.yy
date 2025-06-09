@@ -63,6 +63,7 @@
   MAX     "max"
   MIN     "min"
   NEXT    "next"
+  NEXTHIGHCPU "nexthighcpu"
   NOT     "not"
   OR      "or"
   POW     "pow"
@@ -197,8 +198,10 @@ exit_statement:
 | "exit" "all"          { $$ = Line::Exit($2); }
 
 for_statement:
-  "for" assignment "to" exp zero_or_more_statements "next"  { $$ = Line::ForNext($2, $4, drv.factory.Number(1.0), $5, &drv); }
-| "for" assignment "to" exp "step" exp zero_or_more_statements "next" { $$ = Line::ForNext($2, $4, $6, $7, &drv); }
+  "for" assignment "to" exp zero_or_more_statements "next"  { $$ = Line::ForNext($2, $4, drv.factory.Number(1.0), $5, true, &drv); }
+| "for" assignment "to" exp "step" exp zero_or_more_statements "next" { $$ = Line::ForNext($2, $4, $6, $7, true, &drv); }
+| "for" assignment "to" exp zero_or_more_statements "nexthighcpu"  { $$ = Line::ForNext($2, $4, drv.factory.Number(1.0), $5, false, &drv); }
+| "for" assignment "to" exp "step" exp zero_or_more_statements "nexthighcpu" { $$ = Line::ForNext($2, $4, $6, $7, false, &drv); }
 
 elseif_group:
   %empty                          {}
