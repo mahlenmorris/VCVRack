@@ -712,19 +712,19 @@ Line Line::ClearAll() {
   return line;
 }
 
-// loop_type is the string identifying the loop type; e.g., "for" or "all".
+// loop_type is the string identifying the loop type; e.g., "for", "while", or "all".
 Line Line::Continue(const std::string &loop_type) {
   Line line;
   line.type = CONTINUE;
-  line.str1 = loop_type;
+  ToLower(loop_type, &line.str1);
   return line;
 }
 
-// loop_type is the string identifying the loop type; e.g., "for" or "all".
+// loop_type is the string identifying the loop type; e.g., "for", "while", or "all".
 Line Line::Exit(const std::string &loop_type) {
   Line line;
   line.type = EXIT;
-  line.str1 = loop_type;
+  ToLower(loop_type, &line.str1);
   return line;
 }
 

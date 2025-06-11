@@ -78,7 +78,7 @@ struct PCode {
 
 // Helps resolve "continue" statements.
 struct Loop {
-  const std::string loop_type;  // E.g., "for".
+  const std::string loop_type;  // E.g., "for" or "while"
   const int line_number;        // Position of the loop start (e.g., FORLOOP).
   Loop(const std::string type, int line) : loop_type{type}, line_number{line} {}
 };

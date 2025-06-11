@@ -210,7 +210,7 @@ struct Line {
     RESET,             // Start all blocks from the top, as if newly compiled.
     SET_CHANNELS,      // Set number of channels on an OUTn port.
     WAIT,              // wait expr1
-    WHILE              // while ... end while
+    WHILE              // while expr1 statements end while
   };
   Type type;
   std::string str1;

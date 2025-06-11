@@ -194,10 +194,12 @@ clear_statement:
 
 continue_statement:
   "continue" "for"      { $$ = Line::Continue($2); }
+| "continue" "while"    { $$ = Line::Continue($2); }
 | "continue" "all"      { $$ = Line::Continue($2); }
 
 exit_statement:
   "exit" "for"          { $$ = Line::Exit($2); }
+| "exit" "while"        { $$ = Line::Exit($2); }
 | "exit" "all"          { $$ = Line::Exit($2); }
 
 for_statement:

@@ -387,7 +387,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       // Need to find this FORLOOP PCode later, so I can fill in jump_count
       // after adding all of the statements.
       int forloop_position = pcodes->size() - 1;
-      // Add to stack.
+      // Add top of loop to stack.
       loops.push_back(Loop("for", forloop_position));
       // Any "exit for" statements we add must be pointed back to the end of
       // *this* loop.
@@ -433,10 +433,18 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       // Need to find this IFNOT PCode later, so I can fill in jump_count
       // after adding all of the statements.
       int ifnot_position = pcodes->size() - 1;
-      // TODO: changes to support EXIT WHILE and CONTINUE WHILE.
+
+      // Add top of loop to stack.
+      loops.push_back(Loop("while", ifnot_position));
+      // Any "exit while" statements we add must be pointed back to the end of
+      // *this* loop.
+      Exit exit("while", ifnot_position);
+      // Translate the statements within the while loop.
       for (auto &loop_line : line.statements[0].lines) {
-        AddLineToPCode(loop_line, innermost_loop);
+        AddLineToPCode(loop_line, exit);
       }
+      // Remove this loop from stack.
+      loops.pop_back();  // TODO: confirm it is the "while" item we placed?
 
       // Insert smallest possible WAIT.
       pcodes->push_back(PCode::Wait(expression_factory.Number(0.0f)));
@@ -449,6 +457,18 @@ void PCodeTranslator::AddLineToPCode(const Line &line,
       // Tell the IFNOT where to go when exiting loop.
       pcodes->at(ifnot_position).jump_count =
           pcodes->size() - ifnot_position;
+      
+      // Now resolve any relevant EXIT jumps.
+      for (Exit exit : exits) {
+        if (exit.exit_type == "while" &&
+            exit.loop_start_Line_number == ifnot_position) {
+          pcodes->at(exit.exit_line_number).jump_count =
+              pcodes->size() - exit.exit_line_number;
+          // We _could_ erase this item in 'exits', but that invalidates
+          // iterators, so we'll just leave it. It won't get matched again.
+        }
+      }
+
     }
     break;
     case Line::PRINT: {
