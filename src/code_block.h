@@ -76,6 +76,13 @@ struct CodeBlock {
   // TODO: how to handle EXIT ALL? Does this stop *all* blocks? Just this one? Need a new gesture
   // to just stop one block? EXIT BLOCK?
   CodeBlock::RunStatus Run(bool loops);
+
+  void DebugPrint() {
+    std::cout << "current_line = " << current_line << "\n";
+    for (PCode pcode : pcodes) {
+      std::cout << pcode.to_string() << "\n";
+    }
+  }
 };
 
 #endif // CODE_BLOCK_H

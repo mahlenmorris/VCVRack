@@ -116,6 +116,10 @@ public:
   // Handling the scanner.
   // Defined in scanner.ll, for odd reasons. Maybe shouldn't be.
   int set_text(const std::string &text);
+
+  void AddError(const std::string& message) {
+    errors.push_back(Error(location.begin.line, location.begin.column, message));
+  }
 };
 
 

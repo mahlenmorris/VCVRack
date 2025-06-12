@@ -357,7 +357,7 @@ struct Basically : Module {
           std::string stable_text(text);
           bool compiles = !driver->parse(stable_text);
           if (compiles) {
-            PCodeTranslator translator;
+            PCodeTranslator translator(driver);
             main_blocks = new std::vector<CodeBlock*>();
             expression_blocks = new std::vector<std::pair<Expression, CodeBlock*> >();
             running_expression_blocks = new std::vector<bool>();
@@ -370,6 +370,8 @@ struct Basically : Module {
             }
             for (auto ast_block : driver->blocks) {
               CodeBlock* new_block = new CodeBlock(environment);
+              // Holds new errors in case translation discovers any.
+              std::vector<std::string> new_errors;
               if (translator.BlockToCodeBlock(new_block, ast_block)) {
                 // Different lists depending on type.
                 if (new_block->type == Block::MAIN) {
@@ -380,6 +382,9 @@ struct Basically : Module {
                   running_expression_blocks->push_back(false);
                 }
               } else {
+                for (std::string err : new_errors) {
+                  driver->AddError(err);
+                }
                 useful = false;
                 // TODO: Report errors via some new mechanism.
               }

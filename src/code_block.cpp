@@ -61,6 +61,9 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
 
   while (running && !waiting) {
     PCode* pcode = &(pcodes[current_line]);
+
+    // Only used when I'm debugging.
+    // std::cout << "Line #" << current_line << " -- " << pcode->to_string() << "\n";
     switch (pcode->type) {
       case PCode::ARRAY_ASSIGNMENT: {
         if (pcode->assign_port.port_type == PortPointer::OUTPUT) {
