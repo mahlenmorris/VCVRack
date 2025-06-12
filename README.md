@@ -946,37 +946,42 @@ Write longer notes! And wider or narrower text notes.
 Here is Fermata:
 * as a label, in three of the six available sizes
 * expanded a bit, turning it into a text editor
-* further expanded, and with different font and screen color choices.
+* further expanded, and with different font, font size, and screen color choices.
 
 ![Fermata Variety](images/Fermata-variety.png)
+![Fermata Font Sizes](images/Fermata-font-sizes.png)
 
 ### Uses
 * Instructions for playing the patch.
 * Notes/reminders on how this part of the patch works. Take a look at [this patch](examples/AnnotatedSunlightOnSeaAnemones.vcv) for one example of what this might look like.
 * TODO's or ideas.
-* A short story you're writing while listening to your patch.
 * As a label, the title names a chunk of the patch, allowing the person seeing
 it to pull it open and, say, read more detail on how it works. An example of this can be found in [this patch](examples/AnnotatedSunlightOnSeaAnemones.vcv).
+* A very wide banner of horizontal text. You can add easily readable text in a video or still image of your patch.
+* A short story or poem you're writing while listening to your patch.
 
 ### Features
 * Up and down arrow keys work mostly like you expect. Home and End go to the
 top and bottom of the text, PgUp and PgDown go up and down a screen length.
 * Text scrolls as you move up and down.
 * Resize the module by dragging the left or right edges. Size can range
-from 3-64 HP.
+from 3-300 HP.
 * Pick from a (small) variety of fonts.
+* Pick the number of lines available at a time via the "Visible Lines" menu selection, with ranges from the 28-line default to a single line of **very** large text (like the "Four" in the image above).
 * Pick from a (small) variety of foreground/background colors.
 * Set the title in the module menu.
 
-Also useful for making a label:
+Also useful for making a vertical text label:
 * Set the title in the menu.
-* Resize the module narrow enough (3-8 HP) and the title becomes a large label.
+* Resize the module (by dragging the left or right edges) and when it's narrow enough (3-8 HP), the title becomes the label text.
 
 ### Menu Options
 #### Set Title
 Type in the title you'd like to use here.
 #### Screen Colors
 Pick from a small number of color choices for the editor window.
+#### Visible Lines
+Pick the font size by selecting the number of visible lines of text, from 28 to 1.
 #### Font
 Pick from a small number of fonts. The "Mono" fonts are monospaced fonts.
 
@@ -1132,6 +1137,9 @@ TTY logging the text being sent by BASICally.
 TTY logging the text being sent by Memory when it loads or saves files.
 ![TTYLogging](images/TTYLogging.png)
 
+The menu allows for a small selection of fonts, colors, and sizes.
+![TTYFontsAndColors](images/TTYSizeAndFonts.png)
+
 More examples in [this patch](examples/TTYExamples.vcv).
 
 ### Uses
@@ -1142,6 +1150,8 @@ a scope trace, especially when monitoring over a long period of time.
 protocol](https://github.com/baconpaul/tipsy-encoder). As of this writing
 in June 2024, the only such modules that I know of are my [BASICally](#basically)
 and [Memory](Memory.md#memory) modules.
+* With the larger font sizes now available, you can use BASICally to print() a series
+of timed messages, providing visual narration to a video performance.
 
 ### Features
 * **Note that navigation works much better when the Pause button is lit**.
@@ -1149,9 +1159,10 @@ Up and Down arrow keys work mostly like you expect. Home and End go to the
 top and bottom of the text, PgUp and PgDown go up and down a screen length.
 * Text scrolls as you move up and down.
 * Resize the module by dragging the right edge. Size can range
-from 4-64 HP.
-* Pick from a (small) variety of fonts. Be sure to try "Veteran Typewriter" font
+from 4-300 HP.
+* Pick from a (small) variety of fonts. Be sure to try the "Veteran Typewriter" font
 for a more authentic teletype feeling.
+* Pick the number of lines available at a time via the "Visible Lines" menu selection, with ranges from the 28-line default to a single line of **very** large text (like the "Four" in the image above).
 * Pick from a (small) variety of foreground/background colors. Be sure to try
 "Black on Yellow (TTY Paper)" for that authentic teletype feeling.
 * Can be cleared by clicking the CLEAR button or by sending a "!!CLEAR!!" message.
@@ -1191,6 +1202,8 @@ patch, and will be restored when the patch is loaded. If not set, then
 the log will be empty when the patch starts.
 #### Screen Colors
 Pick from a small number of color choices for the editor window.
+#### Visible Lines
+Pick the font size by selecting the number of visible lines of text, from 28 to 1.
 #### Font
 Pick from a small number of fonts. The "Mono" fonts are monospaced fonts.
 
