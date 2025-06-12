@@ -435,9 +435,10 @@ namespace yy {
       // for_statement
       // elseif_clause
       // if_statement
-      // print_statement
+      // procedure_call
       // reset_statement
       // wait_statement
+      // while_statement
       char dummy5[sizeof (Line)];
 
       // zero_or_more_statements
@@ -454,6 +455,7 @@ namespace yy {
       // "and"
       // "="
       // "ceiling"
+      // "channels"
       // "clear"
       // "connected"
       // "continue"
@@ -471,12 +473,14 @@ namespace yy {
       // "max"
       // "min"
       // "next"
+      // "nexthighcpu"
       // "not"
       // "or"
       // "pow"
       // "print"
       // "reset"
       // "sample_rate"
+      // "set_channels"
       // "sign"
       // "sin"
       // "start"
@@ -488,6 +492,7 @@ namespace yy {
       // "trigger"
       // "wait"
       // "when"
+      // "while"
       // "-"
       // "+"
       // "*"
@@ -570,65 +575,69 @@ namespace yy {
     TOK_AND = 6,                   // "and"
     TOK_ASSIGN = 7,                // "="
     TOK_CEILING = 8,               // "ceiling"
-    TOK_CLEAR = 9,                 // "clear"
-    TOK_CONNECTED = 10,            // "connected"
-    TOK_CONTINUE = 11,             // "continue"
-    TOK_DEBUG = 12,                // "debug"
-    TOK_ELSE = 13,                 // "else"
-    TOK_ELSEIF = 14,               // "elseif"
-    TOK_END = 15,                  // "end"
-    TOK_EXIT = 16,                 // "exit"
-    TOK_FLOOR = 17,                // "floor"
-    TOK_FOR = 18,                  // "for"
-    TOK_IF = 19,                   // "if"
-    TOK_LOG2 = 20,                 // "log2"
-    TOK_LOGE = 21,                 // "loge"
-    TOK_LOG10 = 22,                // "log10"
-    TOK_MAX = 23,                  // "max"
-    TOK_MIN = 24,                  // "min"
-    TOK_NEXT = 25,                 // "next"
-    TOK_NOT = 26,                  // "not"
-    TOK_OR = 27,                   // "or"
-    TOK_POW = 28,                  // "pow"
-    TOK_PRINT = 29,                // "print"
-    TOK_RESET = 30,                // "reset"
-    TOK_SAMPLE_RATE = 31,          // "sample_rate"
-    TOK_SIGN = 32,                 // "sign"
-    TOK_SIN = 33,                  // "sin"
-    TOK_START = 34,                // "start"
-    TOK_STEP = 35,                 // "step"
-    TOK_THEN = 36,                 // "then"
-    TOK_TIME = 37,                 // "time"
-    TOK_TIME_MILLIS = 38,          // "time_millis"
-    TOK_TO = 39,                   // "to"
-    TOK_TRIGGER = 40,              // "trigger"
-    TOK_WAIT = 41,                 // "wait"
-    TOK_WHEN = 42,                 // "when"
-    TOK_MINUS = 43,                // "-"
-    TOK_PLUS = 44,                 // "+"
-    TOK_STAR = 45,                 // "*"
-    TOK_SLASH = 46,                // "/"
-    TOK_LPAREN = 47,               // "("
-    TOK_RPAREN = 48,               // ")"
-    TOK_LBRACE = 49,               // "{"
-    TOK_RBRACE = 50,               // "}"
-    TOK_LBRACKET = 51,             // "["
-    TOK_RBRACKET = 52,             // "]"
-    TOK_COMMA = 53,                // ","
-    TOK_DOLLAR = 54,               // "$"
-    TOK_QUESTION = 55,             // "?"
-    TOK_COLON = 56,                // ":"
-    TOK_IDENTIFIER = 57,           // "identifier"
-    TOK_QUOTED_STRING = 58,        // "quoted_string"
-    TOK_NUMBER = 59,               // "number"
-    TOK_NOTE = 60,                 // "note"
-    TOK_IN_PORT = 61,              // "in_port"
-    TOK_OUT_PORT = 62,             // "out_port"
-    TOK_ZEROARGFUNC = 63,          // "zeroargfunc"
-    TOK_ONEARGFUNC = 64,           // "oneargfunc"
-    TOK_TWOARGFUNC = 65,           // "twoargfunc"
-    TOK_COMPARISON = 66,           // "comparison"
-    TOK_NEG = 67                   // NEG
+    TOK_CHANNELS = 9,              // "channels"
+    TOK_CLEAR = 10,                // "clear"
+    TOK_CONNECTED = 11,            // "connected"
+    TOK_CONTINUE = 12,             // "continue"
+    TOK_DEBUG = 13,                // "debug"
+    TOK_ELSE = 14,                 // "else"
+    TOK_ELSEIF = 15,               // "elseif"
+    TOK_END = 16,                  // "end"
+    TOK_EXIT = 17,                 // "exit"
+    TOK_FLOOR = 18,                // "floor"
+    TOK_FOR = 19,                  // "for"
+    TOK_IF = 20,                   // "if"
+    TOK_LOG2 = 21,                 // "log2"
+    TOK_LOGE = 22,                 // "loge"
+    TOK_LOG10 = 23,                // "log10"
+    TOK_MAX = 24,                  // "max"
+    TOK_MIN = 25,                  // "min"
+    TOK_NEXT = 26,                 // "next"
+    TOK_NEXTHIGHCPU = 27,          // "nexthighcpu"
+    TOK_NOT = 28,                  // "not"
+    TOK_OR = 29,                   // "or"
+    TOK_POW = 30,                  // "pow"
+    TOK_PRINT = 31,                // "print"
+    TOK_RESET = 32,                // "reset"
+    TOK_SAMPLE_RATE = 33,          // "sample_rate"
+    TOK_SET_CHANNELS = 34,         // "set_channels"
+    TOK_SIGN = 35,                 // "sign"
+    TOK_SIN = 36,                  // "sin"
+    TOK_START = 37,                // "start"
+    TOK_STEP = 38,                 // "step"
+    TOK_THEN = 39,                 // "then"
+    TOK_TIME = 40,                 // "time"
+    TOK_TIME_MILLIS = 41,          // "time_millis"
+    TOK_TO = 42,                   // "to"
+    TOK_TRIGGER = 43,              // "trigger"
+    TOK_WAIT = 44,                 // "wait"
+    TOK_WHEN = 45,                 // "when"
+    TOK_WHILE = 46,                // "while"
+    TOK_MINUS = 47,                // "-"
+    TOK_PLUS = 48,                 // "+"
+    TOK_STAR = 49,                 // "*"
+    TOK_SLASH = 50,                // "/"
+    TOK_LPAREN = 51,               // "("
+    TOK_RPAREN = 52,               // ")"
+    TOK_LBRACE = 53,               // "{"
+    TOK_RBRACE = 54,               // "}"
+    TOK_LBRACKET = 55,             // "["
+    TOK_RBRACKET = 56,             // "]"
+    TOK_COMMA = 57,                // ","
+    TOK_DOLLAR = 58,               // "$"
+    TOK_QUESTION = 59,             // "?"
+    TOK_COLON = 60,                // ":"
+    TOK_IDENTIFIER = 61,           // "identifier"
+    TOK_QUOTED_STRING = 62,        // "quoted_string"
+    TOK_NUMBER = 63,               // "number"
+    TOK_NOTE = 64,                 // "note"
+    TOK_IN_PORT = 65,              // "in_port"
+    TOK_OUT_PORT = 66,             // "out_port"
+    TOK_ZEROARGFUNC = 67,          // "zeroargfunc"
+    TOK_ONEARGFUNC = 68,           // "oneargfunc"
+    TOK_TWOARGFUNC = 69,           // "twoargfunc"
+    TOK_COMPARISON = 70,           // "comparison"
+    TOK_NEG = 71                   // NEG
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -645,7 +654,7 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 68, ///< Number of tokens.
+        YYNTOKENS = 72, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -656,89 +665,94 @@ namespace yy {
         S_AND = 6,                               // "and"
         S_ASSIGN = 7,                            // "="
         S_CEILING = 8,                           // "ceiling"
-        S_CLEAR = 9,                             // "clear"
-        S_CONNECTED = 10,                        // "connected"
-        S_CONTINUE = 11,                         // "continue"
-        S_DEBUG = 12,                            // "debug"
-        S_ELSE = 13,                             // "else"
-        S_ELSEIF = 14,                           // "elseif"
-        S_END = 15,                              // "end"
-        S_EXIT = 16,                             // "exit"
-        S_FLOOR = 17,                            // "floor"
-        S_FOR = 18,                              // "for"
-        S_IF = 19,                               // "if"
-        S_LOG2 = 20,                             // "log2"
-        S_LOGE = 21,                             // "loge"
-        S_LOG10 = 22,                            // "log10"
-        S_MAX = 23,                              // "max"
-        S_MIN = 24,                              // "min"
-        S_NEXT = 25,                             // "next"
-        S_NOT = 26,                              // "not"
-        S_OR = 27,                               // "or"
-        S_POW = 28,                              // "pow"
-        S_PRINT = 29,                            // "print"
-        S_RESET = 30,                            // "reset"
-        S_SAMPLE_RATE = 31,                      // "sample_rate"
-        S_SIGN = 32,                             // "sign"
-        S_SIN = 33,                              // "sin"
-        S_START = 34,                            // "start"
-        S_STEP = 35,                             // "step"
-        S_THEN = 36,                             // "then"
-        S_TIME = 37,                             // "time"
-        S_TIME_MILLIS = 38,                      // "time_millis"
-        S_TO = 39,                               // "to"
-        S_TRIGGER = 40,                          // "trigger"
-        S_WAIT = 41,                             // "wait"
-        S_WHEN = 42,                             // "when"
-        S_MINUS = 43,                            // "-"
-        S_PLUS = 44,                             // "+"
-        S_STAR = 45,                             // "*"
-        S_SLASH = 46,                            // "/"
-        S_LPAREN = 47,                           // "("
-        S_RPAREN = 48,                           // ")"
-        S_LBRACE = 49,                           // "{"
-        S_RBRACE = 50,                           // "}"
-        S_LBRACKET = 51,                         // "["
-        S_RBRACKET = 52,                         // "]"
-        S_COMMA = 53,                            // ","
-        S_DOLLAR = 54,                           // "$"
-        S_QUESTION = 55,                         // "?"
-        S_COLON = 56,                            // ":"
-        S_IDENTIFIER = 57,                       // "identifier"
-        S_QUOTED_STRING = 58,                    // "quoted_string"
-        S_NUMBER = 59,                           // "number"
-        S_NOTE = 60,                             // "note"
-        S_IN_PORT = 61,                          // "in_port"
-        S_OUT_PORT = 62,                         // "out_port"
-        S_ZEROARGFUNC = 63,                      // "zeroargfunc"
-        S_ONEARGFUNC = 64,                       // "oneargfunc"
-        S_TWOARGFUNC = 65,                       // "twoargfunc"
-        S_COMPARISON = 66,                       // "comparison"
-        S_NEG = 67,                              // NEG
-        S_YYACCEPT = 68,                         // $accept
-        S_program = 69,                          // program
-        S_blocks = 70,                           // blocks
-        S_block = 71,                            // block
-        S_main_block = 72,                       // main_block
-        S_zero_or_more_statements = 73,          // zero_or_more_statements
-        S_one_or_more_statements = 74,           // one_or_more_statements
-        S_statement = 75,                        // statement
-        S_array_assignment = 76,                 // array_assignment
-        S_assignment = 77,                       // assignment
-        S_clear_statement = 78,                  // clear_statement
-        S_continue_statement = 79,               // continue_statement
-        S_exit_statement = 80,                   // exit_statement
-        S_for_statement = 81,                    // for_statement
-        S_elseif_group = 82,                     // elseif_group
-        S_elseif_clause = 83,                    // elseif_clause
-        S_if_statement = 84,                     // if_statement
-        S_print_statement = 85,                  // print_statement
-        S_reset_statement = 86,                  // reset_statement
-        S_wait_statement = 87,                   // wait_statement
-        S_expression_list = 88,                  // expression_list
-        S_exp = 89,                              // exp
-        S_string_list = 90,                      // string_list
-        S_string_exp = 91                        // string_exp
+        S_CHANNELS = 9,                          // "channels"
+        S_CLEAR = 10,                            // "clear"
+        S_CONNECTED = 11,                        // "connected"
+        S_CONTINUE = 12,                         // "continue"
+        S_DEBUG = 13,                            // "debug"
+        S_ELSE = 14,                             // "else"
+        S_ELSEIF = 15,                           // "elseif"
+        S_END = 16,                              // "end"
+        S_EXIT = 17,                             // "exit"
+        S_FLOOR = 18,                            // "floor"
+        S_FOR = 19,                              // "for"
+        S_IF = 20,                               // "if"
+        S_LOG2 = 21,                             // "log2"
+        S_LOGE = 22,                             // "loge"
+        S_LOG10 = 23,                            // "log10"
+        S_MAX = 24,                              // "max"
+        S_MIN = 25,                              // "min"
+        S_NEXT = 26,                             // "next"
+        S_NEXTHIGHCPU = 27,                      // "nexthighcpu"
+        S_NOT = 28,                              // "not"
+        S_OR = 29,                               // "or"
+        S_POW = 30,                              // "pow"
+        S_PRINT = 31,                            // "print"
+        S_RESET = 32,                            // "reset"
+        S_SAMPLE_RATE = 33,                      // "sample_rate"
+        S_SET_CHANNELS = 34,                     // "set_channels"
+        S_SIGN = 35,                             // "sign"
+        S_SIN = 36,                              // "sin"
+        S_START = 37,                            // "start"
+        S_STEP = 38,                             // "step"
+        S_THEN = 39,                             // "then"
+        S_TIME = 40,                             // "time"
+        S_TIME_MILLIS = 41,                      // "time_millis"
+        S_TO = 42,                               // "to"
+        S_TRIGGER = 43,                          // "trigger"
+        S_WAIT = 44,                             // "wait"
+        S_WHEN = 45,                             // "when"
+        S_WHILE = 46,                            // "while"
+        S_MINUS = 47,                            // "-"
+        S_PLUS = 48,                             // "+"
+        S_STAR = 49,                             // "*"
+        S_SLASH = 50,                            // "/"
+        S_LPAREN = 51,                           // "("
+        S_RPAREN = 52,                           // ")"
+        S_LBRACE = 53,                           // "{"
+        S_RBRACE = 54,                           // "}"
+        S_LBRACKET = 55,                         // "["
+        S_RBRACKET = 56,                         // "]"
+        S_COMMA = 57,                            // ","
+        S_DOLLAR = 58,                           // "$"
+        S_QUESTION = 59,                         // "?"
+        S_COLON = 60,                            // ":"
+        S_IDENTIFIER = 61,                       // "identifier"
+        S_QUOTED_STRING = 62,                    // "quoted_string"
+        S_NUMBER = 63,                           // "number"
+        S_NOTE = 64,                             // "note"
+        S_IN_PORT = 65,                          // "in_port"
+        S_OUT_PORT = 66,                         // "out_port"
+        S_ZEROARGFUNC = 67,                      // "zeroargfunc"
+        S_ONEARGFUNC = 68,                       // "oneargfunc"
+        S_TWOARGFUNC = 69,                       // "twoargfunc"
+        S_COMPARISON = 70,                       // "comparison"
+        S_NEG = 71,                              // NEG
+        S_YYACCEPT = 72,                         // $accept
+        S_program = 73,                          // program
+        S_blocks = 74,                           // blocks
+        S_block = 75,                            // block
+        S_main_block = 76,                       // main_block
+        S_zero_or_more_statements = 77,          // zero_or_more_statements
+        S_one_or_more_statements = 78,           // one_or_more_statements
+        S_statement = 79,                        // statement
+        S_array_assignment = 80,                 // array_assignment
+        S_assignment = 81,                       // assignment
+        S_clear_statement = 82,                  // clear_statement
+        S_continue_statement = 83,               // continue_statement
+        S_exit_statement = 84,                   // exit_statement
+        S_for_statement = 85,                    // for_statement
+        S_elseif_group = 86,                     // elseif_group
+        S_elseif_clause = 87,                    // elseif_clause
+        S_if_statement = 88,                     // if_statement
+        S_procedure_call = 89,                   // procedure_call
+        S_reset_statement = 90,                  // reset_statement
+        S_wait_statement = 91,                   // wait_statement
+        S_while_statement = 92,                  // while_statement
+        S_expression_list = 93,                  // expression_list
+        S_exp = 94,                              // exp
+        S_string_list = 95,                      // string_list
+        S_string_exp = 96                        // string_exp
       };
     };
 
@@ -803,9 +817,10 @@ namespace yy {
       case symbol_kind::S_for_statement: // for_statement
       case symbol_kind::S_elseif_clause: // elseif_clause
       case symbol_kind::S_if_statement: // if_statement
-      case symbol_kind::S_print_statement: // print_statement
+      case symbol_kind::S_procedure_call: // procedure_call
       case symbol_kind::S_reset_statement: // reset_statement
       case symbol_kind::S_wait_statement: // wait_statement
+      case symbol_kind::S_while_statement: // while_statement
         value.move< Line > (std::move (that.value));
         break;
 
@@ -825,6 +840,7 @@ namespace yy {
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CEILING: // "ceiling"
+      case symbol_kind::S_CHANNELS: // "channels"
       case symbol_kind::S_CLEAR: // "clear"
       case symbol_kind::S_CONNECTED: // "connected"
       case symbol_kind::S_CONTINUE: // "continue"
@@ -842,12 +858,14 @@ namespace yy {
       case symbol_kind::S_MAX: // "max"
       case symbol_kind::S_MIN: // "min"
       case symbol_kind::S_NEXT: // "next"
+      case symbol_kind::S_NEXTHIGHCPU: // "nexthighcpu"
       case symbol_kind::S_NOT: // "not"
       case symbol_kind::S_OR: // "or"
       case symbol_kind::S_POW: // "pow"
       case symbol_kind::S_PRINT: // "print"
       case symbol_kind::S_RESET: // "reset"
       case symbol_kind::S_SAMPLE_RATE: // "sample_rate"
+      case symbol_kind::S_SET_CHANNELS: // "set_channels"
       case symbol_kind::S_SIGN: // "sign"
       case symbol_kind::S_SIN: // "sin"
       case symbol_kind::S_START: // "start"
@@ -859,6 +877,7 @@ namespace yy {
       case symbol_kind::S_TRIGGER: // "trigger"
       case symbol_kind::S_WAIT: // "wait"
       case symbol_kind::S_WHEN: // "when"
+      case symbol_kind::S_WHILE: // "while"
       case symbol_kind::S_MINUS: // "-"
       case symbol_kind::S_PLUS: // "+"
       case symbol_kind::S_STAR: // "*"
@@ -1072,9 +1091,10 @@ switch (yykind)
       case symbol_kind::S_for_statement: // for_statement
       case symbol_kind::S_elseif_clause: // elseif_clause
       case symbol_kind::S_if_statement: // if_statement
-      case symbol_kind::S_print_statement: // print_statement
+      case symbol_kind::S_procedure_call: // procedure_call
       case symbol_kind::S_reset_statement: // reset_statement
       case symbol_kind::S_wait_statement: // wait_statement
+      case symbol_kind::S_while_statement: // while_statement
         value.template destroy< Line > ();
         break;
 
@@ -1094,6 +1114,7 @@ switch (yykind)
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CEILING: // "ceiling"
+      case symbol_kind::S_CHANNELS: // "channels"
       case symbol_kind::S_CLEAR: // "clear"
       case symbol_kind::S_CONNECTED: // "connected"
       case symbol_kind::S_CONTINUE: // "continue"
@@ -1111,12 +1132,14 @@ switch (yykind)
       case symbol_kind::S_MAX: // "max"
       case symbol_kind::S_MIN: // "min"
       case symbol_kind::S_NEXT: // "next"
+      case symbol_kind::S_NEXTHIGHCPU: // "nexthighcpu"
       case symbol_kind::S_NOT: // "not"
       case symbol_kind::S_OR: // "or"
       case symbol_kind::S_POW: // "pow"
       case symbol_kind::S_PRINT: // "print"
       case symbol_kind::S_RESET: // "reset"
       case symbol_kind::S_SAMPLE_RATE: // "sample_rate"
+      case symbol_kind::S_SET_CHANNELS: // "set_channels"
       case symbol_kind::S_SIGN: // "sign"
       case symbol_kind::S_SIN: // "sin"
       case symbol_kind::S_START: // "start"
@@ -1128,6 +1151,7 @@ switch (yykind)
       case symbol_kind::S_TRIGGER: // "trigger"
       case symbol_kind::S_WAIT: // "wait"
       case symbol_kind::S_WHEN: // "when"
+      case symbol_kind::S_WHILE: // "while"
       case symbol_kind::S_MINUS: // "-"
       case symbol_kind::S_PLUS: // "+"
       case symbol_kind::S_STAR: // "*"
@@ -1467,6 +1491,21 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_CHANNELS (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_CHANNELS, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_CHANNELS (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_CHANNELS, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_CLEAR (std::string v, location_type l)
       {
         return symbol_type (token::TOK_CLEAR, std::move (v), std::move (l));
@@ -1722,6 +1761,21 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_NEXTHIGHCPU (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_NEXTHIGHCPU, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_NEXTHIGHCPU (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_NEXTHIGHCPU, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_NOT (std::string v, location_type l)
       {
         return symbol_type (token::TOK_NOT, std::move (v), std::move (l));
@@ -1807,6 +1861,21 @@ switch (yykind)
       make_SAMPLE_RATE (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOK_SAMPLE_RATE, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_SET_CHANNELS (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_SET_CHANNELS, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_SET_CHANNELS (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_SET_CHANNELS, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1972,6 +2041,21 @@ switch (yykind)
       make_WHEN (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOK_WHEN, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_WHILE (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_WHILE, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_WHILE (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_WHILE, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -2693,9 +2777,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 686,     ///< Last index in yytable_.
-      yynnts_ = 24,  ///< Number of nonterminal symbols.
-      yyfinal_ = 60 ///< Termination state number.
+      yylast_ = 828,     ///< Last index in yytable_.
+      yynnts_ = 25,  ///< Number of nonterminal symbols.
+      yyfinal_ = 70 ///< Termination state number.
     };
 
 
@@ -2750,9 +2834,10 @@ switch (yykind)
       case symbol_kind::S_for_statement: // for_statement
       case symbol_kind::S_elseif_clause: // elseif_clause
       case symbol_kind::S_if_statement: // if_statement
-      case symbol_kind::S_print_statement: // print_statement
+      case symbol_kind::S_procedure_call: // procedure_call
       case symbol_kind::S_reset_statement: // reset_statement
       case symbol_kind::S_wait_statement: // wait_statement
+      case symbol_kind::S_while_statement: // while_statement
         value.copy< Line > (YY_MOVE (that.value));
         break;
 
@@ -2772,6 +2857,7 @@ switch (yykind)
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CEILING: // "ceiling"
+      case symbol_kind::S_CHANNELS: // "channels"
       case symbol_kind::S_CLEAR: // "clear"
       case symbol_kind::S_CONNECTED: // "connected"
       case symbol_kind::S_CONTINUE: // "continue"
@@ -2789,12 +2875,14 @@ switch (yykind)
       case symbol_kind::S_MAX: // "max"
       case symbol_kind::S_MIN: // "min"
       case symbol_kind::S_NEXT: // "next"
+      case symbol_kind::S_NEXTHIGHCPU: // "nexthighcpu"
       case symbol_kind::S_NOT: // "not"
       case symbol_kind::S_OR: // "or"
       case symbol_kind::S_POW: // "pow"
       case symbol_kind::S_PRINT: // "print"
       case symbol_kind::S_RESET: // "reset"
       case symbol_kind::S_SAMPLE_RATE: // "sample_rate"
+      case symbol_kind::S_SET_CHANNELS: // "set_channels"
       case symbol_kind::S_SIGN: // "sign"
       case symbol_kind::S_SIN: // "sin"
       case symbol_kind::S_START: // "start"
@@ -2806,6 +2894,7 @@ switch (yykind)
       case symbol_kind::S_TRIGGER: // "trigger"
       case symbol_kind::S_WAIT: // "wait"
       case symbol_kind::S_WHEN: // "when"
+      case symbol_kind::S_WHILE: // "while"
       case symbol_kind::S_MINUS: // "-"
       case symbol_kind::S_PLUS: // "+"
       case symbol_kind::S_STAR: // "*"
@@ -2891,9 +2980,10 @@ switch (yykind)
       case symbol_kind::S_for_statement: // for_statement
       case symbol_kind::S_elseif_clause: // elseif_clause
       case symbol_kind::S_if_statement: // if_statement
-      case symbol_kind::S_print_statement: // print_statement
+      case symbol_kind::S_procedure_call: // procedure_call
       case symbol_kind::S_reset_statement: // reset_statement
       case symbol_kind::S_wait_statement: // wait_statement
+      case symbol_kind::S_while_statement: // while_statement
         value.move< Line > (YY_MOVE (s.value));
         break;
 
@@ -2913,6 +3003,7 @@ switch (yykind)
       case symbol_kind::S_AND: // "and"
       case symbol_kind::S_ASSIGN: // "="
       case symbol_kind::S_CEILING: // "ceiling"
+      case symbol_kind::S_CHANNELS: // "channels"
       case symbol_kind::S_CLEAR: // "clear"
       case symbol_kind::S_CONNECTED: // "connected"
       case symbol_kind::S_CONTINUE: // "continue"
@@ -2930,12 +3021,14 @@ switch (yykind)
       case symbol_kind::S_MAX: // "max"
       case symbol_kind::S_MIN: // "min"
       case symbol_kind::S_NEXT: // "next"
+      case symbol_kind::S_NEXTHIGHCPU: // "nexthighcpu"
       case symbol_kind::S_NOT: // "not"
       case symbol_kind::S_OR: // "or"
       case symbol_kind::S_POW: // "pow"
       case symbol_kind::S_PRINT: // "print"
       case symbol_kind::S_RESET: // "reset"
       case symbol_kind::S_SAMPLE_RATE: // "sample_rate"
+      case symbol_kind::S_SET_CHANNELS: // "set_channels"
       case symbol_kind::S_SIGN: // "sign"
       case symbol_kind::S_SIN: // "sin"
       case symbol_kind::S_START: // "start"
@@ -2947,6 +3040,7 @@ switch (yykind)
       case symbol_kind::S_TRIGGER: // "trigger"
       case symbol_kind::S_WAIT: // "wait"
       case symbol_kind::S_WHEN: // "when"
+      case symbol_kind::S_WHILE: // "while"
       case symbol_kind::S_MINUS: // "-"
       case symbol_kind::S_PLUS: // "+"
       case symbol_kind::S_STAR: // "*"
@@ -3039,7 +3133,7 @@ switch (yykind)
 
 
 } // yy
-#line 3043 "parser.hh"
+#line 3137 "parser.hh"
 
 
 

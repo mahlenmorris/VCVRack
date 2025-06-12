@@ -24,6 +24,7 @@ std::unordered_map<std::string, Expression::Operation> ExpressionFactory::string
   {"or", Expression::OR},
   {"abs", Expression::ABS},
   {"ceiling", Expression::CEILING},
+  {"channels", Expression::CHANNELS},
   {"connected", Expression::CONNECTED},
   {"floor", Expression::FLOOR},
   {"log2", Expression::LOG2},
@@ -76,10 +77,20 @@ float Expression::Compute() {
     case BINOP: return binop_compute();
     case ARRAY_VARIABLE: {
       int index = (int) floor(subexpressions[0].Compute());
-      if ((index < 0) || (index >= (int) array_ptr->size())) {
-        return 0.0f;  // The default value if not in the array.
+      // IN* and OUT* accesses are different from other arrays.
+      
+      if (port.port_type == PortPointer::NOT_PORT) {
+        if ((index < 0) || (index >= (int) array_ptr->size())) {
+          return 0.0f;  // The default value if not in the array.
+        }
+        return array_ptr->at(index);
+      } else {
+        // Channels are numbered 1-16 (e.g., see the VCV modules.)
+        if ((index < 1) || (index > 16)) {
+          return 0.0f;  // The default value if not in the array.
+        }
+        return env->GetVoltage(port, index);
       }
-      return array_ptr->at(index);
     }
     break;
     case VARIABLE: {
@@ -104,6 +115,7 @@ float Expression::Compute() {
     break;
     case ONEPORTFUNC: {
       switch (operation) {
+        case CHANNELS: return env->GetChannels(port);
         case CONNECTED: return env->Connected(port);
         case TRIGGER: return env->Trigger(port) ? 1.0f : 0.0f;
         default: return -8.642f;
@@ -492,7 +504,12 @@ Expression ExpressionFactory::ArrayVariable(const std::string &array_name,
   ex.type = Expression::ARRAY_VARIABLE;
   std::string lower;
   ToLower(array_name, &lower);
-  ex.array_ptr = driver->GetArrayFromName(lower);
+  if (driver->VarHasPort(lower)) {
+    ex.port = driver->GetPortFromName(lower);
+    ex.env = env;
+  } else {
+    ex.array_ptr = driver->GetArrayFromName(lower);
+  }
   ex.subexpressions.push_back(arg1);
   return ex;
 }
@@ -604,7 +621,11 @@ Line Line::ArrayAssignment(const std::string &variable_name,
   std::string lower;
   ToLower(variable_name, &lower);
   line.str1 = lower;  // Not required, but handy for troubleshooting.
-  line.array_ptr = driver->GetArrayFromName(lower);
+  if (driver->VarHasPort(lower)) {
+    line.assign_port = driver->GetPortFromName(lower);
+  } else {
+    line.array_ptr = driver->GetArrayFromName(lower);
+  }
   line.expr1 = index;
   line.expr2 = value;
   return line;
@@ -691,25 +712,25 @@ Line Line::ClearAll() {
   return line;
 }
 
-// loop_type is the string identifying the loop type; e.g., "for" or "all".
+// loop_type is the string identifying the loop type; e.g., "for", "while", or "all".
 Line Line::Continue(const std::string &loop_type) {
   Line line;
   line.type = CONTINUE;
-  line.str1 = loop_type;
+  ToLower(loop_type, &line.str1);
   return line;
 }
 
-// loop_type is the string identifying the loop type; e.g., "for" or "all".
+// loop_type is the string identifying the loop type; e.g., "for", "while", or "all".
 Line Line::Exit(const std::string &loop_type) {
   Line line;
   line.type = EXIT;
-  line.str1 = loop_type;
+  ToLower(loop_type, &line.str1);
   return line;
 }
 
 Line Line::ForNext(const Line &assign, const Expression &limit,
                    const Expression &step, const Statements &state,
-                   Driver* driver) {
+                   bool wait_on_next, Driver* driver) {
   Line line;
   line.type = FORNEXT;
   line.str1 = assign.str1;
@@ -723,6 +744,7 @@ Line Line::ForNext(const Line &assign, const Expression &limit,
   line.expr2 = limit;
   line.expr3 = step;
   line.statements.push_back(state);
+  line.wait_on_next = wait_on_next;
   return line;
 }
 
@@ -772,6 +794,17 @@ Line Line::Print(const std::string &port1, const ExpressionList &args,
   return line;
 }
 
+Line Line::SetChannels(const std::string &port1,
+     const Expression &channels_expr, Driver* driver) {
+  Line line;
+  line.type = SET_CHANNELS;
+  std::string lower;
+  ToLower(port1, &lower);
+  line.assign_port = driver->GetPortFromName(lower);
+  line.expr1 = channels_expr;
+  return line;
+}
+
 Line Line::Reset() {
   Line line;
   line.type = RESET;
@@ -783,6 +816,15 @@ Line Line::Wait(const Expression &expr) {
   line.type = WAIT;
   line.expr1 = expr;
   return line;
+}
+
+Line Line::While(const Expression &condition, const Statements &state,
+                  Driver* driver) {
+  Line line;
+  line.type = WHILE;
+  line.expr1 = condition;
+  line.statements.push_back(state);
+  return line;    
 }
 
 std::ostream& operator<<(std::ostream& os, Line line) {

@@ -21,6 +21,14 @@ void CodeBlock::SetVariableValue(float* variable_ptr,
   }
 }
 
+void CodeBlock::SetOUTSingleValue(const PortPointer &assign_port,
+    int channel, float value) {
+  if ((channel >= 1) && (channel <= 16)) {
+    environment->SetVoltage(assign_port, channel, value);
+  }  
+}
+
+
 float CodeBlock::GetVariableValue(float* variable_ptr,
     const PortPointer &port) {
   if (port.port_type == PortPointer::NOT_PORT) {
@@ -53,9 +61,20 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
 
   while (running && !waiting) {
     PCode* pcode = &(pcodes[current_line]);
+
+    // Only used when I'm debugging.
+    // std::cout << "Line #" << current_line << " -- " << pcode->to_string() << "\n";
     switch (pcode->type) {
       case PCode::ARRAY_ASSIGNMENT: {
-        pcode->DoArrayAssignment();
+        if (pcode->assign_port.port_type == PortPointer::OUTPUT) {
+          int channel = (int) floor(pcode->expr1.Compute());
+            if ((channel >= 1) && (channel <= 16)) {
+              environment->SetVoltage(pcode->assign_port, channel,
+                  pcode->expr2.Compute());
+            }
+        } else {  
+          pcode->DoArrayAssignment();
+        }
         current_line++;
       }
       break;
@@ -189,6 +208,16 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
         // Note: once tested that result was not empty, but sending empty string
         // could be intended behavior, I realize.
         environment->Send(pcode->assign_port, result);
+        current_line++;
+      }
+      break;
+      case PCode::SET_CHANNELS: {
+        // Number of channels is an int from 1-16.
+        int channels = floor(pcode->expr1.Compute());
+        // Do nothing if outside valid range.
+        if ((channels >= 1) && (channels <= 16)) {
+          environment->SetChannels(pcode->assign_port, channels);
+        }
         current_line++;
       }
       break;

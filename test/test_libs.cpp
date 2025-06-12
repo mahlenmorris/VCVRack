@@ -10,6 +10,7 @@ struct TestEnvironment : Environment {
   std::unordered_map<int, bool> connected;
   std::unordered_map<int, float> outputs;
   std::unordered_map<int, float> inputs;
+  std::unordered_map<std::string, float> inAndChannel;
   bool clear_called = false;
   bool starting = false;
   // List of strings sent via Send().
@@ -21,15 +22,36 @@ struct TestEnvironment : Environment {
     inputs[2] = c;
     inputs[3] = d;
   }
+  void SetInAndChannel(int index, int channel, float value) {
+    std::string key;
+    key.append(std::to_string(index));
+    key.append("+");
+    key.append(std::to_string(channel));
+    inAndChannel[key] = value;
+  }
   void setConnected(int index, bool is_connected) {
     connected[index] = is_connected;
   }
   float SampleRate() override {
     return 43210;  // An unusual sample rate!
   }
+  float GetChannels(const PortPointer &) override { return 1.0f; }
+  void SetChannels(const PortPointer &, int ) override { }
+
   float GetVoltage(const PortPointer &port) override {
     if (port.port_type == PortPointer::INPUT) {
       return inputs[port.index];
+    } else {
+      return outputs[port.index];
+    }
+  }
+  float GetVoltage(const PortPointer &port, int channel) override {
+    if (port.port_type == PortPointer::INPUT) {
+      std::string key;
+      key.append(std::to_string(port.index));
+      key.append("+");
+      key.append(std::to_string(channel));
+      return inAndChannel[key];
     } else {
       return outputs[port.index];
     }
@@ -41,6 +63,8 @@ struct TestEnvironment : Environment {
       outputs[port.index] = value;
     }
   }
+  void SetVoltage(const PortPointer &, int, float) { }
+
   float Connected(const PortPointer &port) override {
     return (connected.find(port.index) != connected.end() &&
             connected.at(port.index)) ? 1.0f : 0.0f;
@@ -189,6 +213,21 @@ TEST(ParserTest, SimpleTest)
     EXPECT_EQ("out1", lines->at(0).str1);
     EXPECT_FLOAT_EQ(1.5, lines->at(0).expr1.Compute());
     EXPECT_TRUE(lines->at(0).expr1.Volatile());
+}
+
+TEST(ParserTest, PolyphonicInputsTest)
+{
+    Driver drv;
+    drv.AddPortForName("in1", true, 0);
+    TestEnvironment test_env;
+    drv.SetEnvironment(&test_env);
+
+    test_env.SetInAndChannel(0, 2, 0.12345);
+
+    EXPECT_EQ(0, drv.parse("foo = IN1[2]\n"));
+    std::vector<Line>* lines = &(drv.blocks[0].lines);
+    ASSERT_EQ(1, lines->size());
+    EXPECT_FLOAT_EQ(0.12345, lines->at(0).expr1.Compute());
 }
 
 TEST(ParserTest, FunctionTest)
@@ -666,7 +705,7 @@ TEST(ParserTest, ParseStringTest)
 
 TEST(RunTest, RunsAtAll) {
   Driver drv;
-  PCodeTranslator translator;
+  PCodeTranslator translator(&drv);
   TestEnvironment test_env;
   CodeBlock block(&test_env);
 
@@ -679,7 +718,7 @@ TEST(RunTest, RunsAtAll) {
 
 TEST(RunTest, RunsClear) {
   Driver drv;
-  PCodeTranslator translator;
+  PCodeTranslator translator(&drv);
   TestEnvironment test_env;
   drv.SetEnvironment(&test_env);
   CodeBlock block(&test_env);
@@ -694,7 +733,7 @@ TEST(RunTest, RunsClear) {
 
 TEST(RunTest, StringAssignment) {
   Driver drv;
-  PCodeTranslator translator;
+  PCodeTranslator translator(&drv);
   TestEnvironment test_env;
   CodeBlock block(&test_env);
 
@@ -755,20 +794,22 @@ TEST(RunTest, StringAssignment) {
   EXPECT_EQ("bar", *(drv.GetStringVarFromName("ploop")));
 
   EXPECT_EQ(0, drv.parse(
-    "g$ = \"boo!\"\n"
-    "a$[2] = {1, \"---\", debug(bb), g$}\n"
-    "a$[2] = 3\n"
-    "result$ = debug(a$[], 0, 6)"));
+    R"(
+    g$ = "boo!"
+    a$[2] = {1, "---", debug(bb), g$}
+    a$[2] = 3
+    result$ = debug(a$[], 0, 6)
+    )"));
   ASSERT_EQ(1, drv.blocks.size());
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
   EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
-  EXPECT_EQ("a$[0] = {\"\", \"\", \"3\", \"---\", \"bb = 0\", \"boo!\", \"\"}",
+  EXPECT_EQ(R"(a$[0] = {"", "", "3", "---", "bb = 0", "boo!", ""})",
     *(drv.GetStringVarFromName("result")));
 }
 
 TEST(RunTest, RunsPrint) {
   Driver drv;
-  PCodeTranslator translator;
+  PCodeTranslator translator(&drv);
   TestEnvironment test_env;
   drv.SetEnvironment(&test_env);
   CodeBlock block(&test_env);
@@ -784,15 +825,17 @@ TEST(RunTest, RunsPrint) {
 
 TEST(RunTest, RunsPrintWithStringVar) {
   Driver drv;
-  PCodeTranslator translator;
+  PCodeTranslator translator(&drv);
   TestEnvironment test_env;
   drv.SetEnvironment(&test_env);
   CodeBlock block(&test_env);
 
   EXPECT_EQ(0, drv.parse(
-    "space$ = \" \"\n"
-    "msg$ = \"hello, world\"\n"
-    "print(out1, 7, space$, sin(6), space$, msg$, space$)"));
+    R"(
+    space$ = " "
+    msg$ = "hello, world"
+    print(out1, 7, space$, sin(6), space$, msg$, space$)
+    )"));
   ASSERT_EQ(1, drv.blocks.size());
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
   ASSERT_EQ(0, test_env.text_sent.size());
@@ -803,7 +846,7 @@ TEST(RunTest, RunsPrintWithStringVar) {
 
 TEST(RunTest, RunsPrintNewline) {
   Driver drv;
-  PCodeTranslator translator;
+  PCodeTranslator translator(&drv);
   TestEnvironment test_env;
   drv.SetEnvironment(&test_env);
   CodeBlock block(&test_env);
@@ -819,7 +862,7 @@ TEST(RunTest, RunsPrintNewline) {
 
 TEST(RunTest, RunsPrintCase) {
   Driver drv;
-  PCodeTranslator translator;
+  PCodeTranslator translator(&drv);
   TestEnvironment test_env;
   drv.SetEnvironment(&test_env);
   CodeBlock block(&test_env);
@@ -835,7 +878,7 @@ TEST(RunTest, RunsPrintCase) {
 
 TEST(RunTest, RunsStringFunctions1) {
   Driver drv;
-  PCodeTranslator translator;
+  PCodeTranslator translator(&drv);
   TestEnvironment test_env;
   drv.SetEnvironment(&test_env);
   CodeBlock block(&test_env);
@@ -851,15 +894,17 @@ TEST(RunTest, RunsStringFunctions1) {
 
 TEST(RunTest, RunsStringFunctions2) {
   Driver drv;
-  PCodeTranslator translator;
+  PCodeTranslator translator(&drv);
   TestEnvironment test_env;
   drv.SetEnvironment(&test_env);
   CodeBlock block(&test_env);
 
   EXPECT_EQ(0, drv.parse(
-    "a[0] = { 5, 4, 3, 2, 1}\n"
-    "a[2] = 8.8\n"
-    "print(out1, debug(a[], 0, 5))"));
+    R"(
+    a[0] = { 5, 4, 3, 2, 1}
+    a[2] = 8.8
+    print(out1, debug(a[], 0, 5))
+    )"));
   ASSERT_EQ(1, drv.blocks.size());
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
   ASSERT_EQ(0, test_env.text_sent.size());
@@ -870,7 +915,7 @@ TEST(RunTest, RunsStringFunctions2) {
 
 TEST(RunTest, RunsStringFunctions3) {
   Driver drv;
-  PCodeTranslator translator;
+  PCodeTranslator translator(&drv);
   TestEnvironment test_env;
   drv.SetEnvironment(&test_env);
   CodeBlock block(&test_env);
@@ -887,16 +932,18 @@ TEST(RunTest, RunsStringFunctions3) {
 
 TEST(RunTest, RunsStringFunctions4) {
   Driver drv;
-  PCodeTranslator translator;
+  PCodeTranslator translator(&drv);
   TestEnvironment test_env;
   drv.SetEnvironment(&test_env);
   CodeBlock block(&test_env);
 
   // Make sure works even when debug() is first mention of the variable.
   EXPECT_EQ(0, drv.parse(
-    "print(OUT3, debug(foo))\n"
-    "foo = 4\n"
-    "print(OUT3, debug(foo))"));
+    R"(
+    print(OUT3, debug(foo))
+    foo = 4
+    print(OUT3, debug(foo))
+    )"));
   ASSERT_EQ(1, drv.blocks.size());
   ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
   ASSERT_EQ(0, test_env.text_sent.size());
@@ -908,7 +955,7 @@ TEST(RunTest, RunsStringFunctions4) {
 
 TEST(RunTest, StartTest) {
   Driver drv;
-  PCodeTranslator translator;
+  PCodeTranslator translator(&drv);
   TestEnvironment test_env;
   drv.SetEnvironment(&test_env);
   CodeBlock block(&test_env);
@@ -926,7 +973,7 @@ TEST(RunTest, StartTest) {
 
 TEST(RunTest, RunsForLoop) {
   Driver drv;
-  PCodeTranslator translator;
+  PCodeTranslator translator(&drv);
   TestEnvironment test_env;
   CodeBlock block(&test_env);
 
@@ -946,3 +993,292 @@ TEST(RunTest, RunsForLoop) {
   EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
   EXPECT_EQ(0.4f, *(drv.GetVarFromName("i")));
 }
+
+TEST(RunTest, RunsWhileLoopToCompletion) {
+  Driver drv;
+  PCodeTranslator translator(&drv);
+  TestEnvironment test_env;
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse(
+    R"(
+    part = .1
+    WHILE part < .9
+      t = part
+      part = part * 2
+    END WHILE
+    t = 100
+    )"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(0.1f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(0.2f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(0.4f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(0.8f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(100.0f, *(drv.GetVarFromName("t")));
+}
+
+TEST(RunTest, RunsForLoopWithContinueAndExit) {
+  Driver drv;
+  PCodeTranslator translator(&drv);
+  TestEnvironment test_env;
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse(
+    R"(
+    for I = 0 To 1 STEP 0.1
+      IF i == 0.2 THEN CONTINUE FOR END IF 
+      IF i == 0.5 THEN EXIT FOR END IF 
+      t = i  
+    nExT
+    t = 111
+    )"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  ASSERT_EQ(10, block.pcodes.size());
+
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(0.0f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(0.1f, *(drv.GetVarFromName("t")));
+  // Skips 0.2.
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(0.3f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(0.4f, *(drv.GetVarFromName("t")));
+  // Exit takes us here.
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(111.0f, *(drv.GetVarFromName("t")));
+}
+
+TEST(RunTest, ErrorForLoopWithContinueWhile) {
+  Driver drv;
+  PCodeTranslator translator(&drv);
+  TestEnvironment test_env;
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse(
+    R"(
+    for I = 0 To 1 STEP 0.1
+      IF i == 0.2 THEN CONTINUE WHILE END IF 
+      IF i == 0.5 THEN EXIT FOR END IF 
+      t = i  
+    nExT
+    t = 111
+    )"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_FALSE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  ASSERT_EQ(1, drv.errors.size());
+  Error err = drv.errors[0];
+  EXPECT_EQ("'CONTINUE WHILE' statement is not in a WHILE loop.", err.message);
+}
+
+TEST(RunTest, ErrorWhileLoopWithContinueFor) {
+  Driver drv;
+  PCodeTranslator translator(&drv);
+  TestEnvironment test_env;
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse(
+    R"(
+    i = 0
+    while I < 10
+      i = i + 1
+      IF i == 2 THEN CONTINUE FOR END IF 
+      t = i  
+    END WHILE
+    )"));
+
+  // The CONTINUE FOR with no surrounding FOR loop should fail compilation!
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_FALSE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  ASSERT_EQ(1, drv.errors.size());
+  Error err = drv.errors[0];
+  EXPECT_EQ("'CONTINUE FOR' statement is not in a FOR loop.", err.message);
+}
+
+TEST(RunTest, ErrorForLoopWithExitWhile) {
+  Driver drv;
+  PCodeTranslator translator(&drv);
+  TestEnvironment test_env;
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse(
+    R"(
+    for I = 0 To 1 STEP 0.1
+      IF i == 0.2 THEN EXIT WHILE END IF 
+      t = i  
+    nExT
+    t = 111
+    )"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_FALSE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  ASSERT_EQ(1, drv.errors.size());
+  Error err = drv.errors[0];
+  EXPECT_EQ("'EXIT WHILE' statement is not in a WHILE loop.", err.message);
+}
+
+TEST(RunTest, ErrorWhileLoopWithExitFor) {
+  Driver drv;
+  PCodeTranslator translator(&drv);
+  TestEnvironment test_env;
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse(
+    R"(
+    i = 0
+    while I < 10
+      i = i + 1
+      IF i == 2 THEN EXIT FOR END IF 
+      t = i  
+    END WHILE
+    )"));
+
+  // The CONTINUE FOR with no surrounding FOR loop should fail compilation!
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_FALSE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+  ASSERT_EQ(1, drv.errors.size());
+  Error err = drv.errors[0];
+  EXPECT_EQ("'EXIT FOR' statement is not in a FOR loop.", err.message);
+}
+
+TEST(RunTest, RunsWhileLoopWithContinueAndExit) {
+  Driver drv;
+  PCodeTranslator translator(&drv);
+  TestEnvironment test_env;
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse(
+    R"(
+    i = 0
+    while I < 10
+      i = i + 1
+      IF i == 2 THEN CONTINUE WHILE END IF 
+      IF i == 5 THEN EXIT WHILE END IF 
+      t = i  
+    END WHILE
+    t = 123
+    )"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(1.0f, *(drv.GetVarFromName("t")));
+  // Skips 2.0.
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(3.0f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(4.0f, *(drv.GetVarFromName("t")));
+  // Exit takes us here.
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(123.0f, *(drv.GetVarFromName("t")));
+}
+
+TEST(RunTest, RunsForAndWhileLoopWithContinueAndExit) {
+  Driver drv;
+  PCodeTranslator translator(&drv);
+  TestEnvironment test_env;
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse(
+    R"(
+    FOR whole = 0 to 5
+      part = .1
+      WHILE part < .9
+        IF part == .4 THEN
+          part = 0.35
+          CONTINUE WHILE
+        END IF
+        IF whole == 1 THEN
+          t = 111
+          EXIT FOR
+        END IF
+        t = whole + part
+        part = part * 2
+      END WHILE
+    NEXT
+    t = -123
+    WAIT 1
+    )"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(0.1f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(0.2f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(0.35f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(0.7f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  // This is the gap between the END WHILE and the NEXT, which does not change 't'.
+  EXPECT_EQ(0.7f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(-123.0f, *(drv.GetVarFromName("t")));
+}
+
+// Reverse the situation above.
+TEST(RunTest, RunsForAndWhileLoopWithContinueAndExitReversed) {
+  Driver drv;
+  PCodeTranslator translator(&drv);
+  TestEnvironment test_env;
+  CodeBlock block(&test_env);
+
+  EXPECT_EQ(0, drv.parse(
+    R"(
+    FOR whole = 0 to 4
+      part = .1
+      WHILE part < .9
+        IF part == .4 THEN
+          EXIT WHILE
+        END IF
+        IF whole == 1 THEN
+          CONTINUE FOR
+        END IF
+        t = whole + part
+        part = part * 2
+      END WHILE
+    NEXT
+    t = -123
+    WAIT 1
+    )"));
+  ASSERT_EQ(1, drv.blocks.size());
+  ASSERT_TRUE(translator.BlockToCodeBlock(&block, drv.blocks[0]));
+
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(0.1f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(0.2f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  // This is the gap between the END WHILE and the NEXT, which does not change 't'.
+  EXPECT_EQ(0.2f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(2.1f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(2.2f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(2.2f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(3.1f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(3.2f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(3.2f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(4.1f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(4.2f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(4.2f, *(drv.GetVarFromName("t")));
+  EXPECT_EQ(CodeBlock::CONTINUES, block.Run(true));
+  EXPECT_EQ(-123.0f, *(drv.GetVarFromName("t")));
+}
+
+// TODO: Are EXIT ALL and CONTINUE ALL tested well? 

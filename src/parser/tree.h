@@ -50,6 +50,7 @@ class Expression {
     OR,
     ABS,
     CEILING,
+    CHANNELS,
     CONNECTED,
     DEBUG,
     FLOOR,
@@ -205,9 +206,11 @@ struct Line {
     FORNEXT,           // for str1 = expr1 to expr2 state1 next
     IFTHEN,            // if expr1 then state1 [elseifs - state2] end if
     IFTHENELSE,        // if expr1 then state1 [elseifs - state3] else state2 end if
-    PRINT,             // print(out1, )
+    PRINT,             // print(out1, ...)
     RESET,             // Start all blocks from the top, as if newly compiled.
-    WAIT               // wait expr1
+    SET_CHANNELS,      // Set number of channels on an OUTn port.
+    WAIT,              // wait expr1
+    WHILE              // while expr1 statements end while
   };
   Type type;
   std::string str1;
@@ -222,6 +225,7 @@ struct Line {
   Expression expr1, expr2, expr3;
   ExpressionList expr_list;
   std::vector<Statements> statements;
+  bool wait_on_next;  // to distinguish NEXT from NEXTHIGHCPU.
 
   static Line ArrayAssignment(const std::string &variable_name,
                               const Expression &index,
@@ -264,7 +268,7 @@ struct Line {
 
   static Line ForNext(const Line &assign, const Expression &limit,
                       const Expression &step, const Statements &state,
-                      Driver* driver);
+                      bool wait_on_next, Driver* driver);
 
   static Line IfThen(const Expression &bool_expr,
                      const Statements &then_state,
@@ -278,10 +282,16 @@ struct Line {
   static Line Print(const std::string &port1, const ExpressionList &args,
                     Driver* driver);
 
+  static Line SetChannels(const std::string &port1,
+     const Expression &channels_expr, Driver* driver);
+
   static Line Reset();
 
   static Line Wait(const Expression &expr);
 
+  static Line While(const Expression &condition, const Statements &state,
+                    Driver* driver);
+  
   friend std::ostream& operator<<(std::ostream& os, Line line);
 };
 

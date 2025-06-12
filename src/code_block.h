@@ -65,6 +65,10 @@ struct CodeBlock {
   // and these methods?
   void SetVariableValue(float* variable_ptr,
      const PortPointer &assign_port, float value);
+
+  // Just for setting values in an OUTn[]. "SingleValue" because this
+  // doesn't handle assigning multiple values to a range of an array.
+  void SetOUTSingleValue(const PortPointer &assign_port, int channel, float value);
   float GetVariableValue(float* variable_ptr, const PortPointer &port);
 
   // Only called when the global "running" status of the program is true.
@@ -72,6 +76,13 @@ struct CodeBlock {
   // TODO: how to handle EXIT ALL? Does this stop *all* blocks? Just this one? Need a new gesture
   // to just stop one block? EXIT BLOCK?
   CodeBlock::RunStatus Run(bool loops);
+
+  void DebugPrint() {
+    std::cout << "current_line = " << current_line << "\n";
+    for (PCode pcode : pcodes) {
+      std::cout << pcode.to_string() << "\n";
+    }
+  }
 };
 
 #endif // CODE_BLOCK_H
