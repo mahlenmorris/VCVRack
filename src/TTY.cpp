@@ -473,7 +473,8 @@ struct TTYModuleResizeHandle : OpaqueWidget {
 
 static std::string module_browser_text =
   "Logs DISTINCT values coming in through V1 or V2.\n"
-  "And logs Tipsy text messages sent to TEXT1/2/3\n";
+  "Logs Tipsy text messages sent by BASICally or Memory.\n"
+  "Horizontally resizable.";
 
 // Class for the editor.
 struct TTYTextField : STTextField {
@@ -531,7 +532,7 @@ struct TTYTextField : STTextField {
     } else {
       // Show something inviting when being shown in the module browser.
       this->text = &module_browser_text;
-      set_visible_lines(28);  // TODO: make this larger, so preview is more appealing?
+      set_visible_lines(20);  // Making this larger, so preview is more appealing.
     }
     textUpdated();
   }

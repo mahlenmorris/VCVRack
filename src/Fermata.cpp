@@ -413,10 +413,9 @@ static std::string module_browser_text =
   "Write your text here! For example:\n"
   "* Instructions for playing the patch.\n"
   "* Notes/reminders on how this part of the patch works.\n"
-  "* TODO's or ideas.\n"
-  "* A short story you're writing while listening to your patch.\n\n"
-  "You can also set the title (below) in the module menu, as well as a pick "
-  "a font and screen colors. And you can resize the module by dragging the "
+  "* TODO's, ideas, or a poem you're writing.\n\n"
+  "You can also set the title (below) in the module menu, as well as pick "
+  "a font, font size, and colors. You can resize the module by dragging the "
   "right edge (over there -->).\n"
   "If you shrink the module enough, the title becomes a large label on "
   "the front.";
@@ -473,7 +472,7 @@ struct FermataTextField : STTextField {
     } else {
       // Show something inviting when being shown in the module browser.
       this->text = &module_browser_text;
-      set_visible_lines(28);  // TODO: make this larger, so preview is more appealing?
+      set_visible_lines(20);  // Making this larger, so preview is more appealing.
     }
     textUpdated();
   }
