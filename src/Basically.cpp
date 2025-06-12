@@ -1543,6 +1543,7 @@ struct BasicallyWidget : ModuleWidget {
       "Language hints (selecting inserts code)"));
     std::pair<std::string, std::string> syntax[] = {
       {"OUT1 = IN1 + offset[n]", "OUT1 = IN1 + offset[n]\n"},
+      {"OUT1[chan] = IN1[chan] / 2", "OUT1[chan] = IN1[chan] / 2\n"},
       {"offset[0] = {2, 0.2, foo, 100*4.5}", "offset[0] = {2, 0.2, foo, 100*4.5}\n"},
       {"WAIT 200", "WAIT 200\n"},
       {"' I'm a comment!", "' I'm a comment! Only humans read me.\n"},
@@ -1554,16 +1555,17 @@ struct BasicallyWidget : ModuleWidget {
        "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSE\n  OUT1 = -5\nEND IF\n"},
       {"IF IN1 == 0 THEN OUT1 = IN2 * IN1 ELSEIF IN1 < 2 THEN OUT1 = IN2 ELSE OUT1 = -5 END IF\n",
        "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSEIF IN1 < 2 THEN\n  OUT1 = IN2\nELSE\n  OUT1 = -5\nEND IF\n"},
-      {"FOR i = 0 TO 10 foo = IN1 + i NEXT\n",
+      {"FOR i = 0 TO 10 foo = IN1 + i NEXT|NEXTHIGHCPU\n",
        "FOR i = 0 TO 10\n  foo = IN1 + i\nNEXT\n"},
       {"FOR i = 0 TO 10 STEP 0.2 foo = IN1 + i NEXT\n",
        "FOR i = 0 TO 10 STEP 0.2\n  foo = IN1 + i\nNEXT\n"},
-      {"CONTINUE FOR", "CONTINUE FOR\n"},
-      {"EXIT FOR", "EXIT FOR\n"},
-      {"CONTINUE ALL", "CONTINUE ALL\n"},
-      {"EXIT ALL", "EXIT ALL\n"},
+      {"WHILE foo > 10  foo = foo / 2 END WHILE\n",
+       "WHILE foo > 10\n  foo = foo / 2\nEND WHILE\n"},
+      {"CONTINUE FOR|WHILE|ALL", "CONTINUE FOR\n"},
+      {"EXIT FOR|WHILE|ALL", "EXIT WHILE\n"},
       {"CLEAR ALL", "CLEAR ALL\n"},
       {"RESET", "RESET\n"},
+      {"set_channels(OUT1, 6)", "set_channels(OUT1, 6)\n"},
       {"ALSO ... END ALSO", "ALSO\n  out1 = mod(out1 + random(0, 0.1))\nEND ALSO"},
       {"WHEN start() limit = 200 curr = 0 END WHEN",
        "WHEN start()\n  limit = 200\n  curr = 0\nEND WHEN"}
@@ -1584,6 +1586,7 @@ struct BasicallyWidget : ModuleWidget {
     std::pair<std::string, std::string> math_funcs[] = {
       {"abs(x) - this number without a negative sign", "abs(IN1)"},
       {"ceiling(x) - integer value at or above x", "ceiling(IN1)"},
+      {"channels(p) - number of channels in polyphonic INx port p", "channels(IN1)"},
       {"connected(x) - 1 if named port x has a cable attached, 0 if not",
        "connected(IN1)"},
       {"floor(x) - integer value at or below x", "floor(IN1)"},
@@ -1608,7 +1611,7 @@ struct BasicallyWidget : ModuleWidget {
        "IF time() > 60 THEN ' It's been a minute."},
       {"time_millis() - Number of milliseconds since this BASICally module started running",
        "IF time_millis() > 1000 THEN ' It's been a second."},
-      {"trigger(x) - 1 only for the moment when the IN port x receives a trigger",
+      {"trigger(p) - 1 only for the moment when the INx port p receives a trigger",
        "WHEN trigger(IN9)"}
     };
     MenuItem* math_menu = createSubmenuItem("Math", "",
