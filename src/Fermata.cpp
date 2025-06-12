@@ -33,6 +33,7 @@ struct Fermata : Module {
       json_object_set_new(rootJ, "font_choice",
                           json_stringn(font_choice.c_str(), font_choice.size()));
     }
+    json_object_set_new(rootJ, "visible_lines", json_integer(visible_lines));
     if (title_text.length() > 0) {
       json_object_set_new(rootJ, "title_text",
                           json_stringn(title_text.c_str(), title_text.size()));
@@ -53,6 +54,9 @@ struct Fermata : Module {
     json_t* screenJ = json_object_get(rootJ, "screen_colors");
     if (screenJ)
         screen_colors = json_integer_value(screenJ);
+    json_t* visible_linesJ = json_object_get(rootJ, "visible_lines");
+    if (visible_linesJ)
+        visible_lines = json_integer_value(visible_linesJ);
     json_t* font_choiceJ = json_object_get(rootJ, "font_choice");
     if (font_choiceJ) {
       font_choice = json_string_value(font_choiceJ);
@@ -88,6 +92,7 @@ struct Fermata : Module {
   int previous_cursor = 0;
   // Amber on Black is the default; it matches the !!!! decor perfectly.
   long long int screen_colors = 0xffc000000000;
+  int visible_lines = 28;
   // width (in "holes") of the whole module. Changed by the resize bar on the
   // right (within limits), and informs the size of the display and text field.
   // Saved in the json for the module.
@@ -202,7 +207,7 @@ struct FermataModuleResizeHandle : OpaqueWidget {
     Rect oldBox = mw->box;
     // Minimum and maximum number of holes we allow the module to be.
     const float minWidth = 3 * RACK_GRID_WIDTH;
-    const float maxWidth = 64 * RACK_GRID_WIDTH;
+    const float maxWidth = 300 * RACK_GRID_WIDTH;
     if (right) {
       newBox.size.x += deltaX;
       newBox.size.x = std::fmax(newBox.size.x, minWidth);
@@ -408,10 +413,9 @@ static std::string module_browser_text =
   "Write your text here! For example:\n"
   "* Instructions for playing the patch.\n"
   "* Notes/reminders on how this part of the patch works.\n"
-  "* TODO's or ideas.\n"
-  "* A short story you're writing while listening to your patch.\n\n"
-  "You can also set the title (below) in the module menu, as well as a pick "
-  "a font and screen colors. And you can resize the module by dragging the "
+  "* TODO's, ideas, or a poem you're writing.\n\n"
+  "You can also set the title (below) in the module menu, as well as pick "
+  "a font, font size, and colors. You can resize the module by dragging the "
   "right edge (over there -->).\n"
   "If you shrink the module enough, the title becomes a large label on "
   "the front.";
@@ -423,6 +427,28 @@ struct FermataTextField : STTextField {
   bool was_selected;
 
   long long int color_scheme;
+  std::unordered_map<int, std::pair<int, int>> lines_to_font_size_and_offset;
+
+  FermataTextField() {
+    for (int index = 0; index < 13; index++) {
+      lines_to_font_size_and_offset.insert({LARGER_TEXT_INFO[index][0],
+         std::make_pair(LARGER_TEXT_INFO[index][1], LARGER_TEXT_INFO[index][2])});
+    }
+  }
+
+  void set_visible_lines(int visible_lines) {
+    std::unordered_map<int, std::pair<int, int>>::const_iterator found =
+       lines_to_font_size_and_offset.find(visible_lines);
+    if (found == lines_to_font_size_and_offset.end()) {
+      fontSize = 12;
+      textOffset = math::Vec(3, 3);
+    } else {
+      fontSize = found->second.first;
+      textOffset = math::Vec(3, (float) (found->second.second));
+    }
+    // At fontsize 12, it's 28 rows.
+    extended.Initialize(visible_lines, visible_lines >= 3 ? 1 : 0);  // Window Size depends on font size.
+  }
 
   NVGcolor int_to_color(int color) {
     return nvgRGB(color >> 16, (color & 0xff00) >> 8, color & 0xff);
@@ -442,9 +468,11 @@ struct FermataTextField : STTextField {
     // If this is the module browser, 'module' will be null!
     if (module != nullptr) {
       this->text = &(module->text);
+      set_visible_lines(module->visible_lines);
     } else {
       // Show something inviting when being shown in the module browser.
       this->text = &module_browser_text;
+      set_visible_lines(20);  // Making this larger, so preview is more appealing.
     }
     textUpdated();
   }
@@ -490,6 +518,10 @@ struct FermataTextField : STTextField {
       color_scheme = module->screen_colors;
       color = int_to_color(color_scheme >> 24);
       bgColor = int_to_color(color_scheme & 0xffffff);
+    }
+    if (module && (fabs(fontSize - module->visible_lines) > 0.1)) {
+      set_visible_lines(module->visible_lines);
+      frame_buffer->setDirty();
     }
     if (module && module->editor_refresh) {
       // TODO: is this checked often enough? I don't know when step()
@@ -580,7 +612,6 @@ struct FermataWidget : ModuleWidget {
     closed_title->module = module;
     closed_title->hide();  // Only shown when at smallest size.
     addChild(closed_title);
-
 
     // The FramebufferWidget that caches the appearence of the text, so we
     // don't have to keep redrawing it (and wasting UI CPU to do it).
@@ -691,6 +722,28 @@ struct FermataWidget : ModuleWidget {
      }
     );
     menu->addChild(color_menu);
+
+    // 28 * (12.0 / fontSize) = rows
+    // 12 / fontSize = rows / 28
+    // fontSize / 12 = 28 / rows
+    // fontSize = 28*12/rows
+
+    MenuItem* visible_lines_menu = createSubmenuItem("Visible Lines", "",
+      [=](Menu* menu) {
+          for (int index = 0; index < 13; index++) {
+            int lines = LARGER_TEXT_INFO[index][0];
+            menu->addChild(createCheckMenuItem(std::to_string(lines), "",
+                [=]() {return lines == module->visible_lines;},
+                [=]() {module->visible_lines = lines;
+                       textField->set_visible_lines(module->visible_lines);
+                       module->RedrawText();
+                      }
+            ));
+          }
+      }
+    );
+    menu->addChild(visible_lines_menu);
+
 
     std::pair<std::string, std::string> fonts[] = {
       {"VCV font (like Notes)", "res/fonts/ShareTechMono-Regular.ttf"},

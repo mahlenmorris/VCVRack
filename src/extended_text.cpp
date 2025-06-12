@@ -4,6 +4,22 @@
 
 #include "extended_text.h"
 
+int LARGER_TEXT_INFO[13][3] = {
+  {28, 12, 3},
+  {24, 14, 4},
+  {20, 17, 4},
+  {17, 20, 6},
+  {14, 24, 10},
+  {11, 31, 14},
+  {8, 42, 20},
+  {6, 56, 28},
+  {5, 67, 35},
+  {4, 84, 45},
+  {3, 112, 61},
+  {2, 168, 94},
+  {1, 400, 240}
+};
+
 void ExtendedText::Initialize(int length, int buffer) {
   window_length = length;
   buffer_length = buffer;

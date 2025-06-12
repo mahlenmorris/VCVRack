@@ -100,6 +100,7 @@ struct TTY : Module {
       json_object_set_new(rootJ, "font_choice",
                           json_stringn(font_choice.c_str(), font_choice.size()));
     }
+    json_object_set_new(rootJ, "visible_lines", json_integer(visible_lines));
     if (preface_outputs) {
       json_object_set_new(rootJ, "preface_outputs", json_integer(1));
     }
@@ -124,6 +125,9 @@ struct TTY : Module {
     if (font_choiceJ) {
       font_choice = json_string_value(font_choiceJ);
     }
+    json_t* visible_linesJ = json_object_get(rootJ, "visible_lines");
+    if (visible_linesJ)
+        visible_lines = json_integer_value(visible_linesJ);
     json_t* preface_outputsJ = json_object_get(rootJ, "preface_outputs");
     if (preface_outputsJ) {
       preface_outputs = json_integer_value(preface_outputsJ) == 1;
@@ -350,6 +354,7 @@ struct TTY : Module {
 
   // Black on yellow paper color (by my memory, at least).
   long long int screen_colors = 0x000000edc672;
+  int visible_lines = 28;
   // width (in "holes") of the whole module. Changed by the resize bar on the
   // right (within limits), and informs the size of the display and text field.
   // Saved in the json for the module.
@@ -426,7 +431,7 @@ struct TTYModuleResizeHandle : OpaqueWidget {
     Rect oldBox = mw->box;
     // Minimum and maximum number of holes we allow the module to be.
     const float minWidth = 4 * RACK_GRID_WIDTH;
-    const float maxWidth = 64 * RACK_GRID_WIDTH;
+    const float maxWidth = 300 * RACK_GRID_WIDTH;
     newBox.size.x += deltaX;
     newBox.size.x = std::fmax(newBox.size.x, minWidth);
     newBox.size.x = std::fmin(newBox.size.x, maxWidth);
@@ -468,7 +473,8 @@ struct TTYModuleResizeHandle : OpaqueWidget {
 
 static std::string module_browser_text =
   "Logs DISTINCT values coming in through V1 or V2.\n"
-  "And logs Tipsy text messages sent to TEXT1/2/3\n";
+  "Logs Tipsy text messages sent by BASICally or Memory.\n"
+  "Horizontally resizable.";
 
 // Class for the editor.
 struct TTYTextField : STTextField {
@@ -476,6 +482,34 @@ struct TTYTextField : STTextField {
   FramebufferWidget* frame_buffer;
   bool was_selected;
   long long int color_scheme;
+  std::unordered_map<int, std::pair<int, int>> lines_to_font_size_and_offset;
+
+  TTYTextField() {
+    for (int index = 0; index < 13; index++) {
+      lines_to_font_size_and_offset.insert({LARGER_TEXT_INFO[index][0],
+         std::make_pair(LARGER_TEXT_INFO[index][1], LARGER_TEXT_INFO[index][2])});
+    }
+  }
+
+  void set_visible_lines(int visible_lines) {
+    std::unordered_map<int, std::pair<int, int>>::const_iterator found =
+       lines_to_font_size_and_offset.find(visible_lines);
+    if (found == lines_to_font_size_and_offset.end()) {
+      fontSize = 12;
+      textOffset = math::Vec(3, 3);
+    } else {
+      fontSize = found->second.first;
+      textOffset = math::Vec(3, (float) (found->second.second));
+    }
+    // TTY prefers to put the cursor on the line after the last text,
+    // which makes much of the text window blank at large font sizes.
+    // TODO: maybe this has to do with the 2nd arg to extended.Initialize() below?
+    large_text_mode = visible_lines <= 6 ;
+    // At fontsize 12, it's 28 rows.
+    // When only a couple of lines high, scrolling before getting to top or bottom
+    // is frustrating. 
+    extended.Initialize(visible_lines, visible_lines >= 6 ? 1 : 0);
+  }
 
   NVGcolor int_to_color(int color) {
     return nvgRGB(color >> 16, (color & 0xff00) >> 8, color & 0xff);
@@ -494,9 +528,11 @@ struct TTYTextField : STTextField {
     // If this is the module browser, 'module' will be null!
     if (module != nullptr) {
       this->text = &(module->text);
+      set_visible_lines(module->visible_lines);
     } else {
       // Show something inviting when being shown in the module browser.
       this->text = &module_browser_text;
+      set_visible_lines(20);  // Making this larger, so preview is more appealing.
     }
     textUpdated();
   }
@@ -543,6 +579,9 @@ struct TTYTextField : STTextField {
         color_scheme = module->screen_colors;
         color = int_to_color(color_scheme >> 24);
         bgColor = int_to_color(color_scheme & 0xffffff);
+      }
+      if (module && (fabs(fontSize - module->visible_lines) > 0.1)) {
+        set_visible_lines(module->visible_lines);
       }
       if (module->editor_refresh) {
         // TODO: is this checked often enough? I don't know when step()
@@ -736,6 +775,22 @@ struct TTYWidget : ModuleWidget {
      }
     );
     menu->addChild(color_menu);
+
+    MenuItem* visible_lines_menu = createSubmenuItem("Visible Lines", "",
+      [=](Menu* menu) {
+          for (int index = 0; index < 13; index++) {
+            int lines = LARGER_TEXT_INFO[index][0];
+            menu->addChild(createCheckMenuItem(std::to_string(lines), "",
+                [=]() {return lines == module->visible_lines;},
+                [=]() {module->visible_lines = lines;
+                       textDisplay->set_visible_lines(module->visible_lines);
+                       module->RedrawText();
+                      }
+            ));
+          }
+      }
+    );
+    menu->addChild(visible_lines_menu);
 
     std::pair<std::string, std::string> fonts[] = {
       {"VCV font (like Notes)", "res/fonts/ShareTechMono-Regular.ttf"},
