@@ -75,6 +75,8 @@ and the code window changes size. Handy for reading those long comments without
 line breaks and for shrinking the module down to a small size when you don't
 wish to edit the code. Also, the text window scrolls vertically as you move
 through it.
+* Input ports (IN1-IN9) and output ports (OUT1-OUT6) are polyphonic,
+with a maximum of 16 channels each. 
 * Four different run "STYLES" (see Controls below), giving it the ability to
  act on a RUN trigger, or to run the most recent working version continuously
  as you type, or only run while a button or trigger is pressed.
@@ -105,21 +107,25 @@ Examples:
     ' in BASICally are floating point numbers.
     foo = 3
     ' Uses the value of the 'foo' variable.
-    bar = 5 * in1 + foo
+    bar = 5 * IN1 + foo
     ' Sets the value of the OUT1 port.
-    out1 = bar * -0.01
+    OUT1 = bar * -0.01
     ' Sets out2 equal to -1.9. Operator precedence is the same as most other languages.
-    out2 = 0.1 + 2 * -1
+    OUT2 = 0.1 + 2 * -1
     ' Set out2 to emit the V/OCT value for middle C.
-    out2 = C4
+    OUT2 = C4
+    ' Get and set polyphonic channels of the INx and OUTx ports.
+    OUT2 = 0.1  ' Sets the first channel of OUT2 to 0.1.
+    OUT2[1] = 0.1  ' Also sets the first channel of OUT2 to 0.1.
+    OUT2[16] = IN1[1]  ' Sets the last OUT2 channel equal to the value of IN1's first channel.
 
 * All variables start with the value 0.0 when first read.
 * Variables stay available in the environment of a module until the patch
 is restarted. This is true even if the code that created the variable has been removed from the program.
-* OUT1-6 are by default clamped to the range -10v <--> 10v. You can make
+* OUT1-6 (and all of their channels) are, by default, limited (akak, clamped) to the range -10v <--> 10v. You can make
 individual OUT ports unclamped in [the module menu](#clampunclamp-outn-values). Input values and internal values are not clamped.
 * [Scientific pitch notation](https://en.m.wikipedia.org/wiki/Scientific_pitch_notation) is supported (e.g., c4, Db2, d#8), turning them into
-V/OCT values. So you can use **out1 = c4**, send OUT1 to a VCO in the default position, and the VCO will output a tone at middle C.
+V/OCT values. So you can use **OUT1 = c4**, send OUT1 to a VCO in the default position, and the VCO will output a tone at middle C.
 
 The following are operators and functions you can use in mathematical
 expressions:
@@ -139,7 +145,8 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 | Function  | Meaning        | Examples |
 | --------- | -------------- | -------- |
 |**abs(x)**| absolute value | abs(2.1) == 2.1, abs(-2.1) == 2.1 |
-|**ceiling(x)**| integer value at or above x | ceiling(2.1) == 3, ceiling(-2.1) == -2 |
+|**ceiling(x)**|integer value at or above x | ceiling(2.1) == 3, ceiling(-2.1) == -2 |
+|**channels(p)**|number of channels in polyphonic INx port p | FOR chan = 1 TO channels(IN1)|
 |**connected(x)**|1 if named port x has a cable attached, 0 if not | connected(IN1) |
 |**floor(x)**|integer value at or below x|floor(2.1) == 2, floor(-2.1) == -3|
 |**log2(x)**|Base 2 logarithm of x; returns zero for x <= 0|log2(8) == 3|
@@ -206,8 +213,10 @@ Examples:
     ' Negative values are treated as if the were zero.
     WAIT -3
 
-If you find that your BASICally module is using a lot of CPU, even a short WAIT
-will help make the module use less CPU.
+WAIT's are a powerful way to reduce the amount of CPU that BASICally is consuming in your patch.
+If you find that your BASICally module is using a lot of CPU, even a short WAIT (e.g., WAIT 1, or WAIT 0.2)
+can help make the module use less CPU. When BASICally is processing non-audio signals, the ear is quite unlikely to perceive
+the 1ms delay.
 
 ### Comments
 A single quote (') followed by a space indicates that the rest of the line will
@@ -247,6 +256,28 @@ Unlike BASIC and many other languages, there is no need to set the size of
 the array before using it (i.e, there is no DIM() statement.)
 
 There are also arrays of strings, see [Text Functions](#text-functions) for details.
+
+### Polyphonic Inputs and Outputs
+Polyphonic or multi-channel signals are referenced as if they were arrays in BASICally. VCV Rack cables can carry at most 16 channels.
+IN1[1] is the first channel, as is IN1 (without the array notation), and IN1[16] is the last usable channel.
+
+The functions channels() and set_channels() also help you use polyphonic signals.
+* channels(INx) - returns the number of channels in that input signal. That value is set by the module that is sending that signal.
+Often used when processing multiple channels like so, which halves the input signals:
+```
+FOR chan = 1 to channels(IN1)
+  OUT2[chan] = IN1[chan] / 2
+NEXT   ' Or "NEXTHIGHCPU", see the section on FOR-NEXT loops.
+```
+* set_channels(OUTx) - Tells the specified output port how many channels to have. Without using
+set_channels(), the output port will continue to output the highest channel number that has been set
+since the module started. For example:
+```
+OUT1[2] = 0            ' Starting from scratch, OUT1 now has 2 channels.
+OUT1[8] = 1            ' Now OUT1 now has 8 channels.
+OUT1[4] = -2           ' OUT1 still has 8 channels.
+set_channels(OUT1, 5)  ' OUT1 now only has 5 channels.
+```
 
 ### IF Statements (Conditional Behavior)
 There are four kinds of IF statements:
@@ -334,6 +365,56 @@ else
   out1 = in3
 end if
 ```
+### WHILE Loops
+Used to repeat statements while some condition is true:
+
+```
+WHILE **expression**
+  **...Statements...**
+END WHILE
+```
+
+Example:
+```
+OUT1 = 0.1
+WHILE OUT1 < 10
+  OUT1 = OUT1 * 2
+  WAIT 10
+END WHILE
+' out1 will be: 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8 and then leave the loop
+```
+Note that the last value (12.8) will be 10.0 unless OUT1 is [unclamped](#clampunclamp-outn-values).
+
+### CONTINUE WHILE and EXIT WHILE
+While in a WHILE loop, there may be circumstances when you want to change
+what statements to run. There are two special ways to do this.
+
+**CONTINUE WHILE** moves execution back to the beginning of the loop.
+
+**EXIT WHILE**, in contrast, moves to the statement after the END WHILE, leaving the
+loop entirely.
+
+Examples:
+```
+WHILE note == c4 
+  IF foo > 2 AND foo < 2.5 THEN
+    ' Skips rest of loop when foo in this range.
+    CONTINUE WHILE
+  END IF  
+  foo = foo + random(-1, 1)
+  WAIT 1
+END WHILE
+
+WHILE note == c4 
+  IF foo > 2 AND foo < 2.5 THEN
+    ' Leave loop when foo in this range.
+    EXIT WHILE
+  END IF  
+  foo = foo + random(-1, 1)
+  WAIT 1
+END WHILE
+```
+
 ### FOR Loops
 Useful for repeating statements for some limited number of times.
 There are two kinds of FOR loops:
@@ -383,6 +464,60 @@ loops**, are in the same variable space. If you are using [blocks](#blocks)
 which might be running at the same time, make sure you use **different loop
 variables in different blocks**. Not doing so leads to VERY confusing behavior
 when running.
+
+### Faster FOR loops with NEXTHIGHCPU
+
+This next point about FOR loops is subtle.
+As of version 2.0.21, you have the choice of ending a FOR loop with either of
+**NEXT** or **NEXTHIGHCPU**. I'll attempt to explain the difference.
+
+VCV Rack is running BASICally code (and all of the other modules) once for every sample; that is, if you are running at 48KHz, it's running each module 48,000 per second. Each module tries to run as quickly as possible, but if a module takes too long to run many times in a row, you will hear nasty pops and dropouts in the audio.
+
+One design principle I've had is that it should be a bit difficult for a BASICally user to stall out the VCV Rack system this way. As a result of this principle, every time a FOR-NEXT loop repeats, there is [actually a hidden "WAIT 0"](#hidden-wait-0-statements) that occurs. A "WAIT 0" really means, "BASICally will finish processing this sample, and then when the next sample is processed, I"ll continue where I left off."
+
+Consider this simple loop:
+```
+FOR chan = 1 to channels(IN1)
+  OUT1[chan] = IN1[chan] / 2
+NEXT
+```
+Unrolling this loop, it becomes:
+```
+OUT1[1] = IN1[1] / 2
+WAIT 0
+OUT1[2] = IN1[2] / 2
+WAIT 0
+OUT1[3] = IN1[3] / 2
+WAIT 0
+OUT1[4] = IN1[4] / 2
+WAIT 0
+...
+```
+
+Now, if a 16-channel IN1 is changing quite slowly (like most CV signals), you might not notice that the 16th channel gets updated 15 samples (i.e., 0.3 milliseconds) after the first one. But you might, depending on what the signals are altering.
+
+And if these are audio signals, this means that each audio signal is only getting sampled every 16 samples; this is **very** noticeable.
+
+So, if your code is in that situation, or the loop is small enough and not called for every sample, then by replacing NEXT with NEXTHIGHCPU ,the FOR loop to run without the "WAIT 0"s, i.e., 
+```
+OUT1[1] = IN1[1] / 2
+OUT1[2] = IN1[2] / 2
+OUT1[3] = IN1[3] / 2
+OUT1[4] = IN1[4] / 2
+...
+```
+
+As the name suggests, this *can* drive up the CPU usage of BASICally. So if you try it, I'll suggest you check how well it's running by activating VCV's "View/Performance Meters" and see if the numbers and the audio are acceptable to you are not.
+
+Here's some rough guidelines (definitely not rules) that help guide my thinking about when to use which NEXT:
+
+| Situation | Suggestion |
+| --------- | ---------- |
+| Initialization on startup | NEXT |
+|Running a calculation over a long array (more than 20 items) | NEXT |
+|Processing multiple channels of audio every sample | NEXTHIGHCPU |
+|Processing polyphonic CV, per sample accuracy is not required | NEXT |
+|Processing polyphonic CV, per sample accuracy would be better | NEXTHIGHCPU|
 
 ### CONTINUE FOR and EXIT FOR
 While in a FOR loop, there may be circumstances when you want to change
@@ -451,8 +586,8 @@ the "out2 = 0" will NEVER be executed.
 potential to make BASICally more confusing, especially if you are new to
 programming in general. You don't need to know this part to make BASICally do
 useful things for you, so feel free to skip this section the first
-time you learn about BASICally. But come back later; this
-may be useful to you soon.**
+time you learn about BASICally. But come back and read this later; multitasking
+may be useful to you soon!**
 
 The code style described above (one big loop of code that gets repeated) doesn't allow
 for certain kinds of programs to be easily written, and can be less efficient
@@ -557,6 +692,8 @@ END ALSO
 ```
 
 #### WHEN blocks
+WHEN blocks only start running when some condition is met.
+
 WHEN Blocks are of the form:
 ```
 WHEN (condition)
@@ -706,21 +843,28 @@ code and pass control back to the other modules in VCV Rack. If it never WAITed,
 VCV Rack would hang and eventually the program will crash. Therefore, there are a number of hardwired WAIT 0 lines inserted. For example, consider this program:
 ```
 OUT3 = 0
-WAIT 100
 FOR level = 0 To 5 STEP 0.01
   OUT3 = level
 NEXT
 OUT1 = sin(in2 * in2)
+WHILE level > 1
+  level = level / 2
+  OUT3 = level
+END WHILE
 ```    
 Under the hood, it is turned into:
 ```
 OUT3 = 0
-WAIT 100
 FOR level = 0 To 5 STEP 0.01
   OUT3 = level
   WAIT 0   ' There is a hidden WAIT 0 inserted just before every NEXT in a FOR-NEXT loop.
 NEXT
 OUT1 = sin(in2 * in2)
+WHILE level > 1
+  level = level / 2
+  OUT3 = level
+  WAIT 0   ' There is a hidden WAIT 0 inserted just before every END WHILE in a WHILE loop.
+END WHILE
 WAIT 0  ' There is a hidden WAIT 0 inserted at the bottom of the program.
 ```
 
