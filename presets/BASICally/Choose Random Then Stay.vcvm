@@ -1,7 +1,7 @@
 {
   "plugin": "StochasticTelegraph",
   "model": "BASICally",
-  "version": "2.0.6",
+  "version": "2.0.21",
   "params": [
     {
       "value": 0.0,
@@ -13,10 +13,11 @@
     }
   ],
   "data": {
-    "text": "' OUT1 emits a random value from\n' 0-10 once in a while. When it\n' does, it will emit a trigger\n' on OUT2, and hold that value\n' for at least 20 seconds.\n\n' 1-in-10 chance of emiting a \n' new value.\nif random(0, 1) > 0.9 THEN\n  out1 = random(0, 10)\n  ' Trigger on OUT2.\n  out2 = 10\n  wait 1\n  out2 = 0\n  ' Let's not change again for\n  ' a while.\n  wait 20000 ' 20 seconds\nelse \n  WAIT 4000 ' 4 seconds\nend if\n\n",
+    "text": "' OUT1 emits a random value from\n' 0-10V once in a while. When it\n' does, it will emit a trigger\n' on OUT2, and hold that value\n' for at least 10 seconds.\n\n' 1-in-10 chance of emiting a \n' new value.\nif random(0, 1) > 0.9 THEN\n  out1 = random(0, 10)\n  ' Trigger on OUT2.\n  out2 = 10\n  wait 1\n  out2 = 0\n  ' Let's not change again for\n  ' a while.\n  wait 10000 ' 10 seconds\nelse \n  WAIT 4000 ' 4 seconds\nend if\n\n",
     "width": 21,
     "allow_error_highlight": 1,
     "screen_colors": 1095216660480,
-    "title_text": "Choose Random Then Stay"
+    "title_text": "Choose Random Then Stay",
+    "font_choice": "fonts/RobotoMono-Regular.ttf"
   }
 }
