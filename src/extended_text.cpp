@@ -68,7 +68,7 @@ int ExtendedText::VisibleTextLength() {
 // * The font is changed
 // * when started, and before we display anything.
 void ExtendedText::ProcessUpdatedText(const std::string &text,
-   const std::string &font_path, float width) {
+   const std::string &font_path, float font_size, float width) {
   if (latest_nvg_context == nullptr) {
     return;
     // TODO: This is NOT correct. Should really set a dirty bit indicating
@@ -82,7 +82,7 @@ void ExtendedText::ProcessUpdatedText(const std::string &text,
   std::shared_ptr<window::Font> font = APP->window->loadFont(font_path);
   if (font && font->handle >= 0) {
     nvgFontFaceId(latest_nvg_context, font->handle);
-    nvgFontSize(latest_nvg_context, 12);  // Font size we currently use, not adjustable (yet)
+    nvgFontSize(latest_nvg_context, font_size);  // Font size we currently use, sometimes adjusted in menu.
     nvgTextAlign(latest_nvg_context, NVG_ALIGN_LEFT|NVG_ALIGN_BASELINE);
 
     total_physical_row_count = nvgTextBreakLines(

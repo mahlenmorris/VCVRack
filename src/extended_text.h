@@ -84,7 +84,7 @@ struct ExtendedText {
   // * The font is changed
   // * when started, and before we display anything.
   void ProcessUpdatedText(const std::string &text, const std::string &font_path,
-     float width);
+     float font_size, float width);
 
   // Given a cursor position, where are we?
   LineColumn GetCurrentLineColumn(int position);

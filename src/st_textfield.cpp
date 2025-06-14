@@ -492,7 +492,7 @@ int STTextField::getTextPosition(math::Vec mousePos) {
 }
 
 void STTextField::textUpdated() {
-  extended.ProcessUpdatedText(*text, fontPath, box.size.x - 2 * textOffset.x);
+  extended.ProcessUpdatedText(*text, fontPath, fontSize, box.size.x - 2 * textOffset.x);
   cursor = std::min(cursor, (int) text->size());
   selection = cursor;  // Nothing should be selected now.
   extended.RepositionWindow(cursor);

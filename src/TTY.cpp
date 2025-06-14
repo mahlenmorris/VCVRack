@@ -509,6 +509,7 @@ struct TTYTextField : STTextField {
     // When only a couple of lines high, scrolling before getting to top or bottom
     // is frustrating. 
     extended.Initialize(visible_lines, visible_lines >= 6 ? 1 : 0);
+    textUpdated();
   }
 
   NVGcolor int_to_color(int color) {

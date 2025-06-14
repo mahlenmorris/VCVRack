@@ -448,6 +448,7 @@ struct FermataTextField : STTextField {
     }
     // At fontsize 12, it's 28 rows.
     extended.Initialize(visible_lines, visible_lines >= 3 ? 1 : 0);  // Window Size depends on font size.
+    textUpdated();
   }
 
   NVGcolor int_to_color(int color) {
