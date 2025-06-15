@@ -425,6 +425,7 @@ struct FermataTextField : STTextField {
   Fermata* module;
   FramebufferWidget* frame_buffer;
   bool was_selected;
+  int previous_visible_lines = -1;
 
   long long int color_scheme;
   std::unordered_map<int, std::pair<int, int>> lines_to_font_size_and_offset;
@@ -437,6 +438,7 @@ struct FermataTextField : STTextField {
   }
 
   void set_visible_lines(int visible_lines) {
+    previous_visible_lines = visible_lines;
     std::unordered_map<int, std::pair<int, int>>::const_iterator found =
        lines_to_font_size_and_offset.find(visible_lines);
     if (found == lines_to_font_size_and_offset.end()) {
@@ -520,7 +522,7 @@ struct FermataTextField : STTextField {
       color = int_to_color(color_scheme >> 24);
       bgColor = int_to_color(color_scheme & 0xffffff);
     }
-    if (module && (fabs(fontSize - module->visible_lines) > 0.1)) {
+    if (module && (fabs(previous_visible_lines - module->visible_lines) > 0.1)) {
       set_visible_lines(module->visible_lines);
       frame_buffer->setDirty();
     }
