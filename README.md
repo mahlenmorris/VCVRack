@@ -1091,14 +1091,15 @@ Here is Fermata:
 * as a label, in three of the six available sizes
 * expanded a bit, turning it into a text editor
 * further expanded, and with different font, font size, and screen color choices.
+* a short video [showing the range of sizes](https://www.youtube.com/watch?v=VQs2c6qWk8E).
 
 ![Fermata Variety](images/Fermata-variety.png)
 ![Fermata Font Sizes](images/Fermata-font-sizes.png)
 
 ### Uses
-* Instructions for playing the patch.
+* Instructions for playing the patch, for yourself or others.
 * Notes/reminders on how this part of the patch works. Take a look at [this patch](examples/AnnotatedSunlightOnSeaAnemones.vcv) for one example of what this might look like.
-* TODO's or ideas.
+* TODO's or ideas about the patch.
 * As a label, the title names a chunk of the patch, allowing the person seeing
 it to pull it open and, say, read more detail on how it works. An example of this can be found in [this patch](examples/AnnotatedSunlightOnSeaAnemones.vcv).
 * A very wide banner of horizontal text. You can add easily readable text in a video or still image of your patch.
@@ -1268,7 +1269,8 @@ displaying text messages. Useful for
 debugging or saving sets of values that are of interest. TTY can also track
 streams of unique CV values from modules, noting them only when they change.
 
-[Video of TTY in action.](https://www.youtube.com/watch?v=hDymEax7uEU) 
+[Video of TTY in action](https://www.youtube.com/watch?v=hDymEax7uEU).
+And another video, [showing the range of sizes](https://www.youtube.com/watch?v=VQs2c6qWk8E).
 
 ### Examples
 

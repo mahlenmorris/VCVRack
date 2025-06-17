@@ -5,7 +5,8 @@
 * Fermata and TTY:
 * * At the request of Both of these now support [larger font sizes]((https://github.com/mahlenmorris/VCVRack/blob/main/README.md#fermata)), all the way up to filling the vertical space with a single line of text.
 * * They also can now be stretched out to 300 HP wide. That's wider than 33 VCV VCO's.
-* * Thanks to maunatanmaya for this suggestion in my GitHub Issues, and for wrapping it in a ko-fi donation :)
+* * [A short video](https://www.youtube.com/watch?v=VQs2c6qWk8E) demo.
+* * Thanks to maunatanmaya for this suggestion in my GitHub Issues, and for wrapping it in a Ko-fi donation :)
 * BASICally:
 * * Added [WHILE-END WHILE loops](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#while-loops). Thanks to @gabtiorbi for unintentionally reminding me that it's confusing not having WHILE loops.
 * * [Polyphonic INx and OUTx ports](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#polyphonic-inputs-and-outputs)! Thanks again go to @gabtiorbi for getting me to think seriously about supporting this. It's made many of my programs much simpler.
