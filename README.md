@@ -166,11 +166,6 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 |**time_millis()**|The approximate (see note below) number of milliseconds since this BASICally module started running|IF time_millis() > 60000 THEN ' It's been a minute.|
 |**trigger(INn)**|True *only* for the moment when the INn port has received a trigger. Useful for WHEN blocks that wish to change the behavior of the program whenever this trigger is seen.| WHEN trigger(in9) ...|
 
-**Note on time() and time_millis()**: The resolution of these clocks appears to be
-system-dependent. On my Windows system, for one, the minimum non-zero interval
-between calls to time_millis() is about 16 milliseconds. This makes them
-unsuitable for making, say, consistent 40Hz signals.
-
 ### Text functions
 
 BASICally can create text messages and send them in the Tipsy encoding to

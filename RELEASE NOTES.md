@@ -1,5 +1,9 @@
 # Release Notes
 
+### 2.0.22
+#### ????
+* Improved the resolution of BASICally's time() and time_millis() functions.
+
 ### 2.0.21
 #### ???
 * Fermata and TTY:
