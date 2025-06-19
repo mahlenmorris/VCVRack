@@ -16,6 +16,7 @@ extern Model* modelFermata;
 extern Model* modelFixation;
 extern Model* modelFuse;
 extern Model* modelMemory;
+extern Model* modelMemoryCV;
 extern Model* modelRuminate;
 extern Model* modelTTY;
 extern Model* modelVenn;

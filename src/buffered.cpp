@@ -3,7 +3,7 @@
 std::shared_ptr<Buffer> findClosestMemory(Module* leftModule) {
   while (true) {
     if (!leftModule) return nullptr;
-    if (leftModule->model == modelMemory) {
+    if (IsMemoryEnsembleModel(leftModule->model)) {
       return dynamic_cast<BufferedModule*>(leftModule)->getHandle()->buffer;
     }
     auto m = leftModule->model;
@@ -19,6 +19,11 @@ bool ModelHasColor(Model* model) {
   return ((model == modelRuminate) ||
           (model == modelFixation) ||
           (model == modelEmbellish));
+}
+
+bool IsMemoryEnsembleModel(Model* model) {
+  return ((model == modelMemory) ||
+          (model == modelMemoryCV));
 }
 
 bool IsNonMemoryEnsembleModel(Model* model) {

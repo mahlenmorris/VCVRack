@@ -84,6 +84,16 @@
       ]
     },
     {
+      "slug": "MemoryCV",
+      "name": "MemoryCV",
+      "description": "The root part of a Memory Ensemble. What Fixation and Ruminate reads, Embellish writes to and Depict displays.",
+      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#memorycv",
+      "tags": [
+        "Recording",
+        "Sampler"
+      ]
+    },
+    {
       "slug": "Ruminate",
       "name": "Ruminate",
       "description": "A playback head within a Memory Ensemble that plays the entire Memory.",

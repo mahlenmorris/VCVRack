@@ -660,6 +660,8 @@ struct Memory : BufferedModule {
   // We sweep the connected modules every NN samples. Some UI-related tasks are 
   // not as latency-sensitive as the audio thread, and we don't need to do often.
   int assign_color_countdown = 0;
+  // Memory and MemoryCV differ only slightly. This flag tells the code which to behave like.
+  bool cv_rate;
 
   Memory() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -688,6 +690,7 @@ struct Memory : BufferedModule {
 
     load_latest_file_on_start = false;
     initiate_startup_load = false;
+    cv_rate = false;
   }
 
   ~Memory() {
@@ -846,9 +849,10 @@ struct Memory : BufferedModule {
       if (!init_in_progress) {
         // Confirm that we can read the sample rate before starting a fill.
         // Sometimes during startup, sampleRate is still zero.
-        if (args.sampleRate > 1.0) {
-          buffer_change_worker->SetRate(args.sampleRate);
-          prepare_worker->SetRate(args.sampleRate);
+        float sample_rate = cv_rate ? 1000.0f : args.sampleRate;
+        if (sample_rate > 1.0) {
+          buffer_change_worker->SetRate(sample_rate);
+          prepare_worker->SetRate(sample_rate);
           PrepareTask* task = PrepareTask::MakeBlank(params[SECONDS_PARAM].getValue());
           if (!module_prepare_queue.tasks.push(task)) {
             delete task;
@@ -1149,7 +1153,7 @@ struct Memory : BufferedModule {
       }
 
       // RESET takes precedence over a WIPE.
-      if (reset && args.sampleRate > 1.0) {
+      if (reset && (cv_rate || args.sampleRate > 1.0)) {
         PrepareTask* task = PrepareTask::MakeBlank(params[SECONDS_PARAM].getValue());
         if (!module_prepare_queue.tasks.push(task)) {
           delete task;
@@ -1314,8 +1318,7 @@ struct MenuItemPickSaveFile : MenuItem {
 struct MemoryWidget : ModuleWidget {
   MemoryWidget(Memory* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/Memory.svg"),
-                         asset::plugin(pluginInstance, "res/Memory-dark.svg")));
+    this->SetPanels();  // this-> forces the call to the overidden method.
 
     // Module is so narrow that we only include two screws instead of four.
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
@@ -1353,6 +1356,11 @@ struct MemoryWidget : ModuleWidget {
     // FILE I/O light.
      addChild(createLightCentered<SmallLight<WhiteLight>>(mm2px(Vec(17.039, 121.986)),
              module, Memory::FILE_IO_LIGHT));
+  }
+
+  virtual void SetPanels() {
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/Memory.svg"),
+                         asset::plugin(pluginInstance, "res/Memory-dark.svg")));
   }
 
   void appendContextMenu(Menu* menu) override {
@@ -1413,10 +1421,30 @@ struct MemoryWidget : ModuleWidget {
     // Be a little clearer how to make this module do anything.
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel(
-      "Put any of these modules directly to my right: Depict, Embellish, "));
+      "Put any of these modules directly to my right: Brainwash, Depict, Embellish, "));
     menu->addChild(createMenuLabel(
       "Fixation, and Ruminate. See my User Manual for details and usage videos."));
   }
 };
 
+struct MemoryCV : Memory {
+  MemoryCV() : Memory() {
+    cv_rate = true;
+  }
+};
+
+struct MemoryCVWidget : MemoryWidget {
+  MemoryCVWidget(MemoryCV* module) : MemoryWidget((Memory*) module) {
+    SetPanels();
+  }
+
+  void SetPanels() override {
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/MemoryCV.svg"),
+                         asset::plugin(pluginInstance, "res/MemoryCV-dark.svg")));
+  }
+};
+
 Model* modelMemory = createModel<Memory, MemoryWidget>("Memory");
+
+Model* modelMemoryCV = createModel<MemoryCV, MemoryCVWidget>("MemoryCV");
+

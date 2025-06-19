@@ -244,6 +244,7 @@ struct PositionedModule : Module {
 };
 
 bool ModelHasColor(Model* model);
+bool IsMemoryEnsembleModel(Model* model);
 bool IsNonMemoryEnsembleModel(Model* model);
 std::shared_ptr<Buffer> findClosestMemory(Module* leftModule);
 
