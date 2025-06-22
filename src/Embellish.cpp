@@ -143,7 +143,7 @@ struct Embellish : PositionedModule {
     if (connected) {
       // These help the Timestamps UI widgets on this module.
       // While we could have Timestamp only pick these up from the Buffer,
-      // This means that disconnecting the module doesn't zero-out the
+      // this means that disconnecting the module doesn't zero-out the
       // Timestamp displays.
       length = buffer->length;
       seconds = buffer->seconds;

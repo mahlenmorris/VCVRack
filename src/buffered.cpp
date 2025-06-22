@@ -81,16 +81,27 @@ void Buffer::Get(FloatPair *pair, double position) {
   }
   assert(position >= 0.0);
   assert(position < length);
-  int playback_start = trunc(position);
-  int playback_end = trunc(playback_start + 1);
-  if (playback_end >= length) {
-    playback_end -= length;  // Should be zero.
+  if (cv_rate) {
+    // MemoryCV does not do interpolation between samples!
+    // (E.g., don't want intermediate values between two V/Oct values.)
+    // Also need to scale down 'position', as length != true_length.
+    int true_position = trunc(position / length * true_length);
+    assert(true_position >= 0 && true_position < true_length);
+    pair->left = left_array[true_position];
+    pair->right = right_array[true_position];
+  } else {
+    // For a Memory with audio data, we want interpolation.
+    int playback_start = trunc(position);
+    int playback_end = trunc(playback_start + 1);
+    if (playback_end >= length) {
+      playback_end -= length;  // Should be zero.
+    }
+    float start_fraction = position - playback_start;
+    pair->left = left_array[playback_start] * (1.0 - start_fraction) +
+                  left_array[playback_end] * (start_fraction);
+    pair->right = right_array[playback_start] * (1.0 - start_fraction) +
+                  right_array[playback_end] * (start_fraction);
   }
-  float start_fraction = position - playback_start;
-  pair->left = left_array[playback_start] * (1.0 - start_fraction) +
-                left_array[playback_end] * (start_fraction);
-  pair->right = right_array[playback_start] * (1.0 - start_fraction) +
-                right_array[playback_end] * (start_fraction);
 }
 
 // Caller is responsible for only calling this when IsValid() is true.
@@ -100,8 +111,20 @@ void Buffer::Set(int position, float left, float right, long long module_id) {
   }
   assert(position >= 0);
   assert(position < length);
-  left_array[position] = left;
-  right_array[position] = right;
+  if (cv_rate) {
+    // Because there are many positions for each CV position, we need to only allow
+    // a write to occur on one position per CV position. I want it to be the
+    // "center" of the CV position.
+    int cv_position = trunc((double) position * true_length / length);
+    int writable_position = trunc((double) (cv_position + 0.5) * length / true_length);
+    if (position == writable_position) {      
+      left_array[cv_position] = left;
+      right_array[cv_position] = right;
+    }
+  } else {
+    left_array[position] = left;
+    right_array[position] = right;
+  }
   SetDirty(position);
 
   // Update position for this Set() call's module.

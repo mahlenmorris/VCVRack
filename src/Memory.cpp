@@ -155,7 +155,7 @@ struct BufferChangeThread {
 
   // Updates the "waveforms" that Depict shows.
   void RefreshWaveform(std::shared_ptr<Buffer> buffer) {
-    int sector_size = buffer->length / WAVEFORM_SIZE;
+    int sector_size = buffer->true_length / WAVEFORM_SIZE;
     float peak_value = 0.0f;
     bool full_scan = buffer->full_scan;
 
@@ -168,7 +168,7 @@ struct BufferChangeThread {
       if (full_scan || buffer->dirty[p]) {
         float left_amplitude = 0.0, right_amplitude = 0.0;
         for (int i = p * sector_size;
-              !shutdown && i < std::min((p + 1) * sector_size, buffer->length);
+              !shutdown && i < std::min((p + 1) * sector_size, buffer->true_length);
               i++) {
           left_amplitude = std::max(left_amplitude,
                                     std::fabs(buffer->left_array[i]));
@@ -218,7 +218,12 @@ struct BufferChangeThread {
     }
     buffer->right_array = task->new_right_array;
 
-    buffer->length = task->sample_count;
+    buffer->true_length = task->sample_count;
+    if (buffer->cv_rate) {
+      buffer->length = std::round(task->seconds * sample_rate);
+    } else {
+      buffer->length = task->sample_count;
+    }
     buffer->seconds = task->seconds;
     // Tell world we're done, IFF we have a status. WIPE's and RESET's don't.
     if (task->status != nullptr) {
@@ -229,13 +234,15 @@ struct BufferChangeThread {
     //WARN("length = %d", buffer->length);
     //WARN("seconds = %f", buffer->seconds);
 
-    // There's no reason I can come up with to let there be a click between
-    // the end and the beginning of the buffer.
-    // So if I suspect there will be one, add a Smooth to get rid of it.
-    if (abs(buffer->left_array[0] - buffer->left_array[buffer->length - 1]) > 0.1 ||
-        abs(buffer->right_array[0] - buffer->right_array[buffer->length - 1]) > 0.1) {
-      Smooth* new_smooth = new Smooth(0, true);
-        buffer->smooths.additions.push(new_smooth);
+    if (!buffer->cv_rate) {
+      // There's no reason I can come up with to let there be a click between
+      // the end and the beginning of the buffer in an *audio* file.
+      // So if I suspect there will be one, add a Smooth to get rid of it.
+      if (abs(buffer->left_array[0] - buffer->left_array[buffer->true_length - 1]) > 0.1 ||
+          abs(buffer->right_array[0] - buffer->right_array[buffer->true_length - 1]) > 0.1) {
+        Smooth* new_smooth = new Smooth(0, true);
+          buffer->smooths.additions.push(new_smooth);
+      }
     }
   }
 
@@ -250,7 +257,7 @@ struct BufferChangeThread {
             // Check that creation_time is long enough ago that we're
             // confident that the new section is written.
             if (item->creation_time < 0 || (system::getTime() - item->creation_time > 0.001)) {
-              smooth(buffer->left_array, buffer->right_array, item->position, 25, buffer->length);
+              smooth(buffer->left_array, buffer->right_array, item->position, 25, buffer->true_length);
               delete item;
             } else {
               buffer->smooths.additions.push(item);
@@ -660,8 +667,11 @@ struct Memory : BufferedModule {
   // We sweep the connected modules every NN samples. Some UI-related tasks are 
   // not as latency-sensitive as the audio thread, and we don't need to do often.
   int assign_color_countdown = 0;
-  // Memory and MemoryCV differ only slightly. This flag tells the code which to behave like.
+
+  // Memory and MemoryCV differ only slightly, and most of the difference is how Buffer behaves.
+  // This flag tells the code which to behave like.
   bool cv_rate;
+
 
   Memory() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -690,7 +700,6 @@ struct Memory : BufferedModule {
 
     load_latest_file_on_start = false;
     initiate_startup_load = false;
-    cv_rate = false;
   }
 
   ~Memory() {
@@ -849,10 +858,10 @@ struct Memory : BufferedModule {
       if (!init_in_progress) {
         // Confirm that we can read the sample rate before starting a fill.
         // Sometimes during startup, sampleRate is still zero.
-        float sample_rate = cv_rate ? 1000.0f : args.sampleRate;
+        float sample_rate = args.sampleRate;
         if (sample_rate > 1.0) {
           buffer_change_worker->SetRate(sample_rate);
-          prepare_worker->SetRate(sample_rate);
+          prepare_worker->SetRate(cv_rate ? CV_SAMPLE_RATE : sample_rate);
           PrepareTask* task = PrepareTask::MakeBlank(params[SECONDS_PARAM].getValue());
           if (!module_prepare_queue.tasks.push(task)) {
             delete task;
@@ -869,8 +878,7 @@ struct Memory : BufferedModule {
       }
     } else {
       // This is the post-initialization part of process().
-
-      // We may be asked to load a .wav file on startup. We wait unti the buffer is initialized before
+      // We may be asked to load a .wav file on startup. We wait until the buffer is initialized before
       // attempting this, however, since the operation might fail, and I'd rather have *some* buffer than none.
       if (initiate_startup_load && !load_folder_name.empty() && !loaded_file.empty()) {
         initiate_startup_load = false;
@@ -1153,7 +1161,7 @@ struct Memory : BufferedModule {
       }
 
       // RESET takes precedence over a WIPE.
-      if (reset && (cv_rate || args.sampleRate > 1.0)) {
+      if (reset && args.sampleRate > 1.0) {
         PrepareTask* task = PrepareTask::MakeBlank(params[SECONDS_PARAM].getValue());
         if (!module_prepare_queue.tasks.push(task)) {
           delete task;
@@ -1430,6 +1438,12 @@ struct MemoryWidget : ModuleWidget {
 struct MemoryCV : Memory {
   MemoryCV() : Memory() {
     cv_rate = true;
+    std::shared_ptr<Buffer> buffer = getHandle()->buffer;
+    if (buffer) {  // Pretty convinced this is always the case.
+      buffer->cv_rate = true;
+    } else {
+      WARN("MemoryCV(): buffer is null!");
+    }
   }
 };
 
