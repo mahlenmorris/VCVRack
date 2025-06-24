@@ -131,7 +131,10 @@ struct BufferChangeThread {
   ModuleToBufferQueue* module_buffer_queue;
   BufferToModuleQueue* buffer_module_queue;
   std::vector<FileOperationReporting*>* reporters;
-  float sample_rate;
+  // VCV's sample rate; the rate we expect process() to be called.
+  float process_call_rate;
+  // Sample rate for memory buffers and saved files.
+  float memory_sample_rate;
 
   bool shutdown;
   // Indicator to UI that File I/O is happening.
@@ -143,19 +146,21 @@ struct BufferChangeThread {
                      std::vector<FileOperationReporting*>* reporters) :
       handle{the_handle}, prepare_buffer_queue{prepare_buffer_queue},
       module_buffer_queue{module_buffer_queue},
-      buffer_module_queue{buffer_module_queue}, reporters{reporters}, sample_rate{0.0f}, shutdown{false} {}
+      buffer_module_queue{buffer_module_queue}, reporters{reporters},
+      process_call_rate{0.0f}, memory_sample_rate{0.0f}, shutdown{false} {}
 
   void Halt() {
     shutdown = true;
   }
 
-  void SetRate(float rate) {
-    sample_rate = rate;
+  void SetRates(float vcv_sample_rate, float memory_rate) {
+    process_call_rate = vcv_sample_rate;
+    memory_sample_rate = memory_rate;
   }
 
   // Updates the "waveforms" that Depict shows.
   void RefreshWaveform(std::shared_ptr<Buffer> buffer) {
-    int sector_size = buffer->true_length / WAVEFORM_SIZE;
+    float sector_size = (double) buffer->true_length / WAVEFORM_SIZE;
     float peak_value = 0.0f;
     bool full_scan = buffer->full_scan;
 
@@ -167,8 +172,8 @@ struct BufferChangeThread {
     for (int p = 0; !shutdown && p < WAVEFORM_SIZE; p++) {
       if (full_scan || buffer->dirty[p]) {
         float left_amplitude = 0.0, right_amplitude = 0.0;
-        for (int i = p * sector_size;
-              !shutdown && i < std::min((p + 1) * sector_size, buffer->true_length);
+        for (int i = (int) trunc(p * sector_size);
+              !shutdown && i < std::min((int) trunc((p + 1) * sector_size), buffer->true_length);
               i++) {
           left_amplitude = std::max(left_amplitude,
                                     std::fabs(buffer->left_array[i]));
@@ -220,7 +225,7 @@ struct BufferChangeThread {
 
     buffer->true_length = task->sample_count;
     if (buffer->cv_rate) {
-      buffer->length = std::round(task->seconds * sample_rate);
+      buffer->length = std::round(task->seconds * process_call_rate);
     } else {
       buffer->length = task->sample_count;
     }
@@ -231,8 +236,9 @@ struct BufferChangeThread {
     }
     delete task;
 
-    //WARN("length = %d", buffer->length);
-    //WARN("seconds = %f", buffer->seconds);
+    // WARN("length = %d", buffer->length);
+    // WARN("true_length = %d", buffer->true_length);
+    // WARN("seconds = %f", buffer->seconds);
 
     if (!buffer->cv_rate) {
       // There's no reason I can come up with to let there be a click between
@@ -296,7 +302,7 @@ struct BufferChangeThread {
                 // Set the number of channels. Memory is always stereo.
                 audio_file.setNumChannels(2);
                 audio_file.setBitDepth(32);  // This is what Audacity produces.
-                audio_file.setSampleRate(sample_rate);
+                audio_file.setSampleRate(memory_sample_rate);
 
                 // SLOW: this call can take many seconds.
                 // Wave file (implicit)
@@ -860,7 +866,7 @@ struct Memory : BufferedModule {
         // Sometimes during startup, sampleRate is still zero.
         float sample_rate = args.sampleRate;
         if (sample_rate > 1.0) {
-          buffer_change_worker->SetRate(sample_rate);
+          buffer_change_worker->SetRates(sample_rate, cv_rate ? CV_SAMPLE_RATE : sample_rate);
           prepare_worker->SetRate(cv_rate ? CV_SAMPLE_RATE : sample_rate);
           PrepareTask* task = PrepareTask::MakeBlank(params[SECONDS_PARAM].getValue());
           if (!module_prepare_queue.tasks.push(task)) {

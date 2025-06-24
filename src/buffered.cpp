@@ -40,6 +40,10 @@ bool Buffer::IsValid() {
 }
 
 int Buffer::NearHead(int position) {
+  if (cv_rate) {
+    // MemoryCV does not want fades and smoothing.
+    return INT_MAX;
+  }
   // TODO: not sure if correct when near the ends of the buffer.
   int nearest = INT_MAX;
   for (int i = 0; i < (int) record_heads.size(); ++i) {
@@ -59,6 +63,11 @@ void Buffer::SetDirty(int position) {
 // with 'module_id', or INT_MAX if not considered "near".
 // Typically called for the benefit of recording heads.
 int Buffer::NearHeadButNotThisModule(int position, long long module_id) {
+  if (cv_rate) {
+    // MemoryCV does not want fades and smoothing.
+    return INT_MAX;
+  }
+
   // TODO: not sure if correct when near the ends of the buffer.
   int nearest = INT_MAX;
   for (int i = 0; i < (int) record_heads.size(); ++i) {
@@ -120,12 +129,13 @@ void Buffer::Set(int position, float left, float right, long long module_id) {
     if (position == writable_position) {      
       left_array[cv_position] = left;
       right_array[cv_position] = right;
+      SetDirty(position);
     }
   } else {
     left_array[position] = left;
     right_array[position] = right;
+    SetDirty(position);
   }
-  SetDirty(position);
 
   // Update position for this Set() call's module.
   // Memory creates and updates this list during the module scan in

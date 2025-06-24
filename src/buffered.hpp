@@ -187,6 +187,8 @@ struct Buffer {
 
   bool IsValid();
 
+  // How many samples away from another head this position is. If less than some value,
+  // caller may decide to fade playback.
   int NearHead(int position);
   // Returns distance if near a recording head, except for the recording head
   // with 'module_id', or INT_MAX if not considered "near".
