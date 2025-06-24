@@ -4,6 +4,22 @@
 
 #include "extended_text.h"
 
+int LARGER_TEXT_INFO[13][3] = {
+  {28, 12, 3},
+  {24, 14, 4},
+  {20, 17, 4},
+  {17, 20, 6},
+  {14, 24, 10},
+  {11, 31, 14},
+  {8, 42, 20},
+  {6, 56, 28},
+  {5, 67, 35},
+  {4, 84, 45},
+  {3, 112, 61},
+  {2, 168, 94},
+  {1, 400, 240}
+};
+
 void ExtendedText::Initialize(int length, int buffer) {
   window_length = length;
   buffer_length = buffer;
@@ -52,7 +68,7 @@ int ExtendedText::VisibleTextLength() {
 // * The font is changed
 // * when started, and before we display anything.
 void ExtendedText::ProcessUpdatedText(const std::string &text,
-   const std::string &font_path, float width) {
+   const std::string &font_path, float font_size, float width) {
   if (latest_nvg_context == nullptr) {
     return;
     // TODO: This is NOT correct. Should really set a dirty bit indicating
@@ -66,7 +82,7 @@ void ExtendedText::ProcessUpdatedText(const std::string &text,
   std::shared_ptr<window::Font> font = APP->window->loadFont(font_path);
   if (font && font->handle >= 0) {
     nvgFontFaceId(latest_nvg_context, font->handle);
-    nvgFontSize(latest_nvg_context, 12);  // Font size we currently use, not adjustable (yet)
+    nvgFontSize(latest_nvg_context, font_size);  // Font size we currently use, sometimes adjusted in menu.
     nvgTextAlign(latest_nvg_context, NVG_ALIGN_LEFT|NVG_ALIGN_BASELINE);
 
     total_physical_row_count = nvgTextBreakLines(

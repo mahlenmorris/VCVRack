@@ -39,7 +39,8 @@ struct PCode {
                  // And may have a list of variables later.
                  // TODO: Maybe make a Type for one-off commands?
     RESET,       // Like CLEAR, A command with no return value.
-    PRINT        // Sends strings to be sent out via a port.
+    PRINT,        // Sends strings to be sent out via a port.
+    SET_CHANNELS // Set number of polyphonic channels on OUTn ports.
   };
   Type type;
   std::string str1;
@@ -77,7 +78,7 @@ struct PCode {
 
 // Helps resolve "continue" statements.
 struct Loop {
-  const std::string loop_type;  // E.g., "for".
+  const std::string loop_type;  // E.g., "for" or "while"
   const int line_number;        // Position of the loop start (e.g., FORLOOP).
   Loop(const std::string type, int line) : loop_type{type}, line_number{line} {}
 };

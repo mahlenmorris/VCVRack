@@ -45,6 +45,7 @@
   AND     "and"
   ASSIGN  "="
   CEILING "ceiling"
+  CHANNELS "channels"
   CLEAR   "clear"
   CONNECTED "connected"
   CONTINUE "continue"
@@ -62,12 +63,14 @@
   MAX     "max"
   MIN     "min"
   NEXT    "next"
+  NEXTHIGHCPU "nexthighcpu"
   NOT     "not"
   OR      "or"
   POW     "pow"
   PRINT   "print"
   RESET   "reset"
   SAMPLE_RATE "sample_rate"
+  SET_CHANNELS "set_channels"
   SIGN    "sign"
   SIN     "sin"
   START   "start"
@@ -79,6 +82,7 @@
   TRIGGER "trigger"
   WAIT    "wait"
   WHEN    "when"
+  WHILE   "while"
   MINUS   "-"
   PLUS    "+"
   STAR    "*"
@@ -124,9 +128,10 @@
 %nterm <Line> exit_statement
 %nterm <Line> for_statement
 %nterm <Line> if_statement
-%nterm <Line> print_statement
+%nterm <Line> procedure_call
 %nterm <Line> reset_statement
 %nterm <Line> wait_statement
+%nterm <Line> while_statement
 
 %printer { yyo << $$; } <*>;
 
@@ -164,13 +169,15 @@ statement:
 | exit_statement       { $$ = $1; }
 | for_statement        { $$ = $1; }
 | if_statement         { $$ = $1; }
-| print_statement      { $$ = $1; }
+| procedure_call       { $$ = $1; }
 | reset_statement      { $$ = $1; }
 | wait_statement       { $$ = $1; }
+| while_statement      { $$ = $1; }
 
 array_assignment:
   "identifier" "[" exp "]" "=" exp  { $$ = Line::ArrayAssignment($1, $3, $6, &drv); }
 | "identifier" "[" exp "]" "=" "{" expression_list "}"  { $$ = Line::ArrayAssignment($1, $3, $7, &drv); }
+| "out_port" "[" exp "]" "=" exp { $$ = Line::ArrayAssignment($1, $3, $6, &drv); }
 | "identifier" "$" "[" exp "]" "=" exp  { $$ = Line::StringArrayAssignment($1, $4, $7, &drv); }
 | "identifier" "$" "[" exp "]" "=" string_exp  { $$ = Line::StringArrayAssignment($1, $4, $7, &drv); }
 | "identifier" "$" "[" exp "]" "=" "{" string_list "}"  { $$ = Line::StringArrayAssignment($1, $4, $8, &drv); }
@@ -187,15 +194,19 @@ clear_statement:
 
 continue_statement:
   "continue" "for"      { $$ = Line::Continue($2); }
+| "continue" "while"    { $$ = Line::Continue($2); }
 | "continue" "all"      { $$ = Line::Continue($2); }
 
 exit_statement:
   "exit" "for"          { $$ = Line::Exit($2); }
+| "exit" "while"        { $$ = Line::Exit($2); }
 | "exit" "all"          { $$ = Line::Exit($2); }
 
 for_statement:
-  "for" assignment "to" exp zero_or_more_statements "next"  { $$ = Line::ForNext($2, $4, drv.factory.Number(1.0), $5, &drv); }
-| "for" assignment "to" exp "step" exp zero_or_more_statements "next" { $$ = Line::ForNext($2, $4, $6, $7, &drv); }
+  "for" assignment "to" exp zero_or_more_statements "next"  { $$ = Line::ForNext($2, $4, drv.factory.Number(1.0), $5, true, &drv); }
+| "for" assignment "to" exp "step" exp zero_or_more_statements "next" { $$ = Line::ForNext($2, $4, $6, $7, true, &drv); }
+| "for" assignment "to" exp zero_or_more_statements "nexthighcpu"  { $$ = Line::ForNext($2, $4, drv.factory.Number(1.0), $5, false, &drv); }
+| "for" assignment "to" exp "step" exp zero_or_more_statements "nexthighcpu" { $$ = Line::ForNext($2, $4, $6, $7, false, &drv); }
 
 elseif_group:
   %empty                          {}
@@ -208,14 +219,18 @@ if_statement:
   "if" exp "then" zero_or_more_statements elseif_group "end" "if"       { $$ = Line::IfThen($2, $4, $5); }
 | "if" exp "then" zero_or_more_statements elseif_group "else" zero_or_more_statements "end" "if"  { $$ = Line::IfThenElse($2, $4, $7, $5); }
 
-print_statement:
+procedure_call:
   "print" "(" "out_port" "," string_list ")"  {$$ = Line::Print($3, $5, &drv);}
+| "set_channels" "(" "out_port" "," exp ")"   {$$ = Line::SetChannels($3, $5, &drv);} 
 
 reset_statement:
   "reset"               { $$ = Line::Reset(); }
 
 wait_statement:
   "wait" exp            { $$ = Line::Wait($2); }
+
+while_statement:
+  "while" exp zero_or_more_statements "end" "while"  { $$ = Line::While($2, $3, &drv); }
 
 %right "?" ":";
 %left "or";
@@ -235,6 +250,7 @@ exp:
 | MINUS "number" %prec NEG { $$ = drv.factory.Number(-1 * (float) $2);}
 | "not" exp %prec NEG { $$ = drv.factory.Not($2);}
 | "in_port"     { $$ = drv.factory.Variable($1, &drv); }
+| "in_port" "[" exp "]" { $$ = drv.factory.ArrayVariable($1, $3, &drv); }
 | "out_port"    { $$ = drv.factory.Variable($1, &drv); }
 | "identifier"  { $$ = drv.factory.Variable($1, &drv); }
 | "identifier" "[" exp "]" { $$ = drv.factory.ArrayVariable($1, $3, &drv); }
@@ -246,6 +262,7 @@ exp:
 | exp "and" exp { $$ = drv.factory.CreateBinOp($1, $2, $3); }
 | exp "or" exp  { $$ = drv.factory.CreateBinOp($1, $2, $3); }
 | "zeroargfunc" "(" ")"          {$$ = drv.factory.ZeroArgFunc($1);}
+| "channels" "(" "in_port" ")"  {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
 | "connected" "(" "in_port" ")"  {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
 | "connected" "(" "out_port" ")" {$$ = drv.factory.OnePortFunc($1, $3, &drv);}
 | "trigger"   "(" "in_port" ")"  {$$ = drv.factory.OnePortFunc($1, $3, &drv);}

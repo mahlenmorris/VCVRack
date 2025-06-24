@@ -1,7 +1,7 @@
 {
   "plugin": "StochasticTelegraph",
   "model": "BASICally",
-  "version": "2.0.13",
+  "version": "2.0.21",
   "params": [
     {
       "value": 0.0,
@@ -13,7 +13,7 @@
     }
   ],
   "data": {
-    "text": "' IN1 controls the cycle length.\n' 0.0v -> min_len_ms, 10.0v -> max_len_ms.\n' IN2 controls ratio of rise and fall.\n' 0.0v -> instant rise, 10v -> instant fall.\n' When IN3 is greater than 1.0V, new envelopes will be generated.\n' So holding IN3 high makes envelope continuous, a trigger to\n' IN3 will make one envelope.\n' OUT1 emits corresponding linear envelope from 0v to 10v.\n\nWHEN start()\n  min_len_ms = 1  ' 1 ms.\n  max_len_ms = 1000 * 60 * 20  ' 20 minutes.\nEND WHEN\n\nALSO\n  ' More efficient if we don't compute every cycle.\n  WAIT 1\n  ms = pow(IN1 / 10, 3) * (max_len_ms - min_len_ms) / 10 +\n       min_len_ms\n  rise_ratio = IN2 / 10\n  ticks_per_rise = max(1, rise_ratio * ms * sample_rate() / 1000)\n  volt_per_rise_tick = 10 / ticks_per_rise\n  ticks_per_fall = max(1, \n                    (1 - rise_ratio) * ms * sample_rate() / 1000)\n  volt_per_fall_tick = -10 / ticks_per_fall\nEND ALSO\n\nALSO\n  IF IN3 >= 1 THEN\n    for i = 0 to 1 step 0  ' Like a \"while(true)\".\n      OUT1 = OUT1 + volt_per_rise_tick\n      IF OUT1 >= 10 THEN\n        EXIT FOR\n      END IF\n    NEXT\n    OUT1 = 10\n    for i = 0 to 1 step 0\n      OUT1 = OUT1 + volt_per_fall_tick\n      IF OUT1 <= 0 THEN\n        EXIT FOR\n      END IF\n    NEXT\n    OUT1 = 0\n  END IF\nEND ALSO\n\n' Useful for debugging and seeing what settings\n' currently are.\n' You can get rid of this ALSO loop if not connecting a TTY to OUT6.\nALSO\n  print(OUT6, debug(ms))\n  WAIT 1000  ' Print once per second.\nEND ALSO\n    \n",
+    "text": "' IN1 controls the cycle length.\n' 0.0v -> min_len_ms, 10.0v -> max_len_ms.\n' IN2 controls ratio of rise and fall.\n' 0.0v -> instant rise, 5v -> rise time = fall time,\n' 10v -> instant fall.\n' When IN3 is greater than 1.0V, new envelopes will be generated.\n' So holding IN3 high makes envelope continuous, a trigger to\n' IN3 will make one envelope.\n' OUT1 emits corresponding linear envelope from 0v to 10v.\n\nWHEN start()\n  min_len_ms = 1  ' 1 ms.\n  max_len_ms = 1000 * 60 * 20  ' 20 minutes.\nEND WHEN\n\nALSO\n  ' More efficient if we don't compute every cycle.\n  WAIT 1\n  ms = pow(IN1 / 10, 3) * (max_len_ms - min_len_ms) +\n       min_len_ms\n  rise_ratio = IN2 / 10\n  ticks_per_rise = max(1, rise_ratio * ms * sample_rate() / 1000)\n  volt_per_rise_tick = 10 / ticks_per_rise\n  ticks_per_fall = max(1, \n                    (1 - rise_ratio) * ms * sample_rate() / 1000)\n  volt_per_fall_tick = -10 / ticks_per_fall\nEND ALSO\n\nALSO\n  IF IN3 >= 1 THEN\n    WHILE OUT1 < 10\n      OUT1 = OUT1 + volt_per_rise_tick\n    END WHILE\n    OUT1 = 10\n    WHILE OUT1 > 0\n      OUT1 = OUT1 + volt_per_fall_tick\n    END WHILE\n    OUT1 = 0\n  END IF\nEND ALSO\n\n' Useful for debugging and seeing what settings\n' currently are.\n' You can get rid of this ALSO loop if not connecting a TTY to OUT6.\nALSO\n  print(OUT6, debug(ms))\n  WAIT 1000  ' Print once per second.\nEND ALSO\n    \n",
     "width": 33,
     "allow_error_highlight": 1,
     "screen_colors": 1095216660480,

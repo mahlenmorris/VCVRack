@@ -54,6 +54,9 @@ STTextField::STTextField() {
   text = &placeholder;  // must be correctly set by caller!
   extended.Initialize(28, 1);
   is_dirty = true;
+
+  // FOr TTY only.
+  large_text_mode = false;
 }
 
 // I think I need this (copied from blendish.h) because it's a static function
@@ -489,7 +492,7 @@ int STTextField::getTextPosition(math::Vec mousePos) {
 }
 
 void STTextField::textUpdated() {
-  extended.ProcessUpdatedText(*text, fontPath, box.size.x - 2 * textOffset.x);
+  extended.ProcessUpdatedText(*text, fontPath, fontSize, box.size.x - 2 * textOffset.x);
   cursor = std::min(cursor, (int) text->size());
   selection = cursor;  // Nothing should be selected now.
   extended.RepositionWindow(cursor);
@@ -625,7 +628,8 @@ void STTextField::createContextMenu() {
 void STTextField::make_additions(TTYQueue *additions) {
   int likely_ending_length = extended.line_map.size() +
                              additions->text_additions.size();
-  bool cursor_at_end = (cursor >= (int) text->size());  // TODO: incorrect!
+  bool cursor_at_end = 
+    (cursor + (large_text_mode ? 1 : 0) >= (int) text->size());
   std::string item;
   while (additions->text_additions.pop(item)) {
     text->append(item);
@@ -639,6 +643,9 @@ void STTextField::make_additions(TTYQueue *additions) {
   }
   if (cursor_at_end) {
     cursor = (int) text->size();
+    if (large_text_mode) {
+      cursor = std::max(0, cursor - 1);
+    }
     // TODO: scroll?
   }
   // Reindex text.

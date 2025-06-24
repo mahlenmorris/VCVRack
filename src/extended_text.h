@@ -12,6 +12,12 @@ Library that helps my subclasses of LedDisplayTextField do useful
 features like being longer than the screen and support up/down keys.
 */
 
+// For Fermata and TTY, set up map of visible line counts to font size
+// and Y offset.
+// Each entry is:
+//   [line_count, font size, Y_offset]
+extern int LARGER_TEXT_INFO[13][3];
+
 struct TextLine {
   int line_number;
   int start_position;
@@ -78,7 +84,7 @@ struct ExtendedText {
   // * The font is changed
   // * when started, and before we display anything.
   void ProcessUpdatedText(const std::string &text, const std::string &font_path,
-     float width);
+     float font_size, float width);
 
   // Given a cursor position, where are we?
   LineColumn GetCurrentLineColumn(int position);

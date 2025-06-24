@@ -1,7 +1,7 @@
 {
   "plugin": "StochasticTelegraph",
   "model": "BASICally",
-  "version": "2.0.6",
+  "version": "2.0.21",
   "params": [
     {
       "value": 0.0,
@@ -13,10 +13,11 @@
     }
   ],
   "data": {
-    "text": "' Recorded signal comes in via IN1. It is recorded just behind\n' the OUT1 playback head.\n' Playback heads comes out of OUT1 - OUT5.\n' Trigger to IN9 clears the tape and resets the positions of\n' the tape heads\n\ntick = mod(tick + 1, size)  ' Position in loop.\nout1 = loop[tick]  ' Send out what we have.\nloop[tick] = in1  ' Record what we get back.\n\n' Note that IN1 DOES NOT include what was sent to\n' OUT1, because there is a one-sample delay along\n' the cables.\n\n' OUT2 is Half-speed playback head.\nhalf = mod(half + 0.5, size)\nout2 = loop[half] * (1 - mod(half, 1)) + loop[half + 1] * mod(half, 1)\n\n' OUT3 is a slightly unsteady playback head.\n' warble_speed is varied by a WHEN block below.\nwarble = mod(warble + warble_speed, size)\nout3 = loop[warble] * (1 - mod(warble, 1)) + loop[warble + 1] * mod(warble, 1)\n\n' OUT4: How about a reverse head?\ntick4 = mod(tick4 + size - 1, size) ' +size to ensure > 0\nout4 = loop[tick4]\n\n' OUT5: A normal speed head, some offset from OUT1.\n' That offset changes every full loop.\nout5 = loop[mod(tick + offset, size)]\n\nWHEN start() or trigger(IN9)\n  if trigger(in9) THEN\n    clear all\n  end if\n  warble_speed = 0.5\n  size = 10 * sample_rate() ' Ten second loop.\nEND WHEN\n\n' SLightly varies the speed of out3 several times a second.\nWHEN mod(tick, 1000) == 0\n  warble_speed = (1 + warble_speed + normal(1, 0.2)) / 3\nEND WHEN\n\nWHEN tick == 0\n  ' At least some time away from OUT1.\n  offset = floor(random(size * 0.1, size * 0.9))\nEND WHEN  ",
-    "width": 41,
+    "text": "' NOTE: The Memory system of modules would probably do this more easily.\n' \n' Recorded signal comes in via IN1. It is recorded just behind\n' the OUT1 playback head.\n' Playback heads comes out of OUT1 - OUT5.\n' Trigger to IN9 clears the tape and resets the positions of\n' the tape heads\n\ntick = mod(tick + 1, size)  ' Position in loop.\nout1 = loop[tick]  ' Send out what we have.\nloop[tick] = in1  ' Record what we get back.\n\n' Note that IN1 DOES NOT include what was sent to\n' OUT1, because there is a one-sample delay along\n' the cables.\n\n' OUT2 is Half-speed playback head.\nhalf = mod(half + 0.5, size)\nout2 = loop[half] * (1 - mod(half, 1)) + loop[half + 1] * mod(half, 1)\n\n' OUT3 is a slightly unsteady playback head.\n' warble_speed is varied by a WHEN block below.\nwarble = mod(warble + warble_speed, size)\nout3 = loop[warble] * (1 - mod(warble, 1)) + loop[warble + 1] * mod(warble, 1)\n\n' OUT4: How about a reverse head?\ntick4 = mod(tick4 + size - 1, size) ' +size to ensure > 0\nout4 = loop[tick4]\n\n' OUT5: A normal speed head, some offset from OUT1.\n' That offset changes every full loop.\nout5 = loop[mod(tick + offset, size)]\n\nWHEN start() or trigger(IN9)\n  if trigger(in9) THEN\n    clear all\n  end if\n  warble_speed = 0.5\n  size = 10 * sample_rate() ' Ten second loop.\nEND WHEN\n\n' Slightly varies the speed of out3 several times a second.\nWHEN mod(tick, 1000) == 0\n  warble_speed = (1 + warble_speed + normal(1, 0.2)) / 3\nEND WHEN\n\nWHEN tick == 0\n  ' At least some time away from OUT1.\n  offset = floor(random(size * 0.1, size * 0.9))\nEND WHEN  ",
+    "width": 37,
     "allow_error_highlight": 1,
     "screen_colors": 1095216660480,
-    "title_text": "1 record, 5 play"
+    "title_text": "1 record, 5 play",
+    "font_choice": "fonts/RobotoMono-Regular.ttf"
   }
 }

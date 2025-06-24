@@ -161,11 +161,36 @@ struct Basically : Module {
       starting = start;
     }
 
+    float GetChannels(const PortPointer &port) override {
+      if (port.port_type == PortPointer::INPUT) {
+        return inputs->at(port.index).getChannels();
+      } else {
+        return outputs->at(port.index).getChannels();
+      }
+    }
+
+    void SetChannels(const PortPointer &port, int channels) override {
+      if (port.port_type == PortPointer::INPUT) {
+        inputs->at(port.index).setChannels(channels);
+      } else {
+        outputs->at(port.index).setChannels(channels);
+      }
+    }
+
     float GetVoltage(const PortPointer &port) override {
       if (port.port_type == PortPointer::INPUT) {
         return inputs->at(port.index).getVoltage();
       } else {
         return outputs->at(port.index).getVoltage();
+      }
+    }
+    float GetVoltage(const PortPointer &port, int channel) override {
+      // Within the program, channels are 1-16, but within the VCV API,
+      // they are 0 - 15.
+      if (port.port_type == PortPointer::INPUT) {
+        return inputs->at(port.index).getVoltage(channel - 1);
+      } else {
+        return outputs->at(port.index).getVoltage(channel - 1);
       }
     }
     void SetVoltage(const PortPointer &port, float value) override {
@@ -180,6 +205,23 @@ struct Basically : Module {
         outputs->at(port.index).setVoltage(value);
       }
     }
+    void SetVoltage(const PortPointer &port, int channel, float value) override {
+      if (port.port_type == PortPointer::INPUT) {
+        inputs->at(port.index).setVoltage(value, channel - 1);
+        inputs->at(port.index).setChannels(
+            std::max(inputs->at(port.index).getChannels(), channel));
+      } else {
+        // Force output values to -10 <= x <= 10 range.
+        // Set in menu.
+        if (out_index_to_clamp->at(port.index)) {
+          value = clamp(value, -10.0f, 10.0f);
+        }
+        outputs->at(port.index).setVoltage(value, channel - 1);
+        outputs->at(port.index).setChannels(
+            std::max(outputs->at(port.index).getChannels(), channel));
+      }
+    }
+
     float SampleRate() override {
       return args->sampleRate;
     }
@@ -315,7 +357,7 @@ struct Basically : Module {
           std::string stable_text(text);
           bool compiles = !driver->parse(stable_text);
           if (compiles) {
-            PCodeTranslator translator;
+            PCodeTranslator translator(driver);
             main_blocks = new std::vector<CodeBlock*>();
             expression_blocks = new std::vector<std::pair<Expression, CodeBlock*> >();
             running_expression_blocks = new std::vector<bool>();
@@ -328,6 +370,8 @@ struct Basically : Module {
             }
             for (auto ast_block : driver->blocks) {
               CodeBlock* new_block = new CodeBlock(environment);
+              // Holds new errors in case translation discovers any.
+              std::vector<std::string> new_errors;
               if (translator.BlockToCodeBlock(new_block, ast_block)) {
                 // Different lists depending on type.
                 if (new_block->type == Block::MAIN) {
@@ -338,6 +382,9 @@ struct Basically : Module {
                   running_expression_blocks->push_back(false);
                 }
               } else {
+                for (std::string err : new_errors) {
+                  driver->AddError(err);
+                }
                 useful = false;
                 // TODO: Report errors via some new mechanism.
               }
@@ -557,6 +604,15 @@ struct Basically : Module {
     outputs[OUT4_OUTPUT].setVoltage(0.0f);
     outputs[OUT5_OUTPUT].setVoltage(0.0f);
     outputs[OUT6_OUTPUT].setVoltage(0.0f);
+
+    // Now that I have polyphonic output, need to set channel count
+    // appropriately when bypassed.
+    outputs[OUT1_OUTPUT].setChannels(1);
+    outputs[OUT2_OUTPUT].setChannels(1);
+    outputs[OUT3_OUTPUT].setChannels(1);
+    outputs[OUT4_OUTPUT].setChannels(1);
+    outputs[OUT5_OUTPUT].setChannels(1);
+    outputs[OUT6_OUTPUT].setChannels(1);
   }
 
   void process(const ProcessArgs& args) override {
@@ -1487,6 +1543,7 @@ struct BasicallyWidget : ModuleWidget {
       "Language hints (selecting inserts code)"));
     std::pair<std::string, std::string> syntax[] = {
       {"OUT1 = IN1 + offset[n]", "OUT1 = IN1 + offset[n]\n"},
+      {"OUT1[chan] = IN1[chan] / 2", "OUT1[chan] = IN1[chan] / 2\n"},
       {"offset[0] = {2, 0.2, foo, 100*4.5}", "offset[0] = {2, 0.2, foo, 100*4.5}\n"},
       {"WAIT 200", "WAIT 200\n"},
       {"' I'm a comment!", "' I'm a comment! Only humans read me.\n"},
@@ -1498,16 +1555,17 @@ struct BasicallyWidget : ModuleWidget {
        "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSE\n  OUT1 = -5\nEND IF\n"},
       {"IF IN1 == 0 THEN OUT1 = IN2 * IN1 ELSEIF IN1 < 2 THEN OUT1 = IN2 ELSE OUT1 = -5 END IF\n",
        "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSEIF IN1 < 2 THEN\n  OUT1 = IN2\nELSE\n  OUT1 = -5\nEND IF\n"},
-      {"FOR i = 0 TO 10 foo = IN1 + i NEXT\n",
+      {"FOR i = 0 TO 10 foo = IN1 + i NEXT|NEXTHIGHCPU\n",
        "FOR i = 0 TO 10\n  foo = IN1 + i\nNEXT\n"},
       {"FOR i = 0 TO 10 STEP 0.2 foo = IN1 + i NEXT\n",
        "FOR i = 0 TO 10 STEP 0.2\n  foo = IN1 + i\nNEXT\n"},
-      {"CONTINUE FOR", "CONTINUE FOR\n"},
-      {"EXIT FOR", "EXIT FOR\n"},
-      {"CONTINUE ALL", "CONTINUE ALL\n"},
-      {"EXIT ALL", "EXIT ALL\n"},
+      {"WHILE foo > 10  foo = foo / 2 END WHILE\n",
+       "WHILE foo > 10\n  foo = foo / 2\nEND WHILE\n"},
+      {"CONTINUE FOR|WHILE|ALL", "CONTINUE FOR\n"},
+      {"EXIT FOR|WHILE|ALL", "EXIT WHILE\n"},
       {"CLEAR ALL", "CLEAR ALL\n"},
       {"RESET", "RESET\n"},
+      {"set_channels(OUT1, 6)", "set_channels(OUT1, 6)\n"},
       {"ALSO ... END ALSO", "ALSO\n  out1 = mod(out1 + random(0, 0.1))\nEND ALSO"},
       {"WHEN start() limit = 200 curr = 0 END WHEN",
        "WHEN start()\n  limit = 200\n  curr = 0\nEND WHEN"}
@@ -1528,6 +1586,7 @@ struct BasicallyWidget : ModuleWidget {
     std::pair<std::string, std::string> math_funcs[] = {
       {"abs(x) - this number without a negative sign", "abs(IN1)"},
       {"ceiling(x) - integer value at or above x", "ceiling(IN1)"},
+      {"channels(p) - number of channels in polyphonic INx port p", "channels(IN1)"},
       {"connected(x) - 1 if named port x has a cable attached, 0 if not",
        "connected(IN1)"},
       {"floor(x) - integer value at or below x", "floor(IN1)"},
@@ -1552,7 +1611,7 @@ struct BasicallyWidget : ModuleWidget {
        "IF time() > 60 THEN ' It's been a minute."},
       {"time_millis() - Number of milliseconds since this BASICally module started running",
        "IF time_millis() > 1000 THEN ' It's been a second."},
-      {"trigger(x) - 1 only for the moment when the IN port x receives a trigger",
+      {"trigger(p) - 1 only for the moment when the INx port p receives a trigger",
        "WHEN trigger(IN9)"}
     };
     MenuItem* math_menu = createSubmenuItem("Math", "",
