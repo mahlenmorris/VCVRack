@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.21
-#### ???
+#### June 24, 2025
 * Fermata and TTY:
 * * Both of these now support [larger font sizes]((https://github.com/mahlenmorris/VCVRack/blob/main/README.md#fermata)), all the way up to filling the vertical space with a single line of text.
 * * They also can now be stretched out to 300 HP wide. That's wider than 33 VCV VCO's.
