@@ -3,7 +3,7 @@
 ### 2.0.21
 #### ???
 * Fermata and TTY:
-* * At the request of Both of these now support [larger font sizes]((https://github.com/mahlenmorris/VCVRack/blob/main/README.md#fermata)), all the way up to filling the vertical space with a single line of text.
+* * Both of these now support [larger font sizes]((https://github.com/mahlenmorris/VCVRack/blob/main/README.md#fermata)), all the way up to filling the vertical space with a single line of text.
 * * They also can now be stretched out to 300 HP wide. That's wider than 33 VCV VCO's.
 * * [A short video](https://www.youtube.com/watch?v=VQs2c6qWk8E) demo.
 * * Thanks to maunatanmaya for this suggestion in my GitHub Issues, and for wrapping it in a Ko-fi donation :)
