@@ -52,6 +52,7 @@ struct Ruminate : PositionedModule {
     // If user is adjusting when in NO_PLAY, we move the play head accordingly.
     // Should never be in ADJUSTING.
     //
+    // If buffer->cv_rate is set, then FADE_UP and FADE_DOWN are skipped.
   };
 
   const double FADE_INCREMENT = 0.02;
@@ -223,14 +224,14 @@ struct Ruminate : PositionedModule {
         case NO_PLAY:
         case FADE_DOWN: {
           if (playing && (!adjusting || !fade_on_move)) {
-            play_state = FADE_UP;
+            play_state = buffer->cv_rate ? PLAYING : FADE_UP;
           }
         }
         break;
         case FADE_UP:
         case PLAYING:  {
           if (!playing || (adjusting && fade_on_move)) {
-            play_state = FADE_DOWN;
+            play_state = buffer->cv_rate ? NO_PLAY : FADE_DOWN;
           }
         }
         break;

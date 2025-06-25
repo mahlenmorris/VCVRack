@@ -36,9 +36,9 @@ struct Embellish : PositionedModule {
     // We have a few states we could be in.
     ADJUSTING,  // * Not recording, but actively moving.
     NO_RECORD,  // * Not recording at all.
-    FADE_UP,    // * Starting to record.
+    FADE_UP,    // * Starting to record. Should not be seen if buffer->cv_rate is set.
     RECORDING,   // * Continuing to record.
-    FADE_DOWN    // * Fading out the recording.
+    FADE_DOWN    // * Fading out the recording. Should not be seen if buffer->cv_rate is set.
                 // * And back to not recording at all.
 
     // When starting and stopping the record head, the sequence is:
@@ -179,14 +179,14 @@ struct Embellish : PositionedModule {
         case NO_RECORD:
         case FADE_DOWN: {
           if (recording && !adjusting) {
-            record_state = FADE_UP;
+            record_state = (buffer->cv_rate) ? RECORDING : FADE_UP;
           }
         }
         break;
         case FADE_UP:
         case RECORDING:  {
           if (!recording || adjusting) {
-            record_state = FADE_DOWN;
+            record_state = (buffer->cv_rate) ? NO_RECORD : FADE_DOWN;
           }
         }
         break;
@@ -196,7 +196,7 @@ struct Embellish : PositionedModule {
 
       // Ending a recording means we need a Smooth.
       if (record_state == FADE_DOWN) {
-        if (buffer->smooths.additions.size() < buffer->smooths.additions.max_size()) {
+        if (!buffer->cv_rate && buffer->smooths.additions.size() < buffer->smooths.additions.max_size()) {
           Smooth* new_smooth = new Smooth(display_position + (reverse ? 0 : 1), true);
           // This isn't strictly kosher, since multiple Embellish modules could be pushing
           // a Smooth onto the queue at the same time, and the NoLockQueue is rated as safe
@@ -267,7 +267,7 @@ struct Embellish : PositionedModule {
       display_position = (int) floor(recording_position);
 
       if (record_state == FADE_UP) {
-        if (buffer->smooths.additions.size() < buffer->smooths.additions.max_size()) {
+        if (!buffer->cv_rate && buffer->smooths.additions.size() < buffer->smooths.additions.max_size()) {
           Smooth* new_smooth = new Smooth(display_position + (reverse ? 1 : 0), false);
           buffer->smooths.additions.push(new_smooth);
         }
@@ -286,7 +286,7 @@ struct Embellish : PositionedModule {
           break;
           case 1: {  // Bounce.
             // When we bounce off the ends, we cause a discontinuity that needs smoothing.
-            if (display_position == length) {
+            if (!buffer->cv_rate && display_position == length) {
               // TODO: should I check that I'm actually running before adding this?
               // When we bounce off the end of Memory.
               Smooth* new_smooth = new Smooth(display_position, false);
@@ -300,7 +300,7 @@ struct Embellish : PositionedModule {
               display_position -= length * 2;
             }
 
-            if (display_position == 0) {
+            if (!buffer->cv_rate && display_position == 0) {
               // TODO: should I check that I'm actually running before adding this?
               // When we bounce off the start of Memory.
               Smooth* new_smooth = new Smooth(display_position, false);
@@ -328,7 +328,7 @@ struct Embellish : PositionedModule {
 
         // Switching the reverse button *while recording* causes a discontinuity
         // that requires smoothing.
-        if (prev_reverse != reverse) {
+        if (!buffer->cv_rate && prev_reverse != reverse) {
           Smooth* new_smooth = new Smooth(display_position + (reverse ? 1 : 0), false);
           buffer->smooths.additions.push(new_smooth);
         }

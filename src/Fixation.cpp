@@ -52,6 +52,7 @@ struct Fixation : PositionedModule {
     FADE_DOWN_TO_WAIT    // * We've hit our repeat limit.
 
     // TODO: do we need a FADE_UP_TO_RESTART?
+    // NB: FADE_* states are unused when buffer->cv_rate is set.
 
     // Assertions:
     // Can never move from playing <--> not_playing without a fade.
@@ -321,7 +322,7 @@ struct Fixation : PositionedModule {
           // length_countdown < 0 -> we just switched to this STYLE.
         if (length_event || length_countdown < 0) {
           position_for_restart = GetPosition();
-          length_in_samples  = GetLength(args);
+          length_in_samples = GetLength(args);
           length_countdown = length_in_samples;
         }
       }
@@ -335,7 +336,7 @@ struct Fixation : PositionedModule {
             if (style == 1) {
               playback_position = GetPosition();
               trig_generator.trigger(1e-3f);
-              play_state = FADE_UP;
+              play_state = buffer->cv_rate ? PLAYING: FADE_UP;
               length_countdown = GetLength(args);
             } else {
               if (clock_event) { // in case PLAY_GATE and CLOCK are same sample.
@@ -343,9 +344,9 @@ struct Fixation : PositionedModule {
 
                 // Since we don't need to fade down, we can TRIG now.
                 trig_generator.trigger(1e-3f);
-                play_state = FADE_UP;
+                play_state = buffer->cv_rate ? PLAYING: FADE_UP;
                 playback_position = GetPosition();
-                length_in_samples  = GetLength(args);
+                length_in_samples = GetLength(args);
                 length_countdown = length_in_samples;
                 repeat_count = 0;
               } else {
@@ -364,13 +365,13 @@ struct Fixation : PositionedModule {
             play_state = NO_PLAY;
           } else if (style == 1) {  // user changed STYLE from 0 -> 1, I'm fairly sure.
             trig_generator.trigger(1e-3f);
-            play_state = FADE_UP;
+            play_state = buffer->cv_rate ? PLAYING: FADE_UP;
             playback_position = GetPosition();
             length_countdown  = GetLength(args);
           } else if (clock_event && style_clock) {
             // Since we don't need to fade down, we can TRIG now.
             trig_generator.trigger(1e-3f);
-            play_state = FADE_UP;
+            play_state = buffer->cv_rate ? PLAYING: FADE_UP;
             playback_position = GetPosition();
             length_in_samples  = GetLength(args);
             length_countdown = length_in_samples;
@@ -381,11 +382,11 @@ struct Fixation : PositionedModule {
 
         case FADE_UP: {
           if (stop_play) {
-            play_state = FADE_DOWN;
+            play_state = buffer->cv_rate ? NO_PLAY :FADE_DOWN;
           } else if (fade_ended) {
             play_state = PLAYING;
           } else if (clock_event && style_clock) {
-            play_state = FADE_DOWN_TO_RESTART;
+            play_state = buffer->cv_rate ? PLAYING : FADE_DOWN_TO_RESTART;
             position_for_restart = GetPosition();
             length_in_samples  = GetLength(args);
           }
@@ -394,30 +395,53 @@ struct Fixation : PositionedModule {
 
         case PLAYING: {
           if (stop_play) {
-            play_state = FADE_DOWN;
+            play_state = buffer->cv_rate ? NO_PLAY : FADE_DOWN;
           } else if (style_changed) {
             if (style_clock) {
               // Wait for next CLOCK before playing again.
-              play_state = FADE_DOWN_TO_WAIT;
+              play_state = buffer->cv_rate ? WAITING : FADE_DOWN_TO_WAIT;
             } else {
               // Go back to position and run for length.
-              play_state = FADE_DOWN_TO_RESTART;
+              play_state = buffer->cv_rate ? WAITING : FADE_DOWN_TO_RESTART;
             }
           } else if (clock_event && style_clock) {
-            play_state = FADE_DOWN_TO_RESTART;
-            position_for_restart = GetPosition();
-            length_in_samples  = GetLength(args);
+            if (buffer->cv_rate) {
+              // Just like if FADE_DOWN_TO_RESTART had a fade_ended event.
+              trig_generator.trigger(1e-3f);
+              playback_position = GetPosition();
+              if (style == 1 || style == 2) {
+                length_countdown = GetLength(args);
+              }              
+            } else {
+              play_state = FADE_DOWN_TO_RESTART;
+              position_for_restart = GetPosition();
+              length_in_samples = GetLength(args);
+            }
           } else if (length_event && style == 1) {
-            play_state = FADE_DOWN_TO_RESTART;
-            length_in_samples  = GetLength(args);
+            if (buffer->cv_rate) {
+              // Just like if FADE_DOWN_TO_RESTART had a fade_ended event.
+              trig_generator.trigger(1e-3f);
+              playback_position = GetPosition();
+              length_countdown = GetLength(args);
+            } else {
+              play_state = buffer->cv_rate ? PLAYING : FADE_DOWN_TO_RESTART;
+              length_in_samples = GetLength(args);
+            }
           } else if (length_event && style == 2) {
             ++repeat_count;
             if (repeat_count >= params[COUNT_KNOB_PARAM].getValue()) {
-              play_state = FADE_DOWN_TO_WAIT;
+              play_state = buffer->cv_rate ? WAITING : FADE_DOWN_TO_WAIT;
               length_countdown = -1;
             } else {
-              play_state = FADE_DOWN_TO_RESTART;
-              length_countdown = GetLength(args);
+              if (buffer->cv_rate) {
+                // Just like if FADE_DOWN_TO_RESTART had a fade_ended event.
+                trig_generator.trigger(1e-3f);
+                playback_position = GetPosition();
+                length_countdown = GetLength(args);
+              } else {
+                play_state = FADE_DOWN_TO_RESTART;
+                length_countdown = GetLength(args);
+              }
             }
           }
         }
@@ -429,7 +453,7 @@ struct Fixation : PositionedModule {
           } else if (clock_event && style_clock) {
             play_state = FADE_DOWN_TO_RESTART;
             position_for_restart = GetPosition();
-            length_in_samples  = GetLength(args);
+            length_in_samples = GetLength(args);
           } else if (start_play && style_clock) {
             play_state = WAITING;
           } else if (fade_ended && style_clock) {
@@ -559,6 +583,7 @@ struct Fixation : PositionedModule {
     };
 
     prev_play_state = play_state;
+    WARN("CV = %s", buffer->cv_rate ? "true" : "false");
     WARN("New state: %s", state_names[play_state]);
     WARN("length_countdown: %d", length_countdown);
     WARN("length_in_samples: %d", length_in_samples);
