@@ -50,7 +50,7 @@ Here's a demonstration of a technique for [glitching a drum loop](https://youtu.
 # The Memory Ensemble
 A Memory ensemble is a set of at least some of these modules next to each other (like extensions). The modules in a single ensemble can be in any order from left-to-right, with the exception that the required Memory module is always the left-most module.
 
-Each non-Memory module has a small light near the top edge of the module; when a module is connected to a Memory (by being in a group of these modules), then it's light will be lit. For some modules, that light will be a color; that color is the same as the color that will be shown for the module in the Depict visualizer.
+Each non-Memory module has a small light near the top edge of the module; when a module is connected to a Memory (by being in a group of these modules), then its light will be lit. For some modules, that light will be a color; that color is the same as the color that will be shown for the module in the Depict visualizer.
 
 ![Connecting](images/ConnectedTall.png)
 
@@ -407,7 +407,7 @@ If Bypass is enabled, Fixation will stop playing. However, turning Fixation on a
 
 # Click Avoidance
 Having recording heads starting and stopping and playback heads moving past recording heads is a recipe for usually annoying clicks and pops. A math-oriented person (like myself) might think of them as "discontinuities". For the sake of brevity, I'll forego describing all of the ways that the Memory system works to avoid these, and just mention a couple things:
-* A playback head (i.e., Ruminate or Fixation) will fade its output volume to zero when it passes over a recording head, and then fade the volume back up. This usually happens in less than a millisecond of time, and is, in my experience, not noticable. However, a side effect of this is that if a playback head is moving at the same speed as a recording head and very closely near it (like within 50 samples), it's volume may be reduced or even zero. Setting the INITIAL position knobs to different values can help spread them apart when you start up the patch.
+* A playback head (i.e., Ruminate or Fixation) will fade its output volume to zero when it passes over a recording head, and then fade the volume back up. This usually happens in less than a millisecond of time, and is, in my experience, not noticable. However, a side effect of this is that if a playback head is moving at the same speed as a recording head and very closely near it (like within 50 samples), its volume may be reduced or even zero. Setting the INITIAL position knobs to different values can help spread them apart when you start up the patch.
 * Similarly, when two recording heads pass each other (e.g., in opposite directions), they will both fade out the signal they are writing to Memory.
 * Another source of clicks is turing the playback head on and off, so this also fades in and out.
 * Whenever a recording head starts or stops, it will "smooth out" where that happened.
