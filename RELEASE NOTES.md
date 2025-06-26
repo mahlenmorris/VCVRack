@@ -13,13 +13,13 @@
 * * Thanks to maunatanmaya for this suggestion in my GitHub Issues, and for wrapping it in a Ko-fi donation :)
 * BASICally:
 * * Added [WHILE-END WHILE loops](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#while-loops). Thanks to @gabtiorbi for unintentionally reminding me that it's confusing not having WHILE loops.
-* * [Polyphonic INx and OUTx ports](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#polyphonic-inputs-and-outputs)! Thanks again go to @gabtiorbi for getting me to think seriously about supporting this. It's made many of my programs much simpler.
+* * [Polyphonic INx and OUTx ports](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#polyphonic-inputs-and-outputs)! Thanks again to @gabtiorbi for getting me to think seriously about supporting this. It's made many of my programs much simpler.
 * * Adding polyphony convinced me that a faster FOR loop mechanism is (sometimes) needed, so I've added [the NEXTHIGHCPU option](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#faster-for-loops-with-nexthighcpu) to FOR loops.
 * * Updated the BASICally presets to use these features when appropriate.
 
 ### 2.0.20
 #### May 25, 2025
-* Added the ternery '?:' operator to BASICally. For example:
+* Added the ternary '?:' operator to BASICally. For example:
 ```
 IF foo >= 2 THEN
   OUT1 = IN1
@@ -32,7 +32,7 @@ can now be written as:
 OUT1 = foo >=2 ? IN1 : 0
 ```
 * In Venn, each Circle can now have a name associated with it, making the display more understandable.
-* In Venn, each Circle can now have an arbitrarily complicate formula associated with it, and the computed values become
+* In Venn, each Circle can now have an arbitrarily complicated formula associated with it, and the computed values become
 the polyphonic MATH1 output port. Examples of formula include:
 * * "0.125"
 * * "c#2" - that is, the V/OCT value for a C sharp in octave 2
@@ -62,7 +62,7 @@ the polyphonic MATH1 output port. Examples of formula include:
 and then replace the contents of Memory when recording is completed.
 * Fixed bug in Fixation when CLOCK and PLAY input both receive triggers at the same moment. (thanks reina!).
 
-I should mention that Brainwash doesn't feel complete to me yet, so I'll openly invite people to make suggestions for how to make it more useful for kinds of music that benefit from it.
+I should mention that Brainwash doesn't feel complete to me yet, so I'll openly invite people to make suggestions for how to make it more useful for the kinds of music that benefit from it.
 
 ### 2.0.17
 #### September 28, 2024
@@ -73,7 +73,7 @@ I should mention that Brainwash doesn't feel complete to me yet, so I'll openly 
 * * * [Generating MIDI notes](https://www.youtube.com/watch?v=gOE4iCjMsH8) and moving Point at audio rate.
 * TTY can now display a timestamp on each line via a menu option.
 * Fixed a bug in Memory's file loading that would clip the end of the file when the file and Rack had different sample rates.
-* Added a menu option to Memory to load the last loaded file on module start (thanks, @jue). 
+* Added a menu option to Memory to load the last loaded file on module start (thanks, @jue).
 
 ### 2.0.16
 #### August 10, 2024
@@ -110,7 +110,7 @@ See [example video](https://www.youtube.com/watch?v=dOsupn0-Mxw).
 the sum of the SPEED input and control is how many samples the playhead moves forward per sample emitted, so 1 is normal speed, .5 is half-speed. When checked, this sum will be interpreted the way that V/Oct is interpreted in most modules. See [example video](https://www.youtube.com/watch?v=kGKmS2WjqIs).
 * When the sliders on Ruminate and Embellish are released, they now resume normal operation more quickly.
 * Put a big "T" behind ports only input or output Tispy text messages. Put a less solid "T"
-on the BASICally OUTn ports, to suggest that they can emit both Tipsy and regular values. 
+on the BASICally OUTn ports, to suggest that they can emit both Tipsy and regular values.
 
 ### 2.0.14
 #### May 6, 2024
@@ -144,14 +144,14 @@ to BASICally so it can send text to other modules.
 documenting a patch, or for writing a story while listening to one.
 A more capable version of VCV's Notes.
 * Also improved the BASICally editor (it's the same as the one Fermata uses).
-You can choose from different fonts, and fixed some bugs in scrolling. Added
+You can choose from different fonts, and I fixed some bugs in scrolling. Added
 more presets.
 
 ### 2.0.9
 #### April 10, 2023
 * Additional preset scripts for BASICally.
 * Drifter can now RESET to shapes other than a straight line at zero.
-* Drifter can drift the left and right end points in sync. This prevents
+* Drifter can drift the left and right endpoints in sync. This prevents
 sudden changes/transients when driving IN with a saw wave.
 * Fuse now has an UNTRIGGER input and button, which lowers the accumulated
 count of triggers.
@@ -203,7 +203,7 @@ Updates to BASICally:
 * Text window scrolls when you get to the top or bottom. Longer programs!
 * Now have six INx ports instead of four.
 * Added scientific note notation: “out1 = c#3” and “if IN5 < bb3 then…” are now legal.
-* Now can have black text on white.
+* Now you can have black text on white.
 * Some performance improvement.
 * Added all the Math functions to the menu.
 
