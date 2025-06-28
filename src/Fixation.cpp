@@ -424,7 +424,7 @@ struct Fixation : PositionedModule {
               playback_position = GetPosition();
               length_countdown = GetLength(args);
             } else {
-              play_state = buffer->cv_rate ? PLAYING : FADE_DOWN_TO_RESTART;
+              play_state = FADE_DOWN_TO_RESTART;
               length_in_samples = GetLength(args);
             }
           } else if (length_event && style == 2) {
