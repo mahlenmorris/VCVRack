@@ -113,6 +113,18 @@ void Buffer::Get(FloatPair *pair, double position) {
   }
 }
 
+void Buffer::GetDirect(FloatPair *pair, double position) {
+  if (!IsValid()) {
+    pair->left = 0.0f;
+    pair->right = 0.0f;
+    return;
+  }
+  assert(position >= 0.0);
+  assert(position < length);
+  pair->left = left_array[(int) position];
+  pair->right = right_array[(int) position];
+}
+
 // Caller is responsible for only calling this when IsValid() is true.
 void Buffer::Set(int position, float left, float right, long long module_id) {
   if (!IsValid()) {

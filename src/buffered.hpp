@@ -198,7 +198,11 @@ struct Buffer {
   void SetDirty(int position);
 
   // Caller is responsible for only calling this when IsValid() is true.
+  // 'position' is realtime sample units.
   void Get(FloatPair *pair, double position);
+  // 'position' is 1:1 with memory, not with time.
+  // Used by SAVE_FILE.
+  void GetDirect(FloatPair *pair, double position);
   // Caller is responsible for only calling this when IsValid() is true.
   void Set(int position, float left, float right, long long module_id);
 };

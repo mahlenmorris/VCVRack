@@ -294,10 +294,10 @@ struct BufferChangeThread {
 
                 // Do a fair bit of setup, so it can save properly.
                 // Set both the number of channels and number of samples per channel
-                audio_file.setAudioBufferSize(2, buffer->length);
+                audio_file.setAudioBufferSize(2, buffer->true_length);
 
                 // Set the number of samples per channel
-                audio_file.setNumSamplesPerChannel(buffer->length);
+                audio_file.setNumSamplesPerChannel(buffer->true_length);
 
                 // Set the number of channels. Memory is always stereo.
                 audio_file.setNumChannels(2);

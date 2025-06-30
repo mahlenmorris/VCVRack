@@ -1011,7 +1011,7 @@ bool AudioFile<T>::saveToWaveFile (std::string filePath)
     } else {
         for (int i = 0; i < getNumSamplesPerChannel(); i++) {
             FloatPair sample;
-            memory_buffer->Get(&sample, i);
+            memory_buffer->GetDirect(&sample, i);
             for (int channel = 0; channel < getNumChannels(); channel++) {
                 float value;
                 if (channel == 0) {
