@@ -60,6 +60,7 @@
 #include <limits>
 
 #include "buffered.hpp"  // For Buffer.
+// And this pulls in the VCV Rack API as well.
 
 // disable some warnings on Windows
 #if defined (_MSC_VER)
@@ -495,46 +496,26 @@ void AudioFile<T>::shouldLogErrorsToConsole (bool logErrors)
 template <class T>
 bool AudioFile<T>::load (std::string filePath)
 {
-    std::ifstream file (filePath, std::ios::binary);
-    
-    // check the file exists
-    if (! file.good())
-    {
-        reportError ("ERROR: File doesn't exist or otherwise can't load file\n"  + filePath);
-        return false;
-    }
-    
-    std::vector<uint8_t> fileData;
+  // I (Mahlen) replaced this file reading stuff with Rack's API because
+  // std::ifstream won't find files with non-ASCII characters in them.
 
-  file.unsetf (std::ios::skipws);
-
-  file.seekg (0, std::ios::end);
-  size_t length = file.tellg();
-  file.seekg (0, std::ios::beg);
-
-  // allocate
-  fileData.resize (length);
-
-  file.read(reinterpret_cast<char*> (fileData.data()), length);
-  file.close();
-
-  if (file.gcount() != length)
-  {
-    reportError ("ERROR: Couldn't read entire file\n" + filePath);
+  // Check the file exists.
+  if (!system::exists(filePath)) {
+    reportError ("ERROR: File doesn't exist or otherwise can't load file\n"  + filePath);
     return false;
   }
-    
-    // Handle very small files that will break our attempt to read the
-    // first header info from them
-    if (fileData.size() < 12)
-    {
-        reportError ("ERROR: File is not a valid audio file\n" + filePath);
-        return false;
-    }
-    else
-    {
-        return loadFromMemory (fileData);
-    }
+
+  size_t length = system::getFileSize(filePath);
+  // Handle very small files that will break our attempt to read the
+  // first header info from them.
+  if (length < 12) {
+    reportError ("ERROR: File is not a valid audio file\n" + filePath);
+    return false;
+  }
+
+  std::vector<uint8_t> fileData = system::readFile(filePath);
+
+  return loadFromMemory (fileData);
 }
 
 //=============================================================
