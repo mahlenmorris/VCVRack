@@ -1163,24 +1163,11 @@ bool AudioFile<T>::saveToAiffFile (std::string filePath)
 
 //=============================================================
 template <class T>
-bool AudioFile<T>::writeDataToFile (std::vector<uint8_t>& fileData, std::string filePath)
-{
-    std::ofstream outputFile (filePath, std::ios::binary);
-    
-    if (outputFile.is_open())
-    {
-        for (size_t i = 0; i < fileData.size(); i++)
-        {
-            char value = (char) fileData[i];
-            outputFile.write (&value, sizeof (char));
-        }
-        
-        outputFile.close();
-        
-        return true;
-    }
-    
-    return false;
+bool AudioFile<T>::writeDataToFile (std::vector<uint8_t>& fileData, std::string filePath) {
+  // The Rack API call can better handle paths with non-ASCII chars in them. 
+  system::writeFile(filePath, fileData);
+  // Although oddly it returns no error indication.
+  return true;
 }
 
 //=============================================================
