@@ -1,12 +1,14 @@
 # The Memory modules for VCV Rack
 A set of related modules for use with VCV Rack 2.0. They combine to form ensembles of
 recording and playback of audio. Forms an inverted tape machine, with a motionless
-recording medium (a Memory) and playback and recording heads that move independently within it.
+recording medium (a Memory or MemoryCV) and playback and recording heads that move independently within it.
 
 ![Memory Modules image](images/MemoryFamilySameHeight.png)
 
 * [Memory](#memory): The module containing the audio. Can be wiped clean
 and resized. *Always* the left-most module in any Memory ensemble.
+* [MemoryCV](#memorycv): The module containing the control voltage signals. Can be wiped clean
+and resized. *Always* the left-most module in any MemoryCV ensemble. Requires less RAM than a Memory.
 * [Depict](#depict): Visualizes the contents of the Memory and the movement of the heads within it.
 * [Embellish](#embellish): Records stereo signals sent to it, but simultaneously plays back the
 audio signal under the head. This makes sound-on-sound, effects passes, and the building up of
@@ -19,7 +21,7 @@ sound over time straightforward.
 
 Omri Cohen has made [a 34 minute tour-de-force video](https://www.youtube.com/watch?v=JyQDlhEvEPA) that explains these modules and many, many interesting techniques for combining them. I highly recommend it.
 
-My own 15 minute video demonstrating some use cases [is here](https://youtu.be/EKoMFsSqUo4). (Note that this was recorded before Fixation and Brainwash existed.) It demonstrates these simple patches:
+My own 15 minute video demonstrating some use cases [is here](https://youtu.be/EKoMFsSqUo4). It demonstrates these simple patches:
 * [Introduction](examples/Memory%20-%20ensemble%20basics.vcv)
 * [First Guitar Example](examples/Memory%20-%20guitar%20samples.vcv)
 * [Square Wave and Delay](examples/Memory%20-%20Delay%20Pass%20over%20Square%20Wave.vcv)
@@ -44,22 +46,22 @@ And here's a couple of [shorter](https://www.youtube.com/watch?v=WQ9XN9qqOYI&t=1
 The documentation for the *other* Stochastic Telegraph modules can [be found here](README.md).
 
 # The Memory Ensemble
-A Memory ensemble is a set of at least some of these modules next to each other (like extensions). The modules in a single ensemble can be in any order from left-to-right, with the exception that the required Memory module is always the left-most module.
+A Memory/MemoryCV ensemble is a set of at least some of these modules next to each other (like extensions). The modules in a single ensemble can be in any order from left-to-right, with the exception that the required Memory or MemoryCV module is always the left-most module.
 
 Each non-Memory module has a small light near the top edge of the module; when a module is connected to a Memory (by being in a group of these modules), then its light will be lit. For some modules, that light will be a color; that color is the same as the color that will be shown for the module in the Depict visualizer.
 
 ![Connecting](images/ConnectedTall.png)
 
 A typical starting place for a Memory Ensemble is one each of:
-* [Memory](#memory) - the storage for the audio data.
-* [Embellish](#embellish) or [Brainwash](#brainwash) - writes audio to Memory. But a Memory can load audio from a .WAV file, so not strictly required.
-* [Ruminate](#ruminate) or [Fixation](#fixation) - Plays audio from the content of Memory.
-* [Depict](#depict) - Visualizer for the state of Memory and the movement of the Embellish, Ruminate, and Fixation heads. Not required, but really helpful to understand what's happening.
+* [Memory](#memory) or [MemoryCV](#memorycv) - the storage for the audio (or CV) data.
+* [Embellish](#embellish) or [Brainwash](#brainwash) - writes audio (or CV) to Memory/MemoryCV. But a Memory can load audio from a .WAV file, so not strictly required.
+* [Ruminate](#ruminate) or [Fixation](#fixation) - Plays the content of the Memory/MemoryCV.
+* [Depict](#depict) - Visualizer for the state of Memory/MemoryCV and the movement of the Embellish, Ruminate, and Fixation heads. Not required, but really helpful to understand what's happening.
 
 ![Line Break image](images/Separator.png)
 
 # Memory
-The basis of any Memory ensemble is exactly one Memory module. Whichever Memory module is closest to the left side of the other modules in the ensemble is the one used by the ensemble.
+The basis of any Memory ensemble dealing with audio signals is exactly one Memory module. Whichever Memory module is closest to the left side of the other modules in the ensemble is the one used by the ensemble.
 
 A Memory by itself cannot play or record audio. It is solely where the stereo audio data is stored and can be retrieved.
 
@@ -151,8 +153,95 @@ A standard dialog box to save files will appear. The entire current contents of 
 ### Known Limitations
 * Putting noise into the LOAD or SAVE Tipsy inputs can crash VCV Rack.
 
+# MemoryCV
+The basis of any MemoryCV ensemble dealing with CV signals is exactly one MemoryCV module. Whichever MemoryCV module is closest to the left side of the other modules in the ensemble is the one used by the ensemble.
+
+A MemoryCV by itself cannot play or record control voltage signals. It is solely where the two CV data signals are stored and can be retrieved.
+
+Most modules treat the MemoryCV data as a circular loop; typically, moving past the arrives at the beginning of the signals.
+
+### Position and signal voltage
+There are knobs, inputs, and outputs that all correspond to positions within the MemoryCV. Since there is no standard way to send a "time" within VCV, and especially since
+MemoryCV buffers can be quite a bit larger than 10 seconds, I decided to just map 0-10 to whatever the length of the buffer is. All of them work the same way:
+* They range in values from 0.0V to just under 10.0V. Values outside that range will wrap around, hence 10.0V is the same as 0.0V.
+* 0.0V is the beginning of the Memory buffer. It appears at the bottom of the Depict display.
+* Values close to but not quite 10.0V will be at the end (the top of the Depit display).
+* Modules have the option of treating the buffer as a loop seamlessly joined at beginning and end, or as a bounded region. See the BOUNCE control on those modules.
+
+### Notes on Sample Rate
+* The MemoryCV is storing its data at 1000Hz; i.e., 1000 samples per second. This value is somewhat arbitrarily chosen, but I feel should be more than detailed enough for any CV signal.
+* MemoryCV modules can consume a bit of your computer's RAM when running. The higher the LENGTH, the more data MemoryCV will be storing. A single MemoryCV set to 1000 seconds (i.e., 16m 40s) is using 8 Mb of RAM.
+
+### Controls
+#### WIPE Input and Button
+Pressing the button or sending a trigger to the WIPE input will keep the length of the MemoryCV the same, but reset all of the values within it to 0.0V.
+#### LENGTH Knob
+The length of the MemoryCV buffer, in seconds, ranging from 1 - 1000. Changes do not take effect until the RESET button is pressed.
+#### RESET Button
+Gets rid of the previous buffer, creates a new one of LENGTH seconds, then sets it to 0.0V.
+#### LOAD Tipsy Input
+**The LOAD input takes *only* [Tipsy](https://github.com/baconpaul/tipsy-encoder) inputs. Tipsy is a way to send text over a VCV Rack cable; currently, the only module that can send controllable Tipsy text is
+[BASICally](README.md#basically) (see the "print()" command).**
+
+MemoryCV can save and load CV as WAV files. The LOAD input can accept two different types of textual messages:
+* A file name, or path and a filename
+* * For example, ``foo.wav``, or ``sub/directory/bar.wav``
+* * This is assumed to be relative to the Load Folder you set in the menu.
+For example, if the Load Folder is set to ``/my sounds``, then sending ``drums/snare.wav`` to the LOAD input will cause MemoryCV to immediately
+replace the MemoryCV's contents with the audio from ``/my sounds/drums/snare.wav``, if that file exists.
+* ``#N``, where N is some integer number
+* * For example, ``#0``, ``#12``, ``#776``
+* * In this case, the Nth file (zero-indexed) in the Load Folder will be loaded, wrapping around to the beginning if N is larger than the number of files.
+So if your Load Folder contained the three files, ``apple.wav``, ``banana.wav``, and ``chocolate.wav``, then ``#0``, ``#3``, and ``#6`` would all refer to ``apple.wav``.
+* * This means that a BASICally program like the following will load a random file in the Load Folder every time IN1 sees a trigger.
+![Memory Example - Load Random File](images/LoadRandomFile.png)
+#### LOAD Completion Output
+Loading a file takes an amount of time that is hard to predict, since the file can be on an SSD, a spinning hard drive, or a network or cloud drive. And larger
+files take longer to read than shorter ones. To help synchronize events that need to happen *after* the file has loaded, this output is provided.
+
+Any time that a file load is completed, no matter how it was started (via the menu or the Tipsy input) and no matter if it succeeds or fails (like if the named
+file doesn't exist or isn't a readable .wav file), when it has completed, a trigger will come out of this output.
+#### SAVE Tipsy Input
+**The SAVE input takes *only* Tipsy inputs. Tipsy is a way to send text over a VCV Rack cable; currently, the only module that can send useful Tipsy data is
+[BASICally](README.md#basically) (see the "print()" command).**
+
+The SAVE input can accept:
+* A file name, or path and a filename
+* * For example, ``foo.wav``, or ``sub/directory/bar.wav``
+* * This is assumed to be relative to the Save Folder you set in the menu.
+For example, if the Save Folder is set to ``/my sounds``, then sending ``drums/snare.wav`` to the SAVE input will cause MemoryCV to immediately
+save the MemoryCV's contents to the file ``/my sounds/drums/snare.wav``. Note that this will fail if the folder ``/my sounds/drums`` doesn't already exist; MemoryCV
+will not create new sub-folders. Also note, **MemoryCV will happily overwrite an already existing file, and cannot ask you to confirm that's what you want.**
+#### SAVE Completion Output
+Saving a file takes an amount of time that is hard to predict, since the file can be on an SSD, a spinning hard drive, or a network or cloud drive. And larger
+files take longer to save than shorter ones. To help synchronize events that need to happen *after* the file has loaded, this output is provided.
+
+Any time that a file save is completed, no matter how it was started (via the menu or the Tipsy input) and no matter if it succeeds or fails (like if the named
+folder doesn't exist or can't be written to), when it has completed, a trigger will come out of this output.
+#### LOG Tipsy Output
+If you want to see a human-readable log of load and save events, a cable from this output to one of the TEXTn inputs of the TTY module will show you
+any messages it has, including the length of files it reads in. This is especially useful if files aren't loading or saving as you expect.
+
+### Menu Options
+#### Pick Folder for Loading
+Select a folder to load audio files from. Once this is done, the "Load File" submenu will be populated with all of the WAV files it can load. Any inputs to the
+LOAD Tipsy input will be relative to this folder.  
+#### Load File
+Once the Load Folder has been selected, any files MemoryCV thinks it can read (currently only .WAV files) will be listed here, and selecting one will
+immediately load it into the MemoryCV.
+#### Load most recent file on module start
+If set, when the patch is loaded (or even when the module is duplicated), it will attempt to load
+in the last file that was loaded.
+#### Pick Folder for Saving
+Select a folder to Save .wav files to. Once this is done, any inputs to the SAVE Tipsy input will be relative to this folder.  
+#### Save to File...
+A standard dialog box to save files will appear. The entire current contents of the MemoryCV buffer will be saved as a WAV file.
+
+### Known Limitations
+* Putting noise into the LOAD or SAVE Tipsy inputs can crash VCV Rack.
+
 # Brainwash
-Brainwash records audio while RECORD is engaged, and when RECORD is released, what was recorded becomes the new contents of the attached Memory. A Brainwash can record no more than sixty seconds of audio; if RECORD is engaged for longer than that, then the Memory will become the last 60 seconds the Brainwash heard.
+Brainwash records audio (or CV, if attached to a MemoryCV) while RECORD is engaged, and when RECORD is released, what was recorded becomes the new contents of the attached Memory/MemoryCV. A Brainwash can record no more than sixty seconds of audio; if RECORD is engaged for longer than that, then the Memory will become the last 60 seconds the Brainwash heard.
 
 More than one Brainwash can be used in the same ensemble, but ending recording in two or more Brainwash's at roughly the same time has unpredictable results.
 ### Uses
@@ -216,7 +305,7 @@ SET is an input that resets the position of the head. It takes values from 0.0V 
 #### Position INITIAL Knob
 A value from 0.0v to 10.0 that sets the position of the head ONLY the first time it is turned on.
 
-If there are multiple Embellishes in an ensemble, it is useful to set this value to something different for each Embellish, so that when the patch is restarted, both heads aren't writing to the same exact position, with results that are unlikely to be intended. Similarly, if a Ruminate is running right alongside an Embellish at the same speed (i.e., "1"), the Ruminate can be ducked to zero volume (see Click Avoidance below for why); setting their Initial positions differently avoids that problem.
+If there are multiple Embellishes in an ensemble, it is useful to set this value to something different for each Embellish, so that when the patch is restarted, both heads aren't writing to the same exact position, with results that are unlikely to be intended. Similarly, if a Ruminate is running right alongside an Embellish at the same speed (i.e., "1"), the Ruminate can be ducked to zero volume (see [Click Avoidance](#click-avoidance) below for why); setting their Initial positions differently avoids that problem.
 #### Position CURRENT Output
 An output that emits the position from 0.0V to 10.0V.
 
@@ -259,7 +348,7 @@ SET is an input that resets the position of the head. It takes values from 0.0V 
 #### Position INITIAL Knob
 A value from 0.0v to 10.0 that sets the position of the head ONLY the first time it is turned on.
 
-If there are multiple Ruminates in an ensemble and they are moving at the same speed, it is useful to set this value to something different for each Ruminate, so that when the patch is restarted, both heads aren't playing from the same exact position. Similarly, if a Ruminate is running right alongside an Embellish at the same speed (i.e., "1"), the Ruminate can be ducked to zero volume (see Click Avoidance below for why); setting their Initial positions differently avoids that problem.
+If there are multiple Ruminates in an ensemble and they are moving at the same speed, it is useful to set this value to something different for each Ruminate, so that when the patch is restarted, both heads aren't playing from the same exact position. Similarly, if a Ruminate is running right alongside an Embellish at the same speed (i.e., "1"), the Ruminate can be ducked to zero volume (see [Click Avoidance](#click-avoidance) below for why); setting their Initial positions differently avoids that problem.
 #### Position CURRENT Output
 An output that emits the position from 0.0V to 10.0V.
 
@@ -298,7 +387,7 @@ set to values of a just intonation [diatonic scale](https://en.m.wikipedia.org/w
 the audio content is a fairly consistent single tone.
 
 ### Bypass Behavior
-If Bypass is enabled, Ruminate will stop playing. However, turning Ruminate on and off by using Bypass while playing will also bypass the module's Click Avoidance behavior, so it's not generally advised; it will almost surely have clicks in the audio it sends out.
+If Bypass is enabled, Ruminate will stop playing. However, turning Ruminate on and off by using Bypass while playing will also bypass the module's [Click Avoidance](#click-avoidance) behavior, so it's not generally advised; it will almost surely have clicks in the audio it sends out.
 
 # Fixation
 Fixation, like Ruminate, is used to playback audio from a Memory. Fixation has abilities that let it excell at playing short bits of a Memory repeatedly. It's ideal for looping for set lengths of time or for restarting based on a clock signal.
@@ -362,7 +451,7 @@ playback stops, otherwise we move to POSITION and play again for LENGTH (which i
 
 This will output a short trigger whenever the play head starts playing from a POSITION. This can be useful for starting an envelope around the sound that Fixation outputs.
 
-Note that this will likely NOT be precisely the same as when a CLOCK is received (in STYLE's that use CLOCK), because Fixation will quickly fade down the audio it's currently playing before starting the next playback. See the Click Avoidance section for more detail.
+Note that this will likely NOT be precisely the same as when a CLOCK is received (in STYLE's that use CLOCK), because Fixation will quickly fade down the audio it's currently playing before starting the next playback. See the [Click Avoidance](#click-avoidance) section for more detail.
 
 #### PLAY Input and Button
 Fixation will playback audio if either the button has been pressed into the Playing position or a while a positive gate is being received by the PLAY input.
@@ -399,7 +488,21 @@ set to values of a just intonation [diatonic scale](https://en.m.wikipedia.org/w
 the audio content is a fairly consistent single tone.
 
 ### Bypass Behavior
-If Bypass is enabled, Fixation will stop playing. However, turning Fixation on and off by using Bypass while playing will also bypass the module's Click Avoidance behavior, so it's not generally advised; it will almost surely have clicks in the audio it sends out.
+If Bypass is enabled, Fixation will stop playing. However, turning Fixation on and off by using Bypass while playing will also bypass the module's [Click Avoidance](#click-avoidance) behavior, so it's not generally advised; it will almost surely have clicks in the audio it sends out.
+
+![Line Break image](images/Separator.png)
+
+# Differences between Memory and MemoryCV Ensembles
+
+While any Ensemble can use either a Memory or a MemoryCV module on the left side, there are differences in how they behave:
+
+* Sample rate: Memory uses the VCV Rack sample rate at the time it is created. MemoryCV is always 1000 Hz.
+* RAM usage and file sizes. Due to the lower sample rate, MemoryCV will use far less RAM and write much smaller files.
+* To avoid transients and pops, Memory does smoothing of transitions between recorded sections. MemoryCV does not, as it might lead to undesirable values (like pitches between two values).
+* Another way that Memory avoids pops is by ducking the volume of a playback head when passing a recording head. MemoryCV does not do this.
+* During playback, if the playback head is between samples (which often happens if playing at speeds other than "1"), then the module has to decide whether or not to create an intermediate value between the two nearest samples (known as "interpolation"). If using a Memory, then this will occur, since audio sounds fine that way. When using a MemoryCV, it will not does not do interpolation, since intermediate values can be far different from the intent (e.g., intermediate V/Oct values would introduce new notes.)
+
+For more detail, see the [Click Avoidance](#click-avoidance) section. Ensembles with a Memory do the Click Avoidance steps, because the data in the Memory is presumed to be audio. Ensembles with a MemoryCV do not do Click Avoidance techniques, because the data is presumed to NOT be audio, and introducing intermediate smoothed values are unlikely to be the intent.
 
 # Click Avoidance
 Having recording heads starting and stopping and playback heads moving past recording heads is a recipe for usually annoying clicks and pops. A math-oriented person (like myself) might think of them as "discontinuities". For the sake of brevity, I'll forego describing all of the ways that the Memory system works to avoid these, and just mention a couple things:
