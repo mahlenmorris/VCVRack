@@ -436,7 +436,9 @@ struct PrepareThread {
 
     for (auto path : dirList)  {
       if ((rack::string::lowercase(system::getExtension(path)) == "wav") ||
-          (rack::string::lowercase(system::getExtension(path)) == ".wav")) {
+          (rack::string::lowercase(system::getExtension(path)) == ".wav") ||
+          (rack::string::lowercase(system::getExtension(path)) == "csv") ||
+          (rack::string::lowercase(system::getExtension(path)) == ".csv")) {
         loadable_files->push_back(system::getFilename(path));
       }
     }

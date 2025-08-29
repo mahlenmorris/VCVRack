@@ -88,6 +88,7 @@ enum class AudioFileFormat
     Error,
     NotLoaded,
     Wave,
+    CSV,
     Aiff
 };
 
@@ -120,7 +121,7 @@ public:
     /** Loads an audio file from a given file path.
      * @Returns true if the file was successfully loaded
      */
-    bool load (std::string filePath);
+    bool load (const std::string& filePath);
     
     /** Saves an audio file to a given file path.
      * @Returns true if the file was successfully saved
@@ -129,7 +130,7 @@ public:
         
     //=============================================================
     /** Loads an audio file from data in memory */
-    bool loadFromMemory (std::vector<uint8_t>& fileData);
+    bool loadFromMemory (std::vector<uint8_t>& fileData, const std::string& filePath);
     
     //=============================================================
     /** @Returns the sample rate */
@@ -209,8 +210,10 @@ private:
     };
     
     //=============================================================
-    AudioFileFormat determineAudioFileFormat (std::vector<uint8_t>& fileData);
+    AudioFileFormat determineAudioFileFormat (std::vector<uint8_t>& fileData,
+        const std::string& filePath);
     bool decodeWaveFile (std::vector<uint8_t>& fileData);
+    bool decodeCSVFile (std::vector<uint8_t>& fileData);
     bool decodeAiffFile (std::vector<uint8_t>& fileData);
     
     //=============================================================
@@ -494,7 +497,7 @@ void AudioFile<T>::shouldLogErrorsToConsole (bool logErrors)
 
 //=============================================================
 template <class T>
-bool AudioFile<T>::load (std::string filePath)
+bool AudioFile<T>::load (const std::string& filePath)
 {
   // I (Mahlen) replaced this file reading stuff with Rack's API because
   // std::ifstream won't find files with non-ASCII characters in them.
@@ -505,29 +508,35 @@ bool AudioFile<T>::load (std::string filePath)
     return false;
   }
 
-  size_t length = system::getFileSize(filePath);
-  // Handle very small files that will break our attempt to read the
-  // first header info from them.
-  if (length < 12) {
-    reportError ("ERROR: File is not a valid audio file\n" + filePath);
-    return false;
+  if (!(rack::string::endsWith(rack::string::lowercase(filePath), ".csv"))) {
+    size_t length = system::getFileSize(filePath);
+    // Handle very small files that will break our attempt to read the
+    // first header info from them.
+    if (length < 12) {
+        reportError ("ERROR: File is not a valid audio file\n" + filePath);
+        return false;
+    }
   }
 
   std::vector<uint8_t> fileData = system::readFile(filePath);
 
-  return loadFromMemory (fileData);
+  return loadFromMemory (fileData, filePath);
 }
 
 //=============================================================
 template <class T>
-bool AudioFile<T>::loadFromMemory (std::vector<uint8_t>& fileData)
+bool AudioFile<T>::loadFromMemory (std::vector<uint8_t>& fileData, const std::string& filePath)
 {
     // get audio file format
-    audioFileFormat = determineAudioFileFormat (fileData);
+    audioFileFormat = determineAudioFileFormat (fileData, filePath);
     
     if (audioFileFormat == AudioFileFormat::Wave)
     {
         return decodeWaveFile (fileData);
+    }
+    else if (audioFileFormat == AudioFileFormat::CSV)
+    {
+        return decodeCSVFile (fileData);
     }
     else if (audioFileFormat == AudioFileFormat::Aiff)
     {
@@ -683,6 +692,50 @@ bool AudioFile<T>::decodeWaveFile (std::vector<uint8_t>& fileData)
     {
         int32_t chunkSize = fourBytesToInt (fileData, indexOfXMLChunk + 4);
         iXMLChunk = std::string ((const char*) &fileData[indexOfXMLChunk + 8], chunkSize);
+    }
+
+    return true;
+}
+
+//=============================================================
+template <class T>
+bool AudioFile<T>::decodeCSVFile (std::vector<uint8_t>& fileData)
+{
+    clearAudioBuffer();
+    // For now, I assume that all .CSV files are two columns, and I will ignore columns
+    // after the second one.
+    uint16_t numChannels = 2;
+    sampleRate = 1000;
+    samples.resize(numChannels);
+    
+    // Convert to string for easier reading.
+    std::string fileString(fileData.begin(), fileData.end());
+    std::istringstream iss(fileString);
+    std::string line;
+    while (std::getline(iss, line)) {
+      std::istringstream line_stream(line);
+      std::string field;
+      int field_count = 0;
+      bool skip_line = false;
+      std::vector<float> line_samples;
+      while (!skip_line && field_count < 2 && std::getline(line_stream, field, ',')) {
+        field_count++;
+        try {
+          float value = std::stof(field) / 10.0;  // AudioFile is in [-1, 1].
+          line_samples.push_back(value);
+        } catch (...) {
+          skip_line = true;
+        }
+      }
+      if (!skip_line && field_count == 2) {
+        for (int chan = 0; chan < numChannels; chan++) {
+          samples[chan].push_back(line_samples[chan]);
+        }
+      }
+    }
+    if (getNumSamplesPerChannel() == 0) {
+      reportError ("ERROR: no valid CSV lines found");
+      return false;
     }
 
     return true;
@@ -1238,10 +1291,27 @@ void AudioFile<T>::clearAudioBuffer()
 
 //=============================================================
 template <class T>
-AudioFileFormat AudioFile<T>::determineAudioFileFormat (std::vector<uint8_t>& fileData)
-{
+AudioFileFormat AudioFile<T>::determineAudioFileFormat (
+    std::vector<uint8_t>& fileData, const std::string& filePath) {
+
+    if (rack::string::endsWith(rack::string::lowercase(filePath), ".csv")) {
+      // Let's make sure the first 200 chars are ASCII.
+      bool all_ascii = true;
+      for (int position = 0; position < std::min((size_t) 200, fileData.size()); ++position) {
+        char chr = fileData[position];
+        if (!isascii(chr)) {
+          all_ascii = false;
+          break;
+        }
+      }
+      if (all_ascii) {
+        return AudioFileFormat::CSV;
+      }
+    }
+
+    // Some ways to determine file type use a bit of text at the top of the file.
     std::string header (fileData.begin(), fileData.begin() + 4);
-    
+
     if (header == "RIFF")
         return AudioFileFormat::Wave;
     else if (header == "FORM")
