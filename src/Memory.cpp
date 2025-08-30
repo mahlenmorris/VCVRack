@@ -305,8 +305,14 @@ struct BufferChangeThread {
                 audio_file.setSampleRate(memory_sample_rate);
 
                 // SLOW: this call can take many seconds.
-                // Wave file (implicit)
-                bool worked = audio_file.save(task->str1);
+                bool worked = false;
+                if (rack::string::endsWith(rack::string::lowercase(task->str1), ".csv")) {
+                  worked = audio_file.save(task->str1, AudioFileFormat::CSV);
+                } else {
+                  // Wave file (implicit).
+                  worked = audio_file.save(task->str1);
+                }
+                
                 busy = false;
                 if (worked) {
                   task->status->log_messages.lines.push(
@@ -445,12 +451,14 @@ struct PrepareThread {
     busy = false;
   }
 
-  void ConvertFileToSamples(PrepareTask* task, const AudioFile<float>& audio_file) {
+  void ConvertFileToSamples(PrepareTask* task,
+      const AudioFile<float>& audio_file, bool has_no_sample_rate) {
     assert(task->type == PrepareTask::LOAD_FILE);
     // One goal is to minimize the amount of downtime for the buffer,
     // since the AudioFile -> Buffer process is time consuming for large files.
     // So the conversion happens before we swap in the memory.
-    int samples = std::round(audio_file.getLengthInSeconds() * sample_rate);
+    int samples = has_no_sample_rate ? audio_file.getNumSamplesPerChannel() :
+        std::round(audio_file.getLengthInSeconds() * sample_rate);
     int file_samples = audio_file.getNumSamplesPerChannel();
     float* new_left_array = new float[samples];
     float* new_right_array = new float[samples];
@@ -462,7 +470,8 @@ struct PrepareThread {
     //   on both channels.
     bool file_is_mono = audio_file.getNumChannels() == 1;
     // TODO: put in an optimization if sample rates are the same. Less math to do.
-    double sample_rate_ratio = 1.0 * audio_file.getSampleRate() / sample_rate;
+    double sample_rate_ratio = has_no_sample_rate ? 1.0 :
+        1.0 * audio_file.getSampleRate() / sample_rate;
     // This can take a while; definitely let a Halt() call interrupt it.
     for (int i = 0; !shutdown && i < samples; ++i) {
       // Use the linear interpolation that I also use in Buffer::Get().
@@ -516,13 +525,20 @@ struct PrepareThread {
               if (worked) {
                 task->status->log_messages.lines.push(
                   "Completed read of '" + task->str1 + "'.");
-                task->status->log_messages.lines.push(
-                  "It is " + std::to_string(audio_file.getLengthInSeconds()) +
-                  " seconds long.");
+                if (rack::string::endsWith(rack::string::lowercase(task->str1), ".csv")) {
+                  task->status->log_messages.lines.push(
+                    "It is " + std::to_string(audio_file.getNumSamplesPerChannel() / sample_rate) +
+                    " seconds long.");
+                } else {
+                  task->status->log_messages.lines.push(
+                    "It is " + std::to_string(audio_file.getLengthInSeconds()) +
+                    " seconds long.");
+                }
                 
                 // This part can also be slow, since it walks over every sample.
                 busy = true;
-                ConvertFileToSamples(task, audio_file);
+                ConvertFileToSamples(task, audio_file,
+                    rack::string::endsWith(rack::string::lowercase(task->str1), ".csv"));
                 busy = false;
                 double seconds = audio_file.getLengthInSeconds();
                 // Done with the audio_file.
@@ -886,7 +902,7 @@ struct Memory : BufferedModule {
       }
     } else {
       // This is the post-initialization part of process().
-      // We may be asked to load a .wav file on startup. We wait until the buffer is initialized before
+      // We may be asked to load a file on startup. We wait until the buffer is initialized before
       // attempting this, however, since the operation might fail, and I'd rather have *some* buffer than none.
       if (initiate_startup_load && !load_folder_name.empty() && !loaded_file.empty()) {
         initiate_startup_load = false;
@@ -1261,7 +1277,7 @@ struct Memory : BufferedModule {
     return (path_string);
   }
 
-  std::string selectSaveFile() {
+  std::string selectSaveFile(const std::string& file_type) {
     std::string path_string = "";
      // I like things that default file names to a time stamp. 
     char date_buffer[80];
@@ -1269,7 +1285,15 @@ struct Memory : BufferedModule {
     // Convert unix time to local time structure.
     time_t unixTime = static_cast<time_t>(system::getUnixTime());
     struct tm* localTime = localtime(&unixTime);
-    strftime(date_buffer, sizeof(date_buffer), "Memory %Y-%m-%d %H-%M-%S.wav", localTime);
+    strftime(date_buffer, sizeof(date_buffer), "Memory %Y-%m-%d %H-%M-%S.", localTime);
+    strcat(date_buffer, file_type.c_str());
+
+    const char* filter_string;
+    if (file_type.compare("wav") == 0) {
+      filter_string = "WAV:wav";
+    } else {
+      filter_string = "CSV (Comma Separated Value):csv";
+    }
 
     // Default to save folder. If not set, default to load_folder.
     char *path = osdialog_file(
@@ -1277,7 +1301,7 @@ struct Memory : BufferedModule {
       save_folder_name.empty() ?
         (load_folder_name.empty() ? NULL : load_folder_name.c_str()) :
         save_folder_name.c_str(),
-      date_buffer, osdialog_filters_parse("Wav:wav"));
+      date_buffer, osdialog_filters_parse(filter_string));
 
     if (path != NULL) {
         path_string.assign(path);
@@ -1316,9 +1340,12 @@ struct MenuItemPickSaveFolder : MenuItem {
 
 struct MenuItemPickSaveFile : MenuItem {
   Memory *module;
+  std::string file_type;
+
+  MenuItemPickSaveFile(const std::string& type) : file_type{type} {}
 
   void onAction(const event::Action &e) override {
-    std::string file_path = module->selectSaveFile();
+    std::string file_path = module->selectSaveFile(file_type);
     if (file_path != "") {
       // We set this even if it's the same path as before. This gives the user a gesture to update
       // the list.
@@ -1394,7 +1421,7 @@ struct MemoryWidget : ModuleWidget {
     menu_item_load_folder->module = module;
     menu->addChild(menu_item_load_folder);
     if (module->loadable_files.empty()) {
-      menu->addChild(createMenuLabel("No .wav files seen in Loading directory"));
+      menu->addChild(createMenuLabel("No .wav or .csv files seen in Loading directory"));
     } else {
       MenuItem* loadable_file_menu = createSubmenuItem("Load File", "",
         [=](Menu* menu) {
@@ -1429,10 +1456,16 @@ struct MemoryWidget : ModuleWidget {
     }
     menu_item_save_folder->module = module;
     menu->addChild(menu_item_save_folder);
-    MenuItemPickSaveFile* menu_item_save_file = new MenuItemPickSaveFile;
-    menu_item_save_file->text = "Save to File...";  
-    menu_item_save_file->module = module;
-    menu->addChild(menu_item_save_file);
+
+    MenuItemPickSaveFile* menu_item_save_file_wav = new MenuItemPickSaveFile("wav");
+    menu_item_save_file_wav->text = "Save to WAV File...";  
+    menu_item_save_file_wav->module = module;
+    menu->addChild(menu_item_save_file_wav);
+
+    MenuItemPickSaveFile* menu_item_save_file_csv = new MenuItemPickSaveFile("csv");
+    menu_item_save_file_csv->text = "Save to CSV File...";  
+    menu_item_save_file_csv->module = module;
+    menu->addChild(menu_item_save_file_csv);
 
     // Be a little clearer how to make this module do anything.
     menu->addChild(new MenuSeparator);

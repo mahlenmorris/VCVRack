@@ -218,6 +218,7 @@ private:
     
     //=============================================================
     bool saveToWaveFile (std::string filePath);
+    bool saveToCSVFile (std::string filePath);
     bool saveToAiffFile (std::string filePath);
     
     //=============================================================
@@ -705,8 +706,11 @@ bool AudioFile<T>::decodeCSVFile (std::vector<uint8_t>& fileData)
     // For now, I assume that all .CSV files are two columns, and I will ignore columns
     // after the second one.
     uint16_t numChannels = 2;
-    sampleRate = 1000;
     samples.resize(numChannels);
+
+    // CSV files, as I am choosing to interpret them, don't have a sample rate.
+    // They simply match the rate of the buffer they are being put into.
+    sampleRate = 1000;
     
     // Convert to string for easier reading.
     std::string fileString(fileData.begin(), fileData.end());
@@ -933,12 +937,11 @@ void AudioFile<T>::addSampleRateToAiffData (std::vector<uint8_t>& fileData, uint
 template <class T>
 bool AudioFile<T>::save (std::string filePath, AudioFileFormat format)
 {
-    if (format == AudioFileFormat::Wave)
-    {
+    if (format == AudioFileFormat::Wave) {
         return saveToWaveFile (filePath);
-    }
-    else if (format == AudioFileFormat::Aiff)
-    {
+    } else if (format == AudioFileFormat::CSV) {
+        return saveToCSVFile (filePath);
+    } else if (format == AudioFileFormat::Aiff) {
         return saveToAiffFile (filePath);
     }
     
@@ -1107,6 +1110,28 @@ bool AudioFile<T>::saveToWaveFile (std::string filePath)
     
     // try to write the file
     return writeDataToFile (fileData, filePath);
+}
+
+//=============================================================
+template <class T>
+bool AudioFile<T>::saveToCSVFile (std::string filePath) {
+  if (memory_buffer == nullptr) {
+    reportError ("ERROR: no Buffer object, couldn't save file to " + filePath);
+    return false;
+  }
+  
+  std::vector<uint8_t> fileData;
+  for (int i = 0; i < getNumSamplesPerChannel(); i++) {
+    FloatPair sample;
+    memory_buffer->GetDirect(&sample, i);
+    addStringToFileData(fileData, std::to_string(sample.left));
+    addStringToFileData(fileData, ",");
+    addStringToFileData(fileData, std::to_string(sample.right));
+    addStringToFileData(fileData, "\n");
+  }
+  
+  // try to write the file
+  return writeDataToFile (fileData, filePath);
 }
 
 //=============================================================
