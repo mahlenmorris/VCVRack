@@ -179,7 +179,7 @@ struct Ruminate : PositionedModule {
       // This means that disconnecting the module doesn't zero-out the
       // Timestamp displays.
       // Bad things happen if these are zero, which sometimes happens on startup.
-      length = std::max(buffer->length, 10);
+      length = std::max(buffer->length, 1);
       seconds = std::max(buffer->seconds, 0.1);
 
       // User (or input) is adjusting the position.

@@ -261,7 +261,7 @@ struct Fixation : PositionedModule {
     // If connected and buffer isn't empty.
     if (connected) {
       // Bad things happen if this are zero, which sometimes happens on startup.
-      length = std::max(buffer->length, 10);
+      length = std::max(buffer->length, 1);
 
       // This affects all behavior, so let's get it up front.
       int style = params[STYLE_KNOB_PARAM].getValue();
