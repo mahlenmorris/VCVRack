@@ -102,6 +102,7 @@ struct BufferTask {
   float* new_right_array;
   int sample_count;
   double seconds;
+  bool smooth_endpoints;
   FileOperationReporting* status;  // Owned by module.
   
   BufferTask(const Type the_type) : type{the_type},
@@ -113,7 +114,7 @@ struct BufferTask {
   static BufferTask* SaveFileTask(FileOperationReporting* status, const std::string& file_path);
 
   static BufferTask* ReplaceTask(float* new_left, float* new_right, FileOperationReporting* status,
-                                 int sample_count, double seconds);
+                                 int sample_count, double seconds, bool smooth_ends);
 };
 
 struct BufferTaskQueue {

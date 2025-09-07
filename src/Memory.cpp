@@ -234,14 +234,13 @@ struct BufferChangeThread {
     if (task->status != nullptr) {
       task->status->completed = LOAD_COMPLETED;
     }
-    delete task;
 
     // WARN("length = %d", buffer->length);
     // WARN("true_length = %d", buffer->true_length);
     // WARN("seconds = %f", buffer->seconds);
 
-    if (!buffer->cv_rate) {
-      // There's no reason I can come up with to let there be a click between
+    if (task->smooth_endpoints && !buffer->cv_rate) {
+      // We typically don't want to let there be a click between
       // the end and the beginning of the buffer in an *audio* file.
       // So if I suspect there will be one, add a Smooth to get rid of it.
       if (abs(buffer->left_array[0] - buffer->left_array[buffer->true_length - 1]) > 0.1 ||
@@ -250,6 +249,8 @@ struct BufferChangeThread {
           buffer->smooths.additions.push(new_smooth);
       }
     }
+
+    delete task;
   }
 
   void Work() {
@@ -537,8 +538,8 @@ struct PrepareThread {
                 
                 // This part can also be slow, since it walks over every sample.
                 busy = true;
-                ConvertFileToSamples(task, audio_file,
-                    rack::string::endsWith(rack::string::lowercase(task->str1), ".csv"));
+                bool is_csv = rack::string::endsWith(rack::string::lowercase(task->str1), ".csv");
+                ConvertFileToSamples(task, audio_file, is_csv);
                 busy = false;
                 double seconds = audio_file.getLengthInSeconds();
                 // Done with the audio_file.
@@ -546,7 +547,7 @@ struct PrepareThread {
                 // Send task to BufferChangeThread.
                 BufferTask* replace_task = BufferTask::ReplaceTask(
                   task->new_left_array, task->new_right_array, task->status,
-                  task->result_sample_count, seconds);  
+                  task->result_sample_count, seconds, !is_csv);  
                 if (!prepare_buffer_queue->tasks.push(replace_task)) {
                   delete task->new_left_array;
                   delete task->new_right_array;
@@ -581,8 +582,9 @@ struct PrepareThread {
               }
 
               // Send task to BufferChangeThread.
+              // No reason to smooth an already blank file, so smooth_ends is false.
               BufferTask* replace_task = BufferTask::ReplaceTask(
-                new_left_array, new_right_array, nullptr, sample_count, task->seconds);  
+                new_left_array, new_right_array, nullptr, sample_count, task->seconds, false);  
               if (!prepare_buffer_queue->tasks.push(replace_task)) {
                 delete replace_task;  // Queue is full, shed load.
               }

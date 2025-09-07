@@ -174,12 +174,14 @@ BufferTask* BufferTask::SaveFileTask(FileOperationReporting* status, const std::
 }
 
 BufferTask* BufferTask::ReplaceTask(
-  float* new_left, float* new_right, FileOperationReporting* status, int sample_count, double seconds) {
+    float* new_left, float* new_right, FileOperationReporting* status,
+    int sample_count, double seconds, bool smooth_ends) {
   BufferTask* task = new BufferTask(REPLACE_AUDIO);
   task->new_left_array = new_left;
   task->new_right_array = new_right;
   task->status = status;
   task->sample_count = sample_count;
   task->seconds = seconds;
+  task->smooth_endpoints = smooth_ends;
   return task;
 }  

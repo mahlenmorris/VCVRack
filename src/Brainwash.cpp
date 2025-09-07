@@ -82,7 +82,7 @@ struct BrainwashThread {
         // Now add to queue for Memory to consume.
         BufferTask* replace_task = BufferTask::ReplaceTask(
           new_left, new_right, nullptr,  // nullptr for status indicates we don't need FileIO status info.
-          endpoint_position + 1, (endpoint_position + 1) / sample_rate);  
+          endpoint_position + 1, (endpoint_position + 1) / sample_rate, true);  
         if (!(buffer->replacements.queue.push(replace_task))) {
           delete replace_task->new_left_array;
           delete replace_task->new_right_array;
