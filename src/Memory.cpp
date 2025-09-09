@@ -171,18 +171,24 @@ struct BufferChangeThread {
     // For now, do this the most brute-force way; scan from bottom to top.
     for (int p = 0; !shutdown && p < WAVEFORM_SIZE; p++) {
       if (full_scan || buffer->dirty[p]) {
-        float left_amplitude = 0.0, right_amplitude = 0.0;
-        for (int i = (int) trunc(p * sector_size);
-              !shutdown && i < std::min((int) trunc((p + 1) * sector_size), buffer->true_length);
-              i++) {
-          left_amplitude = std::max(left_amplitude,
-                                    std::fabs(buffer->left_array[i]));
-          right_amplitude = std::max(right_amplitude,
-                                      std::fabs(buffer->right_array[i]));
+        if (sector_size >= 1.0) {
+          float left_amplitude = 0.0, right_amplitude = 0.0;
+          for (int i = (int) trunc(p * sector_size);
+                !shutdown && i < std::min((int) trunc((p + 1) * sector_size), buffer->true_length);
+                i++) {
+            left_amplitude = std::max(left_amplitude,
+                                      std::fabs(buffer->left_array[i]));
+            right_amplitude = std::max(right_amplitude,
+                                        std::fabs(buffer->right_array[i]));
+          }
+          buffer->waveform.points[p][0] = left_amplitude;
+          buffer->waveform.points[p][1] = right_amplitude;
+        } else {
+          FloatPair pair;
+          buffer->Get(&pair, ((double) p) * buffer->length / WAVEFORM_SIZE);
+          buffer->waveform.points[p][0] = std::fabs(pair.left);
+          buffer->waveform.points[p][1] = std::fabs(pair.right);
         }
-        buffer->waveform.points[p][0] = left_amplitude;
-        buffer->waveform.points[p][1] = right_amplitude;
-
         // Not stricly speaking correct (the sector may have been written
         // to during the scan). But correctness is not critical, and the new
         // values will be caught if any further writes to this sector occur,

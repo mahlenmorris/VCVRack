@@ -141,12 +141,19 @@ void Buffer::Set(int position, float left, float right, long long module_id) {
     if (position == writable_position) {      
       left_array[cv_position] = left;
       right_array[cv_position] = right;
-      SetDirty(position);
     }
   } else {
     left_array[position] = left;
     right_array[position] = right;
-    SetDirty(position);
+  }
+
+  if (true_length < WAVEFORM_SIZE) {
+    // In cases where there are very few samples compared to the WAVEFORM resolution,
+    // the correct solution would be to SetDirty a range of the waveform.
+    // But, no, that's really hard! We'll just recreate the whole waveform.
+    full_scan = true; 
+  } else {
+    SetDirty(position);    
   }
 
   // Update position for this Set() call's module.
