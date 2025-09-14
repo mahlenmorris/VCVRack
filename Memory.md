@@ -98,7 +98,7 @@ Gets rid of the previous audio buffer, creates a new one of LENGTH seconds, then
 
 The LOAD input can accept two different types of textual messages:
 * A file name, or path and a filename
-* * For example, ``foo.wav``, or ``sub/directory/bar.wav``
+* * For example, ``foo.csv``, or ``sub/directory/bar.wav``
 * * This is assumed to be relative to the Load Folder you set in the menu.
 For example, if the Load Folder is set to ``/my sounds``, then sending ``drums/snare.wav`` to the LOAD input will cause Memory to immediately
 replace the Memory's contents with the audio from ``/my sounds/drums/snare.wav``, if that file exists.
@@ -503,6 +503,43 @@ While any Ensemble can use either a Memory or a MemoryCV module on the left side
 * During playback, if the playback head is between samples (which often happens if playing at speeds other than "1"), then the module has to decide whether or not to create an intermediate value between the two nearest samples (known as "interpolation"). If using a Memory, then this will occur, since audio sounds fine that way. When using a MemoryCV, it will not does not do interpolation, since intermediate values can be far different from the intent (e.g., intermediate V/Oct values would introduce new notes.)
 
 For more detail, see the [Click Avoidance](#click-avoidance) section. Ensembles with a Memory do the Click Avoidance steps, because the data in the Memory is presumed to be audio. Ensembles with a MemoryCV do not do Click Avoidance techniques, because the data is presumed to NOT be audio, and introducing intermediate smoothed values are unlikely to be the intent.
+
+# CSV Files
+Both Memory and MemoryCV can save and load Comma Separated Value (CSV) files as well as WAV files. CSV files are very simple text files with two numeric values separated by a comma. Many programs can produce CSV files, including most spreadsheet software, programming languages, and even simple text editors like Windows Notepad.
+
+## CSV Format
+Lines in a CSV file can look like any of these lines:
+```
+1, 0
+2.2218  ,-8.71234
+-10, 2.2
+```
+
+The first value is the left signal, the second is the right signal. Any line that isn't of the form:
+```
+[number],[number]
+```
+
+will be ignored. 
+
+CSV files must end with .CSV to be recognized as such.
+
+## Uses
+Typically one would not save/edit/load CSV files in Memory, as audio data is very voluminous and there are easier ways to make small edits to audio files (e.g., Audacity). And of course, there are infinitely many ways to create control voltage signals within VCV Rack, so I won't suggest this is the *best* way to manipulate control voltage. But for **precisely** describing Control Voltage values with **millisecond accuracy**, a CSV file loaded into MemoryCV is quite useful (albeit verbose to create manually). If you've longed to control your music with the help of a spreadsheet, here's your chance!
+
+More realistically, one can also record control voltage into a MemoryCV, save it as a CSV file, then fine tune the values and timing within the CSV file, and load the file and use it within MemoryCV.
+
+## CSV file and Sample Rate.
+Unlike WAV files, CSV files have no inherent notion of sample rate, meaning that loading a CSV file into a MemoryCV is treated at the sample rate of MemoryCV (1000 lines per second). In the case of a Memory, it would be loaded at the sample rate that VCV Rate is running at (e.g., 48000 lines per second).
+
+For a MemoryCV, if you wanted, say, a quarter of a second of (1.123, 10), then in the file that would be 250 lines of:
+```
+1.123, 10
+...
+```
+Again, a spreadsheet's copy and paste (and line counting) ability is useful here.
+
+Alternatively, you could make shorter files, and then play them with Ruminate or Fixation at slower speeds than "1". For example, if you make a four line CSV file, load it into MemoryCV, and set the play speed of Ruminate to 4/1000 = 1/250 = 0.004, then Ruminate will take a second to play all four values. 
 
 # Click Avoidance
 Having recording heads starting and stopping and playback heads moving past recording heads is a recipe for usually annoying clicks and pops. A math-oriented person (like myself) might think of them as "discontinuities". For the sake of brevity, I'll forego describing all of the ways that the Memory system works to avoid these, and just mention a couple things:
