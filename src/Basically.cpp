@@ -240,14 +240,11 @@ struct Basically : Module {
       return rack::random::normal() * std_dev + mean;
     }
     float Time(bool millis) override {
+      float elapsed = args->frame * args->sampleTime;
       if (millis) {
-        std::chrono::duration<double, std::milli> elapsed =
-          std::chrono::high_resolution_clock::now() - time_start;
-        return elapsed.count();
+        return elapsed * 1000.0;
       } else {
-        std::chrono::duration<double> elapsed =
-          std::chrono::high_resolution_clock::now() - time_start;
-        return elapsed.count();
+        return elapsed;
       }
     }
     void Clear() override {

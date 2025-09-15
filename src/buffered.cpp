@@ -3,7 +3,7 @@
 std::shared_ptr<Buffer> findClosestMemory(Module* leftModule) {
   while (true) {
     if (!leftModule) return nullptr;
-    if (leftModule->model == modelMemory) {
+    if (IsMemoryEnsembleModel(leftModule->model)) {
       return dynamic_cast<BufferedModule*>(leftModule)->getHandle()->buffer;
     }
     auto m = leftModule->model;
@@ -21,6 +21,11 @@ bool ModelHasColor(Model* model) {
           (model == modelEmbellish));
 }
 
+bool IsMemoryEnsembleModel(Model* model) {
+  return ((model == modelMemory) ||
+          (model == modelMemoryCV));
+}
+
 bool IsNonMemoryEnsembleModel(Model* model) {
   return ((model == modelRuminate) ||
           (model == modelFixation) ||
@@ -35,6 +40,10 @@ bool Buffer::IsValid() {
 }
 
 int Buffer::NearHead(int position) {
+  if (cv_rate) {
+    // MemoryCV does not want fades and smoothing.
+    return INT_MAX;
+  }
   // TODO: not sure if correct when near the ends of the buffer.
   int nearest = INT_MAX;
   for (int i = 0; i < (int) record_heads.size(); ++i) {
@@ -54,6 +63,11 @@ void Buffer::SetDirty(int position) {
 // with 'module_id', or INT_MAX if not considered "near".
 // Typically called for the benefit of recording heads.
 int Buffer::NearHeadButNotThisModule(int position, long long module_id) {
+  if (cv_rate) {
+    // MemoryCV does not want fades and smoothing.
+    return INT_MAX;
+  }
+
   // TODO: not sure if correct when near the ends of the buffer.
   int nearest = INT_MAX;
   for (int i = 0; i < (int) record_heads.size(); ++i) {
@@ -76,16 +90,39 @@ void Buffer::Get(FloatPair *pair, double position) {
   }
   assert(position >= 0.0);
   assert(position < length);
-  int playback_start = trunc(position);
-  int playback_end = trunc(playback_start + 1);
-  if (playback_end >= length) {
-    playback_end -= length;  // Should be zero.
+  if (cv_rate) {
+    // MemoryCV does not do interpolation between samples!
+    // (E.g., don't want intermediate values between two V/Oct values.)
+    // Also need to scale down 'position', as length != true_length.
+    int true_position = trunc(position / length * true_length);
+    assert(true_position >= 0 && true_position < true_length);
+    pair->left = left_array[true_position];
+    pair->right = right_array[true_position];
+  } else {
+    // For a Memory with audio data, we want interpolation.
+    int playback_start = trunc(position);
+    int playback_end = trunc(playback_start + 1);
+    if (playback_end >= length) {
+      playback_end -= length;  // Should be zero.
+    }
+    float start_fraction = position - playback_start;
+    pair->left = left_array[playback_start] * (1.0 - start_fraction) +
+                  left_array[playback_end] * (start_fraction);
+    pair->right = right_array[playback_start] * (1.0 - start_fraction) +
+                  right_array[playback_end] * (start_fraction);
   }
-  float start_fraction = position - playback_start;
-  pair->left = left_array[playback_start] * (1.0 - start_fraction) +
-                left_array[playback_end] * (start_fraction);
-  pair->right = right_array[playback_start] * (1.0 - start_fraction) +
-                right_array[playback_end] * (start_fraction);
+}
+
+void Buffer::GetDirect(FloatPair *pair, double position) {
+  if (!IsValid()) {
+    pair->left = 0.0f;
+    pair->right = 0.0f;
+    return;
+  }
+  assert(position >= 0.0);
+  assert(position < length);
+  pair->left = left_array[(int) position];
+  pair->right = right_array[(int) position];
 }
 
 // Caller is responsible for only calling this when IsValid() is true.
@@ -95,9 +132,29 @@ void Buffer::Set(int position, float left, float right, long long module_id) {
   }
   assert(position >= 0);
   assert(position < length);
-  left_array[position] = left;
-  right_array[position] = right;
-  SetDirty(position);
+  if (cv_rate) {
+    // Because there are many positions for each CV position, we need to only allow
+    // a write to occur on one position per CV position. I want it to be the
+    // "center" of the CV position.
+    int cv_position = trunc((double) position * true_length / length);
+    int writable_position = trunc((double) (cv_position + 0.5) * length / true_length);
+    if (position == writable_position) {      
+      left_array[cv_position] = left;
+      right_array[cv_position] = right;
+    }
+  } else {
+    left_array[position] = left;
+    right_array[position] = right;
+  }
+
+  if (true_length < WAVEFORM_SIZE) {
+    // In cases where there are very few samples compared to the WAVEFORM resolution,
+    // the correct solution would be to SetDirty a range of the waveform.
+    // But, no, that's really hard! We'll just recreate the whole waveform.
+    full_scan = true; 
+  } else {
+    SetDirty(position);    
+  }
 
   // Update position for this Set() call's module.
   // Memory creates and updates this list during the module scan in
@@ -124,12 +181,14 @@ BufferTask* BufferTask::SaveFileTask(FileOperationReporting* status, const std::
 }
 
 BufferTask* BufferTask::ReplaceTask(
-  float* new_left, float* new_right, FileOperationReporting* status, int sample_count, double seconds) {
+    float* new_left, float* new_right, FileOperationReporting* status,
+    int sample_count, double seconds, bool smooth_ends) {
   BufferTask* task = new BufferTask(REPLACE_AUDIO);
   task->new_left_array = new_left;
   task->new_right_array = new_right;
   task->status = status;
   task->sample_count = sample_count;
   task->seconds = seconds;
+  task->smooth_endpoints = smooth_ends;
   return task;
 }  

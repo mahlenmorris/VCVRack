@@ -5,14 +5,14 @@ self-regulating structure. Exploring the region between random and static.
 ![All Modules image](images/TheFamily.png)
 ![Memory Modules image](images/TheFamilyRowTwo.png)
 
-* [Memory System](Memory.md): A set of six inter-related recording/playback modules with [their own documentation](Memory.md).
+* [Memory System](Memory.md): A set of seven interrelated recording/playback modules with [their own documentation](Memory.md).
 * [BASICally](#basically): A simple, likely familiar procedural programming language within the context of VCV Rack.
 * [Drifter](#drifter): Creates sequences of values that can slowly (or quickly) vary, like a series of points doing random walks connected into a series.
 * [Fermata](#fermata): A text editor and labeling module. Write much longer text notes. Resizable, scrolls, font choices, and more. Or just add some visual emphasis,
 Stochastic Telegraph-style.
 * [Fuse](#fuse): Block, allow, or attenuate a signal passing through, based on the number of triggers observed in a different signal.
 * [TTY](#tty): A scrolling text window that displays distinct values it gets, and also displays [Tipsy](https://github.com/baconpaul/tipsy-encoder) text messages sent by other modules (like BASICally).
-* [Venn](#venn): A 2D graphical signal generator consisting of up to sixteen visible Circles and a visible Point chosen by mouse or CV. Where the Point is in relation to a Circle determines four CV values per Circle. 
+* [Venn](#venn): A 2D graphical signal generator consisting of up to sixteen visible Circles and a visible Point chosen by mouse or CV. Where the Point is in relation to a Circle determines five CV values per Circle. 
 
 ![Line Break image](images/Separator.png)
 
@@ -122,7 +122,7 @@ Examples:
 * All variables start with the value 0.0 when first read.
 * Variables stay available in the environment of a module until the patch
 is restarted. This is true even if the code that created the variable has been removed from the program.
-* OUT1-6 (and all of their channels) are, by default, limited (akak, clamped) to the range -10v <--> 10v. You can make
+* OUT1-6 (and all of their channels) are, by default, limited (aka, clamped) to the range -10v <--> 10v. You can make
 individual OUT ports unclamped in [the module menu](#clampunclamp-outn-values). Input values and internal values are not clamped.
 * [Scientific pitch notation](https://en.m.wikipedia.org/wiki/Scientific_pitch_notation) is supported (e.g., c4, Db2, d#8), turning them into
 V/OCT values. So you can use **OUT1 = c4**, send OUT1 to a VCO in the default position, and the VCO will output a tone at middle C.
@@ -134,7 +134,7 @@ any number by zero, while undefined in *mathematics*, is defined by *BASICally*
 to be 0.0.
 * **"<", "<=", ">" , ">=", "==", "!="** -- comparison operators. Most commonly used
 in IF-THEN[-ELSE] statements.
-* "condition **?** true_value **:** false_value" -- often known as the ternery operator, allows choices to be made based on comparisons of values.
+* "condition **?** true_value **:** false_value" -- often known as the ternary operator, allows choices to be made based on comparisons of values.
 For example, "distance >= 2 ? 1.4 : 3.14" means if DISTANCE is two or more, return 1.4; otherwise, return 3.14.
 * **"and", "or", "not"** -- Boolean logic operators. For purposes of these, a zero
 value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
@@ -165,11 +165,6 @@ value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 |**time()**|The number of seconds (see note below) since this BASICally module started running|IF time() > 60 THEN ' It's been a minute.|
 |**time_millis()**|The approximate (see note below) number of milliseconds since this BASICally module started running|IF time_millis() > 60000 THEN ' It's been a minute.|
 |**trigger(INn)**|True *only* for the moment when the INn port has received a trigger. Useful for WHEN blocks that wish to change the behavior of the program whenever this trigger is seen.| WHEN trigger(in9) ...|
-
-**Note on time() and time_millis()**: The resolution of these clocks appears to be
-system-dependent. On my Windows system, for one, the minimum non-zero interval
-between calls to time_millis() is about 16 milliseconds. This makes them
-unsuitable for making, say, consistent 40Hz signals.
 
 ### Text functions
 
@@ -210,7 +205,7 @@ Examples:
     wait in2 * 100
     ' The shortest possible WAIT. Exactly one sample.
     WAIT 0
-    ' Negative values are treated as if the were zero.
+    ' Negative values are treated as if the value was zero.
     WAIT -3
 
 WAIT's are a powerful way to reduce the amount of CPU that BASICally is consuming in your patch.
@@ -304,15 +299,15 @@ or
 
 IF **conditional expression 1** THEN
 
-**...Statements for expression 1 is True...**
+**...Statements for when expression 1 is True...**
 
 ELSEIF **conditional expression 2** THEN
 
-**...Statements for expression 2 is True...**
+**...Statements for when expression 2 is True...**
 
 ELSEIF **conditional expression 3** THEN
 
-**...Statements for expression 3 is True...**  *(You can have multiple ELSEIF clauses.)*
+**...Statements for when expression 3 is True...**  *(You can have multiple ELSEIF clauses.)*
 
 END IF
 
@@ -320,19 +315,19 @@ or
 
 IF **conditional expression 1** THEN
 
-**...Statements for expression 1 is True...**
+**...Statements for when expression 1 is True...**
 
 ELSEIF **conditional expression 2** THEN
 
-**...Statements for expression 2 is True...**
+**...Statements for when expression 2 is True...**
 
 ELSEIF **conditional expression 3** THEN
 
-**...Statements for expression 3 is True...**  *(You can have multiple ELSEIF clauses.)*
+**...Statements for when expression 3 is True...**  *(You can have multiple ELSEIF clauses.)*
 
 ELSE
 
-**...Statements for expression 3 is False...**
+**...Statements for when expression 3 is False...**
 
 END IF
 
@@ -473,7 +468,7 @@ As of version 2.0.21, you have the choice of ending a FOR loop with either of
 
 VCV Rack is running BASICally code (and all of the other modules) once for every sample; that is, if you are running at 48KHz, it's running each module 48,000 per second. Each module tries to run as quickly as possible, but if a module takes too long to run many times in a row, you will hear nasty pops and dropouts in the audio.
 
-One design principle I've had is that it should be a bit difficult for a BASICally user to stall out the VCV Rack system this way. As a result of this principle, every time a FOR-NEXT loop repeats, there is [actually a hidden "WAIT 0"](#hidden-wait-0-statements) that occurs. A "WAIT 0" really means, "BASICally will finish processing this sample, and then when the next sample is processed, I"ll continue where I left off."
+One design principle I've had is that it should be a bit difficult for a BASICally user to stall out the VCV Rack system this way. As a result of this principle, every time a FOR-NEXT loop repeats, there is [actually a hidden "WAIT 0"](#hidden-wait-0-statements) that occurs. A "WAIT 0" really means, "BASICally will finish processing this sample, and then when the next sample is processed, I'll continue where I left off."
 
 Consider this simple loop:
 ```
@@ -606,7 +601,7 @@ and "blocks".
 There are two kinds of Blocks of code.
 
 #### ALSO Blocks
-ALSO blocks each run continuously, exactly the way the (un-blocked) code examples
+ALSO blocks each run continuously, exactly the way the (non-blocked) code examples
 elsewhere in this manual do. For example:
 
 ```
@@ -759,7 +754,7 @@ WHEN trigger(IN1)
   FOR i = 1 to 10  ' Uses "i"
     foo[i] = random(0, 10)
   NEXT
-END WHEN
+END WHE
 
 WHEN bar > 3
   FOR i = -5 to 5 STEP 0.1  ' ALSO uses "i"!
@@ -840,7 +835,7 @@ values are computed **only** upon entering the loop.*
 
 Under the hood, WAIT statements are how BASICally knows to stop running its
 code and pass control back to the other modules in VCV Rack. If it never WAITed,
-VCV Rack would hang and eventually the program will crash. Therefore, there are a number of hardwired WAIT 0 lines inserted. For example, consider this program:
+VCV Rack would hang and eventually the program would crash. Therefore, there are a number of hardwired WAIT 0 lines inserted. For example, consider this program:
 ```
 OUT3 = 0
 FOR level = 0 To 5 STEP 0.01
@@ -1007,8 +1002,8 @@ oscillator output, random,... Drifter alters signals, basically.
 [Here's a video from Pazi K.](https://www.youtube.com/watch?v=L5No8J7SPK4) showing two Drifters being used to simultaneously
 create the timbre of two sounds **and** create matching visuals in Etchasketchoscope.
 
-[Another patch](https://patchstorage.com/partch-2/), this one demonstratating using Drifter to hold melodies that we play
-several times and then allow to vary at specific times.
+[Another patch](https://patchstorage.com/partch-2/), this one demonstrating using Drifter to hold melodies that play
+several times and then allow it to vary at specific times.
 
 (Someday I'll make a video or two that demonstrates these other notions better.)
 
@@ -1030,7 +1025,7 @@ time. Hint: start small.
 Selects one of three options:
 * Left and right end points stay locked
 at their current value OR end points drift up and down when DRIFT events occur.
-* Left and right end points drift independently.
+* Left and right endpoints drift independently.
 * The right-side end point stays at the same value as the left one.
 
 #### DRIFT Input and Button
@@ -1039,7 +1034,7 @@ cause all of the points defining the output curve to move once, within the
 limits set by X DRIFT, TOTAL DRIFT, and ENDS.
 #### COUNT Knob
 The number of segments in the steps/line/curve, from 1 (just
-connecting the end points) to 32. **Takes effect at the next RESET.**
+connecting the endpoints) to 32. **Takes effect at the next RESET.**
 #### RESET Input and Button
 A trigger to the Input or a Button press resets the line to its
 starting position (see Menu Options below for choosing a starting position).
@@ -1151,7 +1146,6 @@ If this module is bypassed, then it will be darker. But otherwise, no different.
 [TD-410](https://library.vcvrack.com/SubmarineFree/TD-410), and
 [TD-316](https://library.vcvrack.com/SubmarineFree/TD-316).
 
-
 ![Line Break image](images/Separator.png)
 
 # Fuse
@@ -1184,7 +1178,7 @@ with repeated use.
 ### Controls
 Note that hovering the cursor over the colored fuse progress bar displays the
 current count of TRIGGER events seen and the percentage of the LIMIT
-has been reached
+has been reache
 
 #### STYLE Knob
 Selects from one of four styles of behavior:
@@ -1414,7 +1408,7 @@ The Circles are created, resized, moved, and deleted with keystrokes. These are 
 around the WASD keys familiar to anyone who has played games on a computer.
 ![Venn Keyboard editing](images/VennKeyboard.png)
 These edits affect
-whichever Circle is currently **selected**; the currently selected Circle is shown in slightly thicker lines, and it's corresponding number is shown in a small window to the left of the Surface.
+whichever Circle is currently **selected**; the currently selected Circle is shown in slightly thicker lines, and its corresponding number is shown in a small window to the left of the Surface.
 
 To clarify those icons:
 * **F** - create a new Circle of slightly randomized size, centered on where the mouse cursor is currently hovering over the surface. That new Circle will now be the selected Circle.
@@ -1510,12 +1504,12 @@ Each channel is 0.0V when Point is outside of the corresponding Circle. The valu
 0V to 10V as Point approaches the center. How quickly that value increases is affected by the DISTANCE Shape Knob.
 
 #### DISTANCE Shape Knob
-This parameter allows you to change how the DISTANCE value grows from 0V - 10V as Point approches the center.
+This parameter allows you to change how the DISTANCE value grows from 0V - 10V as Point approaches the center.
 
 ![Venn Shape Knob Effect Graph](images/VennDistanceShape.png)
 * At full left (-1), the curve looks like the red line; rapidly increasing at first, then growing far more slowly.
 * At center (0, the default), the curve looks like the yellow line; increasing linearly with distance.
-* At full right (1), the curve looks like the green line; growing inperceptively, then growing far more quickly very near to the center.
+* At full right (1), the curve looks like the green line; growing imperceptibly, then growing far more quickly very near to the center.
 
 #### WITHIN Output
 A polyphonic output with as many channels as the highest numbered Circle.
@@ -1527,7 +1521,7 @@ These are polyphonic outputs with as many channels as the highest numbered Circl
 
 The values of a channel reflect the relative distance from the center of a Circle. 
 * Each channel is 0V when the Point is outside the Circle. Values within the Circle range from -5V to 5V (but see the INV and OFST switches).
-* When Point is inside the Circle, then Point's horizontal or vertical distance from the center is divided by the radius of the Circle and muliplied by 5.
+* When Point is inside the Circle, then Point's horizontal or vertical distance from the center is divided by the radius of the Circle and multiplied by 5.
 * For example, if Point is at X = 3, and that's inside a Circle whose center is at X = 4 with a radius of 2.5, then X for that Circle's channel is (3 - 4) / 2.5 * 5 = -2.
 
 #### INV Switches
@@ -1563,10 +1557,10 @@ expressions:
 * **"+", "-", "*", "/"** -- add, subtract, multiply, divide. Note that dividing
 any number by zero, while undefined in *mathematics*, is defined by *Venn*
 to be 0.0.
-* "condition **?** true_value **:** false_value" - often known as the ternery operator, allows choices to be made based on comparisons of values.
+* "condition **?** true_value **:** false_value" - often known as the ternary operator, allows choices to be made based on comparisons of values.
 For example, "distance >= 2 ? 1.4 : 3.14" means if DISTANCE is two or more, return 1.4; otherwise, return 3.14.
 * **"<", "<=", ">" , ">=", "==", "!="** -- comparison operators. Useful in the condition part of "condition ? true_value : false_value".
-* **"and", "or", "not"** -- Boolean logic operators. Handy for more complicated conditions in the ternery operator. For purposes of these, a zero
+* **"and", "or", "not"** -- Boolean logic operators. Handy for more complicated conditions in the ternary operator. For purposes of these, a zero
 value is treated as **FALSE**, and *any non-zero value* is treated as **TRUE**.
 * Technical note: correct testing of equality or inequality in floating point numbers is [notoriously non-obvious to beginners](https://embeddeduse.com/2019/08/26/qt-compare-two-floats/) (and even experts). Venn uses an ever-so-slightly looser definition of equality, as described at the end of the essay linked above. For most uses this will work exactly as before and be less prone to surprises like this example. But if you find yourself comparing two numbers and you want differences of 0.00001V to matter, I'll suggest that instead of writing "a == b", you use "a <= b AND a >= b", which does not invoke the looser definition. 
 

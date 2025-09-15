@@ -83,7 +83,7 @@ struct Depict : Module {
         }
         // If we are still in our module list, move to the left.
         auto m = next_module->model;
-        if (m == modelMemory) {
+        if (IsMemoryEnsembleModel(m)) {
           std::shared_ptr<Buffer> found_buffer = dynamic_cast<BufferedModule*>(next_module)->getHandle()->buffer;
           if (buffer != found_buffer && found_buffer->IsValid()) {
             buffer = found_buffer;

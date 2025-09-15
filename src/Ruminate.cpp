@@ -52,6 +52,7 @@ struct Ruminate : PositionedModule {
     // If user is adjusting when in NO_PLAY, we move the play head accordingly.
     // Should never be in ADJUSTING.
     //
+    // If buffer->cv_rate is set, then FADE_UP and FADE_DOWN are skipped.
   };
 
   const double FADE_INCREMENT = 0.02;
@@ -178,8 +179,8 @@ struct Ruminate : PositionedModule {
       // This means that disconnecting the module doesn't zero-out the
       // Timestamp displays.
       // Bad things happen if these are zero, which sometimes happens on startup.
-      length = std::max(buffer->length, 10);
-      seconds = std::max(buffer->seconds, 0.1);
+      length = buffer->length;
+      seconds = buffer->seconds;
 
       // User (or input) is adjusting the position.
       if (inputs[ABS_POSITION_INPUT].getVoltage() != prev_abs_position) {
@@ -223,14 +224,14 @@ struct Ruminate : PositionedModule {
         case NO_PLAY:
         case FADE_DOWN: {
           if (playing && (!adjusting || !fade_on_move)) {
-            play_state = FADE_UP;
+            play_state = buffer->cv_rate ? PLAYING : FADE_UP;
           }
         }
         break;
         case FADE_UP:
         case PLAYING:  {
           if (!playing || (adjusting && fade_on_move)) {
-            play_state = FADE_DOWN;
+            play_state = buffer->cv_rate ? NO_PLAY : FADE_DOWN;
           }
         }
         break;
@@ -321,8 +322,12 @@ struct Ruminate : PositionedModule {
 
       display_position = playback_position;
 
-      while (display_position > 2 * length) {
-        display_position -= 2 * length;
+      if (length > 0) {
+        while (display_position > 2 * length) {
+          display_position -= 2 * length;
+        }
+      } else {
+        display_position = 0;
       }
 
       if (display_position >= length) {
@@ -342,8 +347,11 @@ struct Ruminate : PositionedModule {
           break;
         }
       }
-
-      outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
+      if (length > 0) {
+        outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
+      } else {
+        outputs[NOW_POSITION_OUTPUT].setVoltage(0.0f);
+      }
       line_record.position = display_position;
 
       if (play_state != NO_PLAY && play_state != ADJUSTING) {

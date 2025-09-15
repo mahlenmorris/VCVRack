@@ -11,6 +11,11 @@
 // TODO: should be related to sample rate? Set by user?
 const double FADE_DISTANCE = 50.0;
 
+// Sample rate we use in MemoryCV. While possible we may let user
+// pick rate at some point, not yet convinced it's all that valuable
+// to allow that. 
+const float CV_SAMPLE_RATE = 1000.0f;
+
 // Just to make transmiting data easier, but might not need?
 struct FloatPair {
   float left;
@@ -97,6 +102,7 @@ struct BufferTask {
   float* new_right_array;
   int sample_count;
   double seconds;
+  bool smooth_endpoints;
   FileOperationReporting* status;  // Owned by module.
   
   BufferTask(const Type the_type) : type{the_type},
@@ -108,7 +114,7 @@ struct BufferTask {
   static BufferTask* SaveFileTask(FileOperationReporting* status, const std::string& file_path);
 
   static BufferTask* ReplaceTask(float* new_left, float* new_right, FileOperationReporting* status,
-                                 int sample_count, double seconds);
+                                 int sample_count, double seconds, bool smooth_ends);
 };
 
 struct BufferTaskQueue {
@@ -132,7 +138,11 @@ struct Buffer {
   // Consider making this a 2 x length array.
   float* left_array;   // make this std::shared_ptr.
   float* right_array;   // make this std::shared_ptr.
-  int length = 0;
+
+  // These two are the same for Memory modules, but different for MemoryCV modules.
+  int length = 0;      // Length in audio rate samples (what the modules work in.)
+  int true_length = 0; // Actually array length.
+
   double seconds;
 
   // For marking blocks of the waveform that Depict shows as needing to be updated.
@@ -160,11 +170,12 @@ struct Buffer {
   // looking at it.
   bool freshen_waveform;
 
+  // Memory and MemoryCV differ only slightly, and most of the difference is how Buffer behaves.
+  // This flag tells the code which to behave like.
+  bool cv_rate;
+
   Buffer() : left_array{nullptr}, right_array{nullptr}, length{0},
-             seconds{0.0}, full_scan{false} {
-    // TODO: set to false when no Depicts are in range.
-    freshen_waveform = true;
-  }
+             seconds{0.0}, full_scan{false}, freshen_waveform{true}, cv_rate{false} {}
 
   ~Buffer() {
     if (left_array) {
@@ -177,6 +188,8 @@ struct Buffer {
 
   bool IsValid();
 
+  // How many samples away from another head this position is. If less than some value,
+  // caller may decide to fade playback.
   int NearHead(int position);
   // Returns distance if near a recording head, except for the recording head
   // with 'module_id', or INT_MAX if not considered "near".
@@ -186,7 +199,11 @@ struct Buffer {
   void SetDirty(int position);
 
   // Caller is responsible for only calling this when IsValid() is true.
+  // 'position' is realtime sample units.
   void Get(FloatPair *pair, double position);
+  // 'position' is 1:1 with memory, not with time.
+  // Used by SAVE_FILE.
+  void GetDirect(FloatPair *pair, double position);
   // Caller is responsible for only calling this when IsValid() is true.
   void Set(int position, float left, float right, long long module_id);
 };
@@ -244,6 +261,7 @@ struct PositionedModule : Module {
 };
 
 bool ModelHasColor(Model* model);
+bool IsMemoryEnsembleModel(Model* model);
 bool IsNonMemoryEnsembleModel(Model* model);
 std::shared_ptr<Buffer> findClosestMemory(Module* leftModule);
 

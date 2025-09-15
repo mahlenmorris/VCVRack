@@ -131,7 +131,10 @@ struct BufferChangeThread {
   ModuleToBufferQueue* module_buffer_queue;
   BufferToModuleQueue* buffer_module_queue;
   std::vector<FileOperationReporting*>* reporters;
-  float sample_rate;
+  // VCV's sample rate; the rate we expect process() to be called.
+  float process_call_rate;
+  // Sample rate for memory buffers and saved files.
+  float memory_sample_rate;
 
   bool shutdown;
   // Indicator to UI that File I/O is happening.
@@ -143,19 +146,21 @@ struct BufferChangeThread {
                      std::vector<FileOperationReporting*>* reporters) :
       handle{the_handle}, prepare_buffer_queue{prepare_buffer_queue},
       module_buffer_queue{module_buffer_queue},
-      buffer_module_queue{buffer_module_queue}, reporters{reporters}, sample_rate{0.0f}, shutdown{false} {}
+      buffer_module_queue{buffer_module_queue}, reporters{reporters},
+      process_call_rate{0.0f}, memory_sample_rate{0.0f}, shutdown{false} {}
 
   void Halt() {
     shutdown = true;
   }
 
-  void SetRate(float rate) {
-    sample_rate = rate;
+  void SetRates(float vcv_sample_rate, float memory_rate) {
+    process_call_rate = vcv_sample_rate;
+    memory_sample_rate = memory_rate;
   }
 
   // Updates the "waveforms" that Depict shows.
   void RefreshWaveform(std::shared_ptr<Buffer> buffer) {
-    int sector_size = buffer->length / WAVEFORM_SIZE;
+    float sector_size = (double) buffer->true_length / WAVEFORM_SIZE;
     float peak_value = 0.0f;
     bool full_scan = buffer->full_scan;
 
@@ -166,18 +171,24 @@ struct BufferChangeThread {
     // For now, do this the most brute-force way; scan from bottom to top.
     for (int p = 0; !shutdown && p < WAVEFORM_SIZE; p++) {
       if (full_scan || buffer->dirty[p]) {
-        float left_amplitude = 0.0, right_amplitude = 0.0;
-        for (int i = p * sector_size;
-              !shutdown && i < std::min((p + 1) * sector_size, buffer->length);
-              i++) {
-          left_amplitude = std::max(left_amplitude,
-                                    std::fabs(buffer->left_array[i]));
-          right_amplitude = std::max(right_amplitude,
-                                      std::fabs(buffer->right_array[i]));
+        if (sector_size >= 1.0) {
+          float left_amplitude = 0.0, right_amplitude = 0.0;
+          for (int i = (int) trunc(p * sector_size);
+                !shutdown && i < std::min((int) trunc((p + 1) * sector_size), buffer->true_length);
+                i++) {
+            left_amplitude = std::max(left_amplitude,
+                                      std::fabs(buffer->left_array[i]));
+            right_amplitude = std::max(right_amplitude,
+                                        std::fabs(buffer->right_array[i]));
+          }
+          buffer->waveform.points[p][0] = left_amplitude;
+          buffer->waveform.points[p][1] = right_amplitude;
+        } else {
+          FloatPair pair;
+          buffer->Get(&pair, ((double) p) * buffer->length / WAVEFORM_SIZE);
+          buffer->waveform.points[p][0] = std::fabs(pair.left);
+          buffer->waveform.points[p][1] = std::fabs(pair.right);
         }
-        buffer->waveform.points[p][0] = left_amplitude;
-        buffer->waveform.points[p][1] = right_amplitude;
-
         // Not stricly speaking correct (the sector may have been written
         // to during the scan). But correctness is not critical, and the new
         // values will be caught if any further writes to this sector occur,
@@ -218,25 +229,34 @@ struct BufferChangeThread {
     }
     buffer->right_array = task->new_right_array;
 
-    buffer->length = task->sample_count;
+    buffer->true_length = task->sample_count;
+    if (buffer->cv_rate) {
+      buffer->length = std::round(task->seconds * process_call_rate);
+    } else {
+      buffer->length = task->sample_count;
+    }
     buffer->seconds = task->seconds;
     // Tell world we're done, IFF we have a status. WIPE's and RESET's don't.
     if (task->status != nullptr) {
       task->status->completed = LOAD_COMPLETED;
     }
-    delete task;
 
-    //WARN("length = %d", buffer->length);
-    //WARN("seconds = %f", buffer->seconds);
+    // WARN("length = %d", buffer->length);
+    // WARN("true_length = %d", buffer->true_length);
+    // WARN("seconds = %f", buffer->seconds);
 
-    // There's no reason I can come up with to let there be a click between
-    // the end and the beginning of the buffer.
-    // So if I suspect there will be one, add a Smooth to get rid of it.
-    if (abs(buffer->left_array[0] - buffer->left_array[buffer->length - 1]) > 0.1 ||
-        abs(buffer->right_array[0] - buffer->right_array[buffer->length - 1]) > 0.1) {
-      Smooth* new_smooth = new Smooth(0, true);
-        buffer->smooths.additions.push(new_smooth);
+    if (task->smooth_endpoints && !buffer->cv_rate) {
+      // We typically don't want to let there be a click between
+      // the end and the beginning of the buffer in an *audio* file.
+      // So if I suspect there will be one, add a Smooth to get rid of it.
+      if (abs(buffer->left_array[0] - buffer->left_array[buffer->true_length - 1]) > 0.1 ||
+          abs(buffer->right_array[0] - buffer->right_array[buffer->true_length - 1]) > 0.1) {
+        Smooth* new_smooth = new Smooth(0, true);
+          buffer->smooths.additions.push(new_smooth);
+      }
     }
+
+    delete task;
   }
 
   void Work() {
@@ -250,7 +270,7 @@ struct BufferChangeThread {
             // Check that creation_time is long enough ago that we're
             // confident that the new section is written.
             if (item->creation_time < 0 || (system::getTime() - item->creation_time > 0.001)) {
-              smooth(buffer->left_array, buffer->right_array, item->position, 25, buffer->length);
+              smooth(buffer->left_array, buffer->right_array, item->position, 25, buffer->true_length);
               delete item;
             } else {
               buffer->smooths.additions.push(item);
@@ -281,19 +301,25 @@ struct BufferChangeThread {
 
                 // Do a fair bit of setup, so it can save properly.
                 // Set both the number of channels and number of samples per channel
-                audio_file.setAudioBufferSize(2, buffer->length);
+                audio_file.setAudioBufferSize(2, buffer->true_length);
 
                 // Set the number of samples per channel
-                audio_file.setNumSamplesPerChannel(buffer->length);
+                audio_file.setNumSamplesPerChannel(buffer->true_length);
 
                 // Set the number of channels. Memory is always stereo.
                 audio_file.setNumChannels(2);
                 audio_file.setBitDepth(32);  // This is what Audacity produces.
-                audio_file.setSampleRate(sample_rate);
+                audio_file.setSampleRate(memory_sample_rate);
 
                 // SLOW: this call can take many seconds.
-                // Wave file (implicit)
-                bool worked = audio_file.save(task->str1);
+                bool worked = false;
+                if (rack::string::endsWith(rack::string::lowercase(task->str1), ".csv")) {
+                  worked = audio_file.save(task->str1, AudioFileFormat::CSV);
+                } else {
+                  // Wave file (implicit).
+                  worked = audio_file.save(task->str1);
+                }
+                
                 busy = false;
                 if (worked) {
                   task->status->log_messages.lines.push(
@@ -423,19 +449,23 @@ struct PrepareThread {
 
     for (auto path : dirList)  {
       if ((rack::string::lowercase(system::getExtension(path)) == "wav") ||
-          (rack::string::lowercase(system::getExtension(path)) == ".wav")) {
+          (rack::string::lowercase(system::getExtension(path)) == ".wav") ||
+          (rack::string::lowercase(system::getExtension(path)) == "csv") ||
+          (rack::string::lowercase(system::getExtension(path)) == ".csv")) {
         loadable_files->push_back(system::getFilename(path));
       }
     }
     busy = false;
   }
 
-  void ConvertFileToSamples(PrepareTask* task, const AudioFile<float>& audio_file) {
+  void ConvertFileToSamples(PrepareTask* task,
+      const AudioFile<float>& audio_file, bool has_no_sample_rate) {
     assert(task->type == PrepareTask::LOAD_FILE);
     // One goal is to minimize the amount of downtime for the buffer,
     // since the AudioFile -> Buffer process is time consuming for large files.
     // So the conversion happens before we swap in the memory.
-    int samples = std::round(audio_file.getLengthInSeconds() * sample_rate);
+    int samples = has_no_sample_rate ? audio_file.getNumSamplesPerChannel() :
+        std::round(audio_file.getLengthInSeconds() * sample_rate);
     int file_samples = audio_file.getNumSamplesPerChannel();
     float* new_left_array = new float[samples];
     float* new_right_array = new float[samples];
@@ -447,7 +477,8 @@ struct PrepareThread {
     //   on both channels.
     bool file_is_mono = audio_file.getNumChannels() == 1;
     // TODO: put in an optimization if sample rates are the same. Less math to do.
-    double sample_rate_ratio = 1.0 * audio_file.getSampleRate() / sample_rate;
+    double sample_rate_ratio = has_no_sample_rate ? 1.0 :
+        1.0 * audio_file.getSampleRate() / sample_rate;
     // This can take a while; definitely let a Halt() call interrupt it.
     for (int i = 0; !shutdown && i < samples; ++i) {
       // Use the linear interpolation that I also use in Buffer::Get().
@@ -501,13 +532,20 @@ struct PrepareThread {
               if (worked) {
                 task->status->log_messages.lines.push(
                   "Completed read of '" + task->str1 + "'.");
-                task->status->log_messages.lines.push(
-                  "It is " + std::to_string(audio_file.getLengthInSeconds()) +
-                  " seconds long.");
+                if (rack::string::endsWith(rack::string::lowercase(task->str1), ".csv")) {
+                  task->status->log_messages.lines.push(
+                    "It is " + std::to_string(audio_file.getNumSamplesPerChannel() / sample_rate) +
+                    " seconds long.");
+                } else {
+                  task->status->log_messages.lines.push(
+                    "It is " + std::to_string(audio_file.getLengthInSeconds()) +
+                    " seconds long.");
+                }
                 
                 // This part can also be slow, since it walks over every sample.
                 busy = true;
-                ConvertFileToSamples(task, audio_file);
+                bool is_csv = rack::string::endsWith(rack::string::lowercase(task->str1), ".csv");
+                ConvertFileToSamples(task, audio_file, is_csv);
                 busy = false;
                 double seconds = audio_file.getLengthInSeconds();
                 // Done with the audio_file.
@@ -515,7 +553,7 @@ struct PrepareThread {
                 // Send task to BufferChangeThread.
                 BufferTask* replace_task = BufferTask::ReplaceTask(
                   task->new_left_array, task->new_right_array, task->status,
-                  task->result_sample_count, seconds);  
+                  task->result_sample_count, seconds, !is_csv);  
                 if (!prepare_buffer_queue->tasks.push(replace_task)) {
                   delete task->new_left_array;
                   delete task->new_right_array;
@@ -550,8 +588,9 @@ struct PrepareThread {
               }
 
               // Send task to BufferChangeThread.
+              // No reason to smooth an already blank file, so smooth_ends is false.
               BufferTask* replace_task = BufferTask::ReplaceTask(
-                new_left_array, new_right_array, nullptr, sample_count, task->seconds);  
+                new_left_array, new_right_array, nullptr, sample_count, task->seconds, false);  
               if (!prepare_buffer_queue->tasks.push(replace_task)) {
                 delete replace_task;  // Queue is full, shed load.
               }
@@ -660,6 +699,11 @@ struct Memory : BufferedModule {
   // We sweep the connected modules every NN samples. Some UI-related tasks are 
   // not as latency-sensitive as the audio thread, and we don't need to do often.
   int assign_color_countdown = 0;
+
+  // Memory and MemoryCV differ only slightly, and most of the difference is how Buffer behaves.
+  // This flag tells the code which to behave like.
+  bool cv_rate;
+
 
   Memory() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -846,9 +890,10 @@ struct Memory : BufferedModule {
       if (!init_in_progress) {
         // Confirm that we can read the sample rate before starting a fill.
         // Sometimes during startup, sampleRate is still zero.
-        if (args.sampleRate > 1.0) {
-          buffer_change_worker->SetRate(args.sampleRate);
-          prepare_worker->SetRate(args.sampleRate);
+        float sample_rate = args.sampleRate;
+        if (sample_rate > 1.0) {
+          buffer_change_worker->SetRates(sample_rate, cv_rate ? CV_SAMPLE_RATE : sample_rate);
+          prepare_worker->SetRate(cv_rate ? CV_SAMPLE_RATE : sample_rate);
           PrepareTask* task = PrepareTask::MakeBlank(params[SECONDS_PARAM].getValue());
           if (!module_prepare_queue.tasks.push(task)) {
             delete task;
@@ -865,8 +910,7 @@ struct Memory : BufferedModule {
       }
     } else {
       // This is the post-initialization part of process().
-
-      // We may be asked to load a .wav file on startup. We wait unti the buffer is initialized before
+      // We may be asked to load a file on startup. We wait until the buffer is initialized before
       // attempting this, however, since the operation might fail, and I'd rather have *some* buffer than none.
       if (initiate_startup_load && !load_folder_name.empty() && !loaded_file.empty()) {
         initiate_startup_load = false;
@@ -1241,7 +1285,7 @@ struct Memory : BufferedModule {
     return (path_string);
   }
 
-  std::string selectSaveFile() {
+  std::string selectSaveFile(const std::string& file_type) {
     std::string path_string = "";
      // I like things that default file names to a time stamp. 
     char date_buffer[80];
@@ -1249,7 +1293,15 @@ struct Memory : BufferedModule {
     // Convert unix time to local time structure.
     time_t unixTime = static_cast<time_t>(system::getUnixTime());
     struct tm* localTime = localtime(&unixTime);
-    strftime(date_buffer, sizeof(date_buffer), "Memory %Y-%m-%d %H-%M-%S.wav", localTime);
+    strftime(date_buffer, sizeof(date_buffer), "Memory %Y-%m-%d %H-%M-%S.", localTime);
+    strcat(date_buffer, file_type.c_str());
+
+    const char* filter_string;
+    if (file_type.compare("wav") == 0) {
+      filter_string = "WAV:wav";
+    } else {
+      filter_string = "CSV (Comma Separated Value):csv";
+    }
 
     // Default to save folder. If not set, default to load_folder.
     char *path = osdialog_file(
@@ -1257,7 +1309,7 @@ struct Memory : BufferedModule {
       save_folder_name.empty() ?
         (load_folder_name.empty() ? NULL : load_folder_name.c_str()) :
         save_folder_name.c_str(),
-      date_buffer, osdialog_filters_parse("Wav:wav"));
+      date_buffer, osdialog_filters_parse(filter_string));
 
     if (path != NULL) {
         path_string.assign(path);
@@ -1296,9 +1348,12 @@ struct MenuItemPickSaveFolder : MenuItem {
 
 struct MenuItemPickSaveFile : MenuItem {
   Memory *module;
+  std::string file_type;
+
+  MenuItemPickSaveFile(const std::string& type) : file_type{type} {}
 
   void onAction(const event::Action &e) override {
-    std::string file_path = module->selectSaveFile();
+    std::string file_path = module->selectSaveFile(file_type);
     if (file_path != "") {
       // We set this even if it's the same path as before. This gives the user a gesture to update
       // the list.
@@ -1314,8 +1369,7 @@ struct MenuItemPickSaveFile : MenuItem {
 struct MemoryWidget : ModuleWidget {
   MemoryWidget(Memory* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/Memory.svg"),
-                         asset::plugin(pluginInstance, "res/Memory-dark.svg")));
+    this->SetPanels();  // this-> forces the call to the overidden method.
 
     // Module is so narrow that we only include two screws instead of four.
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
@@ -1355,6 +1409,11 @@ struct MemoryWidget : ModuleWidget {
              module, Memory::FILE_IO_LIGHT));
   }
 
+  virtual void SetPanels() {
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/Memory.svg"),
+                         asset::plugin(pluginInstance, "res/Memory-dark.svg")));
+  }
+
   void appendContextMenu(Menu* menu) override {
     Memory* module = dynamic_cast<Memory*>(this->module);
     assert(module);
@@ -1370,7 +1429,7 @@ struct MemoryWidget : ModuleWidget {
     menu_item_load_folder->module = module;
     menu->addChild(menu_item_load_folder);
     if (module->loadable_files.empty()) {
-      menu->addChild(createMenuLabel("No .wav files seen in Loading directory"));
+      menu->addChild(createMenuLabel("No .wav or .csv files seen in Loading directory"));
     } else {
       MenuItem* loadable_file_menu = createSubmenuItem("Load File", "",
         [=](Menu* menu) {
@@ -1405,18 +1464,50 @@ struct MemoryWidget : ModuleWidget {
     }
     menu_item_save_folder->module = module;
     menu->addChild(menu_item_save_folder);
-    MenuItemPickSaveFile* menu_item_save_file = new MenuItemPickSaveFile;
-    menu_item_save_file->text = "Save to File...";  
-    menu_item_save_file->module = module;
-    menu->addChild(menu_item_save_file);
+
+    MenuItemPickSaveFile* menu_item_save_file_wav = new MenuItemPickSaveFile("wav");
+    menu_item_save_file_wav->text = "Save to WAV File...";  
+    menu_item_save_file_wav->module = module;
+    menu->addChild(menu_item_save_file_wav);
+
+    MenuItemPickSaveFile* menu_item_save_file_csv = new MenuItemPickSaveFile("csv");
+    menu_item_save_file_csv->text = "Save to CSV File...";  
+    menu_item_save_file_csv->module = module;
+    menu->addChild(menu_item_save_file_csv);
 
     // Be a little clearer how to make this module do anything.
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel(
-      "Put any of these modules directly to my right: Depict, Embellish, "));
+      "Put any of these modules directly to my right: Brainwash, Depict, Embellish, "));
     menu->addChild(createMenuLabel(
       "Fixation, and Ruminate. See my User Manual for details and usage videos."));
   }
 };
 
+struct MemoryCV : Memory {
+  MemoryCV() : Memory() {
+    cv_rate = true;
+    std::shared_ptr<Buffer> buffer = getHandle()->buffer;
+    if (buffer) {  // Pretty convinced this is always the case.
+      buffer->cv_rate = true;
+    } else {
+      WARN("MemoryCV(): buffer is null!");
+    }
+  }
+};
+
+struct MemoryCVWidget : MemoryWidget {
+  MemoryCVWidget(MemoryCV* module) : MemoryWidget((Memory*) module) {
+    SetPanels();
+  }
+
+  void SetPanels() override {
+    setPanel(createPanel(asset::plugin(pluginInstance, "res/MemoryCV.svg"),
+                         asset::plugin(pluginInstance, "res/MemoryCV-dark.svg")));
+  }
+};
+
 Model* modelMemory = createModel<Memory, MemoryWidget>("Memory");
+
+Model* modelMemoryCV = createModel<MemoryCV, MemoryCVWidget>("MemoryCV");
+
