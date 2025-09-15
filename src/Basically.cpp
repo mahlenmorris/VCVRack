@@ -88,7 +88,7 @@ struct Basically : Module {
   class ProductionEnvironment : public Environment {
     std::vector<Input>* inputs;
     std::vector<Output>* outputs;
-    float sample_rate;
+    float sample_rate, patch_time;
     Driver* driver;
     bool starting;
     std::vector<CodeBlock*>* main_blocks;
@@ -153,8 +153,9 @@ struct Basically : Module {
 
     // ProcessArgs object isn't available when we first create the Environment.
     // So we need to update it when it is available.
-    void SetSampleRate(float sampleRate) {
+    void SetFromArgs(float sampleRate, float patchTime) {
       sample_rate = sampleRate;
+      patch_time = patchTime;
     }
 
     // Should be called every sample.
@@ -240,11 +241,10 @@ struct Basically : Module {
       return rack::random::normal() * std_dev + mean;
     }
     float Time(bool millis) override {
-      float elapsed = args->frame * args->sampleTime;
       if (millis) {
-        return elapsed * 1000.0;
+        return patch_time * 1000.0;
       } else {
-        return elapsed;
+        return patch_time;
       }
     }
     void Clear() override {
@@ -629,8 +629,8 @@ struct Basically : Module {
       }
     }
     bool loops = (style != TRIGGER_NO_LOOP_STYLE);
-    // Non-zero sample rate not available when we first create the Environment.
-    environment->SetSampleRate(args.sampleRate);
+    // Set some volatile values from ProcessArgs. 
+    environment->SetFromArgs(args.sampleRate, args.frame * args.sampleTime);
     // Might be set true below, but for vast majority of samples this is false.
     environment->SetStarting(false);
 
