@@ -120,11 +120,11 @@ file doesn't exist or isn't a readable .wav file), when it has completed, a trig
 
 The SAVE input can accept:
 * A file name, or path and a filename
-* * For example, ``foo.wav``, or ``sub/directory/bar.wav``
+* * For example, ``foo.wav``, or ``sub/directory/bar.csv``
 * * This is assumed to be relative to the Save Folder you set in the menu.
 For example, if the Save Folder is set to ``/my sounds``, then sending ``drums/snare.wav`` to the SAVE input will cause Memory to immediately
 save the Memory's contents to the file ``/my sounds/drums/snare.wav``. Note that this will fail if the folder ``/my sounds/drums`` doesn't already exist; Memory
-will not create new sub-folders. Also note, **Memory will happily overwrite an already existing file, and cannot ask you to confirm that's what you want.**
+will not create new sub-folders. Also note, **Memory will happily overwrite an already existing file, and cannot ask you to confirm if that's what you want.**
 #### SAVE Completion Output
 Saving a file takes an amount of time that is hard to predict, since the file can be on an SSD, a spinning hard drive, or a network or cloud drive. And larger
 files take longer to save than shorter ones. To help synchronize events that need to happen *after* the file has loaded, this output is provided.
@@ -137,7 +137,7 @@ any messages it has, including the length of files it reads in. This is especial
 
 ### Menu Options
 #### Pick Folder for Loading
-Select a folder to load audio files from. Once this is done, the "Load File" submenu will be populated with all of the WAV files it can load. Any inputs to the
+Select a folder to load audio files from. Once this is done, the "Load File" submenu will be populated with all of the WAV or [CSV](#csv-files) files it can load. Any inputs to the
 LOAD Tipsy input will be relative to this folder.  
 #### Load File
 Once the Load Folder has been selected, any files Memory thinks it can read (currently only .WAV files) will be listed here, and selecting one will
@@ -146,15 +146,17 @@ immediately load it into the Memory.
 If set, when the patch is loaded (or even when the module is duplicated), it will attempt to load
 in the last file that was loaded.
 #### Pick Folder for Saving
-Select a folder to Save .wav files to. Once this is done, any inputs to the SAVE Tipsy input will be relative to this folder.  
-#### Save to File...
+Select a folder to Save WAV or [CSV](#csv-files) files to. Once this is done, any inputs to the SAVE Tipsy input will be relative to this folder.  
+#### Save to WAV File...
 A standard dialog box to save files will appear. The entire current contents of the Memory buffer will be saved as a WAV file.
+#### Save to CSV File...
+A standard dialog box to save files will appear. The entire current contents of the Memory buffer will be saved as [a CSV file](#csv-files). Note that CSV files cannot be edited or played back by audio software, so the recommendation is to save Memory to WAV files.
 
 ### Known Limitations
 * Putting noise into the LOAD or SAVE Tipsy inputs can crash VCV Rack.
 
 # MemoryCV
-The basis of any MemoryCV ensemble dealing with CV signals is exactly one MemoryCV module. Whichever MemoryCV module is closest to the left side of the other modules in the ensemble is the one used by the ensemble.
+The basis of a MemoryCV ensemble dealing with CV signals is exactly one MemoryCV module. Whichever MemoryCV module is closest to the left side of the other modules in the ensemble is the one used by the ensemble.
 
 A MemoryCV by itself cannot play or record control voltage signals. It is solely where the two CV data signals are stored and can be retrieved.
 
@@ -183,59 +185,31 @@ Gets rid of the previous buffer, creates a new one of LENGTH seconds, then sets 
 **The LOAD input takes *only* [Tipsy](https://github.com/baconpaul/tipsy-encoder) inputs. Tipsy is a way to send text over a VCV Rack cable; currently, the only module that can send controllable Tipsy text is
 [BASICally](README.md#basically) (see the "print()" command).**
 
-MemoryCV can save and load CV as WAV files. The LOAD input can accept two different types of textual messages:
-* A file name, or path and a filename
-* * For example, ``foo.wav``, or ``sub/directory/bar.wav``
-* * This is assumed to be relative to the Load Folder you set in the menu.
-For example, if the Load Folder is set to ``/my sounds``, then sending ``drums/snare.wav`` to the LOAD input will cause MemoryCV to immediately
-replace the MemoryCV's contents with the audio from ``/my sounds/drums/snare.wav``, if that file exists.
-* ``#N``, where N is some integer number
-* * For example, ``#0``, ``#12``, ``#776``
-* * In this case, the Nth file (zero-indexed) in the Load Folder will be loaded, wrapping around to the beginning if N is larger than the number of files.
-So if your Load Folder contained the three files, ``apple.wav``, ``banana.wav``, and ``chocolate.wav``, then ``#0``, ``#3``, and ``#6`` would all refer to ``apple.wav``.
-* * This means that a BASICally program like the following will load a random file in the Load Folder every time IN1 sees a trigger.
-![Memory Example - Load Random File](images/LoadRandomFile.png)
-#### LOAD Completion Output
-Loading a file takes an amount of time that is hard to predict, since the file can be on an SSD, a spinning hard drive, or a network or cloud drive. And larger
-files take longer to read than shorter ones. To help synchronize events that need to happen *after* the file has loaded, this output is provided.
-
-Any time that a file load is completed, no matter how it was started (via the menu or the Tipsy input) and no matter if it succeeds or fails (like if the named
-file doesn't exist or isn't a readable .wav file), when it has completed, a trigger will come out of this output.
+Like the Memory module, MemoryCV can load CV as WAV or [CSV](#csv-files) files. See more explanation in the [Memory section](#load-tipsy-input).
 #### SAVE Tipsy Input
 **The SAVE input takes *only* Tipsy inputs. Tipsy is a way to send text over a VCV Rack cable; currently, the only module that can send useful Tipsy data is
 [BASICally](README.md#basically) (see the "print()" command).**
 
-The SAVE input can accept:
-* A file name, or path and a filename
-* * For example, ``foo.wav``, or ``sub/directory/bar.wav``
-* * This is assumed to be relative to the Save Folder you set in the menu.
-For example, if the Save Folder is set to ``/my sounds``, then sending ``drums/snare.wav`` to the SAVE input will cause MemoryCV to immediately
-save the MemoryCV's contents to the file ``/my sounds/drums/snare.wav``. Note that this will fail if the folder ``/my sounds/drums`` doesn't already exist; MemoryCV
-will not create new sub-folders. Also note, **MemoryCV will happily overwrite an already existing file, and cannot ask you to confirm that's what you want.**
-#### SAVE Completion Output
-Saving a file takes an amount of time that is hard to predict, since the file can be on an SSD, a spinning hard drive, or a network or cloud drive. And larger
-files take longer to save than shorter ones. To help synchronize events that need to happen *after* the file has loaded, this output is provided.
+Like the Memory module, MemoryCV can save CV as WAV or [CSV](#csv-files) files. See more explanation in the [Memory section](#save-tipsy-input).
 
-Any time that a file save is completed, no matter how it was started (via the menu or the Tipsy input) and no matter if it succeeds or fails (like if the named
-folder doesn't exist or can't be written to), when it has completed, a trigger will come out of this output.
 #### LOG Tipsy Output
 If you want to see a human-readable log of load and save events, a cable from this output to one of the TEXTn inputs of the TTY module will show you
 any messages it has, including the length of files it reads in. This is especially useful if files aren't loading or saving as you expect.
 
 ### Menu Options
 #### Pick Folder for Loading
-Select a folder to load audio files from. Once this is done, the "Load File" submenu will be populated with all of the WAV files it can load. Any inputs to the
+Select a folder to load audio files from. Once this is done, the "Load File" submenu will be populated with all of the WAV or [CSV](#csv-files) files it can load. Any inputs to the
 LOAD Tipsy input will be relative to this folder.  
 #### Load File
-Once the Load Folder has been selected, any files MemoryCV thinks it can read (currently only .WAV files) will be listed here, and selecting one will
-immediately load it into the MemoryCV.
+Once the Load Folder has been selected, any files MemoryCV thinks it can read (currently only WAV and [CSV](#csv-files) files) will be listed here, and selecting one will immediately load it into the MemoryCV.
 #### Load most recent file on module start
-If set, when the patch is loaded (or even when the module is duplicated), it will attempt to load
-in the last file that was loaded.
+If set, when the patch is loaded (or even when the module is duplicated), it will attempt to load in the last file that was loaded.
 #### Pick Folder for Saving
-Select a folder to Save .wav files to. Once this is done, any inputs to the SAVE Tipsy input will be relative to this folder.  
-#### Save to File...
+Select a folder to Save WAV or [CSV](#csv-files) files to. Once this is done, any inputs to the SAVE Tipsy input will be relative to this folder.  
+#### Save to WAV File...
 A standard dialog box to save files will appear. The entire current contents of the MemoryCV buffer will be saved as a WAV file.
+#### Save to CSV File...
+A standard dialog box to save files will appear. The entire current contents of the MemoryCV buffer will be saved as [a CSV file](#csv-files). Note that CSV files cannot be edited or played back by audio software. But CSV does make it easy to precisely edit CV signals.
 
 ### Known Limitations
 * Putting noise into the LOAD or SAVE Tipsy inputs can crash VCV Rack.

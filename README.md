@@ -5,14 +5,14 @@ self-regulating structure. Exploring the region between random and static.
 ![All Modules image](images/TheFamily.png)
 ![Memory Modules image](images/TheFamilyRowTwo.png)
 
-* [Memory System](Memory.md): A set of six interrelated recording/playback modules with [their own documentation](Memory.md).
+* [Memory System](Memory.md): A set of seven interrelated recording/playback modules with [their own documentation](Memory.md).
 * [BASICally](#basically): A simple, likely familiar procedural programming language within the context of VCV Rack.
 * [Drifter](#drifter): Creates sequences of values that can slowly (or quickly) vary, like a series of points doing random walks connected into a series.
 * [Fermata](#fermata): A text editor and labeling module. Write much longer text notes. Resizable, scrolls, font choices, and more. Or just add some visual emphasis,
 Stochastic Telegraph-style.
 * [Fuse](#fuse): Block, allow, or attenuate a signal passing through, based on the number of triggers observed in a different signal.
 * [TTY](#tty): A scrolling text window that displays distinct values it gets, and also displays [Tipsy](https://github.com/baconpaul/tipsy-encoder) text messages sent by other modules (like BASICally).
-* [Venn](#venn): A 2D graphical signal generator consisting of up to sixteen visible Circles and a visible Point chosen by mouse or CV. Where the Point is in relation to a Circle determines four CV values per Circle. 
+* [Venn](#venn): A 2D graphical signal generator consisting of up to sixteen visible Circles and a visible Point chosen by mouse or CV. Where the Point is in relation to a Circle determines five CV values per Circle. 
 
 ![Line Break image](images/Separator.png)
 
