@@ -7,6 +7,8 @@
 struct BrainwashThread {
   bool shutdown;
   float sample_rate = 0.0;
+  // If set,  we merge a millisecond's worth of signal into one sample.
+  bool cv_rate = false;
   int max_sample_count;
 
   // These are the fixed-size buffers that get recorded to initially.
@@ -40,8 +42,14 @@ struct BrainwashThread {
     sample_rate = rate;
   }
 
+  void SetCV(bool cv) {
+    cv_rate = cv;
+  }
+
   void InitiateReplacement(int endpoint_position, std::shared_ptr<Buffer> buffer) {
-    this->endpoint_position = std::min(endpoint_position, max_sample_count - 1);
+    int endpoint = std::min(endpoint_position, max_sample_count - 1);
+    this->endpoint_position = cv_rate ? trunc(endpoint * CV_SAMPLE_RATE / sample_rate) :
+                                        endpoint;
     this->buffer = buffer;
   }
 
@@ -49,8 +57,20 @@ struct BrainwashThread {
     if (position >= max_sample_count || static_right == nullptr) {
       return;
     }
-    static_left[position] = left;
-    static_right[position] = right;
+    if (cv_rate) {
+      // Because there are many positions for each CV position, we need to only allow
+      // a write to occur on one position per CV position. I want it to be the
+      // "center" of the CV position.
+      int cv_position = trunc((double) position * CV_SAMPLE_RATE / sample_rate);
+      int writable_position = trunc((double) (cv_position + 0.5) * sample_rate / CV_SAMPLE_RATE);
+      if (position == writable_position) {      
+        static_left[cv_position] = left;
+        static_right[cv_position] = right;
+      }
+    } else {
+      static_left[position] = left;
+      static_right[position] = right;
+    }
   }
 
   void Work() {
@@ -80,9 +100,12 @@ struct BrainwashThread {
         memcpy(new_right, static_right, sizeof(float) * length);
 
         // Now add to queue for Memory to consume.
+        double seconds = cv_rate ? (endpoint_position + 1) / CV_SAMPLE_RATE
+                                 : (endpoint_position + 1) / sample_rate;
+
         BufferTask* replace_task = BufferTask::ReplaceTask(
           new_left, new_right, nullptr,  // nullptr for status indicates we don't need FileIO status info.
-          endpoint_position + 1, (endpoint_position + 1) / sample_rate, true);  
+          endpoint_position + 1, seconds, true);  
         if (!(buffer->replacements.queue.push(replace_task))) {
           delete replace_task->new_left_array;
           delete replace_task->new_right_array;
@@ -186,6 +209,7 @@ struct Brainwash : Module {
 
     // If connected and buffer isn't empty.
     if (connected) {
+      worker->SetCV(buffer->cv_rate);
       // Are we in motion or not?
       recordTrigger.process(rescale(
           inputs[RECORD_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
