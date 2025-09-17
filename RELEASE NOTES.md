@@ -2,10 +2,16 @@
 
 ### 2.0.22
 #### ????
-* Improved the resolution of BASICally's time() and time_millis() functions.
+* New MemoryCV module! A drop-in replacement for Memory within a Memory Ensemble, but better for storing and playing control voltage.
+* Memory (and MemoryCV) can now load and save files with non-ASCII characters in the name or path.
+* * Note that the Rack fonts don't support non-ASCII characters, so still can't *display* these names correctly.
+* MemoryCV (and Memory) can load and save .CSV (Comma Separated Value) files. Great when you want **extremely** fine editing control over the signals, or if you've longed to use a spreadsheet in your musical process.
+* BASICally
+* * Improved the resolution of BASICally's time() and time_millis() functions.
+* * Fixed flaky issue where time between compile and running new code could be delayed by up to 5 seconds.
 
 ### 2.0.21
-#### ???
+#### June 24, 2025
 * Fermata and TTY:
 * * At the request of Both of these now support [larger font sizes]((https://github.com/mahlenmorris/VCVRack/blob/main/README.md#fermata)), all the way up to filling the vertical space with a single line of text.
 * * They also can now be stretched out to 300 HP wide. That's wider than 33 VCV VCO's.
