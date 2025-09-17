@@ -89,7 +89,11 @@ void Buffer::Get(FloatPair *pair, double position) {
     return;
   }
   assert(position >= 0.0);
-  assert(position < length);
+  // When the buffer gets updated while Ruminate is playing, the position
+  // can be way out of bounds. Don't crash then.
+  if (position >= length) {
+    position = 0.0;
+  }
   if (cv_rate) {
     // MemoryCV does not do interpolation between samples!
     // (E.g., don't want intermediate values between two V/Oct values.)
