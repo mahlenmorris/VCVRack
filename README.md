@@ -18,7 +18,7 @@ Stochastic Telegraph-style.
 
 # BASICally
 
-A simple, likely familiar procedural programming language within the
+A simple, possibly familiar procedural programming language within the
 context of VCV Rack. Can act like:
 * a very flexible sequencer
 * VCO or LFO
@@ -34,6 +34,9 @@ Useful for:
 * non-standard approaches to otherwise straightforward ideas
 
 ### Examples
+
+* [A video explaining](https://www.youtube.com/watch?v=YsEG85MK8Oc) how to use BASICally to modify incoming MIDI, in this case to map
+keys to parts of an extended chord.
 
 #### Sequencer playing the first three notes of Also sprach Zarathustra
 ![Sequencer image](images/BASICallyZara.png)

@@ -17,18 +17,20 @@ sound over time straightforward.
 * [Ruminate](#ruminate): Plays back audio buffer at a large variety of speeds, most easily over the whole Memory.
 * [Fixation](#fixation): Also plays back audio from the Memory, but with an emphasis on playing smaller sections and with repetition.
 
+The documentation for the *other* Stochastic Telegraph modules can [be found here](README.md).
+
 # Explanatory and Demonstration Videos
 
 Omri Cohen has made [a 34 minute tour-de-force video](https://www.youtube.com/watch?v=JyQDlhEvEPA) that explains these modules and many, many interesting techniques for combining them. I highly recommend it.
 
-My own 15 minute video demonstrating some use cases [is here](https://youtu.be/EKoMFsSqUo4). It demonstrates these simple patches:
+## My Videos
+
+My own 15 minute video demonstrating some uses cases [is here](https://youtu.be/EKoMFsSqUo4). (Note that this was recorded before Fixation and Brainwash existed.) It demonstrates these simple patches:
 * [Introduction](examples/Memory%20-%20ensemble%20basics.vcv)
 * [First Guitar Example](examples/Memory%20-%20guitar%20samples.vcv)
 * [Square Wave and Delay](examples/Memory%20-%20Delay%20Pass%20over%20Square%20Wave.vcv)
 * [Guitar Beat](examples/Memory%20-%20guitar%20sample%20beat.vcv)
 * [Live Recording](examples/Memory%20-%20record%20live.vcv)
-
-Note that this was recorded before Fixation and Brainwash existed.
 
 These later videos I've made demonstrate some other features of these modules:
 * [Fade on Move menu option](https://www.youtube.com/watch?v=dOsupn0-Mxw)
@@ -41,9 +43,11 @@ And these videos discuss Fixation in particular:
 * [Fixation as Highly Controllable Granular Synth](https://www.youtube.com/watch?v=jzkOs-odrig)
 * [Playing Melodies with Short Samples](https://www.youtube.com/watch?v=rDCgencIVIY)
 
-And here's a couple of [shorter](https://www.youtube.com/watch?v=WQ9XN9qqOYI&t=14s) [demonstrations](https://www.youtube.com/watch?v=AjKC7IPgZZM&t=767s) from [Omri Cohen](https://www.youtube.com/@OmriCohen-Music) using these modules.
+## Other People's Videos
 
-The documentation for the *other* Stochastic Telegraph modules can [be found here](README.md).
+Here's a couple of [shorter](https://www.youtube.com/watch?v=WQ9XN9qqOYI&t=14s) [demonstrations](https://www.youtube.com/watch?v=AjKC7IPgZZM&t=767s) from [Omri Cohen](https://www.youtube.com/@OmriCohen-Music) using these modules.
+
+Here's a demonstration of a technique for [glitching a drum loop](https://youtu.be/kz3D2xjEqnY?si=AGD7G_KlP6RZ8WRJ) using the CURRENT from a Ruminate as a phasor that guides other phasors, by [AndreyaMakesMusic](https://www.youtube.com/@andreyamakesmusic).
 
 # The Memory Ensemble
 A Memory/MemoryCV ensemble is a set of at least some of these modules next to each other (like extensions). The modules in a single ensemble can be in any order from left-to-right, with the exception that the required Memory or MemoryCV module is always the left-most module.
