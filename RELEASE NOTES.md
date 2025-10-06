@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.22
-#### ????
+#### October 5, 2025
 * New MemoryCV module! A drop-in replacement for Memory within a Memory Ensemble, but better for storing and playing control voltage.
 * Memory (and MemoryCV) can now load and save files with non-ASCII characters in the name or path.
 * * Note that the Rack fonts don't support non-ASCII characters, so still can't *display* these names correctly.
