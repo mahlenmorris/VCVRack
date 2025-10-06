@@ -15,6 +15,7 @@ void init(Plugin* p) {
   p->addModel(modelFixation);
   p->addModel(modelFuse);
   p->addModel(modelMemory);
+  p->addModel(modelMemoryCV);
   p->addModel(modelRuminate);
   p->addModel(modelTTY);
   p->addModel(modelVenn);

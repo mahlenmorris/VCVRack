@@ -88,7 +88,7 @@ struct Basically : Module {
   class ProductionEnvironment : public Environment {
     std::vector<Input>* inputs;
     std::vector<Output>* outputs;
-    const ProcessArgs* args;
+    float sample_rate, patch_time;
     Driver* driver;
     bool starting;
     std::vector<CodeBlock*>* main_blocks;
@@ -110,6 +110,7 @@ struct Basically : Module {
        inputs{the_inputs}, outputs{the_outputs}, driver{the_driver},
        out_index_to_clamp{clamp_info} {
          time_start = std::chrono::high_resolution_clock::now();
+         sample_rate = 0.0f;
        }
 
      // Must be called every time the program is recompiled.
@@ -152,8 +153,9 @@ struct Basically : Module {
 
     // ProcessArgs object isn't available when we first create the Environment.
     // So we need to update it when it is available.
-    void SetProcessArgs(const ProcessArgs* the_args) {
-      args = the_args;
+    void SetFromArgs(float sampleRate, float patchTime) {
+      sample_rate = sampleRate;
+      patch_time = patchTime;
     }
 
     // Should be called every sample.
@@ -223,7 +225,7 @@ struct Basically : Module {
     }
 
     float SampleRate() override {
-      return args->sampleRate;
+      return sample_rate;
     }
     float Connected(const PortPointer &port) override {
       if (port.port_type == PortPointer::INPUT) {
@@ -240,13 +242,9 @@ struct Basically : Module {
     }
     float Time(bool millis) override {
       if (millis) {
-        std::chrono::duration<double, std::milli> elapsed =
-          std::chrono::high_resolution_clock::now() - time_start;
-        return elapsed.count();
+        return patch_time * 1000.0;
       } else {
-        std::chrono::duration<double> elapsed =
-          std::chrono::high_resolution_clock::now() - time_start;
-        return elapsed.count();
+        return patch_time;
       }
     }
     void Clear() override {
@@ -364,21 +362,24 @@ struct Basically : Module {
             useful = true;
             // Wait until 'environment' has a non-zero SampleRate() value. At most five
             // seconds, in case there are unknown reasons why it would stay zero.
-            for (int waits = 0; waits < 50; ++waits) {
-              if (environment->SampleRate() > 1.0) break;
-              std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if (environment->SampleRate() < 1.0) {
+              for (int waits = 0; waits < 50; ++waits) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                if (environment->SampleRate() > 1.0) break;
+              }
             }
-            for (auto ast_block : driver->blocks) {
+
+            for (size_t block_index = 0; block_index < driver->blocks.size(); ++block_index) {
               CodeBlock* new_block = new CodeBlock(environment);
               // Holds new errors in case translation discovers any.
               std::vector<std::string> new_errors;
-              if (translator.BlockToCodeBlock(new_block, ast_block)) {
+              if (translator.BlockToCodeBlock(new_block, driver->blocks.at(block_index))) {
                 // Different lists depending on type.
                 if (new_block->type == Block::MAIN) {
                   main_blocks->push_back(new_block);
                 } else if (new_block->type == Block::WHEN &&
                     new_block->condition == Block::EXPRESSION) {
-                  expression_blocks->push_back(std::make_pair(ast_block.run_condition, new_block));
+                  expression_blocks->push_back(std::make_pair(driver->blocks.at(block_index).run_condition, new_block));
                   running_expression_blocks->push_back(false);
                 }
               } else {
@@ -628,8 +629,8 @@ struct Basically : Module {
       }
     }
     bool loops = (style != TRIGGER_NO_LOOP_STYLE);
-    // ProcessArgs not available when we first create the Environment.
-    environment->SetProcessArgs(&args);
+    // Set some volatile values from ProcessArgs. 
+    environment->SetFromArgs(args.sampleRate, args.frame * args.sampleTime);
     // Might be set true below, but for vast majority of samples this is false.
     environment->SetStarting(false);
 
