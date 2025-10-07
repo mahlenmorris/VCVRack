@@ -215,6 +215,9 @@ A standard dialog box to save files will appear. The entire current contents of 
 #### Save to CSV File...
 A standard dialog box to save files will appear. The entire current contents of the MemoryCV buffer will be saved as [a CSV file](#csv-files). Note that CSV files cannot be edited or played back by audio software. But CSV does make it easy to precisely edit CV signals.
 
+### Related Modules
+* T's [Spellbook](https://library.vcvrack.com/TMT/Spellbook) can also do textfile-to-signal conversion, uses a more versatile syntax than just numbers, and outputs 16 channels. 
+
 ### Known Limitations
 * Putting noise into the LOAD or SAVE Tipsy inputs can crash VCV Rack.
 
