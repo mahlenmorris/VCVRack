@@ -165,10 +165,11 @@ struct MemoryDepict : Widget {
       // True iff point_buffer was allocated just for this call.
       bool free_point_buffer = false;
 
+      std::shared_ptr<Buffer> buffer = nullptr;
       if (module) {
         max_distance = std::max(1, module->max_distance + 1);
         line_record_size = (int) module->line_records.size();
-        std::shared_ptr<Buffer> buffer = module->buffer;  // In case it gets reset by another action.
+        buffer = module->buffer;  // In case it gets reset by another action.
         if (buffer && buffer->IsValid()) {
           waveform = &(buffer->waveform);
           buffer_length = buffer->length;
@@ -195,53 +196,94 @@ struct MemoryDepict : Widget {
       double x_per_volt = (bounding_box.x - 1.0) / 20.0;
       double zero_volt_left = bounding_box.x / 2 - 0.5;
       double zero_volt_right = bounding_box.x / 2 + 0.5;
+      // if doing CV, zero is the middle of the left or right side.
+      double zero_volt_mid_left = bounding_box.x * 0.25;
+      double zero_volt_mid_right = bounding_box.x * 0.75;
       double y_per_point = bounding_box.y / WAVEFORM_SIZE;
 
-      // Draw the wave forms.
-      // In one shape we:
-      // * Draw the left side side from bottom to top.
-      // * Draw the right side line from top to bottom.
-      // * Join them. Draw that shape.
-      // Then draw a white line down the middle to suggest that these are
-      // two separate channels.
 
       // Make half-white.
       nvgFillColor(args.vg, nvgRGBA(140, 140, 140, 255));
 
       nvgSave(args.vg);
       nvgScissor(args.vg, RECT_ARGS(r));  // Not sure this is right?
-      nvgBeginPath(args.vg);
 
-      // Draw left points on the left of the mid.
-      for (int i = 0; i < WAVEFORM_SIZE; i++) {
-        float max = waveform->points[i][0] * waveform->normalize_factor;
-        // We'll say the x position ranges from -10V to 10V.
-        float x = zero_volt_left - (max * x_per_volt);
-        float y = (WAVEFORM_SIZE - i) * y_per_point;
-        if (i == 0) {
-          nvgMoveTo(args.vg, x, y);
-        } else {
+      if (buffer && buffer->cv_rate) {
+        // We draw vertical oscilliscope signals for CV, since positive and
+        // negative values matter more than amplitude.
+        // Left side:
+        // Make half-white.
+        nvgStrokeColor(args.vg, nvgRGBA(140, 140, 140, 255));
+        nvgStrokeWidth(args.vg, 1);
+
+        // Draw left points on the left of the midline.
+        nvgBeginPath(args.vg);
+        for (int i = 0; i < WAVEFORM_SIZE; i++) {
+          float max = waveform->points[i][0] * waveform->normalize_factor;
+          float x = zero_volt_mid_left - (max * x_per_volt / 2);
+          float y = (WAVEFORM_SIZE - i) * y_per_point;
+          if (i == 0) {
+            nvgMoveTo(args.vg, x, y);
+          } else {
+            nvgLineTo(args.vg, x, y);
+          }
+        }
+        nvgStroke(args.vg);
+        nvgClosePath(args.vg);
+
+        // Draw right points on the right of the midline.
+        nvgBeginPath(args.vg);
+        for (int i = 0; i < WAVEFORM_SIZE; i++) {
+          float max = waveform->points[i][1] * waveform->normalize_factor_right;
+          float x = zero_volt_mid_right - (max * x_per_volt / 2);
+          float y = (WAVEFORM_SIZE - i) * y_per_point;
+          if (i == 0) {
+            nvgMoveTo(args.vg, x, y);
+          } else {
+            nvgLineTo(args.vg, x, y);
+          }
+        }
+        nvgStroke(args.vg);
+        nvgClosePath(args.vg);
+      } else {
+        // Draw the wave forms.
+        // In one shape we:
+        // * Draw the left side side from bottom to top.
+        // * Draw the right side line from top to bottom.
+        // * Join them. Draw that shape.
+        // Then draw a white line down the middle to suggest that these are
+        // two separate channels.
+        nvgBeginPath(args.vg);
+        // Draw left points on the left of the mid.
+        for (int i = 0; i < WAVEFORM_SIZE; i++) {
+          float max = waveform->points[i][0] * waveform->normalize_factor;
+          float x = zero_volt_left - (max * x_per_volt);
+          float y = (WAVEFORM_SIZE - i) * y_per_point;
+          if (i == 0) {
+            nvgMoveTo(args.vg, x, y);
+          } else {
+            nvgLineTo(args.vg, x, y);
+          }
+        }
+
+        // Now do the right channel.
+        for (int i = WAVEFORM_SIZE - 1; i >= 0; i--) {
+          float max = waveform->points[i][1] * waveform->normalize_factor;
+          float x = zero_volt_right + (max * x_per_volt);
+          float y = (WAVEFORM_SIZE - 1 - i) * y_per_point;
           nvgLineTo(args.vg, x, y);
         }
+
+        nvgClosePath(args.vg);
+        nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
+        nvgFill(args.vg);
+
+        // Draw center line down the middle, separating L and R.
+        nvgBeginPath(args.vg);
+        nvgRect(args.vg, zero_volt_left, 0, 0.5f, bounding_box.y);
+        nvgFillColor(args.vg, SCHEME_WHITE);
+        nvgFill(args.vg);
       }
-
-      // Now do the right channel.
-      for (int i = WAVEFORM_SIZE - 1; i >= 0; i--) {
-        float max = waveform->points[i][1] * waveform->normalize_factor;
-        float x = zero_volt_right + (max * x_per_volt);
-        float y = (WAVEFORM_SIZE - 1 - i) * y_per_point;
-        nvgLineTo(args.vg, x, y);
-      }
-
-      nvgClosePath(args.vg);
-      nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
-      nvgFill(args.vg);
-
-      // Draw line.
-      nvgBeginPath(args.vg);
-      nvgRect(args.vg, zero_volt_left, 0, 0.5f, bounding_box.y);
-      nvgFillColor(args.vg, SCHEME_WHITE);
-      nvgFill(args.vg);
 
       // Add text to indicate the largest value we currently display.
       nvgBeginPath(args.vg);
@@ -254,6 +296,17 @@ struct MemoryDepict : Widget {
       // Place on the line just off the left edge.
       nvgText(args.vg, 4, 10, waveform->text_factor.c_str(), NULL);
 
+      if (buffer && buffer->cv_rate) {
+        // We allow left and right CV to be scaled differently, so we can
+        // show detail better.
+        // Add text to indicate the largest right-hand value we currently display.
+        nvgBeginPath(args.vg);
+        // Do I need this? nvgFontFaceId(args.vg, font->handle);
+        nvgTextLetterSpacing(args.vg, -1);
+
+        // Place on the line just off the left edge.
+        nvgText(args.vg, zero_volt_right + 4, 10, waveform->text_factor_right.c_str(), NULL);
+      }
       // Restore previous state.
       nvgResetScissor(args.vg);
       nvgRestore(args.vg);
