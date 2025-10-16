@@ -293,13 +293,12 @@ void STTextField::onButton(const ButtonEvent& e) {
 }
 
 void STTextField::onSelectText(const SelectTextEvent& e) {
-  if (e.codepoint < 128) {
-    std::string newText(1, (char) e.codepoint);
-    if (allow_text_entry) {
-      insertText(newText);
-    }
+  if (allow_text_entry) {
+  	std::u32string s32(1, char32_t(e.codepoint));
+	  std::string s8 = string::UTF32toUTF8(s32);
+	  insertText(s8);
   }
-  e.consume(this);
+	e.consume(this);
 }
 
 void STTextField::onSelectKey(const SelectKeyEvent& e) {
