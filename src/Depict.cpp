@@ -213,7 +213,7 @@ struct MemoryDepict : Widget {
         // negative values matter more than amplitude.
         // Left side:
         // Make half-white.
-        nvgStrokeColor(args.vg, nvgRGBA(140, 140, 140, 255));
+        nvgStrokeColor(args.vg, SCHEME_WHITE);
         nvgStrokeWidth(args.vg, 1);
 
         // Draw left points on the left of the midline.
@@ -245,6 +245,12 @@ struct MemoryDepict : Widget {
         }
         nvgStroke(args.vg);
         nvgClosePath(args.vg);
+        // Draw center line downs the middle of L and R.
+        nvgBeginPath(args.vg);
+        nvgRect(args.vg, zero_volt_mid_left, 0, 0.5f, bounding_box.y);
+        nvgRect(args.vg, zero_volt_mid_right, 0, 0.5f, bounding_box.y);
+        nvgFillColor(args.vg, nvgRGBA(140, 140, 140, 128));
+        nvgFill(args.vg);
       } else {
         // Draw the wave forms.
         // In one shape we:
