@@ -43,7 +43,9 @@ struct STTextField : OpaqueWidget {
   // TODO: get rid of this?
   std::string previous_text;
 
-  // Some uses (e.g., TTY) don't allow the user to type text into window.
+  // Some uses potentially won't allow the user to type text into window.
+  // For a while this was set for TTY, but then I accidently dropped it and
+  // it doesn't really seem to be a problem.
   bool allow_text_entry;
 
   // Many of the actions that require a redraw in the FramebufferWidget are only known
