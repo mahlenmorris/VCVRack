@@ -245,7 +245,7 @@ The Left and Right inputs that are saved and sent to the Memory.
 If Bypass is enabled, Brainwash will stop recording internally.
 
 # Depict
-A module for displaying both a representation of the audio data in Memory and showing the positions of the Embellish, Fixation, and Ruminate heads.
+A module for displaying both a representation of the audio data in Memory (or CV data in MemoryCV) and showing the positions of the Embellish, Fixation, and Ruminate heads.
 
 You can have multiple Depict modules in the same ensemble; they will show identical information.
 ### Example
@@ -259,6 +259,10 @@ within the Memory, with the left channel extending from the white centerline to 
 * **Ruminate** playback heads start from the left-hand edge and are drawn to the right, in the color of the light on its corresponding module. The left-to-right position of the line suggests the position within the ensemble where Ruminate is located. Note how the end point of the blue Ruminate line is in the middle, much as the blue Ruminate is in the middle of the ensemble.
 * **Fixation** playback heads are short lines not connected to either edge, in the color of the light on its corresponding module. The left-to-right position of the line suggests the position within the ensemble where Fixation is located. Note how the position of the yellow Fixation line is to the right, much as the yellow Fixation is the right-most module in the ensemble.
 * **Embellish** recording heads start from the right-hand edge and are drawn to the left, in the color of the light on its corresponding module. Again, the left-to-right position of the line suggests the position within the ensemble where Embellish is located. The end point of the red Embellish line is to the left of the other endpoints, as it is the left-most module.
+
+When attached to a MemoryCV, Depict shows CV curves instead of amplitudes, and the L and R channels can have different scaling, to better show the details.
+
+![Depict CV Example](images/DepictCVExample.png)
 
 # Embellish
 Embellish is used to record audio onto a Memory. Embellish represents a playback and record head that can be moved freely over the length of the audio buffer.
