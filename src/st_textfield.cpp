@@ -295,7 +295,7 @@ void STTextField::onButton(const ButtonEvent& e) {
 void STTextField::onSelectText(const SelectTextEvent& e) {
   if (allow_text_entry) {
   	std::u32string s32(1, char32_t(e.codepoint));
-	  std::string s8 = string::UTF32toUTF8(s32);
+	  std::string s8 = rack::string::UTF32toUTF8(s32);
 	  insertText(s8);
   }
 	e.consume(this);
