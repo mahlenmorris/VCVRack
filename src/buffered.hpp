@@ -126,12 +126,17 @@ struct BufferTaskQueue {
  * Data for creating the drawing of the waveform in Depict.
  */
 struct PointBuffer {
-  // We just measure the amplitudes, not the min and max of the waves.
+  // For a Memory, we just measure the amplitudes, not the min and max of the waves.
   // At the scale we show, a single channel is nearly certain to be symmetric.
   // I.e., we are closer to SoundCloud than Scope.
+  // For a MemoryCV, we want to be a Scope, since CV is typically far less noisey then an audio signal. 
   float points[WAVEFORM_SIZE][2];
+  // For a Memory, we normalize both L and R the same amount.
   double normalize_factor;
   std::string text_factor;
+  // For a MemoryCV, the scale of L and R can be very different, so we scale differently.
+  double normalize_factor_right;
+  std::string text_factor_right;
 };
 
 struct Buffer {

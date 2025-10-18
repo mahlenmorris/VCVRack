@@ -202,7 +202,7 @@ struct TTY : Module {
         int secs = static_cast<int>(seconds);
 
         char buffer[9]; // Enough space for HH:MM:SS
-        sprintf(buffer, "%02d:%02d:%02d", hours, minutes, secs);
+        snprintf(buffer, 9, "%02d:%02d:%02d", hours, minutes, secs);
         result.append(buffer);
       }
       break;

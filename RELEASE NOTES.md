@@ -1,5 +1,10 @@
 # Release Notes
 
+### 2.0.23
+#### ???
+* Fixed bug in text editor for Fermata, TTY, and BASICally that prevented non-7-bit-ASCII characters from being typed in.
+* When attached to a MemoryCV, Depict now shows Scope-style lines instead of amplitude. 
+
 ### 2.0.22
 #### October 5, 2025
 * New MemoryCV module! A drop-in replacement for Memory within a Memory Ensemble, but better for storing and playing control voltage.

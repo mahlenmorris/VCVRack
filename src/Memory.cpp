@@ -161,7 +161,7 @@ struct BufferChangeThread {
   // Updates the "waveforms" that Depict shows.
   void RefreshWaveform(std::shared_ptr<Buffer> buffer) {
     float sector_size = (double) buffer->true_length / WAVEFORM_SIZE;
-    float peak_value = 0.0f;
+    float peak_amplitude_left = 0.0f, peak_amplitude_right = 0.0f;
     bool full_scan = buffer->full_scan;
 
     if (full_scan) {
@@ -171,7 +171,7 @@ struct BufferChangeThread {
     // For now, do this the most brute-force way; scan from bottom to top.
     for (int p = 0; !shutdown && p < WAVEFORM_SIZE; p++) {
       if (full_scan || buffer->dirty[p]) {
-        if (sector_size >= 1.0) {
+        if (!buffer->cv_rate && sector_size >= 1.0) {
           float left_amplitude = 0.0, right_amplitude = 0.0;
           for (int i = (int) trunc(p * sector_size);
                 !shutdown && i < std::min((int) trunc((p + 1) * sector_size), buffer->true_length);
@@ -186,8 +186,13 @@ struct BufferChangeThread {
         } else {
           FloatPair pair;
           buffer->Get(&pair, ((double) p) * buffer->length / WAVEFORM_SIZE);
-          buffer->waveform.points[p][0] = std::fabs(pair.left);
-          buffer->waveform.points[p][1] = std::fabs(pair.right);
+          if (buffer->cv_rate) {
+            buffer->waveform.points[p][0] = pair.left;
+            buffer->waveform.points[p][1] = pair.right;
+          } else {
+            buffer->waveform.points[p][0] = std::fabs(pair.left);
+            buffer->waveform.points[p][1] = std::fabs(pair.right);
+          }
         }
         // Not stricly speaking correct (the sector may have been written
         // to during the scan). But correctness is not critical, and the new
@@ -195,19 +200,39 @@ struct BufferChangeThread {
         // which, since writes are sequential, is quite likely.
         buffer->dirty[p] = false;
       }
-      peak_value = std::max(peak_value, buffer->waveform.points[p][0]);
-      peak_value = std::max(peak_value, buffer->waveform.points[p][1]);
+      peak_amplitude_left = std::max(peak_amplitude_left, std::fabs(buffer->waveform.points[p][0]));
+      peak_amplitude_right = std::max(peak_amplitude_right, std::fabs(buffer->waveform.points[p][1]));
     }
+    if (buffer->cv_rate) {
+      AssignNormalizationFactor(peak_amplitude_left, true, buffer);
+      AssignNormalizationFactor(peak_amplitude_right, false, buffer);
+    } else {
+      AssignNormalizationFactor(std::max(peak_amplitude_left, peak_amplitude_right), true, buffer);
+    }
+  }
+
+  // Turn a peak discovered value into the text and numeric magnification
+  // factors for Depict to use.
+  void AssignNormalizationFactor(float peak_value, bool left, std::shared_ptr<Buffer> &buffer)
+  {
     float window_size;
     for (int i = 0; i < 12; i++) {
       float f = WIDTHS[i];
       if (peak_value <= f || i == 11) {
         window_size = f;
-        buffer->waveform.text_factor.assign(TEXTS[i]);
+        if (left) {
+          buffer->waveform.text_factor.assign(TEXTS[i]);
+        } else {
+          buffer->waveform.text_factor_right.assign(TEXTS[i]);
+        }
         break;
       }
     }
-    buffer->waveform.normalize_factor = 10.0f / window_size;
+    if (left) {
+      buffer->waveform.normalize_factor = 10.0f / window_size;
+    } else {
+      buffer->waveform.normalize_factor_right = 10.0f / window_size;
+    }
   }
 
   void ReplaceAudio(std::shared_ptr<Buffer> buffer, BufferTask* task) {
