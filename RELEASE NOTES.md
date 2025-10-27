@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.23
-#### ???
+#### October 27, 2025
 * Fixed bug in text editor for Fermata, TTY, and BASICally that prevented non-7-bit-ASCII characters from being typed in.
 * When attached to a MemoryCV, Depict now shows Scope-style lines instead of amplitude. 
 
