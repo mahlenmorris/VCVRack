@@ -45,7 +45,7 @@ And these videos discuss Fixation in particular:
 
 ## Other People's Videos
 
-Here's a couple of [shorter](https://www.youtube.com/watch?v=WQ9XN9qqOYI&t=14s) [demonstrations](https://www.youtube.com/watch?v=AjKC7IPgZZM&t=767s) from [Omri Cohen](https://www.youtube.com/@OmriCohen-Music) using these modules.
+In addition to [Omri Cohen](https://www.youtube.com/@OmriCohen-Music)'s [video about Memory](https://www.youtube.com/watch?v=JyQDlhEvEPA), here's a couple of his [shorter](https://www.youtube.com/watch?v=WQ9XN9qqOYI&t=14s) [demonstrations](https://www.youtube.com/watch?v=AjKC7IPgZZM&t=767s). And here's a short demo of his regarding the [MemoryCV module in particular](https://www.youtube.com/watch?v=r3QMHA-M_ZM&t=40s).
 
 Here's a demonstration of a technique for [glitching a drum loop](https://youtu.be/kz3D2xjEqnY?si=AGD7G_KlP6RZ8WRJ) using the CURRENT from a Ruminate as a phasor that guides other phasors, by [AndreyaMakesMusic](https://www.youtube.com/@andreyamakesmusic).
 
@@ -165,6 +165,9 @@ The basis of a MemoryCV ensemble dealing with CV signals is exactly one MemoryCV
 A MemoryCV by itself cannot play or record control voltage signals. It is solely where the two CV data signals are stored and can be retrieved.
 
 Most modules treat the MemoryCV data as a circular loop; typically, moving past the arrives at the beginning of the signals.
+
+### Video Demos
+*  [Omri Cohen](https://www.youtube.com/@OmriCohen-Music)'s short demo regarding the [MemoryCV module](https://www.youtube.com/watch?v=r3QMHA-M_ZM&t=40s).
 
 ### Position and signal voltage
 There are knobs, inputs, and outputs that all correspond to positions within the MemoryCV. Since there is no standard way to send a "time" within VCV, and especially since
