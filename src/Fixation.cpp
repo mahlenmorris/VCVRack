@@ -139,6 +139,7 @@ struct Fixation : PositionedModule {
   double play_fade = 1.0;
   PlayState play_state;
   bool speed_is_voct = false;  // Saved in the patch.
+  bool reverse_direction = false;  // Saved in the patch.
 
   // Timer to track the position within the envelope.
   int length_countdown = -1;
@@ -200,6 +201,7 @@ struct Fixation : PositionedModule {
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "speed_is_voct", json_integer(speed_is_voct ? 1 : 0));
+    json_object_set_new(rootJ, "reverse_direction", json_integer(reverse_direction ? 1 : 0));
     return rootJ;
   }
 
@@ -207,6 +209,10 @@ struct Fixation : PositionedModule {
     json_t* speedJ = json_object_get(rootJ, "speed_is_voct");
     if (speedJ) {
       speed_is_voct = json_integer_value(speedJ) == 1;
+    }
+    json_t* reverseJ = json_object_get(rootJ, "reverse_direction");
+    if (reverseJ) {
+      reverse_direction = json_integer_value(reverseJ) == 1;
     }
   }
 
@@ -489,12 +495,12 @@ struct Fixation : PositionedModule {
       }
 
       // We're probably still moving.
-      // 'movement' is combination of speed input and speed param.
+      // 'movement' is combination of speed input and speed param and reverse_direction menu option.
       // NB: in v/oct case, we subtract the default 1.0 value for SPEED_PARAM.
       double speed = speed_is_voct ?
           std::pow(2.0, inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue() - 1.0) :
           inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
-      double movement = (play_state == NO_PLAY || play_state == WAITING) ? 0.0 : speed;
+      double movement = (play_state == NO_PLAY || play_state == WAITING) ? 0.0 : speed * (reverse_direction ? -1.0 : 1.0);
       
       playback_position += movement;
       // Fix the position, now that the movement has occured.
@@ -647,6 +653,9 @@ struct FixationWidget : ModuleWidget {
     menu->addChild(new MenuSeparator);
     menu->addChild(createBoolPtrMenuItem("Use Speed as V/Oct", "",
                                           &module->speed_is_voct));
+    menu->addChild(createBoolPtrMenuItem("Default direction is reverse", "",
+                                         &module->reverse_direction));
+
 
     // Be a little clearer how to make this module do anything.
     menu->addChild(new MenuSeparator);
