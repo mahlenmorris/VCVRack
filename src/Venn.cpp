@@ -250,6 +250,8 @@ struct Venn : Module {
   // Menu item to only compute MATH1 items when WITHIN a circle.
   // Obviates the need to surround everything with "within ? value : 0".
   bool only_compute_math1_within;
+  // If set, expect Point's position inputs to be 0-10 instead of -5 to 5.
+  bool offset_point_x = false, offset_point_y = false;
 
   // For evaluating expressions.
   std::shared_ptr<VennVariables> variables;
@@ -272,8 +274,8 @@ struct Venn : Module {
 
     configOutput(DISTANCE_OUTPUT, "0V at edge, 10V at center, polyphonic");
     configOutput(WITHIN_GATE_OUTPUT, "0V outside circle, 10V within, polyphonic");
-		configOutput(X_POSITION_OUTPUT, "The current X coordinate of the point (-5V -> 5V). Useful for recording point gestures and performances.");
-		configOutput(Y_POSITION_OUTPUT, "The current Y coordinate of the point (-5V -> 5V). Useful for recording point gestures and performances.");
+		configOutput(X_POSITION_OUTPUT, "The current X coordinate of the point (-5V-5V or 0-10). Useful for recording point gestures and performances.");
+		configOutput(Y_POSITION_OUTPUT, "The current Y coordinate of the point (-5V-5V or 0-10). Useful for recording point gestures and performances.");
 		configOutput(X_DISTANCE_OUTPUT, "Within a circle, varies linearly from left to right, polyphonic");
 		configOutput(Y_DISTANCE_OUTPUT, "Within a circle, varies linearly from bottom to top, polyphonic");
 		configOutput(MATH1_OUTPUT, "Outputs values based on per-circle formulas, polyphonic");
@@ -368,6 +370,10 @@ struct Venn : Module {
     json_object_set_new(rootJ, "show_keyboard", json_integer(show_keyboard ? 1 : 0));
     json_object_set_new(rootJ, "only_compute_math1_within",
         json_integer(only_compute_math1_within ? 1 :0));
+    json_object_set_new(rootJ, "offset_point_x",
+        json_integer(offset_point_x ? 1 :0));
+    json_object_set_new(rootJ, "offset_point_y",
+        json_integer(offset_point_y ? 1 :0));
     return rootJ;
   }
 
@@ -431,6 +437,14 @@ struct Venn : Module {
     json_t* only_compute_math1_withinJ = json_object_get(rootJ,  "only_compute_math1_within");
     if (only_compute_math1_withinJ) {
       only_compute_math1_within = json_integer_value(only_compute_math1_withinJ) > 0;
+    }
+    json_t* offset_point_xJ = json_object_get(rootJ,  "offset_point_x");
+    if (offset_point_xJ) {
+      offset_point_x = json_integer_value(offset_point_xJ) > 0;
+    }
+    json_t* offset_point_yJ = json_object_get(rootJ,  "offset_point_y");
+    if (offset_point_yJ) {
+      offset_point_y = json_integer_value(offset_point_yJ) > 0;
     }
   }
 
@@ -678,12 +692,12 @@ struct Venn : Module {
       point.x = inputs[X_POSITION_INPUT].getVoltage();
     } else {
       // We do these separately, so human can control one axis but not the other, if desired.
-      point.x = human_point.x;
+      point.x = human_point.x + (offset_point_x ? 5.0f : 0.0f);
     }
     if (inputs[Y_POSITION_INPUT].isConnected()) {
       point.y = inputs[Y_POSITION_INPUT].getVoltage();
     } else {
-      point.y = human_point.y;
+      point.y = human_point.y + (offset_point_y ? 5.0f : 0.0f);
     }
 
     if (params[X_POSITION_ATTN_PARAM].getValue() != 0.0f) {
@@ -696,12 +710,18 @@ struct Venn : Module {
     }
 
     // Keep within walls.
+    if (offset_point_x) {
+      point.x = point.x - 5.0f;
+    }
+    if (offset_point_y) {
+      point.y = point.y - 5.0f;
+    }
     point.x = fmax(-5, fmin(5, point.x));
     point.y = fmax(-5, fmin(5, point.y));
 
     // We have now determined the postion of "point".
-    outputs[X_POSITION_OUTPUT].setVoltage(point.x);
-    outputs[Y_POSITION_OUTPUT].setVoltage(point.y);
+    outputs[X_POSITION_OUTPUT].setVoltage(point.x + (offset_point_x ? 5.0f : 0.0f));
+    outputs[Y_POSITION_OUTPUT].setVoltage(point.y + (offset_point_y ? 5.0f : 0.0f));
 
     // Determine what values to output.
     // TODO: many optimizations, including doing nothing when neither point nor circles has changed.
@@ -733,8 +753,8 @@ struct Venn : Module {
     bool invert_y = params[INV_Y_PARAM].getValue();
     if (outputs[MATH1_OUTPUT].isConnected()) {
       // These can only matter if we are computing MATH1 outputs.
-      *variables->GetVarFromEnum(VennVariables::VAR_POINTX) = point.x;
-      *variables->GetVarFromEnum(VennVariables::VAR_POINTY) = point.y;
+      *variables->GetVarFromEnum(VennVariables::VAR_POINTX) = point.x + (offset_point_x ? 5.0f : 0.0f);
+      *variables->GetVarFromEnum(VennVariables::VAR_POINTY) = point.y + (offset_point_y ? 5.0f : 0.0f);
       *variables->GetVarFromEnum(VennVariables::VAR_LEFTX) =  -5 * (invert_x ? -1 : 1) + (offset_x ? 5.0 : 0.0);
       *variables->GetVarFromEnum(VennVariables::VAR_RIGHTX) = 5 * (invert_x ? -1 : 1) + (offset_x ? 5.0 : 0.0);
       *variables->GetVarFromEnum(VennVariables::VAR_TOPY) = 5 * (invert_y ? -1 : 1) + (offset_y ? 5.0 : 0.0);
@@ -1921,6 +1941,10 @@ struct VennWidget : ModuleWidget {
                                          &(module->show_keyboard)));
     menu->addChild(createBoolPtrMenuItem("Only Compute MATH1 for a circle when inside it", "",
                                          &(module->only_compute_math1_within)));
+    menu->addChild(createBoolPtrMenuItem("Point position X ranges from 0-10 instead of -5 - 5", "",
+                                         &(module->offset_point_x)));
+    menu->addChild(createBoolPtrMenuItem("Point position Y ranges from 0-10 instead of -5 - 5", "",
+                                         &(module->offset_point_y)));
     menu->addChild(new MenuSeparator);
         // Now add math functions.
     // description, inserted text.
