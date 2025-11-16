@@ -64,35 +64,38 @@ struct Fixation : PositionedModule {
     // start_play == transition from "play off" -> "play on"
     // stop_play == transition from "play on" -> "play off"
     // CLOCK == CLOCK input sees a trigger.
+    // CLOCK_LOW == CLOCK input goes low.
     // length_event == we have played for as long as we were told to.
     // fade_ended == the fade (up or down) has completed.
     // count_reached == the count of repeats has hit the limit.
     // style_changed == just starting, or style has changed.
 
-    // NO_PLAY -> WAITING on [start_play] && STYLE (0, 2) && ![CLOCK]
-    // NO_PLAY -> FADE_UP on [start_play] && STYLE (0, 2) && [CLOCK]
+    // NO_PLAY -> WAITING on [start_play] && STYLE (0, 2, 3) && ![CLOCK]
+    // NO_PLAY -> FADE_UP on [start_play] && STYLE (0, 2, 3) && [CLOCK]
     // NO_PLAY -> FADE_UP on [start_play] && STYLE (1)
-    // 
-    // WAITING -> FADE_UP on [CLOCK] && STYLE (0, 2)
+    //
+    // WAITING -> FADE_UP on [CLOCK] && STYLE (0, 2, 3)
     // WAITING -> FADE_UP on [style_changed && STYLE (1)]  -- if user changed STYLE from 0 -> 1
     // WAITING -> NO_PLAY on [stop_play]
     // 
     // FADE_UP -> PLAYING on fade_ended
     // FADE_UP -> FADE_DOWN on [stop_play]
-    // FADE_UP -> FADE_DOWN_TO_RESTART on [CLOCK] && STYLE (0, 2)
+    // FADE_UP -> FADE_DOWN_TO_RESTART on [CLOCK] && STYLE (0, 2, 3)
+    // FADE_UP -> FADE_DOWN on [CLOCK_LOW] && STYLE (3)
     // 
     // PLAYING -> FADE_DOWN on [stop_play]
+    // PLAYING -> FADE_DOWN on [CLOCK_LOW] && STYLE (3)
     // PLAYING -> FADE_DOWN_TO_RESTART on [CLOCK] && STYLE (0, 2) 
     // PLAYING -> FADE_DOWN_TO_RESTART on [length_event] && STYLE (1)
     // PLAYING -> FADE_DOWN_TO_RESTART on [length_event] && STYLE (2) && not count_reached
     // PLAYING -> FADE_DOWN_TO_WAIT on [length_event] && STYLE (2) && count_reached
-    // PLAYING -> FADE_DOWN_TO_WAIT on [style_changed && STYLE (0, 2)]
+    // PLAYING -> FADE_DOWN_TO_WAIT on [style_changed && STYLE (0, 2, 3)]
     // PLAYING -> FADE_DOWN_TO_RESTART on [style_changed && STYLE (1)]
     //
     // FADE_DOWN -> NO_PLAY on [fade_ended] and play is off
-    // FADE_DOWN -> FADE_DOWN_TO_RESTART on [CLOCK event] && STYLE (0, 2)
-    // FADE_DOWN -> WAITING on [start_play] && STYLE (0, 2)
-    // FADE_DOWN -> WAITING on [fade_ended] && STYLE (0, 2)
+    // FADE_DOWN -> FADE_DOWN_TO_RESTART on [CLOCK event] && STYLE (0, 2, 3)
+    // FADE_DOWN -> WAITING on [start_play] && STYLE (0, 2, 3)
+    // FADE_DOWN -> WAITING on [fade_ended] && STYLE (0, 2, 3)
     // FADE_DOWN -> FADE_UP on [start_play] && STYLE (1)
     //
     // FADE_DOWN_TO_RESTART -> FADE_DOWN on [stop_play]
@@ -103,9 +106,8 @@ struct Fixation : PositionedModule {
     //
   };
 
-  // DO NOT SUBMIT!
-  // PlayState prev_play_state = NO_PLAY;
-
+  // Only used when debugging.
+  PlayState prev_play_state = NO_PLAY;
 
   const double FADE_INCREMENT = 0.02;
 
@@ -166,13 +168,11 @@ struct Fixation : PositionedModule {
     configParam(COUNT_KNOB_PARAM, 1, 128, 1,
       "Number of repetitions per CLOCK (in STYLE 'CLOCK starts COUNT repeats...')");
     getParamQuantity(COUNT_KNOB_PARAM)->snapEnabled = true;
-    // TODO: Perhaps a fourth style like style 2, but treats CLOCK like a GATE, and keeps playing
-    // until the gate closes?
-    // Maybe this is a behavior on all of them? Or is that really the same as a gate to the PLAY input?
-    configSwitch(STYLE_KNOB_PARAM, 0, 2, 0, "Play Style",
-                 {"CLOCK only: LENGTH and COUNT ignored",
+    configSwitch(STYLE_KNOB_PARAM, 0, 3, 0, "Play Style",
+                 {"CLOCK Restarts: Starts when CLOCK goes high, LENGTH and COUNT ignored",
                   "Always plays LENGTH: CLOCK and COUNT ignored",
-                  "CLOCK starts COUNT repeats of size LENGTH"});
+                  "CLOCK starts repeats: COUNT repeats of size LENGTH",
+                  "CLOCK as Gate: Plays only while CLOCK is high (LENGTH and COUNT ignored)"});
     // This has distinct values.
     getParamQuantity(STYLE_KNOB_PARAM)->snapEnabled = true;
 
@@ -271,13 +271,14 @@ struct Fixation : PositionedModule {
 
       // This affects all behavior, so let's get it up front.
       int style = params[STYLE_KNOB_PARAM].getValue();
-      bool style_clock = (style == 0 || style == 2);
+      bool style_clock = (style == 0 || style == 2 || style == 3);
 
       // Assemble all of the events that can change our state.
       // * CLOCK.
       bool clock_was_high = clock_trigger.isHigh();
       clock_trigger.process(rescale(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
       bool clock_event = !clock_was_high && clock_trigger.isHigh();
+      bool clock_low_event = clock_was_high && !clock_trigger.isHigh();
 
       // * length_event.
       bool length_event = false;
@@ -389,6 +390,8 @@ struct Fixation : PositionedModule {
         case FADE_UP: {
           if (stop_play) {
             play_state = buffer->cv_rate ? NO_PLAY :FADE_DOWN;
+          } else if (clock_low_event && style == 3) {
+            play_state = buffer->cv_rate ? NO_PLAY : FADE_DOWN;
           } else if (fade_ended) {
             play_state = PLAYING;
           } else if (clock_event && style_clock) {
@@ -410,7 +413,9 @@ struct Fixation : PositionedModule {
               // Go back to position and run for length.
               play_state = buffer->cv_rate ? WAITING : FADE_DOWN_TO_RESTART;
             }
-          } else if (clock_event && style_clock) {
+          } else if (clock_low_event && style == 3) {
+            play_state = buffer->cv_rate ? NO_PLAY : FADE_DOWN;
+          } else if (clock_event && (style == 0 || style == 2)) {
             if (buffer->cv_rate) {
               // Just like if FADE_DOWN_TO_RESTART had a fade_ended event.
               trig_generator.trigger(1e-3f);
@@ -576,7 +581,7 @@ struct Fixation : PositionedModule {
     lights[CONNECTED_LIGHT].setBrightness(connected ? 1.0f : 0.0f);
 
   // DO NOT SUBMIT!
-  /*
+  
   if (play_state != prev_play_state) {
     constexpr const char* state_names[] = {
       "NO_PLAY",    // * Not playing at all.
@@ -594,8 +599,8 @@ struct Fixation : PositionedModule {
     WARN("length_countdown: %d", length_countdown);
     WARN("length_in_samples: %d", length_in_samples);
     WARN("playback_position: %f", playback_position);
+    WARN("Clock: %s", clock_trigger.isHigh() ? "high" : "low");
   }
-  */
   }
 };
 
@@ -623,8 +628,8 @@ struct FixationWidget : ModuleWidget {
     addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(8.575, 56.279)), module, Fixation::COUNT_KNOB_PARAM));
     RoundBlackSnapKnob* style_knob = createParamCentered<RoundBlackSnapKnob>(mm2px(Vec(21.59, 56.279)),
         module, Fixation::STYLE_KNOB_PARAM);
-    style_knob->minAngle = -0.28f * M_PI;
-    style_knob->maxAngle = 0.28f * M_PI;
+    style_knob->minAngle = -0.33f * M_PI;
+    style_knob->maxAngle = 0.33f * M_PI;
     addParam(style_knob);
 
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 70.509)), module, Fixation::TRIG_OUT_OUTPUT));
