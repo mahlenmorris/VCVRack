@@ -806,7 +806,7 @@ struct TTYWidget : ModuleWidget {
       {"RobotoSlab Bold", "fonts/RobotoSlab-Bold.ttf"},
       {"RobotoSlab Light", "fonts/RobotoSlab-Light.ttf"},
       {"RobotoSlab Regular", "fonts/RobotoSlab-Regular.ttf"}
-  };
+    };
 
     MenuItem* font_menu = createSubmenuItem("Font", "",
       [=](Menu* menu) {

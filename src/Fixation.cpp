@@ -37,6 +37,12 @@ struct Fixation : PositionedModule {
     LIGHTS_LEN
   };
 
+  enum EndsBehavior {
+    LOOPING,
+    BOUNCING,
+    STOPPING
+  };
+
   static constexpr float MIN_TIME = 1e-3f;
   static constexpr float MAX_TIME = 10.f;
   static constexpr float LAMBDA_BASE = MAX_TIME / MIN_TIME;
@@ -107,7 +113,7 @@ struct Fixation : PositionedModule {
   };
 
   // Only used when debugging.
-  PlayState prev_play_state = NO_PLAY;
+  // PlayState prev_play_state = NO_PLAY;
 
   const double FADE_INCREMENT = 0.02;
 
@@ -142,6 +148,9 @@ struct Fixation : PositionedModule {
   PlayState play_state;
   bool speed_is_voct = false;  // Saved in the patch.
   bool reverse_direction = false;  // Saved in the patch.
+  EndsBehavior ends_behavior = LOOPING;  // Saved in the patch.
+  bool currently_bouncing = false;
+  bool currently_stopped = false;
 
   // Timer to track the position within the envelope.
   int length_countdown = -1;
@@ -202,6 +211,7 @@ struct Fixation : PositionedModule {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "speed_is_voct", json_integer(speed_is_voct ? 1 : 0));
     json_object_set_new(rootJ, "reverse_direction", json_integer(reverse_direction ? 1 : 0));
+    json_object_set_new(rootJ, "ends_behavior", json_integer(ends_behavior));
     return rootJ;
   }
 
@@ -213,6 +223,10 @@ struct Fixation : PositionedModule {
     json_t* reverseJ = json_object_get(rootJ, "reverse_direction");
     if (reverseJ) {
       reverse_direction = json_integer_value(reverseJ) == 1;
+    }
+    json_t* endsJ = json_object_get(rootJ, "ends_behavior");
+    if (endsJ) {
+      ends_behavior = (EndsBehavior) json_integer_value(endsJ);
     }
   }
 
@@ -250,6 +264,12 @@ struct Fixation : PositionedModule {
     return std::max((int) floor(length), 1);
   }
 
+  void PrepareToRestart(double* position, int* length, const ProcessArgs& args) {
+    *position = GetPosition();
+    *length = GetLength(args);
+    currently_bouncing = currently_stopped = false;
+  }
+ 
   void process(const ProcessArgs& args) override {
     // Only call this only every N samples, since the vast majority of
     // the time this won't change.
@@ -328,8 +348,7 @@ struct Fixation : PositionedModule {
       if (style == 1) {  // Always plays LENGTH: CLOCK and COUNT ignored.
           // length_countdown < 0 -> we just switched to this STYLE.
         if (length_event || length_countdown < 0) {
-          position_for_restart = GetPosition();
-          length_in_samples = GetLength(args);
+          PrepareToRestart(&position_for_restart, &length_in_samples, args);
           length_countdown = length_in_samples;
         }
       }
@@ -341,10 +360,10 @@ struct Fixation : PositionedModule {
           playback_position = GetPosition();
           if (start_play) {
             if (style == 1) {
-              playback_position = GetPosition();
               trig_generator.trigger(1e-3f);
               play_state = buffer->cv_rate ? PLAYING: FADE_UP;
               length_countdown = GetLength(args);
+              currently_bouncing = currently_stopped = false;
             } else {
               if (clock_event) { // in case PLAY_GATE and CLOCK are same sample.
                 // This is a clone of the code from WAITING state.
@@ -352,8 +371,7 @@ struct Fixation : PositionedModule {
                 // Since we don't need to fade down, we can TRIG now.
                 trig_generator.trigger(1e-3f);
                 play_state = buffer->cv_rate ? PLAYING: FADE_UP;
-                playback_position = GetPosition();
-                length_in_samples = GetLength(args);
+                PrepareToRestart(&playback_position, &length_in_samples, args);
                 length_countdown = length_in_samples;
                 repeat_count = 0;
               } else {
@@ -373,14 +391,12 @@ struct Fixation : PositionedModule {
           } else if (style == 1) {  // user changed STYLE from 0 -> 1, I'm fairly sure.
             trig_generator.trigger(1e-3f);
             play_state = buffer->cv_rate ? PLAYING: FADE_UP;
-            playback_position = GetPosition();
-            length_countdown  = GetLength(args);
+            PrepareToRestart(&playback_position, &length_countdown, args);
           } else if (clock_event && style_clock) {
             // Since we don't need to fade down, we can TRIG now.
             trig_generator.trigger(1e-3f);
             play_state = buffer->cv_rate ? PLAYING: FADE_UP;
-            playback_position = GetPosition();
-            length_in_samples  = GetLength(args);
+            PrepareToRestart(&playback_position, &length_in_samples, args);
             length_countdown = length_in_samples;
             repeat_count = 0;
           }
@@ -389,15 +405,14 @@ struct Fixation : PositionedModule {
 
         case FADE_UP: {
           if (stop_play) {
-            play_state = buffer->cv_rate ? NO_PLAY :FADE_DOWN;
-          } else if (clock_low_event && style == 3) {
             play_state = buffer->cv_rate ? NO_PLAY : FADE_DOWN;
+          } else if (clock_low_event && style == 3) {
+            play_state = buffer->cv_rate ? WAITING : FADE_DOWN;
           } else if (fade_ended) {
             play_state = PLAYING;
           } else if (clock_event && style_clock) {
             play_state = buffer->cv_rate ? PLAYING : FADE_DOWN_TO_RESTART;
-            position_for_restart = GetPosition();
-            length_in_samples  = GetLength(args);
+            PrepareToRestart(&position_for_restart, &length_in_samples, args);
           }
         }
         break;
@@ -414,7 +429,7 @@ struct Fixation : PositionedModule {
               play_state = buffer->cv_rate ? WAITING : FADE_DOWN_TO_RESTART;
             }
           } else if (clock_low_event && style == 3) {
-            play_state = buffer->cv_rate ? NO_PLAY : FADE_DOWN;
+            play_state = buffer->cv_rate ? WAITING : FADE_DOWN;
           } else if (clock_event && (style == 0 || style == 2)) {
             if (buffer->cv_rate) {
               // Just like if FADE_DOWN_TO_RESTART had a fade_ended event.
@@ -428,6 +443,7 @@ struct Fixation : PositionedModule {
               position_for_restart = GetPosition();
               length_in_samples = GetLength(args);
             }
+            currently_bouncing = currently_stopped = false;
           } else if (length_event && style == 1) {
             if (buffer->cv_rate) {
               // Just like if FADE_DOWN_TO_RESTART had a fade_ended event.
@@ -438,6 +454,7 @@ struct Fixation : PositionedModule {
               play_state = FADE_DOWN_TO_RESTART;
               length_in_samples = GetLength(args);
             }
+            currently_bouncing = currently_stopped = false;
           } else if (length_event && style == 2) {
             ++repeat_count;
             if (repeat_count >= params[COUNT_KNOB_PARAM].getValue()) {
@@ -447,8 +464,7 @@ struct Fixation : PositionedModule {
               if (buffer->cv_rate) {
                 // Just like if FADE_DOWN_TO_RESTART had a fade_ended event.
                 trig_generator.trigger(1e-3f);
-                playback_position = GetPosition();
-                length_countdown = GetLength(args);
+                PrepareToRestart(&playback_position, &length_countdown, args);
               } else {
                 play_state = FADE_DOWN_TO_RESTART;
                 length_countdown = GetLength(args);
@@ -463,8 +479,7 @@ struct Fixation : PositionedModule {
             play_state = NO_PLAY;
           } else if (clock_event && style_clock) {
             play_state = FADE_DOWN_TO_RESTART;
-            position_for_restart = GetPosition();
-            length_in_samples = GetLength(args);
+            PrepareToRestart(&position_for_restart, &length_in_samples, args);
           } else if (start_play && style_clock) {
             play_state = WAITING;
           } else if (fade_ended && style_clock) {
@@ -485,6 +500,7 @@ struct Fixation : PositionedModule {
             if (style == 1 || style == 2) {
               length_countdown = GetLength(args);
             }
+            currently_bouncing = currently_stopped = false;
           }
         }
         break;
@@ -505,14 +521,41 @@ struct Fixation : PositionedModule {
       double speed = speed_is_voct ?
           std::pow(2.0, inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue() - 1.0) :
           inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
-      double movement = (play_state == NO_PLAY || play_state == WAITING) ? 0.0 : speed * (reverse_direction ? -1.0 : 1.0);
+      double movement = (play_state == NO_PLAY || play_state == WAITING || currently_stopped) ? 0.0 : speed * (reverse_direction ? -1.0 : 1.0);
+      if (currently_bouncing) {
+        movement = -movement;
+      }
       
       playback_position += movement;
       // Fix the position, now that the movement has occured.
       if (playback_position < 0.0) {
-        playback_position += length;
+        switch (ends_behavior) {
+          case LOOPING:
+            playback_position += length;
+            break;
+          case BOUNCING: 
+            playback_position = -playback_position;
+            currently_bouncing = !currently_bouncing;
+            break;
+          case STOPPING:
+            playback_position = 0.0;
+            currently_stopped = true;
+            break;
+        }
       } else if (playback_position >= length) {
-        playback_position -= length;
+        switch (ends_behavior) {
+          case LOOPING:
+            playback_position -= length;
+            break;
+          case BOUNCING:
+            playback_position = 2 * length - playback_position;
+            currently_bouncing = !currently_bouncing;
+            break;
+          case STOPPING:
+            playback_position = length - 1;
+            currently_stopped = true;
+            break;
+        }
       }
 
       display_position = playback_position;
@@ -581,7 +624,7 @@ struct Fixation : PositionedModule {
     lights[CONNECTED_LIGHT].setBrightness(connected ? 1.0f : 0.0f);
 
   // DO NOT SUBMIT!
-  
+/*
   if (play_state != prev_play_state) {
     constexpr const char* state_names[] = {
       "NO_PLAY",    // * Not playing at all.
@@ -601,6 +644,7 @@ struct Fixation : PositionedModule {
     WARN("playback_position: %f", playback_position);
     WARN("Clock: %s", clock_trigger.isHigh() ? "high" : "low");
   }
+  */
   }
 };
 
@@ -660,6 +704,24 @@ struct FixationWidget : ModuleWidget {
                                           &module->speed_is_voct));
     menu->addChild(createBoolPtrMenuItem("Default direction is reverse", "",
                                          &module->reverse_direction));
+
+    std::pair<std::string, Fixation::EndsBehavior> ends_behavior[] = {
+      {"Loop Around", Fixation::LOOPING},
+      {"Bounce", Fixation::BOUNCING},
+      {"Stop", Fixation::STOPPING}
+    };
+
+    MenuItem* font_menu = createSubmenuItem("Behavior at ends", "",
+      [=](Menu* menu) {
+          for (auto line : ends_behavior) {
+            menu->addChild(createCheckMenuItem(line.first, "",
+                [=]() {return line.second == module->ends_behavior;},
+                [=]() {module->ends_behavior = line.second;}
+            ));
+          }
+      }
+    );
+    menu->addChild(font_menu);
 
 
     // Be a little clearer how to make this module do anything.
