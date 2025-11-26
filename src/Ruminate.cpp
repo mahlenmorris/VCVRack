@@ -5,7 +5,8 @@
 
 struct Ruminate : PositionedModule {
   enum ParamId {
-    BOUNCE_PARAM,
+    BOUNCE_PARAM,  // No longer used, replaced by Ends Behavior menu item.
+                   // But have to keep around for old patches.
     SPEED_PARAM,
     ADJUST_PARAM,
     PLAY_BUTTON_PARAM,
@@ -25,10 +26,16 @@ struct Ruminate : PositionedModule {
     OUTPUTS_LEN
   };
   enum LightId {
-    BOUNCE_LIGHT,
     CONNECTED_LIGHT,
     PLAY_BUTTON_LIGHT,
     LIGHTS_LEN
+  };
+
+  // For Menu option.
+  enum EndsBehavior {
+    LOOPING,
+    BOUNCING,
+    STOPPING
   };
 
   enum PlayState {
@@ -91,11 +98,12 @@ struct Ruminate : PositionedModule {
   bool fade_on_move = true;  // Saved in the patch.
   bool speed_is_voct = false;  // Saved in the patch.
   bool reverse_direction = false;  // Saved in the patch.
-
+  EndsBehavior ends_behavior = LOOPING;  // Saved in the patch.
+  bool currently_bouncing = false;
+  bool currently_stopped = false;
+  
   Ruminate() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-    configSwitch(BOUNCE_PARAM, 0, 1, 0, "Endpoint Behavior",
-                 {"Loop around", "Bounce"});
     configParam(SPEED_PARAM, -10.f, 10.f, 1.f, "Playback speed/direction");
     configParam(ADJUST_PARAM, -10.f, 10.f, 0.f, "Slider to manually move this playback head within Memory");
     configSwitch(PLAY_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this playback head",
@@ -127,6 +135,7 @@ struct Ruminate : PositionedModule {
     json_object_set_new(rootJ, "fade_on_move", json_integer(fade_on_move ? 1 : 0));
     json_object_set_new(rootJ, "speed_is_voct", json_integer(speed_is_voct ? 1 : 0));
     json_object_set_new(rootJ, "reverse_direction", json_integer(reverse_direction ? 1 : 0));
+    json_object_set_new(rootJ, "ends_behavior", json_integer(ends_behavior));
     return rootJ;
   }
 
@@ -142,6 +151,13 @@ struct Ruminate : PositionedModule {
     json_t* reverseJ = json_object_get(rootJ, "reverse_direction");
     if (reverseJ) {
       reverse_direction = json_integer_value(reverseJ) == 1;
+    }
+    // If not set, derive from state of now-hidden Bounce button.
+    json_t* endsJ = json_object_get(rootJ, "ends_behavior");
+    if (endsJ) {
+      ends_behavior = (EndsBehavior) json_integer_value(endsJ);
+    } else {
+      ends_behavior = (params[BOUNCE_PARAM].getValue() > 0.5f) ? BOUNCING : LOOPING;
     }
   }
 
@@ -177,7 +193,6 @@ struct Ruminate : PositionedModule {
 
     bool connected = (buffer != nullptr) && buffer->IsValid();
 
-    int loop_type = (int) params[BOUNCE_PARAM].getValue();
     // If connected and buffer isn't empty.
     if (connected) {
       // These help the Timestamps UI widgets on this module.
@@ -188,7 +203,13 @@ struct Ruminate : PositionedModule {
       length = buffer->length;
       seconds = buffer->seconds;
 
-      // User (or input) is adjusting the position.
+      // If the length just changed (like the Memory has changed length), then
+      // we should make sure we aren't pointing out of bounds.
+      while (playback_position >= length) {
+        playback_position -= length;
+      }
+
+      // User (or input) is adjusting the SET position.
       if (inputs[ABS_POSITION_INPUT].getVoltage() != prev_abs_position) {
         if (prev_abs_position == -20.0) {
           // Getting an initial value, if any.
@@ -203,6 +224,9 @@ struct Ruminate : PositionedModule {
       // Is our position being adjusted by the slider and/or the position input?
       bool adjusting = abs_changed ||
           std::fabs(slider_value) > std::numeric_limits<float>::epsilon(); // i.e., is not zero.
+      if (adjusting) {
+        currently_stopped = false;
+      }
 
       // Are we being told to play?
       playTrigger.process(rescale(
@@ -272,9 +296,13 @@ struct Ruminate : PositionedModule {
       double speed = speed_is_voct ?
           std::pow(2.0, inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue() - 1.0) :
           inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
-      double movement = play_state == NO_PLAY ?
+      double movement = (play_state == NO_PLAY) || currently_stopped ?
                         0.0 :
                         speed * (reverse_direction ? -1.0 : 1.0);
+      if (currently_bouncing) {
+        movement = -movement;
+      }
+
       if ((play_state == ADJUSTING) || (!fade_on_move && adjusting)) {
         // Even if we're not playing, we want to show movement caused by POSITION movement,
         // so user can see where playback will pick up.
@@ -302,59 +330,44 @@ struct Ruminate : PositionedModule {
         }
       }
       
-      if (use_initial_position && std::fabs(movement >= std::numeric_limits<float>::epsilon())) {
+      if (use_initial_position && std::fabs(movement) >= std::numeric_limits<float>::epsilon()) {
         use_initial_position = false;
       }
       playback_position += movement;
 
       // Fix the position, now that the movement has occured.
-      switch (loop_type) {
-        case 0: {  // Loop around.
-          if (playback_position < 0.0) {
+     if (playback_position < 0.0) {
+        switch (ends_behavior) {
+          case LOOPING:
             playback_position += length;
-          } else if (playback_position >= length) {
+            break;
+          case BOUNCING: 
+            playback_position = -playback_position;
+            currently_bouncing = !currently_bouncing;
+            break;
+          case STOPPING:
+            playback_position = 0.0;
+            currently_stopped = true;
+            break;
+        }
+      } else if (playback_position >= length) {
+        switch (ends_behavior) {
+          case LOOPING:
             playback_position -= length;
-          }
+            break;
+          case BOUNCING:
+            playback_position = 2 * length - playback_position;
+            currently_bouncing = !currently_bouncing;
+            break;
+          case STOPPING:
+            playback_position = length - 1;
+            currently_stopped = true;
+            break;
         }
-        break;
-        case 1: {  // Bounce.
-          if (playback_position < 0.0) {
-            playback_position += 2 * length;
-          } else if (playback_position >= 2 * length) {
-            playback_position -= 2 * length;
-          }
-        }
-        break;
-        
       }
 
       display_position = playback_position;
 
-      if (length > 0) {
-        while (display_position > 2 * length) {
-          display_position -= 2 * length;
-        }
-      } else {
-        display_position = 0;
-      }
-
-      if (display_position >= length) {
-        switch (loop_type) {
-          case 0: {  // Loop around.
-            display_position -= length;
-          }
-          break;
-          case 1: {  // Bounce.
-            // There might be simpler math for this, it just escapes me now.
-            if (display_position < 2 * length) {
-              display_position = std::max(0.0, length * 2 - display_position - 1);
-            } else {
-              display_position -= length * 2;
-            }
-          }
-          break;
-        }
-      }
       if (length > 0) {
         outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
       } else {
@@ -399,7 +412,6 @@ struct Ruminate : PositionedModule {
       // Can only be playing if connected.
       lights[PLAY_BUTTON_LIGHT].setBrightness(0.0f);
     }
-    lights[BOUNCE_LIGHT].setBrightness(loop_type == 1);
     lights[CONNECTED_LIGHT].setBrightness(connected ? 1.0f : 0.0f);
   }
 };
@@ -444,11 +456,6 @@ struct RuminateWidget : ModuleWidget {
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-    addParam(createLightParamCentered<VCVLightLatch<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(6.035, 14.0)),
-                                             module, Ruminate::BOUNCE_PARAM,
-                                             Ruminate::BOUNCE_LIGHT));
-
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 97.087)), module, Ruminate::SPEED_INPUT));
     addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(19.05, 97.087)), module, Ruminate::SPEED_PARAM));
 
@@ -492,6 +499,24 @@ struct RuminateWidget : ModuleWidget {
                                           &module->speed_is_voct));
     menu->addChild(createBoolPtrMenuItem("Default direction is reverse", "",
                                           &module->reverse_direction));
+
+    std::pair<std::string, Ruminate::EndsBehavior> ends_behavior[] = {
+      {"Loop Around", Ruminate::LOOPING},
+      {"Bounce", Ruminate::BOUNCING},
+      {"Stop", Ruminate::STOPPING}
+    };
+
+    MenuItem* ends_menu = createSubmenuItem("Behavior at ends", "",
+      [=](Menu* menu) {
+          for (auto line : ends_behavior) {
+            menu->addChild(createCheckMenuItem(line.first, "",
+                [=]() {return line.second == module->ends_behavior;},
+                [=]() {module->ends_behavior = line.second;}
+            ));
+          }
+      }
+    );
+    menu->addChild(ends_menu);
 
     // Be a little clearer how to make this module do anything.
     menu->addChild(new MenuSeparator);

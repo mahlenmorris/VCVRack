@@ -37,6 +37,7 @@ struct Fixation : PositionedModule {
     LIGHTS_LEN
   };
 
+  // For Menu option.
   enum EndsBehavior {
     LOOPING,
     BOUNCING,
@@ -286,8 +287,14 @@ struct Fixation : PositionedModule {
 
     // If connected and buffer isn't empty.
     if (connected) {
-      // Bad things happen if this are zero, which sometimes happens on startup.
+      // Bad things happen if length is zero, which sometimes happens on startup.
       length = std::max(buffer->length, 1);
+
+      // If the length just changed (like the Memory has changed length), then
+      // we should make sure we aren't pointing out of bounds.
+      while (playback_position >= length) {
+        playback_position -= length;
+      }
 
       // This affects all behavior, so let's get it up front.
       int style = params[STYLE_KNOB_PARAM].getValue();
@@ -711,7 +718,7 @@ struct FixationWidget : ModuleWidget {
       {"Stop", Fixation::STOPPING}
     };
 
-    MenuItem* font_menu = createSubmenuItem("Behavior at ends", "",
+    MenuItem* ends_menu = createSubmenuItem("Behavior at ends", "",
       [=](Menu* menu) {
           for (auto line : ends_behavior) {
             menu->addChild(createCheckMenuItem(line.first, "",
@@ -721,7 +728,7 @@ struct FixationWidget : ModuleWidget {
           }
       }
     );
-    menu->addChild(font_menu);
+    menu->addChild(ends_menu);
 
 
     // Be a little clearer how to make this module do anything.
