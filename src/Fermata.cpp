@@ -654,11 +654,16 @@ struct FermataWidget : ModuleWidget {
 
   void step() override {
     Fermata* module = dynamic_cast<Fermata*>(this->module);
-    // While this is really only useful to call when the width changes,
-    // I don't think it's currently worth the effort to ONLY call it then.
-    // And maybe the *first* time step() is called.
     if (module) {
-      box.size.x = module->width * RACK_GRID_WIDTH;
+      if (box.size.x != module->width * RACK_GRID_WIDTH) {
+        // Module width has changed. Might be first time step() has been called, or undo/redo has happened
+        // But we check for it because when STRIP creates a new instance of this module, it may not
+        // pick up the JSON-saved width until after Rack has placed the other modules, causing gaps or
+        // overlaps. 
+        box.size.x = module->width * RACK_GRID_WIDTH;
+        // This forces the other modules to the right place if needed.
+        APP->scene->rack->setModulePosForce(this, box.pos);
+      }
 
       // TODO: Should the logic in step() above that shows/hides the text editor also be here?
       if (module->width <= 8) {
