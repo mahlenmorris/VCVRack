@@ -51,6 +51,7 @@ struct TTY : Module {
     V2_INPUT,
     TEXT2_INPUT,
     TEXT3_INPUT,
+    V3_INPUT,
     INPUTS_LEN
   };
   enum OutputId {
@@ -73,9 +74,10 @@ struct TTY : Module {
     configSwitch(PAUSE_PARAM, 0, 1, 0, "Stop writing to output",
                  {"Writing", "Paused"});
     configParam(CLEAR_PARAM, 0.f, 1.f, 0.f, "Clears all output");
-    configParam(SAMPLE_PARAM, 1000.0f, 0.0f, 50.0f, "Number of milliseconds skipped between V1/V2 logging attempts");
+    configParam(SAMPLE_PARAM, 1000.0f, 0.0f, 50.0f, "Number of milliseconds skipped between V1/V2/V3 logging attempts");
     configInput(V1_INPUT, "New values will be shown on screen");
     configInput(V2_INPUT, "New values will be shown on screen");
+    configInput(V3_INPUT, "New values will be shown on screen");
     configInput(TEXT1_INPUT, "Input for Tipsy text info");
     configInput(TEXT2_INPUT, "Input for Tipsy text info");
     configInput(TEXT3_INPUT, "Input for Tipsy text info");
@@ -284,6 +286,22 @@ struct TTY : Module {
             add_string(next);
           }
         }
+        if (inputs[V3_INPUT].isConnected()) {
+          float v3 = inputs[V3_INPUT].getVoltage();
+          if (!float_equal(v3, previous_v3)) {
+            previous_v3 = v3;
+            std::string str_value = std::to_string(v3);
+            // Hmmmm; should I be comparing the string values instead? It would be
+            // odd to see the same string twice on a tightly changing value....
+
+            // Add to buffer.
+            std::string prefix(MakePrefix("V3"));
+            std::string next(prefix);
+            next.append(str_value);
+            next.append("\n");
+            add_string(next);
+          }
+        }
       }
     }
 
@@ -335,6 +353,7 @@ struct TTY : Module {
 
   float previous_v1 = -1000.29349;  // Some value it won't be.
   float previous_v2 = -1000.29349;  // Some value it won't be.
+  float previous_v3 = -1000.29349;  // Some value it won't be.
 
   // Controls.
 
@@ -472,7 +491,7 @@ struct TTYModuleResizeHandle : OpaqueWidget {
 };
 
 static std::string module_browser_text =
-  "Logs DISTINCT values coming in through V1 or V2.\n"
+  "Logs DISTINCT values coming in through V1, V2, and V3.\n"
   "Logs Tipsy text messages sent by BASICally or Memory.\n"
   "Horizontally resizable.";
 
@@ -650,21 +669,23 @@ struct TTYWidget : ModuleWidget {
     addParam(createParamCentered<RoundBlackKnob>(
          mm2px(Vec(8.938, 22.329)), module, TTY::SAMPLE_PARAM));
     addParam(createLightParamCentered<VCVLightLatch<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 59.0)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 68.2)),
                                              module, TTY::PAUSE_PARAM,
                                              TTY::PAUSE_LIGHT));
     addParam(createLightParamCentered<VCVLightButton<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 71.0)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(8.938, 79.3)),
                                              module, TTY::CLEAR_PARAM,
                                              TTY::CLEAR_LIGHT));
 
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 34.663)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 34.0)), module,
         TTY::V1_INPUT));
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 45.546)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 45.0)), module,
         TTY::V2_INPUT));
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 86.0)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 56.0)), module,
+        TTY::V3_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 92.0)), module,
         TTY::TEXT1_INPUT));
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 102.0)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 105.0)), module,
         TTY::TEXT2_INPUT));
     addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.938, 118.0)), module,
         TTY::TEXT3_INPUT));
