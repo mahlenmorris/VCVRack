@@ -267,6 +267,15 @@ struct BrainwashWidget : ModuleWidget {
     addChild(createLightCentered<MediumLight<WhiteLight>>(mm2px(Vec(12.7, 3.2)),
                  module, Brainwash::CONNECTED_LIGHT));
   }
+
+  void appendContextMenu(Menu* menu) override {
+    // Be a little clearer how to make this module do anything.
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createMenuLabel(
+      "Brainwash only works when touching a group of modules with a Memory or MemoryCV"));
+    menu->addChild(createMenuLabel(
+      "module to the left. See my User Manual for details and usage videos."));
+  }
 };
 
 
