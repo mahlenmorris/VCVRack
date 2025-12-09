@@ -95,7 +95,6 @@ struct Basically : Module {
     std::vector<std::pair<Expression, CodeBlock*> >* expression_blocks;
     std::vector<bool>* running_expression_blocks;
     std::unordered_map<int, TriggerInfo*> triggers;
-    std::chrono::high_resolution_clock::time_point time_start;
     // Map output index to whether or not we should clamp values for it.
     std::unordered_map<int, bool>* out_index_to_clamp;
     // Map output index to encoder that sends text out of that port and
@@ -109,7 +108,6 @@ struct Basically : Module {
                           std::unordered_map<int, bool>* clamp_info) :
        inputs{the_inputs}, outputs{the_outputs}, driver{the_driver},
        out_index_to_clamp{clamp_info} {
-         time_start = std::chrono::high_resolution_clock::now();
          sample_rate = 0.0f;
        }
 
