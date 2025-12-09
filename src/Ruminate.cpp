@@ -282,6 +282,8 @@ struct Ruminate : PositionedModule {
         } else {
           play_state = NO_PLAY;
         }
+      } else if (play_state == PLAYING) {
+        play_fade = 1.0;  // In case we just switched to a MemoryCV while faded down.
       }
 
       // This is all to figure out the next position in the memory to go to.

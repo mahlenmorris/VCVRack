@@ -15,6 +15,7 @@ struct Fixation : PositionedModule {
     LENGTH_ATTN_PARAM,
     COUNT_KNOB_PARAM,
     STYLE_KNOB_PARAM,
+    NOTE_LENGTH_PARAM,
     PARAMS_LEN
   };
   enum InputId {
@@ -44,6 +45,24 @@ struct Fixation : PositionedModule {
     STOPPING
   };
 
+  double NOTE_LENGTHS[16] = {
+    1.000000,
+    0.750000,
+    0.500000,
+    0.333333,
+    0.375000,
+    0.250000,
+    0.166667,
+    0.187500,
+    0.125000,
+    0.083333,
+    0.093750,
+    0.062500,
+    0.041667,
+    0.046875,
+    0.031250,
+    0.020833
+  };
   static constexpr float MIN_TIME = 1e-3f;
   static constexpr float MAX_TIME = 10.f;
   static constexpr float LAMBDA_BASE = MAX_TIME / MIN_TIME;
@@ -150,6 +169,8 @@ struct Fixation : PositionedModule {
   bool speed_is_voct = false;  // Saved in the patch.
   bool reverse_direction = false;  // Saved in the patch.
   EndsBehavior ends_behavior = LOOPING;  // Saved in the patch.
+  bool tempo_length = false;  // Saved in the patch.
+
   bool currently_bouncing = false;
   bool currently_stopped = false;
 
@@ -164,6 +185,11 @@ struct Fixation : PositionedModule {
   // Makes the output trigger at TRIG when needed.
   dsp::PulseGenerator trig_generator;
 
+  // For tracking the tempo, only used if tempo_length is true.
+  dsp::SchmittTrigger tempo_trigger;
+  int64_t last_tempo_trigger_frame = -1;
+  int64_t tempo_length_in_frames = -1;
+
   Fixation() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configParam(POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.f, "Attenuverter on POSITION input.", "%", 0, 100);
@@ -174,13 +200,35 @@ struct Fixation : PositionedModule {
     configParam(LENGTH_KNOB_PARAM, 0.f, 1.f, 0.5f, "Maximum LENGTH of playback.",
                 " ms", LAMBDA_BASE, MIN_TIME * 1000);
     configInput(LENGTH_INPUT, "Multiplied by the attenuverter, added to the LENGTH value.");
+    // This knob hides behind the LENGTH_KNOB_PARAM in the UI, and is only made visible when
+    // tempo_length is true.
+    configSwitch(NOTE_LENGTH_PARAM, 0, 15, 0, "Note Length",
+                 {"1 (Whole Note)",
+                  "•1/2 (Dotted Half Note)",
+                  "1/2 (Half Note)",
+                  "t1/2 (Triplet Half Note)",
+                  "•1/4 (Dotted Quarter Note)",
+                  "1/4 (Quarter Note)",
+                  "t1/4 (Triplet Quarter Note)",
+                  "•1/8 (Dotted Eighth Note)",
+                  "1/8 (Eighth Note)",
+                  "t1/8 (Triplet Eighth Note)",
+                  "•1/16 (Dotted Sixteenth Note)",
+                  "1/16 (Sixteenth Note)",
+                  "t1/16 (Triplet Sixteenth Note)",
+                  "•1/32 (Dotted Thirty-Second Note)",
+                  "1/32 (Thirty-Second Note)",
+                  "t1/32 (Triplet Thirty-Second Note)",
+                 });
+    // This has distinct values.
+    getParamQuantity(STYLE_KNOB_PARAM)->snapEnabled = true;
 
     configParam(COUNT_KNOB_PARAM, 1, 128, 1,
       "Number of repetitions per CLOCK (in STYLE 'CLOCK starts COUNT repeats...')");
     getParamQuantity(COUNT_KNOB_PARAM)->snapEnabled = true;
     configSwitch(STYLE_KNOB_PARAM, 0, 3, 0, "Play Style",
-                 {"CLOCK Restarts: Starts when CLOCK goes high, LENGTH and COUNT ignored",
-                  "Always plays LENGTH: CLOCK and COUNT ignored",
+                 {"CLOCK Restarts: Starts when CLOCK goes high (LENGTH and COUNT ignored)",
+                  "Always plays LENGTH: (CLOCK and COUNT ignored)",
                   "CLOCK starts repeats: COUNT repeats of size LENGTH",
                   "CLOCK as Gate: Plays only while CLOCK is high (LENGTH and COUNT ignored)"});
     // This has distinct values.
@@ -212,6 +260,7 @@ struct Fixation : PositionedModule {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "speed_is_voct", json_integer(speed_is_voct ? 1 : 0));
     json_object_set_new(rootJ, "reverse_direction", json_integer(reverse_direction ? 1 : 0));
+    json_object_set_new(rootJ, "tempo_length", json_integer(tempo_length ? 1 : 0));
     json_object_set_new(rootJ, "ends_behavior", json_integer(ends_behavior));
     return rootJ;
   }
@@ -224,6 +273,10 @@ struct Fixation : PositionedModule {
     json_t* reverseJ = json_object_get(rootJ, "reverse_direction");
     if (reverseJ) {
       reverse_direction = json_integer_value(reverseJ) == 1;
+    }
+    json_t* tempoJ = json_object_get(rootJ, "tempo_length");
+    if (tempoJ) {
+      tempo_length = json_integer_value(tempoJ) == 1;
     }
     json_t* endsJ = json_object_get(rootJ, "ends_behavior");
     if (endsJ) {
@@ -257,12 +310,18 @@ struct Fixation : PositionedModule {
   }
 
   int GetLength(const ProcessArgs& args) {
-    float length_exp = params[LENGTH_KNOB_PARAM].getValue() +
-      (params[LENGTH_ATTN_PARAM].getValue() * inputs[LENGTH_INPUT].getVoltage() / 10.0);
-    length_exp = rack::math::clamp(length_exp, 0.0f, 1.0f);
-    double length = pow(LAMBDA_BASE, length_exp) * args.sampleRate / 1000;
-    // Counting samples goes wonky if we get below one sample of length.
-    return std::max((int) floor(length), 1);
+    if (tempo_length && tempo_length_in_frames > 0) {
+      // Multiply by note length.
+      return tempo_length_in_frames *
+        NOTE_LENGTHS[(int) params[NOTE_LENGTH_PARAM].getValue()];
+    } else {
+      float length_exp = params[LENGTH_KNOB_PARAM].getValue() +
+        (params[LENGTH_ATTN_PARAM].getValue() * inputs[LENGTH_INPUT].getVoltage() / 10.0);
+      length_exp = rack::math::clamp(length_exp, 0.0f, 1.0f);
+      double length = pow(LAMBDA_BASE, length_exp) * args.sampleRate / 1000;
+      // Counting samples goes wonky if we get below one sample of length.
+      return std::max((int) floor(length), 1);
+    }
   }
 
   void PrepareToRestart(double* position, int* length, const ProcessArgs& args) {
@@ -281,6 +340,25 @@ struct Fixation : PositionedModule {
       find_memory_countdown = (int) (args.sampleRate / 60);
 
       buffer = findClosestMemory(getLeftExpander().module);
+    }
+
+    // Even if not connected, we might still be getting tempo triggers.
+    // So we'll track them just in case.
+    if (inputs[LENGTH_INPUT].isConnected()) {
+      bool tempo_was_high = tempo_trigger.isHigh();
+      tempo_trigger.process(rescale(inputs[LENGTH_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+      if (!tempo_was_high && tempo_trigger.isHigh()) {
+        if (last_tempo_trigger_frame >= 0) {
+          tempo_length_in_frames = args.frame - last_tempo_trigger_frame;
+        }
+        // Set the length based on the new trigger.
+        last_tempo_trigger_frame = args.frame;
+      }
+    } else {
+      // Reset the tempo tracking.
+      last_tempo_trigger_frame = -1;
+      tempo_length_in_frames = -1;
+      tempo_trigger.reset();
     }
 
     bool connected = (buffer != nullptr) && buffer->IsValid();
@@ -613,6 +691,9 @@ struct Fixation : PositionedModule {
             fabs(right - gotten.right) < 0.1) {
           play_fade = 1.0;    
         }
+        if (play_state == PLAYING) {
+          play_fade = 1.0;
+        }
 
         outputs[LEFT_OUTPUT].setVoltage(left);
         outputs[RIGHT_OUTPUT].setVoltage(right);
@@ -656,6 +737,11 @@ struct Fixation : PositionedModule {
 };
 
 struct FixationWidget : ModuleWidget {
+  // Need to be able to show/hide these.
+  Trimpot* length_trimpot = nullptr;
+  RoundBlackKnob* length_knob = nullptr;
+  RoundBlackKnob* note_length_knob = nullptr;
+
   FixationWidget(Fixation* module) {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Fixation.svg"),
@@ -672,13 +758,19 @@ struct FixationWidget : ModuleWidget {
     addParam(createParamCentered<Trimpot>(mm2px(Vec(15.24, 25.737)), module, Fixation::POSITION_ATTN_PARAM));
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.236, 25.737)), module, Fixation::POSITION_INPUT));
 
-    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 40.188)), module, Fixation::LENGTH_KNOB_PARAM));
-    addParam(createParamCentered<Trimpot>(mm2px(Vec(15.24, 40.188)), module, Fixation::LENGTH_ATTN_PARAM));
+    length_knob = createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 40.188)), module, Fixation::LENGTH_KNOB_PARAM);
+    addParam(length_knob);
+    note_length_knob = createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 40.188)), module, Fixation::NOTE_LENGTH_PARAM);
+    addParam(note_length_knob);
+    note_length_knob->hide();  // Hidden unless tempo_length is true.
+    length_trimpot = createParamCentered<Trimpot>(mm2px(Vec(15.24, 40.188)), module, Fixation::LENGTH_ATTN_PARAM);
+    addParam(length_trimpot);
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.236, 40.188)), module, Fixation::LENGTH_INPUT));
 
-    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(8.575, 56.279)), module, Fixation::COUNT_KNOB_PARAM));
-    RoundBlackSnapKnob* style_knob = createParamCentered<RoundBlackSnapKnob>(mm2px(Vec(21.59, 56.279)),
+    addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(8.575, 56.279)), module, Fixation::COUNT_KNOB_PARAM));
+    RoundSmallBlackKnob* style_knob = createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(21.59, 56.279)),
         module, Fixation::STYLE_KNOB_PARAM);
+    style_knob->snap = true;
     style_knob->minAngle = -0.33f * M_PI;
     style_knob->maxAngle = 0.33f * M_PI;
     addParam(style_knob);
@@ -704,11 +796,30 @@ struct FixationWidget : ModuleWidget {
     addChild(connect_light);
   }
 
+  void step() override {
+    ModuleWidget::step();
+    Fixation* module = dynamic_cast<Fixation*>(this->module);
+    if (module) {
+      // Change visible controls when setting length by tempo and note.
+      if (module->tempo_length) {
+        length_trimpot->hide();
+        length_knob->hide();
+        note_length_knob->show();
+      } else {
+        length_trimpot->show();
+        length_knob->show();
+        note_length_knob->hide();
+      }
+    }
+  }
+
   void appendContextMenu(Menu* menu) override {
     Fixation* module = dynamic_cast<Fixation*>(this->module);
     menu->addChild(new MenuSeparator);
     menu->addChild(createBoolPtrMenuItem("Use Speed as V/Oct", "",
                                           &module->speed_is_voct));
+    menu->addChild(createBoolPtrMenuItem("Interpret LENGTH as tempo and note length", "",
+                                          &module->tempo_length));
     menu->addChild(createBoolPtrMenuItem("Default direction is reverse", "",
                                          &module->reverse_direction));
 
@@ -730,11 +841,10 @@ struct FixationWidget : ModuleWidget {
     );
     menu->addChild(ends_menu);
 
-
     // Be a little clearer how to make this module do anything.
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel(
-      "Fixation only works when touching a group of modules with a Memory"));
+      "Fixation only works when touching a group of modules with a Memory or MemoryCV"));
     menu->addChild(createMenuLabel(
       "module to the left. See my User Manual for details and usage videos."));
   }
