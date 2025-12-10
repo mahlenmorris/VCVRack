@@ -114,7 +114,7 @@ struct Ruminate : PositionedModule {
     configInput(SPEED_INPUT, "Playback speed (added to knob value)");
     configInput(PLAY_GATE_INPUT, "Gate to start/stop playing");
   
-    configOutput(NOW_POSITION_OUTPUT, "Point in Memory (0 - 10V) playback head is currently reading,");
+    configOutput(NOW_POSITION_OUTPUT, "Position as phasor (0V -> 10V), and in seconds,");
     configOutput(LEFT_OUTPUT, "Left");
     configOutput(RIGHT_OUTPUT, "Right");
 
@@ -370,14 +370,17 @@ struct Ruminate : PositionedModule {
 
       display_position = playback_position;
 
-      outputs[NOW_POSITION_OUTPUT].setChannels(2);
-      if (length > 0) {
-        outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length, 0);
-        outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * seconds / length, 1);
-      } else {
-        outputs[NOW_POSITION_OUTPUT].setVoltage(0.0f, 0);
-        outputs[NOW_POSITION_OUTPUT].setVoltage(0.0f, 1);
+      if (outputs[NOW_POSITION_OUTPUT].isConnected()) {
+        outputs[NOW_POSITION_OUTPUT].setChannels(2);
+        if (length > 0) {
+          outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length, 0);
+          outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * seconds / length, 1);
+        } else {
+          outputs[NOW_POSITION_OUTPUT].setVoltage(0.0f, 0);
+          outputs[NOW_POSITION_OUTPUT].setVoltage(0.0f, 1);
+        }
       }
+      
       line_record.position = display_position;
 
       if (play_state != NO_PLAY && play_state != ADJUSTING) {
