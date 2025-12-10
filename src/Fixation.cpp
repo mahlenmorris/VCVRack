@@ -30,6 +30,7 @@ struct Fixation : PositionedModule {
     LEFT_OUTPUT,
     RIGHT_OUTPUT,
     TRIG_OUT_OUTPUT,
+    CURRENT_OUTPUT,
     OUTPUTS_LEN
   };
   enum LightId {
@@ -159,6 +160,8 @@ struct Fixation : PositionedModule {
 
   // Cache the buffer length locally.
   int length = 0;
+  // To display timestamps correctly.
+  double seconds = 0.0;
 
   // To fade volume when near a recording head.
   double fade = 1.0f;
@@ -234,6 +237,7 @@ struct Fixation : PositionedModule {
     // This has distinct values.
     getParamQuantity(STYLE_KNOB_PARAM)->snapEnabled = true;
 
+    configOutput(CURRENT_OUTPUT, "Position as phasor (0V -> 10V), and in seconds,");
     configOutput(TRIG_OUT_OUTPUT, "Raises a trigger at the start of each play");
 
     configSwitch(PLAY_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this playback head",
@@ -367,6 +371,7 @@ struct Fixation : PositionedModule {
     if (connected) {
       // Bad things happen if length is zero, which sometimes happens on startup.
       length = std::max(buffer->length, 1);
+      seconds = buffer->seconds;
 
       // If the length just changed (like the Memory has changed length), then
       // we should make sure we aren't pointing out of bounds.
@@ -652,6 +657,18 @@ struct Fixation : PositionedModule {
         display_position += length;
       }
 
+      if (outputs[CURRENT_OUTPUT].isConnected()) {
+        // Output phasor and seconds.
+        outputs[CURRENT_OUTPUT].setChannels(2);
+        if (length > 0) {
+          outputs[CURRENT_OUTPUT].setVoltage(display_position * 10.0 / length, 0);
+          outputs[CURRENT_OUTPUT].setVoltage(display_position * seconds / length, 1);
+        } else {
+          outputs[CURRENT_OUTPUT].setVoltage(0.0f, 0);
+          outputs[CURRENT_OUTPUT].setVoltage(0.0f, 1);
+        }
+      }
+
       line_record.position = display_position;
 
       if (play_state != NO_PLAY && play_state != WAITING) {  // These states are silent.
@@ -736,6 +753,28 @@ struct Fixation : PositionedModule {
   }
 };
 
+struct NowFixationTimestamp : TimestampField {
+  NowFixationTimestamp() {
+  }
+
+  Fixation* module;
+
+  double getPosition() override {
+    if (module && module->length > 0) {
+      return module->display_position * module->seconds / module->length;
+    }
+    return 0.00;  // Dummy display value.
+  }
+
+  double getSeconds() override {
+    if (module && module->seconds > 0.0) {
+      return module->seconds;
+    }
+    return 2.0;
+  }
+};
+
+
 struct FixationWidget : ModuleWidget {
   // Need to be able to show/hide these.
   Trimpot* length_trimpot = nullptr;
@@ -749,8 +788,9 @@ struct FixationWidget : ModuleWidget {
 
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
     addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+    // To eek out a bit more room, we move the lower screws outwards.
+    addChild(createWidget<ScrewSilver>(Vec(0, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+    addChild(createWidget<ScrewSilver>(Vec(box.size.x - RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(21.166, 15.743)), module, Fixation::CLOCK_INPUT));
 
@@ -775,20 +815,27 @@ struct FixationWidget : ModuleWidget {
     style_knob->maxAngle = 0.33f * M_PI;
     addParam(style_knob);
 
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.575, 70.509)), module, Fixation::CURRENT_OUTPUT));
+    // A timestamp is 10 wide.
+    NowFixationTimestamp* now_timestamp = createWidget<NowFixationTimestamp>(mm2px(
+        Vec(8.575 - (10.0 / 2.0), 74.509)));
+    now_timestamp->module = module;
+    addChild(now_timestamp);
+
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 70.509)), module, Fixation::TRIG_OUT_OUTPUT));
 
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 97.087)), module, Fixation::SPEED_INPUT));
-    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(21.59, 97.087)), module, Fixation::SPEED_PARAM));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 101.487)), module, Fixation::SPEED_INPUT));
+    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(21.59, 101.487)), module, Fixation::SPEED_PARAM));
 
     // Play button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(21.59, 84.36)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(21.59, 88.76)),
                                              module, Fixation::PLAY_BUTTON_PARAM,
                                              Fixation::PLAY_BUTTON_LIGHT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 84.36)), module, Fixation::PLAY_GATE_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 88.76)), module, Fixation::PLAY_GATE_INPUT));
 
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.575, 112.0)), module, Fixation::LEFT_OUTPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 112.0)), module, Fixation::RIGHT_OUTPUT));
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.575, 116.4)), module, Fixation::LEFT_OUTPUT));
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 116.4)), module, Fixation::RIGHT_OUTPUT));
 
     ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
       mm2px(Vec(15.24, 3.0)), module, Fixation::CONNECTED_LIGHT);
