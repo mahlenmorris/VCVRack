@@ -67,6 +67,8 @@ struct Fixation : PositionedModule {
   static constexpr float MIN_TIME = 1e-3f;
   static constexpr float MAX_TIME = 10.f;
   static constexpr float LAMBDA_BASE = MAX_TIME / MIN_TIME;
+  static constexpr const char* LENGTH_PORT_NAME = "Multiplied by the attenuverter, added to the LENGTH value.";
+  static constexpr const char* TEMPO_PORT_NAME = "Tempo clock input for note-length based timing.";
 
   enum PlayState {
     // We have several states we could be in.
@@ -181,6 +183,7 @@ struct Fixation : PositionedModule {
   int length_countdown = -1;
   // Total length as of last enquiry.
   int length_in_samples;
+  PortInfo* length_port;
 
   // Only used for STYLE 2 - number of repeats so far completed.
   int repeat_count;
@@ -202,7 +205,8 @@ struct Fixation : PositionedModule {
     configParam(LENGTH_ATTN_PARAM, -1.0f, 1.0f, 0.f, "Attenuverter on LENGTH input.", "%", 0, 100);
     configParam(LENGTH_KNOB_PARAM, 0.f, 1.f, 0.5f, "Maximum LENGTH of playback.",
                 " ms", LAMBDA_BASE, MIN_TIME * 1000);
-    configInput(LENGTH_INPUT, "Multiplied by the attenuverter, added to the LENGTH value.");
+    // We change the name depending on a menu option.            
+    length_port = configInput(LENGTH_INPUT, LENGTH_PORT_NAME);
     // This knob hides behind the LENGTH_KNOB_PARAM in the UI, and is only made visible when
     // tempo_length is true.
     configSwitch(NOTE_LENGTH_PARAM, 0, 15, 0, "Note Length",
@@ -852,10 +856,12 @@ struct FixationWidget : ModuleWidget {
         length_trimpot->hide();
         length_knob->hide();
         note_length_knob->show();
+        module->length_port->name = Fixation::TEMPO_PORT_NAME;
       } else {
         length_trimpot->show();
         length_knob->show();
         note_length_knob->hide();
+        module->length_port->name = Fixation::LENGTH_PORT_NAME;
       }
     }
   }
