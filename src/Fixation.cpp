@@ -525,6 +525,7 @@ struct Fixation : PositionedModule {
           } else if (clock_low_event && style == 3) {
             play_state = buffer->cv_rate ? WAITING : FADE_DOWN;
           } else if (clock_event && (style == 0 || style == 2)) {
+            repeat_count = 0;
             if (buffer->cv_rate) {
               // Just like if FADE_DOWN_TO_RESTART had a fade_ended event.
               trig_generator.trigger(1e-3f);
