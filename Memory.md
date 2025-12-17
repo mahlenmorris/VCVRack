@@ -83,7 +83,7 @@ Memory buffers can be quite a bit larger than 10 seconds, I decided to just map 
 * They range in values from 0.0V to just under 10.0V. Values outside that range will wrap around, hence 10.0V is the same as 0.0V.
 * 0.0V is the beginning of the Memory buffer. It appears at the bottom of the Depict display.
 * Values close to 10.0V will be at the end.
-* Modules have the option of treating the buffer as a loop seamlessly joined at beginning and end, or as a bounded region. See the BOUNCE control on those modules.
+* Some modules have the option of treating the buffer as a loop seamlessly joined at beginning and end, or as a bounded region. See the **Behavior at ends** menu option or the BOUNCE button on those modules.
 
 ### Notes on Sample Rate
 * The Memory is storing its data at whatever the VCV sample rate was when the module was first created or whatever the VCV sample rate was when the Memory module was last RESET. Changing the VCV Sample Rate will not update the sample rate of the Memory, which will result in playback of audio to be distorted (sped up or slowed down) by the difference in Memory's rate and the current VCV rate.
@@ -175,7 +175,7 @@ MemoryCV buffers can be quite a bit larger than 10 seconds, I decided to just ma
 * They range in values from 0.0V to just under 10.0V. Values outside that range will wrap around, hence 10.0V is the same as 0.0V.
 * 0.0V is the beginning of the Memory buffer. It appears at the bottom of the Depict display.
 * Values close to but not quite 10.0V will be at the end (the top of the Depit display).
-* Modules have the option of treating the buffer as a loop seamlessly joined at beginning and end, or as a bounded region. See the BOUNCE control on those modules.
+* Some modules have the option of treating the buffer as a loop seamlessly joined at beginning and end, or as a bounded region. See the **Behavior at ends** menu option or the BOUNCE button on those modules.
 
 ### Notes on Sample Rate
 * The MemoryCV is storing its data at 1000Hz; i.e., 1000 samples per second. This value is somewhat arbitrarily chosen, but I feel should be more than detailed enough for any CV signal.
@@ -225,24 +225,49 @@ A standard dialog box to save files will appear. The entire current contents of 
 * Putting noise into the LOAD or SAVE Tipsy inputs can crash VCV Rack.
 
 # Brainwash
-Brainwash records audio (or CV, if attached to a MemoryCV) while RECORD is engaged, and when RECORD is released, what was recorded becomes the new contents of the attached Memory/MemoryCV. A Brainwash can record no more than sixty seconds of audio; if RECORD is engaged for longer than that, then the Memory will become the last 60 seconds the Brainwash heard.
+Brainwash records audio (or CV, if attached to a MemoryCV) for a bounded length of time. When that length of time is complete, what was recorded becomes the new contents of the attached Memory/MemoryCV. A Brainwash can record no more than sixty seconds of audio; if RECORD is engaged for longer than that, then the Memory will become the last 60 seconds the Brainwash heard.
 
-More than one Brainwash can be used in the same ensemble, but ending recording in two or more Brainwash's at roughly the same time has unpredictable results.
+More than one Brainwash can be used in the same ensemble, but ending recording in two or more Brainwash's at roughly the same time has *unpredictable* results.
 ### Uses
 * To record audio (from the L and R inputs) onto the Memory, replacing the entire contents of the Memory (and changing the length of the Memory).
 
-### Controls
+There are two ways to record:
 
+## 1. Record for COUNT CLOCK triggers.
+The sequence is as follows:
+* Arm the recording process using either a trigger to the ARM Input or pushing the ARM Button.
+* When the next trigger arrives at CLOCK Input, recording starts.
+* The recording stops when COUNT clock triggers have occurred. If COUNT is not an integer (e.g., 0.5), then recording will stop after 0.5 of the most recent CLOCK interval has completed. This can create some interesting polyrhythmic options.
+* Whatever was recorded becomes the new contents of the Memory/MemoryCV.
+
+### Controls
+#### COUNT Knob
+Number of CLOCK intervals to record for.
+
+#### CLOCK Input
+* When ARMed, the first triggers to this Input will start the recording process.
+* While recording, further triggers to this Input will advance the number of elapsed CLOCK inputs until it exceeds the value of COUNT. 
+
+#### ARM Input
+A trigger to this Input will arm the recording, which will commence with the next CLOCK. If the ARM and CLOCK Input are sent at the same moment, then
+recording will start immediately.
+
+#### ARM Button
+Like the ARM Input, pressing this will arm the recording process, awaiting the next CLOCK trigger. If already armed, you can press this again to disarm the recorder.
+
+## 2. Record during Gate or while button is lit.
+### Controls
 #### RECORD Input
 Accepts a gate signal.
-* While the signal is high, Brainwash will invisibly record the audio entering through the L & R inputs.
+* While the signal is high, Brainwash will record the audio entering through the L & R inputs.
 * When the signal goes low, whatever was recorded becomes the new contents of the Memory.
 #### RECORD Button
 A latched button to manually control recording.
 * Clicked the first time, the button will light up and any signal received from L and R will be stored inside Brainwash.
-* Clicked again, and the button will go dark. The contents of Brainwash's internal storage will very quickly replace the entire contents of Memory, and change the length of Memory to be whatever the recorded length was.
-#### L & R Input
-The Left and Right inputs that are saved and sent to the Memory.
+* Clicked again, and the button will go dark. Whatever was recorded becomes the entire contents of Memory, and changes the length of Memory to be whatever the recorded length was.
+
+### L & R Input
+The Left and Right inputs that are saved and sent to the Memory/MemoryCV.
 
 ### Bypass Behavior
 If Bypass is enabled, Brainwash will stop recording internally.
@@ -295,7 +320,9 @@ A value from 0.0v to 10.0 that sets the position of the head ONLY the first time
 
 If there are multiple Embellishes in an ensemble, it is useful to set this value to something different for each Embellish, so that when the patch is restarted, both heads aren't writing to the same exact position, with results that are unlikely to be intended. Similarly, if a Ruminate is running right alongside an Embellish at the same speed (i.e., "1"), the Ruminate can be ducked to zero volume (see [Click Avoidance](#click-avoidance) below for why); setting their Initial positions differently avoids that problem.
 #### Position CURRENT Output
-An output that emits the position from 0.0V to 10.0V.
+This is a two-channel output indicating the current position of the play/record head:
+* The first channel is the position from 0.0V to 10.0V. This can be useful as an input [phasor](https://github.com/mhetrick/hetrickcv/blob/master/docs/Topics/Phasors.md) which [some modules](https://library.vcvrack.com/?query=phasor&brand=HetrickCV&tag=&license=) can use to great effect for controlling other Ruminate and Fixation play heads.
+* The second channel is the position in seconds from the start.
 
 Below this is a display showing this position in either:
 * seconds.hundredths - if the Memory size is less than 60 seconds OR
@@ -326,9 +353,6 @@ There are *many* more videos for these modules listed at [the top of this manual
 * Try playing the same audio at different speeds an octave apart. I find that making one Ruminate run at SPEED 1 and others run at, say, 2.0 or 0.5 or .25 works as a nice starting place.
 ### Controls
 
-#### BOUNCE Button
-When unlit, when the head hits the edge of Memory, it will loop around to the other edge and continue.
-When lit, the head will "bounce" off the edges of Memory, which will result in it playing in reverse even though the speed is positive.
 #### Position ADJUST Slider
 ADJUST is a self-centering slider that allows you to manually move the playback head within the memory. Note that audio output and head movement will stop until the ADJUST slider is released.
 #### Position SET Input
@@ -338,7 +362,9 @@ A value from 0.0v to 10.0 that sets the position of the head ONLY the first time
 
 If there are multiple Ruminates in an ensemble and they are moving at the same speed, it is useful to set this value to something different for each Ruminate, so that when the patch is restarted, both heads aren't playing from the same exact position. Similarly, if a Ruminate is running right alongside an Embellish at the same speed (i.e., "1"), the Ruminate can be ducked to zero volume (see [Click Avoidance](#click-avoidance) below for why); setting their Initial positions differently avoids that problem.
 #### Position CURRENT Output
-An output that emits the position from 0.0V to 10.0V.
+This is a two-channel output indicating the current position of the play head:
+* The first channel is the position from 0.0V to 10.0V. This can be useful as an input [phasor](https://github.com/mhetrick/hetrickcv/blob/master/docs/Topics/Phasors.md) which [some modules](https://library.vcvrack.com/?query=phasor&brand=HetrickCV&tag=&license=) can use to great effect for controlling other Ruminate and Fixation play heads.
+* The second channel is the position in seconds from the start.
 
 Below this is a display showing this position in either:
 * seconds.hundredths - if the Memory size is less than 60 seconds OR
@@ -350,7 +376,7 @@ The speed that the playback head is traveling is the *sum* of the SPEED Input an
 
 As you might expect, playback speed will affect the pitch and tempo of the sounds played (the following assumes that the "Use Speed as V/Oct" menu option is unchecked):
 * "1" is playback at the speed it was recorded at.
-* "-1" is playback in reverse, although note that if BOUNCE is set, then when a Ruminate hits the beginning of the audio, it will start playing forwards.
+* "-1" is playback in reverse, although note that if the menu option **Behavior at ends** is set to **Bounce**, then when a Ruminate hits the beginning of the audio, it will start playing forwards.
 * "0.5" is half speed, pitching the audio down an octave and taking twice as long to play. This is quite possibly the best speed :)
 * "2" is double speed, pitched an octave up.
 
@@ -369,6 +395,13 @@ See [example video](https://www.youtube.com/watch?v=dOsupn0-Mxw).
 #### Use Speed as V/Oct
 Affects how the SPEED is interpreted. When unchecked (the default),
 the sum of the SPEED input and control is how many samples the playhead moves forward per sample emitted, so 1 is normal speed, .5 is half-speed. When checked, this sum will be interpreted the way that V/Oct is interpreted in most modules. See [example video](https://www.youtube.com/watch?v=kGKmS2WjqIs).
+#### Default direction is reverse
+When set, the play head will start by playing in reverse (i.e., from top to bottom). This allows one to use Speed as V/Oct and still play the sample in reverse.
+#### Behavior at ends
+This is a sub-menu with three options, which determine what Ruminate will do when the playhead hits the top or bottom of memory:
+* **Loop Around** - Continue playing at the other end of Memory in the same direction.
+* **Bounce** - Continue playing from the same point, but in the opposite direction.
+* **Stop** - Ruminate stops playing.
 ### Randomize Behavior
 To make the likelihood of pleasing combinations higher, when the Randomize function on the module menu is chosen, the Speed Knob will be
 set to values of a just intonation [diatonic scale](https://en.m.wikipedia.org/wiki/Just_intonation#Diatonic_scale), where "1V" is the root. Best when
@@ -406,27 +439,29 @@ When a position to play from is needed (see the STYLE section below), the value 
 
 #### LENGTH Knob, Attenuverter, and Input
 
-When a length of audio to play is needed (see the STYLE section below), the value of the LENGTH Input (if present) is multiplied by the Attenuverter value, and this product is added to the value of the LENGTH knob. That value is limited to a value from 1 ms to 10 seconds, and that length of audio within the buffer will be played.
+When a length of audio to play is needed (see the STYLE section below), there are two ways this might be determined:
+* (default) the value of the LENGTH Input (if present) is multiplied by the Attenuverter value, and this product is added to the value of the LENGTH knob. That value is limited to a value from 1 ms to 10 seconds, and that length of audio within the buffer will be played.
+* if the **Interpret LENGTH as tempo and note length** menu option is set, then the input acts like a clock measuring the tempo of triggers to it, and the knob now selects from a variety of note lengths (e.g., quarter note, dotted 1/8th, etc.) based on that tempo.
 
 #### COUNT Knob
 
 The third STYLE uses this count from 1 - 128 to determine how many repetitions to play (at most) for each CLOCK input.
 
 #### STYLE Knob
-There are three possible settings for STYLE:
-* **CLOCK only: LENGTH and COUNT ignored**
+There are four possible settings for STYLE:
+* **CLOCK Restarts: Starts when CLOCK goes high (LENGTH and COUNT ignored)**
 * Every time a trigger is received by the CLOCK input:
 * * playback quickly fades out and stops (if already in progress)
 * * the playhead moves to POSITION
 * * a trigger is output at TRIG
 * * the playback quickly fades up and plays until the next CLOCK.
-* **Always plays LENGTH: CLOCK and COUNT ignored**:
+* **Always plays LENGTH: (CLOCK and COUNT ignored)**:
 * Playback starts at POSITION for LENGTH milliseconds; LENGTH is read every time the loop restarts. Once that playback is complete:
 * * playback quickly fades out and stops (if already in progress)
 * * the playhead moves to POSITION
 * * a trigger is output at TRIG
 * * the playback quickly fades up and plays until length is reached.
-* **CLOCK starts COUNT repeats of size LENGTH**:
+* **CLOCK starts repeats: COUNT repeats of size LENGTH**:
 * Every time a trigger is received by the CLOCK input:
 * * the LENGTH is read, and a repeat counter is set to zero.
 * * the playhead moves to POSITION
@@ -434,9 +469,20 @@ There are three possible settings for STYLE:
 * * playback quickly fades up and plays for LENGTH milliseconds.
 * * the counter is incremented by one. If that counter is now greater than or equal to COUNT, then
 playback stops, otherwise we move to POSITION and play again for LENGTH (which is reread) milliseconds.
+* **CLOCK as Gate: Plays only while CLOCK is high (LENGTH and COUNT ignored)**
+* CLOCK is treated like a Gate:
+* * playback quickly fades out and stops (if already in progress)
+* * the playhead moves to POSITION
+* * a trigger is output at TRIG
+* * While CLOCK goes high, Fixation will play.
+* * When CLOCK goes low, Fixation stops playing.
+
+#### Position CURRENT Output
+This is a two-channel output indicating the current position of the play head:
+* The first channel is the position from 0.0V to 10.0V. This can be useful as an input [phasor](https://github.com/mhetrick/hetrickcv/blob/master/docs/Topics/Phasors.md) which [some modules](https://library.vcvrack.com/?query=phasor&brand=HetrickCV&tag=&license=) can use to great effect for controlling other Ruminate and Fixation play heads.
+* The second channel is the position in seconds from the start.
 
 #### TRIG Output
-
 This will output a short trigger whenever the play head starts playing from a POSITION. This can be useful for starting an envelope around the sound that Fixation outputs.
 
 Note that this will likely NOT be precisely the same as when a CLOCK is received (in STYLE's that use CLOCK), because Fixation will quickly fade down the audio it's currently playing before starting the next playback. See the [Click Avoidance](#click-avoidance) section for more detail.
@@ -451,7 +497,7 @@ The speed that the playback head is traveling is the *sum* of the SPEED Input an
 
 As you might expect, playback speed will affect the pitch and tempo of the sounds played (the following assumes that the "Use Speed as V/Oct" menu option is unchecked):
 * "1" is playback at the speed it was recorded at.
-* "-1" is playback in reverse, although note that if BOUNCE is set, then when a Fixation hits the beginning of the audio, it will start playing forwards.
+* "-1" is playback in reverse, although note that if the menu option **Behavior at ends** is set to **Bounce**, then when a Fixation hits the beginning of the audio, it will start playing forwards.
 * "0.5" is half speed, pitching the audio down an octave and taking twice as long to play. This is quite possibly the best speed :)
 * "2" is double speed, pitched an octave up.
 
@@ -470,6 +516,15 @@ See [example video](https://www.youtube.com/watch?v=dOsupn0-Mxw).
 #### Use Speed as V/Oct
 Affects how the SPEED is interpreted. When unchecked (the default),
 the sum of the SPEED input and control is how many samples the playhead moves forward per sample emitted, so 1 is normal speed, .5 is half-speed. When checked, this sum will be interpreted the way that V/Oct is interpreted in most modules. See [example video](https://www.youtube.com/watch?v=kGKmS2WjqIs).
+#### Interpret LENGTH as tempo and note length
+When set, the length controls change their meaning. The attenuverter disappears, the input acts like a clock measuring the tempo of triggers to it, and the knob now selects from a variety of note lengths based on that tempo.
+#### Default direction is reverse
+When set, the play head will start by playing in reverse (i.e., from top to bottom). This allows one to use Speed as V/Oct and still play the sample in reverse.
+#### Behavior at ends
+This is a sub-menu with three options, which determine what Fixation will do when the playhead hits the top or bottom of memory:
+* **Loop Around** - Continue playing at the other end of Memory in the same direction.
+* **Bounce** - Continue playing from the same point, but in the opposite direction.
+* **Stop** - Fixation stops playing until the next event that causes it to play occurs.
 ### Randomize Behavior
 To make the likelihood of pleasing combinations higher, when the Randomize function on the module menu is chosen, the Speed Knob will be
 set to values of a just intonation [diatonic scale](https://en.m.wikipedia.org/wiki/Just_intonation#Diatonic_scale), where "1V" is the root. Best when
@@ -544,7 +599,7 @@ Any Delay or Sampler module can do some of what the Memory system can do.
 ![Line Break image](images/Separator.png)
 
 # Acknowledgements
-Many thanks to [Marc Weidenbaum](https://disquiet.com/) for his offhand suggestion
+Many thanks to [Marc Weidenbaum](https://disquiet.com/) for his offhand suggestion to me
 that resulted in this idea coming to fruition. His encouragement and enthusiasm for
 this idea was essential to it reaching this point.
 
@@ -554,7 +609,7 @@ community for greatly extending my silly idea to send text over a VCV cable and
 seeing far more value in it then I did. And for then doing the actual work of
 implementing it.
 
-Thanks to [Omri Cohen](https://www.youtube.com/@OmriCohen-Music) for making some videos explaining these modules
+Thanks to [Omri Cohen](https://www.youtube.com/@OmriCohen-Music) for making videos explaining these modules
 that far surpass my ability to do so.
 
 And my deepest gratitude to Diane LeVan, for letting me ignore her and actually useful household projects
