@@ -11,6 +11,8 @@
 #include "buffered.hpp"
 #include "smoother.h"
 #include "tipsy_utils.h"
+#include "StochasticTelegraph.hpp"  // For MRU lists.
+
 // WAV/AIFF library.
 #include "AudioFile.h"
 
@@ -30,6 +32,7 @@ static const char* TEXTS[] = {
 };
 
 static constexpr size_t recvBufferSize{1024 * 64};
+const size_t MAX_MRU_DIRECTORIES = 10;
 
 ///////////////////////////////////////////////////////////////
 //
@@ -60,6 +63,7 @@ struct PrepareTask {
   float* new_right_array;
   int result_sample_count;
   std::vector<std::string>* loadable_files;
+  StochasticTelegraph::MRUList* mru_load_directories;
   FileOperationReporting* status;  // Owned by module.
 
   PrepareTask(const Type the_type) : type{the_type},
@@ -459,7 +463,9 @@ struct PrepareThread {
     sample_rate = rate;
   }
 
-  void DoDirectoryRead(const std::string& load_folder, std::vector<std::string>* loadable_files) {
+  void DoDirectoryRead(const std::string& load_folder, std::vector<std::string>* loadable_files,
+                       StochasticTelegraph::MRUList* mru_load_directories) {
+    // mru_load_directories may be null. If so, do not add or change it.
     // To make it more obvious that we are reading contents in, we eliminate the current contents.
     if (!loadable_files->empty()) {
       loadable_files->clear();
@@ -472,14 +478,42 @@ struct PrepareThread {
     // loaded out of order.  I think it's a mac thing." - Voxglitch.
     sort(dirList.begin(), dirList.end());
 
+    bool found_files = false;
     for (auto path : dirList)  {
       if ((rack::string::lowercase(system::getExtension(path)) == "wav") ||
           (rack::string::lowercase(system::getExtension(path)) == ".wav") ||
           (rack::string::lowercase(system::getExtension(path)) == "csv") ||
           (rack::string::lowercase(system::getExtension(path)) == ".csv")) {
         loadable_files->push_back(system::getFilename(path));
+        found_files = true;
       }
     }
+
+    // Now update the MRU list if needed.
+    // To do so, we must:
+    // * Have a valid pointer to the MRU list.
+    // * The load_folder must be non-empty.
+    if (mru_load_directories != nullptr && found_files) {
+      // Since multiple modules could update this list, we should refresh it before we modify it.
+      mru_load_directories->clear();
+      StochasticTelegraph::loadMRUList(mru_load_directories);
+
+      // See if load_folder is already in the list.
+      auto it = std::find(mru_load_directories->entries.begin(), mru_load_directories->entries.end(), load_folder);
+      if (it != mru_load_directories->entries.end()) {
+        // It is already in the list; move it to the front.
+        mru_load_directories->entries.erase(it);
+      }
+      // Add to front.
+      mru_load_directories->entries.insert(mru_load_directories->entries.begin(), load_folder);
+      // Trim to max size.
+      if (mru_load_directories->entries.size() > MAX_MRU_DIRECTORIES) {
+        mru_load_directories->entries.resize(MAX_MRU_DIRECTORIES);
+      }
+      // And save the updated list.
+      StochasticTelegraph::saveMRUList(*mru_load_directories);
+    }
+
     busy = false;
   }
 
@@ -595,7 +629,7 @@ struct PrepareThread {
 
             case PrepareTask::LOAD_DIRECTORY_SET: {
               busy = true;
-              DoDirectoryRead(task->str1, task->loadable_files);
+              DoDirectoryRead(task->str1, task->loadable_files, task->mru_load_directories);
               busy = false;
               delete task;
             }
@@ -698,6 +732,8 @@ struct Memory : BufferedModule {
   bool reset_button_pressed = false;
   
   // For Loading and Saving contents.
+  // Most recently used loading directories.
+  StochasticTelegraph::MRUList mru_load_directories;
   std::string load_folder_name;  // For menu to display.
   std::vector<std::string> loadable_files;  // List found in menu.
   std::string loaded_file;  // Checked item in menu.
@@ -755,6 +791,11 @@ struct Memory : BufferedModule {
     load_decoder.provideDataBuffer(load_recv_buffer, recvBufferSize);
     save_decoder.provideDataBuffer(save_recv_buffer, recvBufferSize);
 
+    // Load MRU directories. This is global to all instances of Memory/MemoryCV, so *not*
+    // stored in the JSON data for this particular module.
+    // This may get re-initialized if this is a MemoryCV module.
+    mru_load_directories.type = StochasticTelegraph::MRUType::MEMORY_DIRECTORY;
+    StochasticTelegraph::loadMRUList(&mru_load_directories);
     load_latest_file_on_start = false;
     initiate_startup_load = false;
   }
@@ -1080,10 +1121,14 @@ struct Memory : BufferedModule {
             }
             break;
 
+            // These are sent when Buffer has saved a file that perhaps should be visible.
             case PrepareTask::LOAD_DIRECTORY_SET: {
               if (!load_folder_name.empty()) {
                 task->str1 = load_folder_name;
                 task->loadable_files = &loadable_files;
+                // We don't set mru_load_directories here, since this action shouldn't actually change
+                // the MRU list.
+                task->mru_load_directories = nullptr;
                 if (!module_prepare_queue.tasks.push(task)) {
                   delete task;
                 }
@@ -1156,6 +1201,7 @@ struct Memory : BufferedModule {
             case PrepareTask::LOAD_DIRECTORY_SET: {
               load_folder_name = task->str1;
               task->loadable_files = &loadable_files;
+              task->mru_load_directories = &mru_load_directories;
               if (!module_prepare_queue.tasks.push(task)) {
                 delete task;
               }
@@ -1443,11 +1489,27 @@ struct MemoryWidget : ModuleWidget {
     Memory* module = dynamic_cast<Memory*>(this->module);
     assert(module);
     menu->addChild(new MenuSeparator);
-    menu->addChild(createMenuLabel("Pick Folder for Loading"));
+    menu->addChild(createMenuLabel("Pick Directory for Loading"));
+    MenuItem* folder_mru_menu = createSubmenuItem("Most Recently Used Directories", "",
+      [=](Menu* menu) {
+          for (const std::string& name : module->mru_load_directories.entries) {
+            menu->addChild(createCheckMenuItem(name, "",
+              [=]() {return name.compare(module->load_folder_name) == 0;},
+              [=]() {
+                PrepareTask* task = PrepareTask::LoadDirectoryTask(name);
+                if (!module->widget_module_queue.tasks.push(task)) {
+                  delete task;
+                } 
+              }
+            ));
+          }
+      }
+    );
+    menu->addChild(folder_mru_menu);
 
     MenuItemPickLoadFolder* menu_item_load_folder = new MenuItemPickLoadFolder;
     if (module->load_folder_name.empty()) {
-      menu_item_load_folder->text = "Click here to pick";  
+      menu_item_load_folder->text = "Click here to pick via Directory Selector...";  
     } else {
       menu_item_load_folder->text = module->load_folder_name;
     }
@@ -1518,6 +1580,11 @@ struct MemoryCV : Memory {
     } else {
       WARN("MemoryCV(): buffer is null!");
     }
+    // Memory() constructor has already run this but for the wrong MRUType, so we
+    // need to load the correct MRU list.
+    mru_load_directories.clear();
+    mru_load_directories.type = StochasticTelegraph::MRUType::MEMORYCV_DIRECTORY;
+    StochasticTelegraph::loadMRUList(&mru_load_directories);
   }
 };
 
