@@ -1,4 +1,5 @@
 #include <ctime>
+#include <filesystem>
 #include <iomanip>
 #include <thread>
 #include <cstdlib> // for strtol
@@ -32,7 +33,6 @@ static const char* TEXTS[] = {
 };
 
 static constexpr size_t recvBufferSize{1024 * 64};
-const size_t MAX_MRU_DIRECTORIES = 10;
 
 ///////////////////////////////////////////////////////////////
 //
@@ -63,12 +63,13 @@ struct PrepareTask {
   float* new_right_array;
   int result_sample_count;
   std::vector<std::string>* loadable_files;
-  StochasticTelegraph::MRUList* mru_load_directories;
+  StochasticTelegraph::MRUType mru_type;
+  bool update_mru;
   FileOperationReporting* status;  // Owned by module.
 
   PrepareTask(const Type the_type) : type{the_type},
       new_left_array{nullptr}, new_right_array{nullptr},
-      loadable_files{nullptr}, status{nullptr} {}
+      loadable_files{nullptr}, update_mru{false}, status{nullptr} {}
 
   ~PrepareTask() {
   }
@@ -83,9 +84,13 @@ struct PrepareTask {
     return task;
   }
 
-  static PrepareTask* LoadDirectoryTask(const std::string& directory) {
+  static PrepareTask* LoadDirectoryTask(const std::string& directory,
+                                        StochasticTelegraph::MRUType mru_type = StochasticTelegraph::MEMORY_DIRECTORY,
+                                        bool update_mru = false) {
     PrepareTask* task = new PrepareTask(LOAD_DIRECTORY_SET);
     task->str1 = directory;
+    task->mru_type = mru_type;
+    task->update_mru = update_mru;
     return task;
   }
 
@@ -362,6 +367,7 @@ struct BufferChangeThread {
 
                 // We may have added a file to the Load directory, so we tell the module
                 // to rescan the load directory just in case.
+                // No need to update MRU for a rescan.
                 PrepareTask* rescan_task = PrepareTask::LoadDirectoryTask("");
                 if (!buffer_module_queue->tasks.push(rescan_task)) {
                   delete rescan_task;
@@ -464,8 +470,7 @@ struct PrepareThread {
   }
 
   void DoDirectoryRead(const std::string& load_folder, std::vector<std::string>* loadable_files,
-                       StochasticTelegraph::MRUList* mru_load_directories) {
-    // mru_load_directories may be null. If so, do not add or change it.
+                       StochasticTelegraph::MRUType mru_type, bool update_mru) {
     // To make it more obvious that we are reading contents in, we eliminate the current contents.
     if (!loadable_files->empty()) {
       loadable_files->clear();
@@ -493,25 +498,9 @@ struct PrepareThread {
     // To do so, we must:
     // * Have a valid pointer to the MRU list.
     // * The load_folder must be non-empty.
-    if (mru_load_directories != nullptr && found_files) {
-      // Since multiple modules could update this list, we should refresh it before we modify it.
-      mru_load_directories->clear();
-      StochasticTelegraph::loadMRUList(mru_load_directories);
-
-      // See if load_folder is already in the list.
-      auto it = std::find(mru_load_directories->entries.begin(), mru_load_directories->entries.end(), load_folder);
-      if (it != mru_load_directories->entries.end()) {
-        // It is already in the list; move it to the front.
-        mru_load_directories->entries.erase(it);
-      }
-      // Add to front.
-      mru_load_directories->entries.insert(mru_load_directories->entries.begin(), load_folder);
-      // Trim to max size.
-      if (mru_load_directories->entries.size() > MAX_MRU_DIRECTORIES) {
-        mru_load_directories->entries.resize(MAX_MRU_DIRECTORIES);
-      }
-      // And save the updated list.
-      StochasticTelegraph::saveMRUList(*mru_load_directories);
+    if (update_mru && found_files) {
+      StochasticTelegraph::PluginConfig::getInstance().putMRUEntry(
+        load_folder, mru_type);
     }
 
     busy = false;
@@ -629,7 +618,7 @@ struct PrepareThread {
 
             case PrepareTask::LOAD_DIRECTORY_SET: {
               busy = true;
-              DoDirectoryRead(task->str1, task->loadable_files, task->mru_load_directories);
+              DoDirectoryRead(task->str1, task->loadable_files, task->mru_type, task->update_mru);
               busy = false;
               delete task;
             }
@@ -732,8 +721,6 @@ struct Memory : BufferedModule {
   bool reset_button_pressed = false;
   
   // For Loading and Saving contents.
-  // Most recently used loading directories.
-  StochasticTelegraph::MRUList mru_load_directories;
   std::string load_folder_name;  // For menu to display.
   std::vector<std::string> loadable_files;  // List found in menu.
   std::string loaded_file;  // Checked item in menu.
@@ -794,8 +781,6 @@ struct Memory : BufferedModule {
     // Load MRU directories. This is global to all instances of Memory/MemoryCV, so *not*
     // stored in the JSON data for this particular module.
     // This may get re-initialized if this is a MemoryCV module.
-    mru_load_directories.type = StochasticTelegraph::MRUType::MEMORY_DIRECTORY;
-    StochasticTelegraph::loadMRUList(&mru_load_directories);
     load_latest_file_on_start = false;
     initiate_startup_load = false;
   }
@@ -842,6 +827,7 @@ struct Memory : BufferedModule {
     json_t* load_folderJ = json_object_get(rootJ, "load_folder");
     if (load_folderJ) {
       load_folder_name.assign(json_string_value(load_folderJ));
+      // No need to update MRU for initially loading the module.
       PrepareTask* task = PrepareTask::LoadDirectoryTask(load_folder_name);
       if (!widget_module_queue.tasks.push(task)) {
         delete task;
@@ -1126,9 +1112,9 @@ struct Memory : BufferedModule {
               if (!load_folder_name.empty()) {
                 task->str1 = load_folder_name;
                 task->loadable_files = &loadable_files;
-                // We don't set mru_load_directories here, since this action shouldn't actually change
-                // the MRU list.
-                task->mru_load_directories = nullptr;
+                // This action shouldn't actually change the MRU list.
+                // Simply reading the directory contents doesn't count as a "recent use".
+                task->update_mru = false;
                 if (!module_prepare_queue.tasks.push(task)) {
                   delete task;
                 }
@@ -1201,7 +1187,6 @@ struct Memory : BufferedModule {
             case PrepareTask::LOAD_DIRECTORY_SET: {
               load_folder_name = task->str1;
               task->loadable_files = &loadable_files;
-              task->mru_load_directories = &mru_load_directories;
               if (!module_prepare_queue.tasks.push(task)) {
                 delete task;
               }
@@ -1398,7 +1383,11 @@ struct MenuItemPickLoadFolder : MenuItem {
     if (filename != "") {
       // We set this even if it's the same path as before. This gives the user a gesture to update
       // the list.
-      PrepareTask* task = PrepareTask::LoadDirectoryTask(filename);
+      PrepareTask* task = PrepareTask::LoadDirectoryTask(filename,
+        module->cv_rate ?
+          StochasticTelegraph::MRUType::MEMORYCV_DIRECTORY :
+          StochasticTelegraph::MRUType::MEMORY_DIRECTORY,
+        true);
       if (!module->widget_module_queue.tasks.push(task)) {
         delete task;
       }
@@ -1485,36 +1474,94 @@ struct MemoryWidget : ModuleWidget {
                          asset::plugin(pluginInstance, "res/Memory-dark.svg")));
   }
 
+  // Shortens really long directory paths for display.
+  std::string betterDirectoryPath(const std::string& path) {
+    if (path.length() < 50) {
+      return path;
+    }
+
+    // Split by the OS's path separator. Show the first three and last three components.
+    //char path_separator = std::filesystem::path::preferred_separator;
+    #if defined ARCH_WIN
+    char path_separator = '\\';
+    #else
+    char path_separator = '/';
+    #endif
+
+    std::vector<std::string> components;
+    std::string current_component;
+    for (char c : path) {
+    #if defined ARCH_WIN
+      if (c == '\\' || c == '/') {
+    #else
+      if (c == path_separator) {
+    #endif
+        if (!current_component.empty()) {
+          components.push_back(current_component);
+          current_component.clear();
+        }
+      } else {
+        current_component += c;
+      }
+    }
+    if (!current_component.empty()) {
+      components.push_back(current_component);
+    }
+
+    if (components.size() <= 5) {
+      return path;
+    }
+
+    std::string result = "";
+    for (size_t i = 0; i < 2 && i < components.size(); ++i) {
+      result += components[i] + path_separator;
+    }
+    result += "...";
+    for (size_t i = components.size() - 3; i < components.size(); ++i) {
+      result += path_separator + components[i];
+    }
+
+    return result;
+  }
+
   void appendContextMenu(Menu* menu) override {
     Memory* module = dynamic_cast<Memory*>(this->module);
     assert(module);
     menu->addChild(new MenuSeparator);
+
     menu->addChild(createMenuLabel("Pick Directory for Loading"));
-    MenuItem* folder_mru_menu = createSubmenuItem("Most Recently Used Directories", "",
-      [=](Menu* menu) {
-          for (const std::string& name : module->mru_load_directories.entries) {
-            menu->addChild(createCheckMenuItem(name, "",
-              [=]() {return name.compare(module->load_folder_name) == 0;},
-              [=]() {
-                PrepareTask* task = PrepareTask::LoadDirectoryTask(name);
-                if (!module->widget_module_queue.tasks.push(task)) {
-                  delete task;
-                } 
-              }
-            ));
-          }
-      }
-    );
-    menu->addChild(folder_mru_menu);
+    menu->addChild(createMenuLabel("Current: " + 
+      (module->load_folder_name.empty() ? "<none>" : module->load_folder_name)));
+
+    StochasticTelegraph::MRUType mru_type = module->cv_rate ?
+      StochasticTelegraph::MRUType::MEMORYCV_DIRECTORY :
+      StochasticTelegraph::MRUType::MEMORY_DIRECTORY;
+    std::vector<std::string>* mru_load_directories = 
+      StochasticTelegraph::PluginConfig::getInstance().getMRUList(mru_type);
+    if (mru_load_directories != nullptr && mru_load_directories->size() > 0) {
+      MenuItem* folder_mru_menu = createSubmenuItem("Most Recently Used Directories", "",
+        [=](Menu* menu) {
+            for (const std::string& name : *mru_load_directories) {
+              menu->addChild(createCheckMenuItem(betterDirectoryPath(name), "",
+                [=]() {return name.compare(module->load_folder_name) == 0;},
+                [=]() {
+                  PrepareTask* task = PrepareTask::LoadDirectoryTask(name, mru_type, true);
+                  if (!module->widget_module_queue.tasks.push(task)) {
+                    delete task;
+                  } 
+                }
+              ));
+            }
+        }
+      );
+      menu->addChild(folder_mru_menu);
+    }
 
     MenuItemPickLoadFolder* menu_item_load_folder = new MenuItemPickLoadFolder;
-    if (module->load_folder_name.empty()) {
-      menu_item_load_folder->text = "Click here to pick via Directory Selector...";  
-    } else {
-      menu_item_load_folder->text = module->load_folder_name;
-    }
+    menu_item_load_folder->text = "Click here to pick via Directory Selector...";  
     menu_item_load_folder->module = module;
     menu->addChild(menu_item_load_folder);
+
     if (module->loadable_files.empty()) {
       menu->addChild(createMenuLabel("No .wav or .csv files seen in Loading directory"));
     } else {
@@ -1536,7 +1583,7 @@ struct MemoryWidget : ModuleWidget {
       );
       menu->addChild(loadable_file_menu);
     }
-    menu->addChild(createBoolPtrMenuItem("Load most recent file on module start", "",
+    menu->addChild(createBoolPtrMenuItem("Load most recent file when this module starts", "",
                                          &(module->load_latest_file_on_start)));
     // TODO: Add menu action to just load some random file without setting the load folder.
 
@@ -1580,11 +1627,6 @@ struct MemoryCV : Memory {
     } else {
       WARN("MemoryCV(): buffer is null!");
     }
-    // Memory() constructor has already run this but for the wrong MRUType, so we
-    // need to load the correct MRU list.
-    mru_load_directories.clear();
-    mru_load_directories.type = StochasticTelegraph::MRUType::MEMORYCV_DIRECTORY;
-    StochasticTelegraph::loadMRUList(&mru_load_directories);
   }
 };
 
