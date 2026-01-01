@@ -270,6 +270,18 @@ bool IsMemoryEnsembleModel(Model* model);
 bool IsNonMemoryEnsembleModel(Model* model);
 std::shared_ptr<Buffer> findClosestMemory(Module* leftModule);
 
+////////////////////////////////////////////////////////////////////////
+// Some widgets that get used by multiple modules.
+//
+
+// Slider that snaps back to the middle when let go.
+struct AdjustSlider : VCVSlider {
+  void onDragEnd(const DragEndEvent& e) override {
+    getParamQuantity()->setImmediateValue(0.0);
+    VCVSlider::onDragEnd(e);
+  }
+};
+
 template <typename T>
 struct TimestampField : OpaqueWidget {
   T* module;

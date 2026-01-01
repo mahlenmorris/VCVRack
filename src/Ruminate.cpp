@@ -424,14 +424,6 @@ struct Ruminate : PositionedModule {
   }
 };
 
-struct AdjustSliderRuminate : VCVSlider {
-  
-  void onDragEnd(const DragEndEvent& e) override {
-    getParamQuantity()->setImmediateValue(0.0);
-    VCVSlider::onDragEnd(e);
-  }
-};
-
 struct RuminateWidget : ModuleWidget {
   RuminateWidget(Ruminate* module) {
     setModule(module);
@@ -446,7 +438,7 @@ struct RuminateWidget : ModuleWidget {
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 97.087)), module, Ruminate::SPEED_INPUT));
     addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(19.05, 97.087)), module, Ruminate::SPEED_PARAM));
 
-    addParam(createParamCentered<AdjustSliderRuminate>(mm2px(Vec(6.35, 43.0)),
+    addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6.35, 43.0)),
        module, Ruminate::ADJUST_PARAM));
     addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(19.05, 50.8)),
        module, Ruminate::INIT_POSITION_PARAM));
