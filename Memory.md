@@ -110,6 +110,7 @@ replace the Memory's contents with the audio from ``/my sounds/drums/snare.wav``
 * * For example, ``#0``, ``#12``, ``#776``
 * * In this case, the Nth file (zero-indexed) in the Load Folder will be loaded, wrapping around to the beginning if N is larger than the number of files.
 So if your Load Folder contained the three files, ``apple.wav``, ``banana.wav``, and ``chocolate.wav``, then ``#0``, ``#3``, and ``#6`` would all refer to ``apple.wav``.
+* * This simple example patch for [previewing WAV files in a directory](https://patchstorage.com/wav-file-explorer/) demonstrates this ability.
 * * This means that a BASICally program like the following will load a random file in the Load Folder every time IN1 sees a trigger.
 ![Memory Example - Load Random File](images/LoadRandomFile.png)
 #### LOAD Completion Output
