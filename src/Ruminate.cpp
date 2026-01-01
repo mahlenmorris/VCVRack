@@ -424,27 +424,6 @@ struct Ruminate : PositionedModule {
   }
 };
 
-struct NowTimestamp : TimestampField {
-  NowTimestamp() {
-  }
-
-  Ruminate* module;
-
-  double getPosition() override {
-    if (module && module->length > 0 && module->seconds > 0.0) {
-      return module->display_position * module->seconds / module->length;
-    }
-    return 0.00;  // Dummy display value.
-  }
-
-  double getSeconds() override {
-    if (module && module->seconds > 0.0) {
-      return module->seconds;
-    }
-    return 2.0;
-  }
-};
-
 struct AdjustSliderRuminate : VCVSlider {
   
   void onDragEnd(const DragEndEvent& e) override {
@@ -484,9 +463,9 @@ struct RuminateWidget : ModuleWidget {
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.7, 65.0)),
                                                module, Ruminate::NOW_POSITION_OUTPUT));
     // A timestamp is 10 wide.
-    NowTimestamp* now_timestamp = createWidget<NowTimestamp>(mm2px(
+    TimestampField<Ruminate>* now_timestamp = createWidget<TimestampField<Ruminate>>(mm2px(
         Vec(12.7 - (10.0 / 2.0), 69.0)));
-    now_timestamp->module = module;
+    now_timestamp->setModule(module);
     addChild(now_timestamp);
 
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.035, 112.0)), module, Ruminate::LEFT_OUTPUT));

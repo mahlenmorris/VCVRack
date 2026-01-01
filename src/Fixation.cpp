@@ -758,28 +758,6 @@ struct Fixation : PositionedModule {
   }
 };
 
-struct NowFixationTimestamp : TimestampField {
-  NowFixationTimestamp() {
-  }
-
-  Fixation* module;
-
-  double getPosition() override {
-    if (module && module->length > 0) {
-      return module->display_position * module->seconds / module->length;
-    }
-    return 0.00;  // Dummy display value.
-  }
-
-  double getSeconds() override {
-    if (module && module->seconds > 0.0) {
-      return module->seconds;
-    }
-    return 2.0;
-  }
-};
-
-
 struct FixationWidget : ModuleWidget {
   // Need to be able to show/hide these.
   Trimpot* length_trimpot = nullptr;
@@ -822,9 +800,9 @@ struct FixationWidget : ModuleWidget {
 
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.575, 70.509)), module, Fixation::CURRENT_OUTPUT));
     // A timestamp is 10 wide.
-    NowFixationTimestamp* now_timestamp = createWidget<NowFixationTimestamp>(mm2px(
+    TimestampField<Fixation>* now_timestamp = createWidget<TimestampField<Fixation>>(mm2px(
         Vec(8.575 - (10.0 / 2.0), 74.509)));
-    now_timestamp->module = module;
+    now_timestamp->setModule(module);
     addChild(now_timestamp);
 
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 70.509)), module, Fixation::TRIG_OUT_OUTPUT));

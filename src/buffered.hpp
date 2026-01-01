@@ -270,13 +270,31 @@ bool IsMemoryEnsembleModel(Model* model);
 bool IsNonMemoryEnsembleModel(Model* model);
 std::shared_ptr<Buffer> findClosestMemory(Module* leftModule);
 
+template <typename T>
 struct TimestampField : OpaqueWidget {
+  T* module;
+  
+  void setModule(T* mod) {
+    module = mod;
+  }
+
+  double getPosition() {
+    if (module && module->length > 0 && module->seconds > 0.0) {
+      return module->display_position * module->seconds / module->length;
+    }
+    return 0.00;  // Dummy display value.
+ }
+
+  double getSeconds() {
+    if (module && module->seconds > 0.0) {
+      return module->seconds;
+    }
+    return 2.0;
+  }
+
   TimestampField() {
     box.size = mm2px(Vec(10.0, 5.0));
   }
-
-  virtual double getPosition() = 0;
-  virtual double getSeconds() = 0;
 
   void drawLayer(const DrawArgs& args, int layer) override {
     if (layer == 1) {
