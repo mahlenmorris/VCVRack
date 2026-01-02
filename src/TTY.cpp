@@ -7,6 +7,7 @@
 
 #include "plugin.hpp"
 #include "st_textfield.hpp"
+#include "StochasticTelegraph.hpp"
 #include <tipsy/tipsy.h>
 
 /*
@@ -393,7 +394,10 @@ struct TTY : Module {
 struct TTYUndoRedoAction : history::ModuleAction {
   int old_width, new_width;
 
-  TTYUndoRedoAction(int64_t id, int old_width, int new_width) :
+  // This has two unused float parameters to match the signature of the
+  // STResizeHandle.
+  TTYUndoRedoAction(int64_t id, int old_width, int new_width,
+       float unused_1=0.0f, float unused_2=0.0f) :
       old_width{old_width}, new_width{new_width} {
     moduleId = id;
     name = "module width change";
@@ -411,81 +415,6 @@ struct TTYUndoRedoAction : history::ModuleAction {
     if (module) {
       module->width = this->new_width;
       module->RedrawText();
-    }
-  }
-};
-
-// Needs to have a different name than the one in BASICally, or it
-// compiles but just won't work.
-// TODO: Possible to make this a reusable class between the two? Unlikely.
-struct TTYModuleResizeHandle : OpaqueWidget {
-  Vec dragPos;
-  Rect originalBox;
-  TTY* module;
-
-  TTYModuleResizeHandle() {
-    // One hole wide and full length tall.
-    box.size = Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
-  }
-
-  void onDragStart(const DragStartEvent& e) override {
-    if (e.button != GLFW_MOUSE_BUTTON_LEFT)
-      return;
-
-    dragPos = APP->scene->rack->getMousePos();
-    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
-    assert(mw);
-    originalBox = mw->box;
-  }
-
-  void onDragMove(const DragMoveEvent& e) override {
-    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
-    assert(mw);
-    int original_width = module->width;
-
-    Vec newDragPos = APP->scene->rack->getMousePos();
-    float deltaX = newDragPos.x - dragPos.x;
-
-    Rect newBox = originalBox;
-    Rect oldBox = mw->box;
-    // Minimum and maximum number of holes we allow the module to be.
-    const float minWidth = 4 * RACK_GRID_WIDTH;
-    const float maxWidth = 300 * RACK_GRID_WIDTH;
-    newBox.size.x += deltaX;
-    newBox.size.x = std::fmax(newBox.size.x, minWidth);
-    newBox.size.x = std::fmin(newBox.size.x, maxWidth);
-    newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
-    // Set box and test whether it's valid.
-    mw->box = newBox;
-    if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
-      mw->box = oldBox;
-    }
-    module->width = std::round(mw->box.size.x / RACK_GRID_WIDTH);
-    if (original_width != module->width) {
-      // Make resizing an undo/redo action. If I don't do this, undoing a
-      // different module's move will cause them to overlap (aka, a
-      // transporter malfunction).
-      APP->history->push(
-        new TTYUndoRedoAction(module->id, original_width, module->width));
-      // Also need to tell FramebufferWidget to update the appearance,
-      // since the width has changed.
-      module->RedrawText();
-    }
-  }
-
-  void drawLayer(const DrawArgs& args, int layer) override {
-    if (layer == 1) {
-      // Draw two lines to give people something to grab for.
-      // Lifted from the VCV Blank module.
-      for (float x = 5.0; x <= 10.0; x += 5.0) {
-        nvgBeginPath(args.vg);
-        const float margin = 5.0;
-        nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
-        nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
-        nvgStrokeWidth(args.vg, 1.0);
-        nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
-        nvgStroke(args.vg);
-      }
     }
   }
 };
@@ -635,7 +564,7 @@ const float CONTROL_WIDTH = 13.0f;
 struct TTYWidget : ModuleWidget {
   Widget* topRightScrew;
   Widget* bottomRightScrew;
-  TTYModuleResizeHandle* rightHandle;
+  StochasticTelegraph::STResizeHandle<TTY, TTYUndoRedoAction>* rightHandle;
   TTYTextField* textDisplay;
   FramebufferWidget* main_text_framebuffer;
 
@@ -704,7 +633,7 @@ struct TTYWidget : ModuleWidget {
     }
 
     // Resize bar on right.
-    rightHandle = new TTYModuleResizeHandle;
+    rightHandle = new StochasticTelegraph::STResizeHandle<TTY, TTYUndoRedoAction>(true, 4, 300);
     rightHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module
     // browser.

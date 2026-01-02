@@ -15,6 +15,8 @@
 #include "st_textfield.hpp"
 #include "tipsy_utils.h"
 #include <tipsy/tipsy.h>  // Library for sending text.
+
+#include "StochasticTelegraph.hpp"  // For my common widgets.
   
 enum Style {
   ALWAYS_STYLE,
@@ -855,7 +857,11 @@ struct TextEditAction : history::ModuleAction {
     name = "code edit";
     old_width = new_width = -1;
   }
-  TextEditAction(int64_t id, int old_width, int new_width) :
+
+  // This has two unused float parameters to match the signature of the
+  // STResizeHandle.
+  TextEditAction(int64_t id, int old_width, int new_width,
+     float unused_1=0.0f, float unused_2=0.0f) :
       old_width{old_width}, new_width{new_width} {
     moduleId = id;
     name = "module width change";
@@ -891,78 +897,6 @@ struct TextEditAction : history::ModuleAction {
         module->width = this->new_width;
       }
       module->RedrawText();
-    }
-  }
-};
-
-struct ModuleResizeHandle : OpaqueWidget {
-  Vec dragPos;
-  Rect originalBox;
-  Basically* module;
-
-  ModuleResizeHandle() {
-    // One hole wide and full length tall.
-    box.size = Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
-  }
-
-  void onDragStart(const DragStartEvent& e) override {
-    if (e.button != GLFW_MOUSE_BUTTON_LEFT)
-      return;
-
-    dragPos = APP->scene->rack->getMousePos();
-    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
-    assert(mw);
-    originalBox = mw->box;
-  }
-
-  void onDragMove(const DragMoveEvent& e) override {
-    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
-    assert(mw);
-    int original_width = module->width;
-
-    Vec newDragPos = APP->scene->rack->getMousePos();
-    float deltaX = newDragPos.x - dragPos.x;
-
-    Rect newBox = originalBox;
-    Rect oldBox = mw->box;
-    // Minimum and maximum number of holes we allow the module to be.
-    const float minWidth = 7 * RACK_GRID_WIDTH;
-    const float maxWidth = 64 * RACK_GRID_WIDTH;
-    newBox.size.x += deltaX;
-    newBox.size.x = std::fmax(newBox.size.x, minWidth);
-    newBox.size.x = std::fmin(newBox.size.x, maxWidth);
-    newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
-
-    // Set box and test whether it's valid.
-    mw->box = newBox;
-    if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
-      mw->box = oldBox;
-    }
-    module->width = std::round(mw->box.size.x / RACK_GRID_WIDTH);
-    if (original_width != module->width) {
-      // Make this an undo action. If I don't do this, undoing a different
-      // module's move will cause them to overlap.
-      APP->history->push(
-        new TextEditAction(module->id, original_width, module->width));
-      // Also need to tell FramebufferWidget to update the appearance,
-      // since the width has changed,
-      module->RedrawText();
-    }
-  }
-
-  void drawLayer(const DrawArgs& args, int layer) override {
-    if (layer == 1) {
-      // Draw two lines to give people something to grab for.
-      // Lifted from the VCV Blank module.
-      for (float x = 5.0; x <= 10.0; x += 5.0) {
-        nvgBeginPath(args.vg);
-        const float margin = 5.0;
-        nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
-        nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
-        nvgStrokeWidth(args.vg, 1.0);
-        nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
-        nvgStroke(args.vg);
-      }
     }
   }
 };
@@ -1423,7 +1357,8 @@ struct BasicallyWidget : ModuleWidget {
       module, Basically::OUT6_OUTPUT));
 
     // Resize bar on right.
-    ModuleResizeHandle* new_rightHandle = new ModuleResizeHandle;
+    StochasticTelegraph::STResizeHandle<Basically, TextEditAction>* new_rightHandle =
+      new StochasticTelegraph::STResizeHandle<Basically, TextEditAction>(true, 7, 64);
     this->rightHandle = new_rightHandle;
     new_rightHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module

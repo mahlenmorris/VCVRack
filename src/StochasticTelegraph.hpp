@@ -53,30 +53,92 @@ private:
   std::vector<std::string> mru_lists[MRU_LEN];
 };
 
-/*  MAHLEN, put this in the CPP that loads all of the models!!
-// Example usage in main.cpp
-int main() {
-  
-    // Access the singleton instance through the static getInstance() function
-    PluginConfig& instance1 = PluginConfig::getInstance();
-    instance1.showMessage("Hello from instance 1");
+/////////////////////
+// Widget for resizing certain modules.
+// T is module type, U is *UndoRedo type.
+template <typename T, typename U>
+struct STResizeHandle : OpaqueWidget {
+  Vec dragPos;
+  Rect originalBox;
+  T* module;
+  bool right;  // True for one on the right side.
+  // Limits on size.
+  int min_holes, max_holes;
 
-    // Attempting to get another instance actually returns the same object
-    PluginConfig& instance2 = PluginConfig::getInstance();
-    instance2.showMessage("Hello from instance 2 (same instance)");
+  STResizeHandle(bool is_right, int min_h, int max_h) : 
+      right(is_right), min_holes(min_h), max_holes(max_h) {
+    // One hole wide and full length tall.
+    box.size = Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
+  }
 
-    // Verify that both references point to the same memory address
-    if (&instance1 == &instance2) {
-        std::cout << "Both instances refer to the same Singleton object!" << std::endl;
+  void onDragStart(const DragStartEvent& e) override {
+    if (e.button != GLFW_MOUSE_BUTTON_LEFT)
+      return;
+
+    dragPos = APP->scene->rack->getMousePos();
+    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
+    assert(mw);
+    originalBox = mw->box;
+  }
+
+  void onDragMove(const DragMoveEvent& e) override {
+    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
+    assert(mw);
+    int original_width = module->width;
+
+    Vec newDragPos = APP->scene->rack->getMousePos();
+    float deltaX = newDragPos.x - dragPos.x;
+
+    Rect newBox = originalBox;
+    Rect oldBox = mw->box;
+    // Minimum and maximum number of holes we allow the module to be.
+    const float minWidth = min_holes * RACK_GRID_WIDTH;
+    const float maxWidth = max_holes * RACK_GRID_WIDTH;
+    if (right) {
+      newBox.size.x += deltaX;
+      newBox.size.x = std::fmax(newBox.size.x, minWidth);
+      newBox.size.x = std::fmin(newBox.size.x, maxWidth);
+      newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
+    } else {
+      newBox.size.x -= deltaX;
+      newBox.size.x = std::fmax(newBox.size.x, minWidth);
+      newBox.size.x = std::fmin(newBox.size.x, maxWidth);
+      newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
+      newBox.pos.x = originalBox.pos.x + originalBox.size.x - newBox.size.x;
     }
+    // Set box and test whether it's valid.
+    mw->box = newBox;
+    if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
+      mw->box = oldBox;
+    }
+    module->width = std::round(mw->box.size.x / RACK_GRID_WIDTH);
+    if (original_width != module->width) {
+      // Make this resizing an undo/redo action. If I don't do this, undoing a
+      // different module's move may cause them to overlap (aka, a
+      // transporter malfunction).
+      APP->history->push(
+        new U(module->id, original_width, module->width,
+                oldBox.pos.x, mw->box.pos.x));
+      // Also need to tell FramebufferWidget to update the appearance.
+      module->RedrawText();
+    }
+  }
 
-    // This would cause a compilation error because the constructor is private:
-    // Singleton instance3; 
+  void drawLayer(const DrawArgs& args, int layer) override {
+    if (layer == 1) {
+      // Draw two lines to give people something to grab for.
+      // Lifted from the VCV Blank module.
+      for (float x = 5.0; x <= 10.0; x += 5.0) {
+        nvgBeginPath(args.vg);
+        const float margin = 5.0;
+        nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
+        nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
+        nvgStrokeWidth(args.vg, 1.0);
+        nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
+        nvgStroke(args.vg);
+      }
+    }
+  }
+};
 
-    // This would also cause a compilation error because the copy constructor is deleted:
-    // Singleton instance4 = instance1;
-
-    return 0;
-}
-*/
 } // namespace StochasticTelegraph
