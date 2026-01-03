@@ -128,12 +128,16 @@ struct BrainwashThread {
 struct Brainwash : Module {
   enum ParamId {
     RECORD_BUTTON_PARAM,
+    CLOCK_COUNT_PARAM,
+    ARM_BUTTON_PARAM,
     PARAMS_LEN
   };
   enum InputId {
     RECORD_GATE_INPUT,
     LEFT_INPUT,
     RIGHT_INPUT,
+    CLOCK_TRIGGER_INPUT,
+    ARM_TRIGGER_INPUT,
     INPUTS_LEN
   };
   enum OutputId {
@@ -142,7 +146,14 @@ struct Brainwash : Module {
   enum LightId {
     CONNECTED_LIGHT,
     RECORD_BUTTON_LIGHT,
+    ARM_BUTTON_LIGHT,
     LIGHTS_LEN
+  };
+
+  enum TimedRecordingState {
+    NOT_RECORDING,       // Not armed.
+    WAITING_FOR_CLOCK,   // Armed and waiting for the next clock to start recording.
+    RECORDING
   };
 
   // We look for the nearest Memory every NN samples. This saves CPU time.
@@ -164,8 +175,28 @@ struct Brainwash : Module {
   // Set if we were recording in the previous process() call.
   bool was_recording;
 
+  dsp::SchmittTrigger arm_trigger;
+  TimedRecordingState timed_recording_state;
+  // These can't be countdowns because COUNT knob might be changing, and I
+  // should notice that.
+  int clocks_so_far;  
+  int fractional_samples_so_far;
+
+  // For tracking the tempo of CLOCK.
+  dsp::SchmittTrigger tempo_trigger;
+  int64_t last_tempo_trigger_frame = -1;
+  int64_t tempo_length_in_frames = -1;
+
   Brainwash() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
+    configInput(CLOCK_TRIGGER_INPUT, 
+      "Clock for recording length; Arm recording and will record for COUNT clocks");
+    configInput(ARM_TRIGGER_INPUT, "Trigger received here will arm recording for COUNT clocks");
+    configSwitch(ARM_BUTTON_PARAM, 0, 1, 0, 
+      "Press to arm recording to start on next CLOCK trigger",
+      {"Disarmed", "Armed"});
+    configParam(CLOCK_COUNT_PARAM, 0.001, 32, 4,
+      "Number of repetitions of CLOCK to record for. May be fractional");
     configSwitch(RECORD_BUTTON_PARAM, 0, 1, 0, "Press to record/release to stop this recording",
                  {"Inactive", "Recording"});
     configInput(RECORD_GATE_INPUT, "Gate to start/stop recording");
@@ -173,8 +204,13 @@ struct Brainwash : Module {
     configInput(RIGHT_INPUT, "Right");
 
     recording_position = -1;
-
     was_recording = false;
+    timed_recording_state = NOT_RECORDING;
+
+    // I'm using the state of the arm button to indicate if we are armed, but we don't want
+    // armed state to get saved.
+    params[ARM_BUTTON_PARAM].setValue(0.0f);
+
     worker = new BrainwashThread();
     thread = new std::thread(&BrainwashThread::Work, worker);
   }
@@ -205,33 +241,118 @@ struct Brainwash : Module {
       }
     }
 
+    // Even if not connected, we might still be getting tempo triggers.
+    // So we'll track them just in case.
+    bool clock_event = false;
+    if (inputs[CLOCK_TRIGGER_INPUT].isConnected()) {
+      bool tempo_was_high = tempo_trigger.isHigh();
+      tempo_trigger.process(rescale(inputs[CLOCK_TRIGGER_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+      if (!tempo_was_high && tempo_trigger.isHigh()) {
+        if (last_tempo_trigger_frame >= 0) {
+          tempo_length_in_frames = args.frame - last_tempo_trigger_frame;
+        }
+        // Set the length based on the new trigger.
+        last_tempo_trigger_frame = args.frame;
+        clock_event = true;
+      }
+    } else {
+      // Reset the tempo tracking.
+      last_tempo_trigger_frame = -1;
+      tempo_length_in_frames = -1;
+      tempo_trigger.reset();
+    }
+
     bool connected = (buffer != nullptr) && buffer->IsValid();
 
     // If connected and buffer isn't empty.
     if (connected) {
       worker->SetCV(buffer->cv_rate);
-      // Are we in motion or not?
-      recordTrigger.process(rescale(
-          inputs[RECORD_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
-      // 'recording' just reflects the state of the button and the gate input.
-      bool recording = (params[RECORD_BUTTON_PARAM].getValue() > 0.1f) ||
-                     recordTrigger.isHigh();
 
-      if (recording && !was_recording) {
-        // Starting from the top.
-        recording_position = -1;
-      } else if (!recording && was_recording) {
-        // Recording done, send it!
-        //WARN("Initiated brainwash at position %d", recording_position);
-        worker->InitiateReplacement(recording_position, buffer);
+      // Are we armed to start recording on the next clock trigger?
+      bool arm_was_triggered = arm_trigger.isHigh();
+      arm_trigger.process(
+        rescale(inputs[ARM_TRIGGER_INPUT].getVoltage(),
+          0.1f, 2.f, 0.f, 1.f));
+      if (!arm_was_triggered && arm_trigger.isHigh()) {
+        params[ARM_BUTTON_PARAM].setValue(1.0f); 
       }
-      was_recording = recording;
-      if (recording) {
-        ++recording_position;
-        worker->RecordSample(recording_position,
-            inputs[LEFT_INPUT].getVoltage(), inputs[RIGHT_INPUT].getVoltage());
+
+      // Handle timed recording state machine.
+      // May pass through multiple states in a single process() call, as this
+      // makes for less repetition of the logic.
+      if (timed_recording_state == NOT_RECORDING) {
+        if (params[ARM_BUTTON_PARAM].getValue() > 0.1f) {
+          // We are now armed.
+          timed_recording_state = WAITING_FOR_CLOCK;
+        }
       }
-      lights[RECORD_BUTTON_LIGHT].setBrightness(recording ? 1.0f : 0.0f);
+      if (timed_recording_state == WAITING_FOR_CLOCK) {
+        if (clock_event) {
+          // Start recording now.
+          timed_recording_state = RECORDING;
+          recording_position = -1;
+          params[ARM_BUTTON_PARAM].setValue(0.0f);  // Not armed now that we've started.
+          clocks_so_far = -1;  // Will be bumped to zero on this clock in next block.
+          fractional_samples_so_far = 0;
+        }
+      }
+      if (timed_recording_state == RECORDING) {
+        if (clock_event) {
+          ++clocks_so_far;
+          fractional_samples_so_far = 0;
+        } else {
+          // Advance fractional samples.
+          ++fractional_samples_so_far;
+        }
+        // See if we have finished recording yet.
+        // This is complicated by the fact that:
+        // * The tempo can change while recording.
+        // * the COUNT knob can change while recording.
+        // So we don't know if we are done until we are done.
+        if (params[CLOCK_COUNT_PARAM].getValue() >
+          clocks_so_far + ((double) fractional_samples_so_far / (tempo_length_in_frames > 0 ? tempo_length_in_frames : 1))) {
+          // Still recording.
+          ++recording_position;
+          worker->RecordSample(recording_position,
+              inputs[LEFT_INPUT].getVoltage(), inputs[RIGHT_INPUT].getVoltage());
+          lights[RECORD_BUTTON_LIGHT].setBrightness(1.0f);
+        } else {
+          // Done recording.
+          worker->InitiateReplacement(recording_position, buffer);
+          timed_recording_state = NOT_RECORDING;
+          lights[RECORD_BUTTON_LIGHT].setBrightness(0.0f);
+        }
+      } else {
+        // The logic for recording via COUNT and CLOCK is different enough that
+        // it makes sense to handle it separately from the gate/button recording.
+        // TODO: What if both are used at the same time?
+
+        // Are we recording or not?
+        recordTrigger.process(rescale(
+            inputs[RECORD_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+        
+        // If we're not already recording due to timed recording, see if
+        // 'recording' just reflects the state of the button and the gate input.
+        bool recording = (params[RECORD_BUTTON_PARAM].getValue() > 0.1f) ||
+                      recordTrigger.isHigh();
+
+        if (recording && !was_recording) {
+          // Starting from the top.
+          recording_position = -1;
+        } else if (!recording && was_recording) {
+          // Recording done, send it!
+          //WARN("Initiated brainwash at position %d", recording_position);
+          worker->InitiateReplacement(recording_position, buffer);
+        }
+        was_recording = recording;
+        if (recording) {
+          ++recording_position;
+          worker->RecordSample(recording_position,
+              inputs[LEFT_INPUT].getVoltage(), inputs[RIGHT_INPUT].getVoltage());
+        }
+        lights[RECORD_BUTTON_LIGHT].setBrightness(recording ? 1.0f : 0.0f);
+        lights[ARM_BUTTON_LIGHT].setBrightness(params[ARM_BUTTON_PARAM].getValue() > 0.1f ? 1.0f : 0.0f);
+      }
     }
     lights[CONNECTED_LIGHT].setBrightness(connected ? 1.0f : 0.0f);
   }
@@ -250,14 +371,27 @@ struct BrainwashWidget : ModuleWidget {
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
+    // CLOCK and clock counting.
+    addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(6.35, 63.0)), module, Brainwash::CLOCK_COUNT_PARAM));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 63.0)), module, Brainwash::CLOCK_TRIGGER_INPUT));
+
+    // ARM button and trigger.
+    addParam(createLightParamCentered<VCVLightLatch<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(19.05, 75.0)),
+                                             module, Brainwash::ARM_BUTTON_PARAM,
+                                             Brainwash::ARM_BUTTON_LIGHT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.35, 75.0)), module,
+                                             Brainwash::ARM_TRIGGER_INPUT));
+
     // Record button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(19.05, 87.408)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(19.05, 90.0)),
                                              module, Brainwash::RECORD_BUTTON_PARAM,
                                              Brainwash::RECORD_BUTTON_LIGHT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.35, 87.408)), module,
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.35, 90.0)), module,
                                              Brainwash::RECORD_GATE_INPUT));
 
+    // Signal Inputs.                                         
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(14.638, 107.525)), module,
                                              Brainwash::LEFT_INPUT));
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(14.638, 117.844)), module,
@@ -266,6 +400,15 @@ struct BrainwashWidget : ModuleWidget {
     // Our light is not colored, since we don't have a position in Depict.
     addChild(createLightCentered<MediumLight<WhiteLight>>(mm2px(Vec(12.7, 3.2)),
                  module, Brainwash::CONNECTED_LIGHT));
+  }
+
+  void appendContextMenu(Menu* menu) override {
+    // Be a little clearer how to make this module do anything.
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createMenuLabel(
+      "Brainwash only works when touching a group of modules with a Memory or MemoryCV"));
+    menu->addChild(createMenuLabel(
+      "module to the left. See my User Manual for details and usage videos."));
   }
 };
 

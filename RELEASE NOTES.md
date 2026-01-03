@@ -1,5 +1,21 @@
 # Release Notes
 
+### 2.0.24
+#### January 2nd, 2026
+* Many changes to Memory modules:
+* * Fixation now has a menu option that changes the LENGTH from "time in milliseconds" to "tempo input + note length". I think this will make it far more suited to tempo-synced playback. Thanks to @cothiele for a discussion that got me to think of this.
+* * Brainwash now has a new method to determining when to record and for how long. It takes a CLOCK signal and a count of CLOCK triggers, and after being ARM'ed, records for that many CLOCK triggers. COUNT doesn't have to be an integer; fractional values can make for *interesting* polyrhythmic effects.
+* * Fixation now has a Clock Gate STYLE option, where the CLOCK is a gate that turns playback on and off.
+* * Both Fixation and Ruminate now have a "Default direction is reverse" menu option. This allows "Speed as V/Oct" to be used with reversed playback. Thanks to @shrymusic for suggesting this.
+* * Both Fixation and Ruminate now have a menu to set the behavior when the module's playhead hits the end of Memory, with options to Loop around, Bounce or (newly added) Stop playback. This replaces the BOUNCE button on Ruminate.
+* * While Ruminate already had this, now both Ruminate and Fixation now have a CURRENT output, which has found some interesting uses as a phasor input. I've also made those outputs polyphonic, with the 2nd channel being the current position of the playhead in seconds from the start.
+* In Venn, menu options can change the ranges of the X and Y Point position from [-5, 5] to [0, 10]. 
+* Added a V3 input to TTY. My initial expectation that this would be used more with text than with signals was likely mistaken.
+* Some bug fixes:
+* * The resizable modules act better when used with the STRIP module.
+* * Fixation wasn't counting playbacks correctly in some situations. 
+
+
 ### 2.0.23
 #### October 27, 2025
 * Fixed bug in text editor for Fermata, TTY, and BASICally that prevented non-7-bit-ASCII characters from being typed in.

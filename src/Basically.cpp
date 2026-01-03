@@ -95,7 +95,6 @@ struct Basically : Module {
     std::vector<std::pair<Expression, CodeBlock*> >* expression_blocks;
     std::vector<bool>* running_expression_blocks;
     std::unordered_map<int, TriggerInfo*> triggers;
-    std::chrono::high_resolution_clock::time_point time_start;
     // Map output index to whether or not we should clamp values for it.
     std::unordered_map<int, bool>* out_index_to_clamp;
     // Map output index to encoder that sends text out of that port and
@@ -109,7 +108,6 @@ struct Basically : Module {
                           std::unordered_map<int, bool>* clamp_info) :
        inputs{the_inputs}, outputs{the_outputs}, driver{the_driver},
        out_index_to_clamp{clamp_info} {
-         time_start = std::chrono::high_resolution_clock::now();
          sample_rate = 0.0f;
        }
 
@@ -1439,11 +1437,16 @@ struct BasicallyWidget : ModuleWidget {
 
   void step() override {
     Basically* module = dynamic_cast<Basically*>(this->module);
-    // While this is really only useful to call when the width changes,
-    // I don't think it's currently worth the effort to ONLY call it then.
-    // And maybe the *first* time step() is called.
     if (module) {
-      box.size.x = module->width * RACK_GRID_WIDTH;
+      if (box.size.x != module->width * RACK_GRID_WIDTH) {
+        // Module width has changed. Might be first time step() has been called, or undo/redo has happened
+        // But we check for it because when STRIP creates a new instance of this module, it may not
+        // pick up the JSON-saved width until after Rack has placed the other modules, causing gaps or
+        // overlaps. 
+        box.size.x = module->width * RACK_GRID_WIDTH;
+        // This forces the other modules to the right place if needed.
+        APP->scene->rack->setModulePosForce(this, box.pos);
+      }
     } else {
       // Like when showing the module in the module browser.
       box.size.x = Basically::DEFAULT_WIDTH * RACK_GRID_WIDTH;

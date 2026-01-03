@@ -1313,14 +1313,14 @@ for a more authentic teletype feeling.
 ### Controls
 
 #### RATE Knob
-Specifies the number of milliseconds between reads on the V1/V2 inputs. If
+Specifies the number of milliseconds between reads on the V1/V2/V3 inputs. If
 set to zero, then every sample will be examined. If set to 1000, then TTY will
-only examine inputs to V1/V2 once every second.
+only examine inputs to V1/V2/V3 once every second.
 Note that a low number (turning the knob to the right) means a very high RATE.
 This may be a poor nomenclature decision on my part.
 RATE has no effect on TEXT inputs.
-#### V1 and V2 inputs
-Signals sent to V1 or V2 will be monitored. Each time they are examined (see
+#### V1, V2, and V3 inputs
+Signals sent to V1, V2, or V3 will be monitored. Each time they are examined (see
 RATE knob), if the value is different than it was the time before, the new
 value will be printed to the text window.
 #### PAUSE button
@@ -1357,11 +1357,11 @@ screen width, this means that shrinking the module down to it's minimum width
 can result in deleting most of the contents of the output window.
 * Putting noise into the TEXTn inputs can crash VCV Rack.
 * If lines of text are scrolling by very quickly, it's probably using more CPU
-than you want. If the values are coming from V1 or V2, consider raising the
+than you want. If the values are coming from V1, V2, or V3, consider raising the
 RATE.
 * There is internal load-shedding inside of TTY. If the UI is not keeping
 up with the all of messages being added, it will throw away new ones until
-the backlog is lessened. This typically only happens when V1/V2 is connected to
+the backlog is lessened. This typically only happens when V1/V2/V3 is connected to
 a continuously changing signal (e.g., a VCO Sine wave) and the RATE is very high
 (like less than ten).
 
@@ -1379,7 +1379,7 @@ which is a deep, interesting platform for dynamic algorithmic event triggering.
 # Venn
 Venn is a signal generator for VCV Rack. With five output ports, each with up to sixteen signals each, it creates up to 80 CV signals simultaneously with an intuitive and visually appealing interface.
 
-Venn's "circles+point" UI is inspired by part of Leafcutter John's [Forester 2022](https://leafcutterjohn.com/forester-2022/) desktop sonic playground.
+Venn's "circles + point" UI is inspired by part of Leafcutter John's [Forester 2022](https://leafcutterjohn.com/forester-2022/) desktop sonic playground.
 Forester 2022 does a *LOT* more than Venn, and you should certainly take a look at it. This is just my take on an innovative piece of Forester that I wanted to see in VCV Rack.
 
 ![Venn Overview](images/VennHeadline.png)
@@ -1487,7 +1487,7 @@ A couple notes:
 #### The Point
 The Point is a small white circle in the Surface that controls the signals sent by each of the Circles. The position of Point
 is a pair of X and Y voltages, where X = -5, Y = -5 is at the lower left corner and X = 5, Y = 5 is
-at the upper right corner.
+at the upper right corner. There are menu options on Venn to change either or both of the X and Y axis from the [-5, 5] range to [0, 10].
 
 ![X and Y controls](images/VennXY.png)
 
@@ -1593,6 +1593,10 @@ The Randomize menu option found on every module will, in Venn, also replace any 
 As noted above, when set (the default), this will show the larger version of the editing keyboard commands. Unsetting it will replace it with a small icon.
 #### Only Compute MATH1 for a circle when inside it
 Defaults to true. By default, the value of MATH1 is zero for a particular Circle when Point is not in the Circle. This is to reduce the CPU load. If, however, the value of MATH1 is important for a Circle even when Point is not in it, then unset this menu option.
+#### Point position X ranges from 0-10 instead of -5 - 5
+When set, the X input will be expected from 0-10, and the X output will fall into that range as well.
+#### Point position Y ranges from 0-10 instead of -5 - 5
+When set, the Y input will be expected from 0-10, and the Y output will fall into that range as well.
 #### MATH Cheat Sheet
 Just shows a brief reminder of all the functions and variable names Venn will recognize.
 

@@ -75,5 +75,6 @@
     "typeinfo": "cpp",
     "variant": "cpp"
   },
-  "cmake.sourceDirectory": "C:/msys64/home/mahle/VCVRack/googletest-main"
+  "cmake.sourceDirectory": "C:/msys64/home/mahle/VCVRack/googletest-main",
+  "C_Cpp.default.compilerPath": "C:/msys64/mingw64/bin/g++.exe"
 }

@@ -99,7 +99,7 @@ struct Embellish : PositionedModule {
 
     configOutput(LEFT_OUTPUT, "Left");
     configOutput(RIGHT_OUTPUT, "Right");
-    configOutput(NOW_POSITION_OUTPUT, "Point in Memory (0 - 10V) playback head is currently reading/writing,");
+    configOutput(NOW_POSITION_OUTPUT, "Position as phasor (0V -> 10V), and in seconds,");
 
     line_record.position = 0.0;
     line_record.type = EMBELLISH;
@@ -310,7 +310,19 @@ struct Embellish : PositionedModule {
           break;
         }
       }
-      outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length);
+
+      if (outputs[NOW_POSITION_OUTPUT].isConnected()) {
+        // Output phasor and seconds.
+        outputs[NOW_POSITION_OUTPUT].setChannels(2);
+        if (length > 0) {
+          outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length, 0);
+          outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * seconds / length, 1);
+        } else {
+          outputs[NOW_POSITION_OUTPUT].setVoltage(0.0f, 0);
+          outputs[NOW_POSITION_OUTPUT].setVoltage(0.0f, 1);
+        }
+      }
+
       // So Depict knows where we are.
       line_record.position = (double) display_position;
 
@@ -459,7 +471,7 @@ struct EmbellishWidget : ModuleWidget {
     // Be a little clearer how to make this module do anything.
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel(
-      "Embellish only works when touching a group of modules with a Memory"));
+      "Embellish only works when touching a group of modules with a Memory or MemoryCV"));
     menu->addChild(createMenuLabel(
       "module to the left. See my User Manual for details and usage videos."));
   }

@@ -15,6 +15,7 @@ struct Fixation : PositionedModule {
     LENGTH_ATTN_PARAM,
     COUNT_KNOB_PARAM,
     STYLE_KNOB_PARAM,
+    NOTE_LENGTH_PARAM,
     PARAMS_LEN
   };
   enum InputId {
@@ -29,6 +30,7 @@ struct Fixation : PositionedModule {
     LEFT_OUTPUT,
     RIGHT_OUTPUT,
     TRIG_OUT_OUTPUT,
+    CURRENT_OUTPUT,
     OUTPUTS_LEN
   };
   enum LightId {
@@ -37,9 +39,36 @@ struct Fixation : PositionedModule {
     LIGHTS_LEN
   };
 
+  // For Menu option.
+  enum EndsBehavior {
+    LOOPING,
+    BOUNCING,
+    STOPPING
+  };
+
+  double NOTE_LENGTHS[16] = {
+    1.000000,
+    0.750000,
+    0.500000,
+    0.333333,
+    0.375000,
+    0.250000,
+    0.166667,
+    0.187500,
+    0.125000,
+    0.083333,
+    0.093750,
+    0.062500,
+    0.041667,
+    0.046875,
+    0.031250,
+    0.020833
+  };
   static constexpr float MIN_TIME = 1e-3f;
   static constexpr float MAX_TIME = 10.f;
   static constexpr float LAMBDA_BASE = MAX_TIME / MIN_TIME;
+  static constexpr const char* LENGTH_PORT_NAME = "Multiplied by the attenuverter, added to the LENGTH value.";
+  static constexpr const char* TEMPO_PORT_NAME = "Tempo clock input for note-length based timing.";
 
   enum PlayState {
     // We have several states we could be in.
@@ -64,35 +93,38 @@ struct Fixation : PositionedModule {
     // start_play == transition from "play off" -> "play on"
     // stop_play == transition from "play on" -> "play off"
     // CLOCK == CLOCK input sees a trigger.
+    // CLOCK_LOW == CLOCK input goes low.
     // length_event == we have played for as long as we were told to.
     // fade_ended == the fade (up or down) has completed.
     // count_reached == the count of repeats has hit the limit.
     // style_changed == just starting, or style has changed.
 
-    // NO_PLAY -> WAITING on [start_play] && STYLE (0, 2) && ![CLOCK]
-    // NO_PLAY -> FADE_UP on [start_play] && STYLE (0, 2) && [CLOCK]
+    // NO_PLAY -> WAITING on [start_play] && STYLE (0, 2, 3) && ![CLOCK]
+    // NO_PLAY -> FADE_UP on [start_play] && STYLE (0, 2, 3) && [CLOCK]
     // NO_PLAY -> FADE_UP on [start_play] && STYLE (1)
-    // 
-    // WAITING -> FADE_UP on [CLOCK] && STYLE (0, 2)
+    //
+    // WAITING -> FADE_UP on [CLOCK] && STYLE (0, 2, 3)
     // WAITING -> FADE_UP on [style_changed && STYLE (1)]  -- if user changed STYLE from 0 -> 1
     // WAITING -> NO_PLAY on [stop_play]
     // 
     // FADE_UP -> PLAYING on fade_ended
     // FADE_UP -> FADE_DOWN on [stop_play]
-    // FADE_UP -> FADE_DOWN_TO_RESTART on [CLOCK] && STYLE (0, 2)
+    // FADE_UP -> FADE_DOWN_TO_RESTART on [CLOCK] && STYLE (0, 2, 3)
+    // FADE_UP -> FADE_DOWN on [CLOCK_LOW] && STYLE (3)
     // 
     // PLAYING -> FADE_DOWN on [stop_play]
+    // PLAYING -> FADE_DOWN on [CLOCK_LOW] && STYLE (3)
     // PLAYING -> FADE_DOWN_TO_RESTART on [CLOCK] && STYLE (0, 2) 
     // PLAYING -> FADE_DOWN_TO_RESTART on [length_event] && STYLE (1)
     // PLAYING -> FADE_DOWN_TO_RESTART on [length_event] && STYLE (2) && not count_reached
     // PLAYING -> FADE_DOWN_TO_WAIT on [length_event] && STYLE (2) && count_reached
-    // PLAYING -> FADE_DOWN_TO_WAIT on [style_changed && STYLE (0, 2)]
+    // PLAYING -> FADE_DOWN_TO_WAIT on [style_changed && STYLE (0, 2, 3)]
     // PLAYING -> FADE_DOWN_TO_RESTART on [style_changed && STYLE (1)]
     //
     // FADE_DOWN -> NO_PLAY on [fade_ended] and play is off
-    // FADE_DOWN -> FADE_DOWN_TO_RESTART on [CLOCK event] && STYLE (0, 2)
-    // FADE_DOWN -> WAITING on [start_play] && STYLE (0, 2)
-    // FADE_DOWN -> WAITING on [fade_ended] && STYLE (0, 2)
+    // FADE_DOWN -> FADE_DOWN_TO_RESTART on [CLOCK event] && STYLE (0, 2, 3)
+    // FADE_DOWN -> WAITING on [start_play] && STYLE (0, 2, 3)
+    // FADE_DOWN -> WAITING on [fade_ended] && STYLE (0, 2, 3)
     // FADE_DOWN -> FADE_UP on [start_play] && STYLE (1)
     //
     // FADE_DOWN_TO_RESTART -> FADE_DOWN on [stop_play]
@@ -103,9 +135,8 @@ struct Fixation : PositionedModule {
     //
   };
 
-  // DO NOT SUBMIT!
+  // Only used when debugging.
   // PlayState prev_play_state = NO_PLAY;
-
 
   const double FADE_INCREMENT = 0.02;
 
@@ -131,6 +162,8 @@ struct Fixation : PositionedModule {
 
   // Cache the buffer length locally.
   int length = 0;
+  // To display timestamps correctly.
+  double seconds = 0.0;
 
   // To fade volume when near a recording head.
   double fade = 1.0f;
@@ -139,17 +172,29 @@ struct Fixation : PositionedModule {
   double play_fade = 1.0;
   PlayState play_state;
   bool speed_is_voct = false;  // Saved in the patch.
+  bool reverse_direction = false;  // Saved in the patch.
+  EndsBehavior ends_behavior = LOOPING;  // Saved in the patch.
+  bool tempo_length = false;  // Saved in the patch.
+
+  bool currently_bouncing = false;
+  bool currently_stopped = false;
 
   // Timer to track the position within the envelope.
   int length_countdown = -1;
   // Total length as of last enquiry.
   int length_in_samples;
+  PortInfo* length_port;
 
   // Only used for STYLE 2 - number of repeats so far completed.
   int repeat_count;
 
   // Makes the output trigger at TRIG when needed.
   dsp::PulseGenerator trig_generator;
+
+  // For tracking the tempo, only used if tempo_length is true.
+  dsp::SchmittTrigger tempo_trigger;
+  int64_t last_tempo_trigger_frame = -1;
+  int64_t tempo_length_in_frames = -1;
 
   Fixation() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -160,21 +205,43 @@ struct Fixation : PositionedModule {
     configParam(LENGTH_ATTN_PARAM, -1.0f, 1.0f, 0.f, "Attenuverter on LENGTH input.", "%", 0, 100);
     configParam(LENGTH_KNOB_PARAM, 0.f, 1.f, 0.5f, "Maximum LENGTH of playback.",
                 " ms", LAMBDA_BASE, MIN_TIME * 1000);
-    configInput(LENGTH_INPUT, "Multiplied by the attenuverter, added to the LENGTH value.");
+    // We change the name depending on a menu option.            
+    length_port = configInput(LENGTH_INPUT, LENGTH_PORT_NAME);
+    // This knob hides behind the LENGTH_KNOB_PARAM in the UI, and is only made visible when
+    // tempo_length is true.
+    configSwitch(NOTE_LENGTH_PARAM, 0, 15, 0, "Note Length",
+                 {"1 (Whole Note)",
+                  "•1/2 (Dotted Half Note)",
+                  "1/2 (Half Note)",
+                  "t1/2 (Triplet Half Note)",
+                  "•1/4 (Dotted Quarter Note)",
+                  "1/4 (Quarter Note)",
+                  "t1/4 (Triplet Quarter Note)",
+                  "•1/8 (Dotted Eighth Note)",
+                  "1/8 (Eighth Note)",
+                  "t1/8 (Triplet Eighth Note)",
+                  "•1/16 (Dotted Sixteenth Note)",
+                  "1/16 (Sixteenth Note)",
+                  "t1/16 (Triplet Sixteenth Note)",
+                  "•1/32 (Dotted Thirty-Second Note)",
+                  "1/32 (Thirty-Second Note)",
+                  "t1/32 (Triplet Thirty-Second Note)",
+                 });
+    // This has distinct values.
+    getParamQuantity(STYLE_KNOB_PARAM)->snapEnabled = true;
 
     configParam(COUNT_KNOB_PARAM, 1, 128, 1,
       "Number of repetitions per CLOCK (in STYLE 'CLOCK starts COUNT repeats...')");
     getParamQuantity(COUNT_KNOB_PARAM)->snapEnabled = true;
-    // TODO: Perhaps a fourth style like style 2, but treats CLOCK like a GATE, and keeps playing
-    // until the gate closes?
-    // Maybe this is a behavior on all of them? Or is that really the same as a gate to the PLAY input?
-    configSwitch(STYLE_KNOB_PARAM, 0, 2, 0, "Play Style",
-                 {"CLOCK only: LENGTH and COUNT ignored",
-                  "Always plays LENGTH: CLOCK and COUNT ignored",
-                  "CLOCK starts COUNT repeats of size LENGTH"});
+    configSwitch(STYLE_KNOB_PARAM, 0, 3, 0, "Play Style",
+                 {"CLOCK Restarts: Starts when CLOCK goes high (LENGTH and COUNT ignored)",
+                  "Always plays LENGTH: (CLOCK and COUNT ignored)",
+                  "CLOCK starts repeats: COUNT repeats of size LENGTH",
+                  "CLOCK as Gate: Plays only while CLOCK is high (LENGTH and COUNT ignored)"});
     // This has distinct values.
     getParamQuantity(STYLE_KNOB_PARAM)->snapEnabled = true;
 
+    configOutput(CURRENT_OUTPUT, "Position as phasor (0V -> 10V), and in seconds,");
     configOutput(TRIG_OUT_OUTPUT, "Raises a trigger at the start of each play");
 
     configSwitch(PLAY_BUTTON_PARAM, 0, 1, 0, "Press to start/stop this playback head",
@@ -200,6 +267,9 @@ struct Fixation : PositionedModule {
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "speed_is_voct", json_integer(speed_is_voct ? 1 : 0));
+    json_object_set_new(rootJ, "reverse_direction", json_integer(reverse_direction ? 1 : 0));
+    json_object_set_new(rootJ, "tempo_length", json_integer(tempo_length ? 1 : 0));
+    json_object_set_new(rootJ, "ends_behavior", json_integer(ends_behavior));
     return rootJ;
   }
 
@@ -207,6 +277,18 @@ struct Fixation : PositionedModule {
     json_t* speedJ = json_object_get(rootJ, "speed_is_voct");
     if (speedJ) {
       speed_is_voct = json_integer_value(speedJ) == 1;
+    }
+    json_t* reverseJ = json_object_get(rootJ, "reverse_direction");
+    if (reverseJ) {
+      reverse_direction = json_integer_value(reverseJ) == 1;
+    }
+    json_t* tempoJ = json_object_get(rootJ, "tempo_length");
+    if (tempoJ) {
+      tempo_length = json_integer_value(tempoJ) == 1;
+    }
+    json_t* endsJ = json_object_get(rootJ, "ends_behavior");
+    if (endsJ) {
+      ends_behavior = (EndsBehavior) json_integer_value(endsJ);
     }
   }
 
@@ -236,14 +318,26 @@ struct Fixation : PositionedModule {
   }
 
   int GetLength(const ProcessArgs& args) {
-    float length_exp = params[LENGTH_KNOB_PARAM].getValue() +
-      (params[LENGTH_ATTN_PARAM].getValue() * inputs[LENGTH_INPUT].getVoltage() / 10.0);
-    length_exp = rack::math::clamp(length_exp, 0.0f, 1.0f);
-    double length = pow(LAMBDA_BASE, length_exp) * args.sampleRate / 1000;
-    // Counting samples goes wonky if we get below one sample of length.
-    return std::max((int) floor(length), 1);
+    if (tempo_length && tempo_length_in_frames > 0) {
+      // Multiply by note length.
+      return tempo_length_in_frames *
+        NOTE_LENGTHS[(int) params[NOTE_LENGTH_PARAM].getValue()];
+    } else {
+      float length_exp = params[LENGTH_KNOB_PARAM].getValue() +
+        (params[LENGTH_ATTN_PARAM].getValue() * inputs[LENGTH_INPUT].getVoltage() / 10.0);
+      length_exp = rack::math::clamp(length_exp, 0.0f, 1.0f);
+      double length = pow(LAMBDA_BASE, length_exp) * args.sampleRate / 1000;
+      // Counting samples goes wonky if we get below one sample of length.
+      return std::max((int) floor(length), 1);
+    }
   }
 
+  void PrepareToRestart(double* position, int* length, const ProcessArgs& args) {
+    *position = GetPosition();
+    *length = GetLength(args);
+    currently_bouncing = currently_stopped = false;
+  }
+ 
   void process(const ProcessArgs& args) override {
     // Only call this only every N samples, since the vast majority of
     // the time this won't change.
@@ -256,22 +350,49 @@ struct Fixation : PositionedModule {
       buffer = findClosestMemory(getLeftExpander().module);
     }
 
+    // Even if not connected, we might still be getting tempo triggers.
+    // So we'll track them just in case.
+    if (inputs[LENGTH_INPUT].isConnected()) {
+      bool tempo_was_high = tempo_trigger.isHigh();
+      tempo_trigger.process(rescale(inputs[LENGTH_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+      if (!tempo_was_high && tempo_trigger.isHigh()) {
+        if (last_tempo_trigger_frame >= 0) {
+          tempo_length_in_frames = args.frame - last_tempo_trigger_frame;
+        }
+        // Set the length based on the new trigger.
+        last_tempo_trigger_frame = args.frame;
+      }
+    } else {
+      // Reset the tempo tracking.
+      last_tempo_trigger_frame = -1;
+      tempo_length_in_frames = -1;
+      tempo_trigger.reset();
+    }
+
     bool connected = (buffer != nullptr) && buffer->IsValid();
 
     // If connected and buffer isn't empty.
     if (connected) {
-      // Bad things happen if this are zero, which sometimes happens on startup.
+      // Bad things happen if length is zero, which sometimes happens on startup.
       length = std::max(buffer->length, 1);
+      seconds = buffer->seconds;
+
+      // If the length just changed (like the Memory has changed length), then
+      // we should make sure we aren't pointing out of bounds.
+      while (playback_position >= length) {
+        playback_position -= length;
+      }
 
       // This affects all behavior, so let's get it up front.
       int style = params[STYLE_KNOB_PARAM].getValue();
-      bool style_clock = (style == 0 || style == 2);
+      bool style_clock = (style == 0 || style == 2 || style == 3);
 
       // Assemble all of the events that can change our state.
       // * CLOCK.
       bool clock_was_high = clock_trigger.isHigh();
       clock_trigger.process(rescale(inputs[CLOCK_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
       bool clock_event = !clock_was_high && clock_trigger.isHigh();
+      bool clock_low_event = clock_was_high && !clock_trigger.isHigh();
 
       // * length_event.
       bool length_event = false;
@@ -321,8 +442,7 @@ struct Fixation : PositionedModule {
       if (style == 1) {  // Always plays LENGTH: CLOCK and COUNT ignored.
           // length_countdown < 0 -> we just switched to this STYLE.
         if (length_event || length_countdown < 0) {
-          position_for_restart = GetPosition();
-          length_in_samples = GetLength(args);
+          PrepareToRestart(&position_for_restart, &length_in_samples, args);
           length_countdown = length_in_samples;
         }
       }
@@ -334,10 +454,10 @@ struct Fixation : PositionedModule {
           playback_position = GetPosition();
           if (start_play) {
             if (style == 1) {
-              playback_position = GetPosition();
               trig_generator.trigger(1e-3f);
               play_state = buffer->cv_rate ? PLAYING: FADE_UP;
               length_countdown = GetLength(args);
+              currently_bouncing = currently_stopped = false;
             } else {
               if (clock_event) { // in case PLAY_GATE and CLOCK are same sample.
                 // This is a clone of the code from WAITING state.
@@ -345,8 +465,7 @@ struct Fixation : PositionedModule {
                 // Since we don't need to fade down, we can TRIG now.
                 trig_generator.trigger(1e-3f);
                 play_state = buffer->cv_rate ? PLAYING: FADE_UP;
-                playback_position = GetPosition();
-                length_in_samples = GetLength(args);
+                PrepareToRestart(&playback_position, &length_in_samples, args);
                 length_countdown = length_in_samples;
                 repeat_count = 0;
               } else {
@@ -366,14 +485,12 @@ struct Fixation : PositionedModule {
           } else if (style == 1) {  // user changed STYLE from 0 -> 1, I'm fairly sure.
             trig_generator.trigger(1e-3f);
             play_state = buffer->cv_rate ? PLAYING: FADE_UP;
-            playback_position = GetPosition();
-            length_countdown  = GetLength(args);
+            PrepareToRestart(&playback_position, &length_countdown, args);
           } else if (clock_event && style_clock) {
             // Since we don't need to fade down, we can TRIG now.
             trig_generator.trigger(1e-3f);
             play_state = buffer->cv_rate ? PLAYING: FADE_UP;
-            playback_position = GetPosition();
-            length_in_samples  = GetLength(args);
+            PrepareToRestart(&playback_position, &length_in_samples, args);
             length_countdown = length_in_samples;
             repeat_count = 0;
           }
@@ -382,13 +499,14 @@ struct Fixation : PositionedModule {
 
         case FADE_UP: {
           if (stop_play) {
-            play_state = buffer->cv_rate ? NO_PLAY :FADE_DOWN;
+            play_state = buffer->cv_rate ? NO_PLAY : FADE_DOWN;
+          } else if (clock_low_event && style == 3) {
+            play_state = buffer->cv_rate ? WAITING : FADE_DOWN;
           } else if (fade_ended) {
             play_state = PLAYING;
           } else if (clock_event && style_clock) {
             play_state = buffer->cv_rate ? PLAYING : FADE_DOWN_TO_RESTART;
-            position_for_restart = GetPosition();
-            length_in_samples  = GetLength(args);
+            PrepareToRestart(&position_for_restart, &length_in_samples, args);
           }
         }
         break;
@@ -404,7 +522,10 @@ struct Fixation : PositionedModule {
               // Go back to position and run for length.
               play_state = buffer->cv_rate ? WAITING : FADE_DOWN_TO_RESTART;
             }
-          } else if (clock_event && style_clock) {
+          } else if (clock_low_event && style == 3) {
+            play_state = buffer->cv_rate ? WAITING : FADE_DOWN;
+          } else if (clock_event && (style == 0 || style == 2)) {
+            repeat_count = 0;
             if (buffer->cv_rate) {
               // Just like if FADE_DOWN_TO_RESTART had a fade_ended event.
               trig_generator.trigger(1e-3f);
@@ -417,6 +538,7 @@ struct Fixation : PositionedModule {
               position_for_restart = GetPosition();
               length_in_samples = GetLength(args);
             }
+            currently_bouncing = currently_stopped = false;
           } else if (length_event && style == 1) {
             if (buffer->cv_rate) {
               // Just like if FADE_DOWN_TO_RESTART had a fade_ended event.
@@ -427,6 +549,7 @@ struct Fixation : PositionedModule {
               play_state = FADE_DOWN_TO_RESTART;
               length_in_samples = GetLength(args);
             }
+            currently_bouncing = currently_stopped = false;
           } else if (length_event && style == 2) {
             ++repeat_count;
             if (repeat_count >= params[COUNT_KNOB_PARAM].getValue()) {
@@ -436,8 +559,7 @@ struct Fixation : PositionedModule {
               if (buffer->cv_rate) {
                 // Just like if FADE_DOWN_TO_RESTART had a fade_ended event.
                 trig_generator.trigger(1e-3f);
-                playback_position = GetPosition();
-                length_countdown = GetLength(args);
+                PrepareToRestart(&playback_position, &length_countdown, args);
               } else {
                 play_state = FADE_DOWN_TO_RESTART;
                 length_countdown = GetLength(args);
@@ -452,8 +574,7 @@ struct Fixation : PositionedModule {
             play_state = NO_PLAY;
           } else if (clock_event && style_clock) {
             play_state = FADE_DOWN_TO_RESTART;
-            position_for_restart = GetPosition();
-            length_in_samples = GetLength(args);
+            PrepareToRestart(&position_for_restart, &length_in_samples, args);
           } else if (start_play && style_clock) {
             play_state = WAITING;
           } else if (fade_ended && style_clock) {
@@ -474,6 +595,7 @@ struct Fixation : PositionedModule {
             if (style == 1 || style == 2) {
               length_countdown = GetLength(args);
             }
+            currently_bouncing = currently_stopped = false;
           }
         }
         break;
@@ -489,19 +611,46 @@ struct Fixation : PositionedModule {
       }
 
       // We're probably still moving.
-      // 'movement' is combination of speed input and speed param.
+      // 'movement' is combination of speed input and speed param and reverse_direction menu option.
       // NB: in v/oct case, we subtract the default 1.0 value for SPEED_PARAM.
       double speed = speed_is_voct ?
           std::pow(2.0, inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue() - 1.0) :
           inputs[SPEED_INPUT].getVoltage() + params[SPEED_PARAM].getValue();
-      double movement = (play_state == NO_PLAY || play_state == WAITING) ? 0.0 : speed;
+      double movement = (play_state == NO_PLAY || play_state == WAITING || currently_stopped) ? 0.0 : speed * (reverse_direction ? -1.0 : 1.0);
+      if (currently_bouncing) {
+        movement = -movement;
+      }
       
       playback_position += movement;
       // Fix the position, now that the movement has occured.
       if (playback_position < 0.0) {
-        playback_position += length;
+        switch (ends_behavior) {
+          case LOOPING:
+            playback_position += length;
+            break;
+          case BOUNCING: 
+            playback_position = -playback_position;
+            currently_bouncing = !currently_bouncing;
+            break;
+          case STOPPING:
+            playback_position = 0.0;
+            currently_stopped = true;
+            break;
+        }
       } else if (playback_position >= length) {
-        playback_position -= length;
+        switch (ends_behavior) {
+          case LOOPING:
+            playback_position -= length;
+            break;
+          case BOUNCING:
+            playback_position = 2 * length - playback_position;
+            currently_bouncing = !currently_bouncing;
+            break;
+          case STOPPING:
+            playback_position = length - 1;
+            currently_stopped = true;
+            break;
+        }
       }
 
       display_position = playback_position;
@@ -511,6 +660,18 @@ struct Fixation : PositionedModule {
       }
       while (display_position < 0.0) {
         display_position += length;
+      }
+
+      if (outputs[CURRENT_OUTPUT].isConnected()) {
+        // Output phasor and seconds.
+        outputs[CURRENT_OUTPUT].setChannels(2);
+        if (length > 0) {
+          outputs[CURRENT_OUTPUT].setVoltage(display_position * 10.0 / length, 0);
+          outputs[CURRENT_OUTPUT].setVoltage(display_position * seconds / length, 1);
+        } else {
+          outputs[CURRENT_OUTPUT].setVoltage(0.0f, 0);
+          outputs[CURRENT_OUTPUT].setVoltage(0.0f, 1);
+        }
       }
 
       line_record.position = display_position;
@@ -552,6 +713,9 @@ struct Fixation : PositionedModule {
             fabs(right - gotten.right) < 0.1) {
           play_fade = 1.0;    
         }
+        if (play_state == PLAYING) {
+          play_fade = 1.0;
+        }
 
         outputs[LEFT_OUTPUT].setVoltage(left);
         outputs[RIGHT_OUTPUT].setVoltage(right);
@@ -570,7 +734,7 @@ struct Fixation : PositionedModule {
     lights[CONNECTED_LIGHT].setBrightness(connected ? 1.0f : 0.0f);
 
   // DO NOT SUBMIT!
-  /*
+/*
   if (play_state != prev_play_state) {
     constexpr const char* state_names[] = {
       "NO_PLAY",    // * Not playing at all.
@@ -588,12 +752,40 @@ struct Fixation : PositionedModule {
     WARN("length_countdown: %d", length_countdown);
     WARN("length_in_samples: %d", length_in_samples);
     WARN("playback_position: %f", playback_position);
+    WARN("Clock: %s", clock_trigger.isHigh() ? "high" : "low");
   }
   */
   }
 };
 
+struct NowFixationTimestamp : TimestampField {
+  NowFixationTimestamp() {
+  }
+
+  Fixation* module;
+
+  double getPosition() override {
+    if (module && module->length > 0) {
+      return module->display_position * module->seconds / module->length;
+    }
+    return 0.00;  // Dummy display value.
+  }
+
+  double getSeconds() override {
+    if (module && module->seconds > 0.0) {
+      return module->seconds;
+    }
+    return 2.0;
+  }
+};
+
+
 struct FixationWidget : ModuleWidget {
+  // Need to be able to show/hide these.
+  Trimpot* length_trimpot = nullptr;
+  RoundBlackKnob* length_knob = nullptr;
+  RoundBlackKnob* note_length_knob = nullptr;
+
   FixationWidget(Fixation* module) {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Fixation.svg"),
@@ -601,8 +793,9 @@ struct FixationWidget : ModuleWidget {
 
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
     addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+    // To eek out a bit more room, we move the lower screws outwards.
+    addChild(createWidget<ScrewSilver>(Vec(0, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+    addChild(createWidget<ScrewSilver>(Vec(box.size.x - RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(21.166, 15.743)), module, Fixation::CLOCK_INPUT));
 
@@ -610,31 +803,44 @@ struct FixationWidget : ModuleWidget {
     addParam(createParamCentered<Trimpot>(mm2px(Vec(15.24, 25.737)), module, Fixation::POSITION_ATTN_PARAM));
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.236, 25.737)), module, Fixation::POSITION_INPUT));
 
-    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 40.188)), module, Fixation::LENGTH_KNOB_PARAM));
-    addParam(createParamCentered<Trimpot>(mm2px(Vec(15.24, 40.188)), module, Fixation::LENGTH_ATTN_PARAM));
+    length_knob = createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 40.188)), module, Fixation::LENGTH_KNOB_PARAM);
+    addParam(length_knob);
+    note_length_knob = createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 40.188)), module, Fixation::NOTE_LENGTH_PARAM);
+    addParam(note_length_knob);
+    note_length_knob->hide();  // Hidden unless tempo_length is true.
+    length_trimpot = createParamCentered<Trimpot>(mm2px(Vec(15.24, 40.188)), module, Fixation::LENGTH_ATTN_PARAM);
+    addParam(length_trimpot);
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.236, 40.188)), module, Fixation::LENGTH_INPUT));
 
-    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(8.575, 56.279)), module, Fixation::COUNT_KNOB_PARAM));
-    RoundBlackSnapKnob* style_knob = createParamCentered<RoundBlackSnapKnob>(mm2px(Vec(21.59, 56.279)),
+    addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(8.575, 56.279)), module, Fixation::COUNT_KNOB_PARAM));
+    RoundSmallBlackKnob* style_knob = createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(21.59, 56.279)),
         module, Fixation::STYLE_KNOB_PARAM);
-    style_knob->minAngle = -0.28f * M_PI;
-    style_knob->maxAngle = 0.28f * M_PI;
+    style_knob->snap = true;
+    style_knob->minAngle = -0.33f * M_PI;
+    style_knob->maxAngle = 0.33f * M_PI;
     addParam(style_knob);
+
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.575, 70.509)), module, Fixation::CURRENT_OUTPUT));
+    // A timestamp is 10 wide.
+    NowFixationTimestamp* now_timestamp = createWidget<NowFixationTimestamp>(mm2px(
+        Vec(8.575 - (10.0 / 2.0), 74.509)));
+    now_timestamp->module = module;
+    addChild(now_timestamp);
 
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 70.509)), module, Fixation::TRIG_OUT_OUTPUT));
 
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 97.087)), module, Fixation::SPEED_INPUT));
-    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(21.59, 97.087)), module, Fixation::SPEED_PARAM));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 101.487)), module, Fixation::SPEED_INPUT));
+    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(21.59, 101.487)), module, Fixation::SPEED_PARAM));
 
     // Play button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(21.59, 84.36)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(21.59, 88.76)),
                                              module, Fixation::PLAY_BUTTON_PARAM,
                                              Fixation::PLAY_BUTTON_LIGHT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 84.36)), module, Fixation::PLAY_GATE_INPUT));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 88.76)), module, Fixation::PLAY_GATE_INPUT));
 
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.575, 112.0)), module, Fixation::LEFT_OUTPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 112.0)), module, Fixation::RIGHT_OUTPUT));
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.575, 116.4)), module, Fixation::LEFT_OUTPUT));
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 116.4)), module, Fixation::RIGHT_OUTPUT));
 
     ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
       mm2px(Vec(15.24, 3.0)), module, Fixation::CONNECTED_LIGHT);
@@ -642,16 +848,57 @@ struct FixationWidget : ModuleWidget {
     addChild(connect_light);
   }
 
+  void step() override {
+    ModuleWidget::step();
+    Fixation* module = dynamic_cast<Fixation*>(this->module);
+    if (module) {
+      // Change visible controls when setting length by tempo and note.
+      if (module->tempo_length) {
+        length_trimpot->hide();
+        length_knob->hide();
+        note_length_knob->show();
+        module->length_port->name = Fixation::TEMPO_PORT_NAME;
+      } else {
+        length_trimpot->show();
+        length_knob->show();
+        note_length_knob->hide();
+        module->length_port->name = Fixation::LENGTH_PORT_NAME;
+      }
+    }
+  }
+
   void appendContextMenu(Menu* menu) override {
     Fixation* module = dynamic_cast<Fixation*>(this->module);
     menu->addChild(new MenuSeparator);
     menu->addChild(createBoolPtrMenuItem("Use Speed as V/Oct", "",
                                           &module->speed_is_voct));
+    menu->addChild(createBoolPtrMenuItem("Interpret LENGTH as tempo and note length", "",
+                                          &module->tempo_length));
+    menu->addChild(createBoolPtrMenuItem("Default direction is reverse", "",
+                                         &module->reverse_direction));
+
+    std::pair<std::string, Fixation::EndsBehavior> ends_behavior[] = {
+      {"Loop Around", Fixation::LOOPING},
+      {"Bounce", Fixation::BOUNCING},
+      {"Stop", Fixation::STOPPING}
+    };
+
+    MenuItem* ends_menu = createSubmenuItem("Behavior at ends", "",
+      [=](Menu* menu) {
+          for (auto line : ends_behavior) {
+            menu->addChild(createCheckMenuItem(line.first, "",
+                [=]() {return line.second == module->ends_behavior;},
+                [=]() {module->ends_behavior = line.second;}
+            ));
+          }
+      }
+    );
+    menu->addChild(ends_menu);
 
     // Be a little clearer how to make this module do anything.
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel(
-      "Fixation only works when touching a group of modules with a Memory"));
+      "Fixation only works when touching a group of modules with a Memory or MemoryCV"));
     menu->addChild(createMenuLabel(
       "module to the left. See my User Manual for details and usage videos."));
   }
