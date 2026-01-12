@@ -113,7 +113,7 @@ struct MemoryDepict : Widget {
   std::vector<LineRecord> dummy_lines = {
     {2.34, SCHEME_RED, RUMINATE, 1},
     {7.9, SCHEME_BLUE, RUMINATE, 2},
-    {5.5, SCHEME_ORANGE, EMBELLISH, 3},
+    {5.5, SCHEME_ORANGE, FIXATION, 3},
     {0.3, SCHEME_PURPLE, EMBELLISH, 4}
   };
 
