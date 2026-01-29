@@ -10,3 +10,4 @@
 *.o
 *.gch
 *.exe
+tools/interpolation.bmp
