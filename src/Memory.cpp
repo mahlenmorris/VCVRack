@@ -721,6 +721,9 @@ struct Memory : BufferedModule {
   bool reset_button_pressed = false;
   
   // For Loading and Saving contents.
+  osdialog_filters* wav_filter;
+  osdialog_filters* csv_filter;
+  osdialog_filters* wav_csv_filter;
   std::string load_folder_name;  // For menu to display.
   std::vector<std::string> loadable_files;  // List found in menu.
   std::string loaded_file;  // Checked item in menu.
@@ -777,10 +780,14 @@ struct Memory : BufferedModule {
 
     load_decoder.provideDataBuffer(load_recv_buffer, recvBufferSize);
     save_decoder.provideDataBuffer(save_recv_buffer, recvBufferSize);
+    wav_filter = osdialog_filters_parse("WAV:wav");
+    csv_filter = osdialog_filters_parse("CSV (Comma Separated Value):csv");
+    wav_csv_filter = osdialog_filters_parse("WAV:wav;CSV (Comma Separated Value):csv");
 
-    // Load MRU directories. This is global to all instances of Memory/MemoryCV, so *not*
-    // stored in the JSON data for this particular module.
-    // This may get re-initialized if this is a MemoryCV module.
+    assert(wav_filter != nullptr);
+    assert(csv_filter != nullptr);
+    assert(wav_csv_filter != nullptr);
+
     load_latest_file_on_start = false;
     initiate_startup_load = false;
   }
@@ -804,6 +811,9 @@ struct Memory : BufferedModule {
       }
       delete buffer_change_worker;
     }
+    osdialog_filters_free(wav_filter);
+    osdialog_filters_free(csv_filter);
+    osdialog_filters_free(wav_csv_filter);
   }
 
   // Save and retrieve menu choice(s).
@@ -964,7 +974,8 @@ struct Memory : BufferedModule {
       // This is the post-initialization part of process().
       // We may be asked to load a file on startup. We wait until the buffer is initialized before
       // attempting this, however, since the operation might fail, and I'd rather have *some* buffer than none.
-      if (initiate_startup_load && !load_folder_name.empty() && !loaded_file.empty()) {
+      // Now that loaded_file can be a complete path, we don't check load_folder_name.
+      if (initiate_startup_load && !loaded_file.empty()) {
         initiate_startup_load = false;
         FileOperationReporting* reporter = new FileOperationReporting();
         reporters.push_back(reporter);
@@ -1324,6 +1335,23 @@ struct Memory : BufferedModule {
     return (path_string);
   }
 
+  std::string selectLoadFile() {
+    std::string path_string = "";
+    char *path = osdialog_file(
+      OSDIALOG_OPEN,
+      load_folder_name.empty() ?
+        (save_folder_name.empty() ? NULL : save_folder_name.c_str()) :
+        load_folder_name.c_str(),
+      NULL, wav_csv_filter);
+
+    if (path != NULL) {
+        path_string.assign(path);
+        std::free(path);  // Required by osdialog_file().
+    }
+
+    return (path_string);
+  }
+
   std::string selectSaveFolder() {
     std::string path_string = "";
     char *path = osdialog_file(
@@ -1352,11 +1380,11 @@ struct Memory : BufferedModule {
     strftime(date_buffer, sizeof(date_buffer), "Memory %Y-%m-%d %H-%M-%S.", localTime);
     strcat(date_buffer, file_type.c_str());
 
-    const char* filter_string;
+    osdialog_filters* filter_pattern;
     if (file_type.compare("wav") == 0) {
-      filter_string = "WAV:wav";
+      filter_pattern = wav_filter;
     } else {
-      filter_string = "CSV (Comma Separated Value):csv";
+      filter_pattern = csv_filter;
     }
 
     // Default to save folder. If not set, default to load_folder.
@@ -1365,7 +1393,7 @@ struct Memory : BufferedModule {
       save_folder_name.empty() ?
         (load_folder_name.empty() ? NULL : load_folder_name.c_str()) :
         save_folder_name.c_str(),
-      date_buffer, osdialog_filters_parse(filter_string));
+      date_buffer, filter_pattern);
 
     if (path != NULL) {
         path_string.assign(path);
@@ -1391,6 +1419,34 @@ struct MenuItemPickLoadFolder : MenuItem {
       if (!module->widget_module_queue.tasks.push(task)) {
         delete task;
       }
+    }
+  }
+};
+
+struct MenuItemPickLoadFile : MenuItem {
+  Memory *module;
+
+  void onAction(const event::Action &e) override {
+    std::string filename_and_path = module->selectLoadFile();
+    if (filename_and_path != "") {
+      PrepareTask* task = PrepareTask::LoadFileTask(nullptr,
+        filename_and_path, "");
+      if (!module->widget_module_queue.tasks.push(task)) {
+        delete task;
+      }
+      // TODO: add this to frequently loaded file MRU list.
+      /*
+      // We set this even if it's the same path as before. This gives the user a gesture to update
+      // the list.
+      PrepareTask* task = PrepareTask::LoadDirectoryTask(filename,
+        module->cv_rate ?
+          StochasticTelegraph::MRUType::MEMORYCV_DIRECTORY :
+          StochasticTelegraph::MRUType::MEMORY_DIRECTORY,
+        true);
+      if (!module->widget_module_queue.tasks.push(task)) {
+        delete task;
+      }
+      */
     }
   }
 };
@@ -1527,47 +1583,66 @@ struct MemoryWidget : ModuleWidget {
   void appendContextMenu(Menu* menu) override {
     Memory* module = dynamic_cast<Memory*>(this->module);
     assert(module);
+
     menu->addChild(new MenuSeparator);
-
-    menu->addChild(createMenuLabel("Pick Directory for Loading"));
+    menu->addChild(createMenuLabel("Loading Directory"));
     menu->addChild(createMenuLabel("Current: " + 
-      (module->load_folder_name.empty() ? "<none>" : module->load_folder_name)));
+      (module->load_folder_name.empty() ? "<none>" : betterDirectoryPath(module->load_folder_name))));
 
+    // Display menu of recently used directories.
     StochasticTelegraph::MRUType mru_type = module->cv_rate ?
       StochasticTelegraph::MRUType::MEMORYCV_DIRECTORY :
       StochasticTelegraph::MRUType::MEMORY_DIRECTORY;
     std::vector<std::string>* mru_load_directories = 
       StochasticTelegraph::PluginConfig::getInstance().getMRUList(mru_type);
     if (mru_load_directories != nullptr && mru_load_directories->size() > 0) {
-      MenuItem* folder_mru_menu = createSubmenuItem("Most Recently Used Directories", "",
-        [=](Menu* menu) {
-            for (const std::string& name : *mru_load_directories) {
-              menu->addChild(createCheckMenuItem(betterDirectoryPath(name), "",
-                [=]() {return name.compare(module->load_folder_name) == 0;},
-                [=]() {
-                  PrepareTask* task = PrepareTask::LoadDirectoryTask(name, mru_type, true);
-                  if (!module->widget_module_queue.tasks.push(task)) {
-                    delete task;
-                  } 
-                }
-              ));
-            }
-        }
-      );
-      menu->addChild(folder_mru_menu);
+      std::vector<std::string> mru_copy;
+      try {
+        mru_copy = *mru_load_directories;
+      } catch (...) {
+        // If copying fails due to concurrent modification or other issues, skip the MRU menu.
+        // TODO: consider using a mutex in the MRU list management to prevent this.
+        // TODO: log a warning message. I'd like to understand this better.
+        mru_load_directories = nullptr;
+      }
+      if (!mru_copy.empty()) {
+        MenuItem* folder_mru_menu = createSubmenuItem("Most Recently Used Directories", "",
+          [=](Menu* menu) {
+              for (const std::string& name : mru_copy) {
+                menu->addChild(createCheckMenuItem(betterDirectoryPath(name), "",
+                  [=]() {return name.compare(module->load_folder_name) == 0;},
+                  [=]() {
+                    PrepareTask* task = PrepareTask::LoadDirectoryTask(name, mru_type, true);
+                    if (!module->widget_module_queue.tasks.push(task)) {
+                      delete task;
+                    } 
+                  }
+                ));
+              }
+          }
+        );
+        menu->addChild(folder_mru_menu);
+      }
     }
 
     MenuItemPickLoadFolder* menu_item_load_folder = new MenuItemPickLoadFolder;
-    menu_item_load_folder->text = "Click here to pick via Directory Selector...";  
+    menu_item_load_folder->text = "Pick via Directory Selector...";  
     menu_item_load_folder->module = module;
     menu->addChild(menu_item_load_folder);
+
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createMenuLabel("Load File"));
+    menu->addChild(createMenuLabel("Current: " + 
+      (module->loaded_file.empty() ? "<none>" : betterDirectoryPath(module->loaded_file))));
 
     if (module->loadable_files.empty()) {
       menu->addChild(createMenuLabel("No .wav or .csv files seen in Loading directory"));
     } else {
-      MenuItem* loadable_file_menu = createSubmenuItem("Load File", "",
+      // Copy the list to avoid race conditions with the prepare thread modifying it.
+      std::vector<std::string> files_copy = module->loadable_files;
+      MenuItem* loadable_file_menu = createSubmenuItem("Pick file from Loading directory", "",
         [=](Menu* menu) {
-            for (const std::string& name : module->loadable_files) {
+            for (const std::string& name : files_copy) {
               menu->addChild(createCheckMenuItem(name, "",
                 [=]() {return name.compare(module->loaded_file) == 0;},
                 [=]() {
@@ -1583,16 +1658,33 @@ struct MemoryWidget : ModuleWidget {
       );
       menu->addChild(loadable_file_menu);
     }
-    menu->addChild(createBoolPtrMenuItem("Load most recent file when this module starts", "",
-                                         &(module->load_latest_file_on_start)));
-    // TODO: Add menu action to just load some random file without setting the load folder.
 
+    MenuItemPickLoadFile* menu_item_load_file = new MenuItemPickLoadFile;
+    menu_item_load_file->text = "Pick file via dialog...";  
+    menu_item_load_file->module = module;
+    menu->addChild(menu_item_load_file);
+
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createBoolPtrMenuItem("Autoload most recent file when this module starts", "",
+                                         &(module->load_latest_file_on_start)));
+
+    // Option to (re)load the most recent file immediately.
+    menu->addChild(createMenuItem("Reload most recent file now...", "",
+      [=]() {
+        PrepareTask* task = PrepareTask::LoadFileTask(nullptr,
+          module->loaded_file, module->load_folder_name);
+        if (!module->widget_module_queue.tasks.push(task)) {
+          delete task;
+        }
+      }
+    ));
+    
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel("Pick Folder for Saving"));
 
     MenuItemPickSaveFolder* menu_item_save_folder = new MenuItemPickSaveFolder;
     if (module->save_folder_name.empty()) {
-      menu_item_save_folder->text = "Click here to pick";  
+      menu_item_save_folder->text = "Pick via Directory Selector...";  
     } else {
       menu_item_save_folder->text = module->save_folder_name;
     }
