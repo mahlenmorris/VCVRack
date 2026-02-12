@@ -753,7 +753,8 @@ struct Memory : BufferedModule {
 
   // Memory and MemoryCV differ only slightly, and most of the difference is how Buffer behaves.
   // This flag tells the code which to behave like.
-  bool cv_rate;
+  // Set it to false initially, so random initialization doesn't cause Memory to behave like MemoryCV.
+  bool cv_rate = false;
 
 
   Memory() {
