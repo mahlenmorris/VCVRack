@@ -1597,15 +1597,26 @@ struct MemoryWidget : ModuleWidget {
     std::vector<std::string>* mru_load_directories = 
       StochasticTelegraph::PluginConfig::getInstance().getMRUList(mru_type);
     if (mru_load_directories != nullptr && mru_load_directories->size() > 0) {
-      std::vector<std::string> mru_copy;
+
+
+      //std::vector<std::string> mru_copy;
+      std::vector<std::string> mru_copy = *mru_load_directories;
+
+
+/* For now, I'm going to try this. I'm curious if the crashes re-emerge.
       try {
         mru_copy = *mru_load_directories;
+      } catch (const std::exception& e) {
+        WARN("Standard exception occurred while copying MRU list for display: %s", e.what());
+        // If copying fails due to concurrent modification or other issues, skip the MRU menu.  
       } catch (...) {
+        // Print anything we can about the exception.
+        WARN("Exception occurred while copying MRU list for display. Skipping MRU menu.");
         // If copying fails due to concurrent modification or other issues, skip the MRU menu.
         // TODO: consider using a mutex in the MRU list management to prevent this.
         // TODO: log a warning message. I'd like to understand this better.
-        mru_load_directories = nullptr;
       }
+*/
       if (!mru_copy.empty()) {
         MenuItem* folder_mru_menu = createSubmenuItem("Most Recently Used Directories", "",
           [=](Menu* menu) {
@@ -1705,9 +1716,13 @@ struct MemoryWidget : ModuleWidget {
     // Be a little clearer how to make this module do anything.
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel(
-      "Put any of these modules directly to my right: Brainwash, Depict, Embellish, "));
+      "Put any of these modules directly to my right:"));
     menu->addChild(createMenuLabel(
-      "Fixation, and Ruminate. See my User Manual for details and usage videos."));
+      "Brainwash, Depict, Embellish, Fixation,"));
+    menu->addChild(createMenuLabel(
+      "and Ruminate. See my User Manual for details"));
+    menu->addChild(createMenuLabel(
+      "and usage videos."));
   }
 };
 
