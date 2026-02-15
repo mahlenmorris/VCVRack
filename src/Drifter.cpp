@@ -66,7 +66,8 @@ float find_smooth_y(point point_0, point point_1, float x) {
   return smooth_y * (high_y - low_y) + low_y;
 }
 
-float compute_y_for_x(float domain, LineType line_type, const point& start_point,
+// Returns value at "domain". Fills in segment_number with the segment we are now in, in [0, points.size()].
+float compute_y_for_x(int* segment_number, float domain, LineType line_type, const point& start_point,
                       const point& end_point, std::vector<point>& points) {
   // Figure out which segment we are in.
   point prev = start_point, start, end;
@@ -76,8 +77,10 @@ float compute_y_for_x(float domain, LineType line_type, const point& start_point
 
   // FYI: How much CPU is saved if I don't actually send output?
   // Surprisingly, it only goes from 0.7-8% -> 0.4-5%.
+  int segment = -1;
   for (std::vector<point>::iterator it = points.begin();
         it != points.end(); ++it) {
+    ++segment;
     if (domain < it->x) {
       start = prev;
       end = *it;
@@ -90,7 +93,10 @@ float compute_y_for_x(float domain, LineType line_type, const point& start_point
   if (!found_end) {
     start = prev;
     end = end_point;
+    segment = points.size();
   }
+
+  *segment_number = segment;
 
   switch (line_type) {
   case LINES_LINETYPE:
@@ -119,7 +125,8 @@ void compute_display_points(int type_knob, const point& start_point,
   for (int i = 0; i < DISPLAY_POINT_COUNT; i++) {
     // "- 1" because need both ends.
     float x = i * (10.0f / (DISPLAY_POINT_COUNT - 1));
-    float y = compute_y_for_x(x, line_type, start_point, end_point, points);
+    int dummy_segment;
+    float y = compute_y_for_x(&dummy_segment, x, line_type, start_point, end_point, points);
     display_points[i].x = x;
     display_points[i].y = y;
   }
@@ -147,6 +154,7 @@ struct Drifter : Module {
   };
   enum OutputId {
     RANGE_OUTPUT,
+    TRIGGER_OUTPUT,
     OUTPUTS_LEN
   };
   enum LightId {
@@ -191,6 +199,7 @@ struct Drifter : Module {
                 "Added to knob value -> the maximum total drift distance per drift event");
     configInput(X_SCALE_INPUT,
                 "Added to knob value -> the maximum x-axis drift distance per drift event");
+		configOutput(TRIGGER_OUTPUT, "Trigger each time IN changes which segment it is in.");
     configOutput(RANGE_OUTPUT, "The Y position on the curve at IN.");
 
     // If user decides to "bypass" the module, we can just pass IN -> OUT.
@@ -533,15 +542,23 @@ struct Drifter : Module {
       need_to_update_graph = true;
     }
 
-    if (inputs[DOMAIN_INPUT].isConnected() &&
-        outputs[RANGE_OUTPUT].isConnected()) {
-      // Only need to compute the output if input and output are connected!
+    if (inputs[DOMAIN_INPUT].isConnected()) {
+      // Need to compute the trig and domain outputs if input is connected!
       float domain = getDomain();
-      float range = compute_y_for_x(domain, line_type, start_point, end_point, points);
+      int new_segment = -1;
+      float range = compute_y_for_x(&new_segment, domain, line_type, start_point, end_point, points);
       if (!offset_unipolar) {
         range -= 5.0f;
       }
       outputs[RANGE_OUTPUT].setVoltage(range);
+      if (outputs[TRIGGER_OUTPUT].isConnected()) {
+        // Send a trigger when we change segments.
+        if (new_segment != prev_segment) {
+          trig_generator.trigger(1e-3f);
+          prev_segment = new_segment;
+        }
+        prev_segment = new_segment;
+      }
     }
 
     // All the reasons we might need to recompute the display graph.
@@ -551,6 +568,9 @@ struct Drifter : Module {
                              display_points);
     }
 
+    outputs[TRIGGER_OUTPUT].setVoltage(
+      trig_generator.process(args.sampleTime) ? 10.0 : 0.0f);
+
     // Lights.
     lights[OFFSET_LIGHT].setBrightness(offset_unipolar);
     lights[RESET_LIGHT].setBrightness(
@@ -559,7 +579,12 @@ struct Drifter : Module {
         drifting_light_countdown > 0 ? 1.0f : 0.0f);
   }
 
+  // For detecting output triggers.
   dsp::SchmittTrigger driftTrigger, resetTrigger;
+  // Makes the output trigger at TRIG when needed.
+  dsp::PulseGenerator trig_generator;
+  int prev_segment = -1;  // To detect changes in segment.
+  
   point start_point = {0.0f, 5.0f};  // Y value depends on OFFSET type.
   point end_point = {10.0f, 5.0f};  // Y value depends on OFFSET type.
   std::vector<point> points;
@@ -803,11 +828,13 @@ struct DrifterWidget : ModuleWidget {
 
     // Input
     addInput(createInputCentered<ThemedPJ301MPort>(
-        mm2px(Vec(13.905, 112.000)), module, Drifter::DOMAIN_INPUT));
+        mm2px(Vec(9.43, 112.0)), module, Drifter::DOMAIN_INPUT));
 
-    // The Output
+    // The Outputs
     addOutput(createOutputCentered<ThemedPJ301MPort>(
-        mm2px(Vec(27.797, 112.000)), module, Drifter::RANGE_OUTPUT));
+        mm2px(Vec(22.86, 112.000)), module, Drifter::TRIGGER_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(36.29, 112.000)), module, Drifter::RANGE_OUTPUT));
   }
 
   void appendContextMenu(Menu* menu) override {

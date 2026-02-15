@@ -1,7 +1,13 @@
 # Release Notes
 
+### 2.0.25
+#### [fill in date when released]
+* Drifter now has a TRIG output.
+* * Outputs a short trigger each time the IN value moves to a new "section" of the graph (i.e., changes which two points it is between).
+* * Putting a phasor into IN, TRIG now turns that phasor into a set number of triggers, which can drift in time (on each click of/trigger into DRIFT).
+
 ### 2.0.24
-#### [Fill in publication date here]
+#### January 2, 2026
 * Many changes to Memory modules:
 * * Fixation now has a menu option that changes the LENGTH from "time in milliseconds" to "tempo input + note length". I think this will make it far more suited to tempo-synced playback. Thanks to @cothiele for a discussion that got me to think of this.
 * * Brainwash now has a new method to determining when to record and for how long. It takes a CLOCK signal and a count of CLOCK triggers, and after being ARM'ed, records for that many CLOCK triggers. COUNT doesn't have to be an integer; fractional values can make for *interesting* polyrhythmic effects.

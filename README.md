@@ -1048,6 +1048,8 @@ Changes are applied instantly.
 #### IN Input
 Selects the horizontal position of the point on the line to be
 selected. Shown on the display as a short line at the bottom of the display.
+#### TRIG Output
+Outputs a short trigger each time the IN value moves to a new "section" of the graph (i.e., changes which two points it is between). This trigger could be used to start the envelope for a note set by OUT, making it simpler to use Drifter to play drifting melodies. The TRIG signal by itself can be used to make shifting tempos that drift around, yet always play the same number of times per sweep of IN.
 #### OUT Output
 The vertical position of the line at the position determined by IN.
 
