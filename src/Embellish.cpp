@@ -357,6 +357,8 @@ struct Embellish : PositionedModule {
           getId());
         lights[RECORD_BUTTON_LIGHT].setBrightness(1.0f);
       } else {
+        outputs[LEFT_OUTPUT].setVoltage(0.0f);
+        outputs[RIGHT_OUTPUT].setVoltage(0.0f);
         lights[RECORD_BUTTON_LIGHT].setBrightness(0.0f);
       }
     } else {
