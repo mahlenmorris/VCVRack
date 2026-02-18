@@ -5,7 +5,7 @@
    viewBox="0 0 20.320001 128.50002"
    version="1.1"
    id="svg8"
-   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
    sodipodi:docname="MemoryCV.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -23,22 +23,22 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="2.8284272"
-     inkscape:cx="-50.73491"
-     inkscape:cy="207.88939"
+     inkscape:zoom="2.0000001"
+     inkscape:cx="32.749999"
+     inkscape:cy="217.24999"
      inkscape:document-units="mm"
-     inkscape:current-layer="g1684"
+     inkscape:current-layer="layer2"
      showgrid="false"
      units="mm"
      inkscape:snap-bbox="true"
      inkscape:snap-page="true"
      inkscape:bbox-nodes="false"
      inkscape:snap-bbox-edge-midpoints="false"
-     inkscape:window-width="2560"
-     inkscape:window-height="1369"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
-     inkscape:window-maximized="1"
+     inkscape:window-width="845"
+     inkscape:window-height="1253"
+     inkscape:window-x="1129"
+     inkscape:window-y="71"
+     inkscape:window-maximized="0"
      inkscape:snap-bbox-midpoints="true"
      inkscape:snap-nodes="false"
      inkscape:document-rotation="0"
@@ -246,24 +246,6 @@
          id="path1227-8-9"
          style="fill:#e8f1f2;fill-opacity:1" />
     </g>
-    <rect
-       style="display:inline;fill:#000000;fill-opacity:1;stroke-width:0.187101"
-       id="rect652-5"
-       width="10.287325"
-       height="9.7920055"
-       x="9.742363"
-       y="74.428696"
-       ry="3.854296"
-       transform="translate(0,168.49998)" />
-    <rect
-       style="display:inline;fill:#000000;fill-opacity:1;stroke-width:0.187101"
-       id="rect652-5-0"
-       width="10.287325"
-       height="9.7920055"
-       x="9.742363"
-       y="90.898773"
-       ry="3.854296"
-       transform="translate(0,168.49998)" />
     <g
        aria-label="SAVE"
        id="text2727"
@@ -318,6 +300,33 @@
          d="m 13.901958,176.83758 -1.493792,4.1038 h -0.727604 l -1.493792,-4.1038 h 0.584288 l 1.287086,3.61046 1.287087,-3.61046 z"
          id="path4030" />
     </g>
+    <rect
+       style="display:inline;fill:#000000;fill-opacity:0.88755;stroke-width:0.175583;image-rendering:auto"
+       id="rect652-7"
+       width="10.616776"
+       height="8.3559361"
+       x="9.5716124"
+       y="197.15901"
+       ry="1.9487509"
+       rx="1.9487509" />
+    <rect
+       style="display:inline;fill:#000000;fill-opacity:0.88755;stroke-width:0.175583;image-rendering:auto"
+       id="rect652-7-8"
+       width="10.616776"
+       height="8.3559361"
+       x="9.5776367"
+       y="243.64671"
+       ry="1.9487509"
+       rx="1.9487509" />
+    <rect
+       style="display:inline;fill:#000000;fill-opacity:0.88755;stroke-width:0.175583;image-rendering:auto"
+       id="rect652-7-8-4"
+       width="10.616776"
+       height="8.3559361"
+       x="9.5776367"
+       y="260.11679"
+       ry="1.9487509"
+       rx="1.9487509" />
   </g>
   <g
      inkscape:groupmode="layer"
@@ -360,13 +369,6 @@
        r="4"
        inkscape:label="fileio_light" />
     <circle
-       style="display:inline;opacity:1;vector-effect:none;fill:#ff0000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
-       id="path4954"
-       cx="10.16"
-       cy="32.836842"
-       r="4"
-       inkscape:label="seconds" />
-    <circle
        style="display:inline;vector-effect:none;fill:#0000ff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
        id="circle4958"
        cx="12.805833"
@@ -394,5 +396,21 @@
        cy="95.794785"
        r="4"
        inkscape:label="save_trigger" />
+    <circle
+       style="display:inline;opacity:1;vector-effect:none;fill:#0000ff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
+       id="circle4958-6-94"
+       cx="14.88"
+       cy="201.33698"
+       r="4"
+       inkscape:label="len_output"
+       transform="translate(0,-168.49998)" />
+    <circle
+       style="display:inline;opacity:1;vector-effect:none;fill:#ff0000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
+       id="path4954"
+       cx="5.4400001"
+       cy="201.33682"
+       r="4"
+       inkscape:label="seconds"
+       transform="translate(0,-168.49998)" />
   </g>
 </svg>

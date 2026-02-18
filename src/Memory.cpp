@@ -681,6 +681,7 @@ struct Memory : BufferedModule {
     LOAD_TRIGGER_OUTPUT,
     SAVE_TRIGGER_OUTPUT,
     TIPSY_LOGGING_OUTPUT,
+    LENGTH_OUTPUT,
     OUTPUTS_LEN
   };
   enum LightId {
@@ -765,6 +766,7 @@ struct Memory : BufferedModule {
         "Length of Memory in seconds; takes effect on next RESET press");
     // This is really an integer.
     getParamQuantity(SECONDS_PARAM)->snapEnabled = true;
+    configOutput(LENGTH_OUTPUT, "Length of recording in seconds; updates on load and reset");
     configButton(RESET_BUTTON_PARAM, "Press to reset length and wipe contents to 0.0V");
     configInput(TIPSY_LOAD_INPUT, "Tipsy text input to load named file");
     configOutput(LOAD_TRIGGER_OUTPUT, "Sends a trigger when file load has completed");
@@ -1076,8 +1078,8 @@ struct Memory : BufferedModule {
         }
       }
       // The SAVE file case is simpler, since there's no #NNN syntax.
-      // TODO: should there be a text gesture that saves using the default name? Not certain
-      // I see that being useful.
+      // TODO: should there be a text gesture that saves using the default name?
+      // Not certain that I see that being useful.
       if (inputs[TIPSY_SAVE_INPUT].isConnected()) {
         auto decoder_status = save_decoder.readFloat(
             inputs[TIPSY_SAVE_INPUT].getVoltage());
@@ -1306,6 +1308,15 @@ struct Memory : BufferedModule {
       outputs[SAVE_TRIGGER_OUTPUT].setVoltage(
         save_generator.process(args.sampleTime) ? 10.0f : 0.0f);
 
+      if (outputs[LENGTH_OUTPUT].isConnected()) {
+        std::shared_ptr<Buffer> buffer = getHandle()->buffer;
+        if (buffer) {  // Checks for null.
+          outputs[LENGTH_OUTPUT].setVoltage(buffer->seconds);
+        } else {
+          outputs[LENGTH_OUTPUT].setVoltage(0.0f);
+        }
+      }
+      
       // Output next value for the log.
       log_message_sender.ProcessEncoder(TIPSY_LOGGING_OUTPUT, &outputs);
 
@@ -1482,6 +1493,71 @@ struct MenuItemPickSaveFile : MenuItem {
   }
 };
 
+// Based on TimestampField, but shows the length of the recording instead
+// of the current position.
+struct LengthField : OpaqueWidget {
+  Memory* module;
+  
+  void setModule(Memory* mod) {
+    module = mod;
+  }
+
+  double getSeconds() {
+    if (module) {
+      std::shared_ptr<Buffer> buffer = module->getHandle()->buffer;
+      if (buffer) {
+        return buffer->seconds;
+      }
+    }
+    return 2.1;  // Just something to show by default.
+  }
+
+  LengthField() {
+    box.size = mm2px(Vec(10.0, 4.0));
+  }
+
+  void drawLayer(const DrawArgs& args, int layer) override {
+    if (layer == 1) {
+      double seconds = getSeconds();
+      char text_buffer[10];
+      if (seconds < 60) {
+        // display "seconds.hundreths"
+        int value = trunc(seconds * 100);
+        snprintf(text_buffer, 10, "%02u.%02u", (value / 100), value % 100);
+      } else {
+        int value = trunc(seconds);
+        snprintf(text_buffer, 10, "%u:%02u", value / 60, value % 60);
+      }
+      std::string result(text_buffer);
+
+      // Draw the timestamp result in the box.
+      Rect r = box.zeroPos();
+      Vec bounding_box = r.getBottomRight();
+
+      // Save previous state.
+      nvgSave(args.vg);
+
+      // Draw background color.
+      nvgBeginPath(args.vg);
+      nvgRect(args.vg, 0.0, 0.0, bounding_box.x, bounding_box.y);
+      nvgFillColor(args.vg, SCHEME_DARK_GRAY);
+      nvgFill(args.vg);
+
+      nvgBeginPath(args.vg);
+      nvgFillColor(args.vg, SCHEME_WHITE);
+      nvgFontSize(args.vg, 11);
+      // Do I need this? nvgFontFaceId(args.vg, font->handle);
+      nvgTextLetterSpacing(args.vg, -1);
+
+      // Place on the line just off the left edge.
+      nvgText(args.vg, 3, 9, result.c_str(), NULL);
+
+      // Restore previous state.
+      nvgRestore(args.vg);
+    }
+    Widget::drawLayer(args, layer);
+  }
+};
 
 struct MemoryWidget : ModuleWidget {
   MemoryWidget(Memory* module) {
@@ -1501,8 +1577,16 @@ struct MemoryWidget : ModuleWidget {
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.378, 14.817)), module,
                                              Memory::WIPE_TRIGGER_INPUT));
 
-    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(10.16, 32.837)),
+    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(5.44, 32.837)),
              module, Memory::SECONDS_PARAM));
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(14.88, 32.837)),
+             module, Memory::LENGTH_OUTPUT));
+    // A timestamp is 10 wide.
+    LengthField* now_timestamp = createWidget<LengthField>(mm2px(
+        Vec(14.88 - (10.0 / 2.0), 32.837 - 8.1)));
+    now_timestamp->setModule(module);
+    addChild(now_timestamp);
+
     // RESET button.
     addParam(createLightParamCentered<VCVLightButton<
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(10.16, 46.959)),
