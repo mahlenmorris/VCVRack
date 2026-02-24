@@ -28,6 +28,54 @@ LineType LINES[] = {
 };
 
 const int DISPLAY_POINT_COUNT = 100;
+
+static std::function<float(float, float, bool)> reset_functions[] = {
+  [](float x, float w, bool uni)
+      { return 0.0 + (uni ? 0.0f : 5.0f);},  // Zeros.
+  [](float x, float w, bool uni)
+      { return 5.0f + 5.0f * sin(3.1415927f * (x + w) / 5.0f);},  // Sine.
+  [](float x, float w, bool uni)
+    { float xw = x + w;    // Triangle.
+      if (xw <= 2.5f) {
+          return 5.0f + 2.0f * xw;
+      } else if (xw <= 7.5f) {
+        return 5.0f + -2.0f * (xw - 5.0f);
+      } else if (xw <= 12.5) {
+        return 5.0f + 2.0f * (xw - 10.f);
+      } else {
+        return 5.0f + -2.0f * (xw - 15.0f);
+      }
+    },
+  [](float x, float w, bool uni)
+    { float xw = x + w;    // Rising Saw.
+      if (xw <= 10.0f) {
+          return xw;
+      } else {
+        return (xw - 10.0f);
+      }
+    },
+  [](float x, float w, bool uni)
+    { float xw = x + w;    // Falling Saw.
+      if (xw <= 10.0f) {
+          return 10.0f - xw;
+      } else {
+        return 10.0f - (xw - 10.0f);
+      }
+    },
+  [](float x, float w, bool uni)
+    { float xw = x + w;    // Square.
+      if (xw < 5.0f) {  // Because w is 5.0 for C, <= 5.0 leads to spurious initial peak.
+        return 10.0f;
+      } else if (xw <= 10.f) {
+        return 0.0f;
+      } else if (xw <= 15.f) {
+        return 10.0f;
+      } else {
+        return 0.0f;
+      }
+    }
+};
+
 ///////////////////////////////////////////////////////////
 // Pulling these functions out of the Module so that we can use them to display a
 // default graph in the module browser/library.
@@ -142,6 +190,7 @@ struct Drifter : Module {
     SEGMENTS_PARAM,
     ENDPOINTS_PARAM,
     X_SCALE_PARAM,
+    UNDRIFT_PARAM,
     PARAMS_LEN
   };
   enum InputId {
@@ -150,6 +199,7 @@ struct Drifter : Module {
     DOMAIN_INPUT,
     SCALE_INPUT,
     X_SCALE_INPUT,
+    UNDRIFT_INPUT,
     INPUTS_LEN
   };
   enum OutputId {
@@ -161,6 +211,7 @@ struct Drifter : Module {
     OFFSET_LIGHT,
     RESET_LIGHT,
     DRIFT_LIGHT,
+    UNDRIFT_LIGHT,
     LIGHTS_LEN
   };
 
@@ -179,6 +230,7 @@ struct Drifter : Module {
     configButton(RESET_PARAM,
                  "Press to reset curve to initial shape (see menu)");
     configButton(DRIFT_PARAM, "Press to drift once");
+    configButton(UNDRIFT_PARAM, "Press to undrift (towards reset shape) once");
 
     configSwitch(OFFSET_PARAM, 0, 1, 0, "Offset",
                  {"Bipolar (-5V - +5V)", "Unipolar (0V - 10V)"});
@@ -194,6 +246,7 @@ struct Drifter : Module {
     configInput(RESET_INPUT,
                 "Line is reset to initial shape when a trigger enters");
     configInput(DRIFT_INPUT, "The curve drifts when a trigger enters");
+    configInput(UNDRIFT_INPUT, "The curve drifts towards reset shape when a trigger enters");
     configInput(DOMAIN_INPUT, "The X position on the curve");
     configInput(SCALE_INPUT,
                 "Added to knob value -> the maximum total drift distance per drift event");
@@ -274,54 +327,7 @@ struct Drifter : Module {
   }
 
   void reset_points(bool startup) {
-    static std::function<float(float, float, bool)> reset_functions[] = {
-      [](float x, float w, bool uni)
-         { return 0.0 + (uni ? 0.0f : 5.0f);},  // Zeros.
-      [](float x, float w, bool uni)
-         { return 5.0f + 5.0f * sin(3.1415927f * (x + w) / 5.0f);},  // Sine.
-      [](float x, float w, bool uni)
-        { float xw = x + w;    // Triangle.
-          if (xw <= 2.5f) {
-             return 5.0f + 2.0f * xw;
-          } else if (xw <= 7.5f) {
-            return 5.0f + -2.0f * (xw - 5.0f);
-          } else if (xw <= 12.5) {
-            return 5.0f + 2.0f * (xw - 10.f);
-          } else {
-            return 5.0f + -2.0f * (xw - 15.0f);
-          }
-        },
-      [](float x, float w, bool uni)
-        { float xw = x + w;    // Rising Saw.
-          if (xw <= 10.0f) {
-             return xw;
-          } else {
-            return (xw - 10.0f);
-          }
-        },
-      [](float x, float w, bool uni)
-        { float xw = x + w;    // Falling Saw.
-          if (xw <= 10.0f) {
-             return 10.0f - xw;
-          } else {
-            return 10.0f - (xw - 10.0f);
-          }
-        },
-      [](float x, float w, bool uni)
-        { float xw = x + w;    // Square.
-          if (xw < 5.0f) {  // Because w is 5.0 for C, <= 5.0 leads to spurious initial peak.
-            return 10.0f;
-          } else if (xw <= 10.f) {
-            return 0.0f;
-          } else if (xw <= 15.f) {
-            return 10.0f;
-          } else {
-            return 0.0f;
-          }
-        }
-    };
-
-    // Empty it.
+    // Empty current list of points.
     while (!points.empty()) {
      points.pop_back();
     }
@@ -351,6 +357,25 @@ struct Drifter : Module {
     }
   }
 
+  // Get the current shape of the destination curve, so that we can drift
+  // back towards it when the user presses UNDRIFT.
+  // new_points must be empty. 
+  void get_current_reset_shape(std::vector<point>& new_points, point& new_start, point& new_end,
+      int segment_count) {
+    // How many segments (we make one fewer point).
+    float distance = 10.0f / segment_count;
+    // The internal scale of the square is 0,0 -> 10, 10.
+    bool unipolar = getOffsetUnipolar();
+    auto reset_func = reset_functions[reset_shape];
+    float w = reset_type * 2.5f;
+    for (int i = 1; i < segment_count; i++) {
+      point p = {i * distance, reset_func(i * distance, w, unipolar)};
+      new_points.push_back(p);
+    }
+    new_start.y = reset_func(0.0f, w, unipolar);
+    new_end.y = reset_func(10.0f, w, unipolar);
+  }
+
   // Given the two drift scales, current point, and a min and max point that
   // bounds the region, return a point in that region that is no more than
   // 'total drift' away from the current point and whose delta along the x_axis
@@ -359,8 +384,8 @@ struct Drifter : Module {
                              point min, point max) {
     // We run this by creating points and seeing if they are close enough.
     // See https://www.youtube.com/watch?v=4y_nmpv-9lI for why.
-    float x_range = std::min(x_drift, std::min(total_drift, max.x - min.x));
-    float y_range = std::min(total_drift, max.y - min.y);
+    float x_range = std::min(x_drift * 2, std::min(total_drift * 2, abs(max.x - min.x)));
+    float y_range = std::min(total_drift * 2, max.y - min.y);
     point result;
     while (true) {
       float x_diff = random::uniform() * x_range - (x_range / 2.0f);
@@ -384,7 +409,7 @@ struct Drifter : Module {
       low_x = 0.0f;
     } else {
       // I think this has some bias to it, since the previous point will
-      // have already moved.
+      // have already moved. That's why the caller makes sure we switch directions.
       low_x = points[i - 1].x;
     }
     if (i == points.size() - 1) {
@@ -402,6 +427,97 @@ struct Drifter : Module {
     points[i] = uniform_region_value(total_drift, x_drift, this_point, min, max);
   }
 
+  // Returns new point based on current_point that is closer to goal_point, without violating:
+  // * total_drift limit
+  // * x_drift limit
+  // * min_x and max_x bounds (which tell us where surrounding points are).
+  // To make this simpler, we ensure that the X and Y of the new point are no further from 
+  // the goal point than they already were.
+  // So while the point does *meander* its way back to the goal, the path is not as random as
+  // it could be.
+  point point_moves_toward_goal(float total_drift, float x_drift,
+      point current_point, point goal_point,
+      float min_x, float max_x) {
+    float min_x_limit, max_x_limit, min_y_limit, max_y_limit;
+    if (goal_point.x >= current_point.x) {
+      // Goal is to the right.
+      min_x_limit = std::max(min_x, current_point.x);
+      max_x_limit = std::min(max_x, std::min(goal_point.x, current_point.x + x_drift));
+    } else {
+      // Goal is to the left.
+      min_x_limit = std::max(min_x, std::max(goal_point.x, current_point.x - x_drift));
+      max_x_limit = std::min(max_x, current_point.x);
+    }
+    // In case float errors make max < min. 
+    max_x_limit = std::max(max_x_limit, min_x_limit);
+    
+    min_y_limit = std::min(current_point.y, goal_point.y);
+    max_y_limit = std::max(current_point.y, goal_point.y);
+
+    float x_range = std::min(x_drift, std::min(total_drift, abs(max_x_limit - min_x_limit)));
+    float y_range = std::min(total_drift, abs(max_y_limit - min_y_limit));
+    point result;
+    while (true) {
+      float x_diff = random::uniform() * x_range;
+      float y_diff = random::uniform() * y_range;
+      // Test with Pythagorean theorem.
+      if ((x_diff * x_diff) + (y_diff * y_diff) <= (total_drift * total_drift)) {
+        result.x = current_point.x + (goal_point.x >= current_point.x ? x_diff : -x_diff);
+        result.y = current_point.y + (goal_point.y >= current_point.y ? y_diff : -y_diff);
+        // And test the boundaries.
+        if ((min_x <= result.x) && (result.x <= max_x)) {
+          return result;
+        }
+      }
+    }
+  }
+
+  void undrift_point(float total_drift, float x_drift, unsigned int i, point goal_point) {
+    constexpr float CLOSE_ENOUGH = 0.01f;
+
+    point this_point = points[i];
+    // If we're close enough to the goal point, just move to goal point.
+    // We do this in each of the two dimensions.
+    float dx = abs(this_point.x - goal_point.x);
+    float dy = abs(this_point.y - goal_point.y);
+    if (dx < CLOSE_ENOUGH && dy < CLOSE_ENOUGH) {
+      point new_point = this_point;
+      bool changed = false;
+      if (dx <= CLOSE_ENOUGH && x_drift >= dx) {
+        new_point.x = goal_point.x;
+        changed = true;
+      }
+      // total_drift isn't *really* the same as x_drift, but it's fine.
+      if (dy <= CLOSE_ENOUGH && total_drift >= dy) {
+        new_point.y = goal_point.y;
+        changed = true;
+      }
+      if (changed) {
+        points[i] = new_point;
+        return;
+      }
+    }
+
+    float low_x, high_x;
+    if (i == 0) {
+      // Leftmost non-endpoint.
+      low_x = 0.0f;
+    } else {
+      // I think this has some bias to it, since the previous point will
+      // have already moved.
+      low_x = points[i - 1].x;
+    }
+    if (i == points.size() - 1) {
+      // Rightmost non-endpoint
+      high_x = 10.0f;
+    } else {
+      high_x = points[i + 1].x;
+    }
+
+    points[i] = point_moves_toward_goal(total_drift, x_drift,
+        this_point, goal_point, low_x, high_x);
+  }
+
   bool getOffsetUnipolar() {
     return params[OFFSET_PARAM].getValue() > 0;
   }
@@ -412,6 +528,24 @@ struct Drifter : Module {
       domain += 5.0f;
     }
     return clamp(domain, 0.0f, 10.0f);
+  }
+
+  float get_x_drift() {
+    float x_drift = params[X_SCALE_PARAM].getValue();
+    if (inputs[X_SCALE_INPUT].isConnected()) {
+      // Don't allow x_drift to be negative.
+      x_drift = clamp(x_drift + inputs[X_SCALE_INPUT].getVoltage(), 0.0f, 10.0f);
+    }
+    return x_drift;
+  }
+
+  float get_total_drift() {
+    float total_drift = params[SCALE_PARAM].getValue();
+    if (inputs[SCALE_INPUT].isConnected()) {
+      // Don't allow total_drift to be negative.
+      total_drift = clamp(total_drift + inputs[SCALE_INPUT].getVoltage(), 0.0f, 10.0f);
+    }
+    return total_drift; 
   }
 
   void process(const ProcessArgs& args) override {
@@ -433,11 +567,12 @@ struct Drifter : Module {
     if (drifting_light_countdown > 0) {
       drifting_light_countdown--;
     }
+    if (undrifting_light_countdown > 0) {
+      undrifting_light_countdown--;
+    }
     if (reset_light_countdown > 0) {
       reset_light_countdown--;
     }
-
-    // TODO: PERF: consider reading buttons only every N samples.
 
     // Y values of end points depend on the offset.
     bool offset_unipolar = getOffsetUnipolar();
@@ -490,8 +625,26 @@ struct Drifter : Module {
       drift_button_pressed = false;
     }
 
-    // Actually drift, if asked to.
-    if (!reset && (drift_from_input || drift_from_button)) {
+    // Determine if we have a UNDRIFT event from button or input.
+    bool undrift_was_low = !undriftTrigger.isHigh();
+    undriftTrigger.process(rescale(
+        inputs[UNDRIFT_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+    bool undrift_from_input = undrift_was_low && undriftTrigger.isHigh();
+
+    // We only want one drift from a button press.
+    bool undrift_from_button = false;
+    if (params[UNDRIFT_PARAM].getValue() > 0.1f) {
+      if (!undrift_button_pressed) {
+        undrift_from_button = true;
+        undrift_button_pressed = true;
+      }
+    } else {
+      undrift_button_pressed = false;
+    }
+
+    // Actually drift, if asked to and not asked to undrift as well.
+    if (!reset && (drift_from_input || drift_from_button) &&
+        !(undrift_from_input || undrift_from_button)) {
       // Flash the drift light for a tenth of second.
       // Compute how many samples to show the light.
       // Note that, in contrast to RESET, we do set a timer on the drift
@@ -499,17 +652,8 @@ struct Drifter : Module {
       // press, but RESET is just as reset no matter how long you hold it.
       drifting_light_countdown = std::floor(args.sampleRate / 10.0f);
 
-      float x_drift = params[X_SCALE_PARAM].getValue();
-      if (inputs[X_SCALE_INPUT].isConnected()) {
-        // Don't allow x_drift to be negative.
-        x_drift = clamp(x_drift + inputs[X_SCALE_INPUT].getVoltage(), 0.0f, 10.0f);
-      }
-
-      float total_drift = params[SCALE_PARAM].getValue();
-      if (inputs[SCALE_INPUT].isConnected()) {
-        // Don't allow total_drift to be negative.
-        total_drift = clamp(total_drift + inputs[SCALE_INPUT].getVoltage(), 0.0f, 10.0f);
-      }
+      float x_drift = get_x_drift();
+      float total_drift = get_total_drift();
 
       // To avoid the bias of always calculating limits from left -> right,
       // we alternate direction.
@@ -540,6 +684,67 @@ struct Drifter : Module {
 
       // Now that new function has been computed, update the display curve.
       need_to_update_graph = true;
+    }
+
+    // Actually undrift, if asked to and not asked to drift at the same time.
+    if (!reset && (undrift_from_input || undrift_from_button) &&
+        !(drift_from_input || drift_from_button)) {
+      // Flash the undrift light for a tenth of second.
+      // Compute how many samples to show the light.
+      // Note that, in contrast to RESET, we do set a timer on the undrift
+      // light; because we want to convey that UNDRIFT does ONE undrift per
+      // press, but RESET is just as reset no matter how long you hold it.
+      // NB: Even if drift limts are zero, we still want to show the light,
+      // so the user knows we saw the press/trigger.
+      undrifting_light_countdown = std::floor(args.sampleRate / 10.0f);
+
+      float x_drift = get_x_drift();
+      float total_drift = get_total_drift();
+      if (total_drift > 0.001f) {
+        // No point in doing any work if we can't actually move anything.
+        // To avoid the bias of always calculating limits from left -> right,
+        // we alternate direction.
+        left_to_right = !left_to_right;
+
+        // Compute the "goal" points for this undrift. Each point should move monotonically towards its goal.
+        std::vector<point> goal_points;
+        point goal_start, goal_end;
+        // This does not allow the number of sections to change.
+        get_current_reset_shape(goal_points, goal_start, goal_end, points.size() + 1);
+
+        // Randomize locations of each point.
+        for (unsigned int i = 0; i < points.size(); i++) {
+          if (left_to_right) {
+            undrift_point(total_drift, x_drift, i, goal_points[i]);
+          } else {
+            undrift_point(total_drift, x_drift, points.size() - 1 - i, goal_points[points.size() - 1 - i]);
+          }
+        }
+        if (endpoints_drift) {
+          // Undrift endpoints.
+          // Easier to just compute the movement of Y directly, since
+          // it's even more constrained than usual.
+          float y_range = std::min(total_drift, abs(start_point.y - goal_start.y));
+          float y_diff = random::uniform() * y_range;
+          if (start_point.y > goal_start.y) {
+            y_diff = -y_diff;
+          }
+          start_point.y += y_diff;
+
+          if (!endpoints_drift_together) {
+          float y_range = std::min(total_drift, abs(end_point.y - goal_end.y));
+          float y_diff = random::uniform() * y_range;
+          if (end_point.y > goal_end.y) {
+            y_diff = -y_diff;
+          }
+          end_point.y += y_diff;
+          } else {
+            end_point.y = start_point.y;
+          }
+        }
+        // Now that new function has been computed, update the display curve.
+        need_to_update_graph = true;
+      }
     }
 
     if (inputs[DOMAIN_INPUT].isConnected()) {
@@ -577,10 +782,12 @@ struct Drifter : Module {
         reset || reset_light_countdown > 0 ? 1.0f : 0.0f);
     lights[DRIFT_LIGHT].setBrightness(
         drifting_light_countdown > 0 ? 1.0f : 0.0f);
+    lights[UNDRIFT_LIGHT].setBrightness(
+        undrifting_light_countdown > 0 ? 1.0f : 0.0f);
   }
 
   // For detecting output triggers.
-  dsp::SchmittTrigger driftTrigger, resetTrigger;
+  dsp::SchmittTrigger driftTrigger, undriftTrigger, resetTrigger;
   // Makes the output trigger at TRIG when needed.
   dsp::PulseGenerator trig_generator;
   int prev_segment = -1;  // To detect changes in segment.
@@ -596,11 +803,13 @@ struct Drifter : Module {
   // Solely so we start with the right number of points.
   bool initialized = false;
 
-  // Make sure we only drift once when DRIFT button is pressed.
+  // Make sure we only drift/undrift once when DRIFT/UNDRIFT button is pressed.
   bool drift_button_pressed = false;
+  bool undrift_button_pressed = false;
 
   // Keeps lights lit long enough to see.
   int drifting_light_countdown = 0;
+  int undrifting_light_countdown = 0;
   int reset_light_countdown = 0;
 
   // Need to update display if LineType changes.
@@ -796,25 +1005,32 @@ struct DrifterWidget : ModuleWidget {
     addInput(createInputCentered<ThemedPJ301MPort>(
         mm2px(Vec(8.024, 48.0)), module, Drifter::X_SCALE_INPUT));
     // Knob.
-    addParam(createParamCentered<RoundBlackKnob>(
+    addParam(createParamCentered<RoundSmallBlackKnob>(
          mm2px(Vec(22.624, 48.0)), module, Drifter::X_SCALE_PARAM));
 
     // Total Drift.
     // Input.
     addInput(createInputCentered<ThemedPJ301MPort>(
-        mm2px(Vec(8.024, 64.0)), module, Drifter::SCALE_INPUT));
+        mm2px(Vec(8.024, 60.0)), module, Drifter::SCALE_INPUT));
     // Knob.
-    addParam(createParamCentered<RoundBlackKnob>(
-         mm2px(Vec(22.624, 64.0)), module, Drifter::SCALE_PARAM));
+    addParam(createParamCentered<RoundSmallBlackKnob>(
+         mm2px(Vec(22.624, 60.0)), module, Drifter::SCALE_PARAM));
 
     // Commands from user/system.
     // Drift
     addInput(createInputCentered<ThemedPJ301MPort>(
-        mm2px(Vec(8.024, 80.0)), module, Drifter::DRIFT_INPUT));
+        mm2px(Vec(8.024, 72.0)), module, Drifter::DRIFT_INPUT));
     addParam(createLightParamCentered<VCVLightButton<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(22.624, 80.0)),
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(22.624, 72.0)),
                                              module, Drifter::DRIFT_PARAM,
                                              Drifter::DRIFT_LIGHT));
+    // Undrift
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(8.024, 84.0)), module, Drifter::UNDRIFT_INPUT));
+    addParam(createLightParamCentered<VCVLightButton<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(22.624, 84.0)),
+                                             module, Drifter::UNDRIFT_PARAM,
+                                             Drifter::UNDRIFT_LIGHT));
 
     // Reset
     addInput(createInputCentered<ThemedPJ301MPort>(
