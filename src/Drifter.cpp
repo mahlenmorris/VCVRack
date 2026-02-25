@@ -191,6 +191,8 @@ struct Drifter : Module {
     ENDPOINTS_PARAM,
     X_SCALE_PARAM,
     UNDRIFT_PARAM,
+		BIAS_PARAM,
+		ATTENUVERTER_PARAM,   
     PARAMS_LEN
   };
   enum InputId {
@@ -254,6 +256,9 @@ struct Drifter : Module {
                 "Added to knob value -> the maximum x-axis drift distance per drift event");
 		configOutput(TRIGGER_OUTPUT, "Trigger each time IN changes which segment it is in.");
     configOutput(RANGE_OUTPUT, "The Y position on the curve at IN.");
+
+    configParam(BIAS_PARAM, -10.f, 10.f, 0.f, "Added to the OUT signal", "V");
+		configParam(ATTENUVERTER_PARAM, -2.f, 2.f, 1.f, "Attenuverter on OUT before BIAS is added", "%", 0, 100);
 
     // If user decides to "bypass" the module, we can just pass IN -> OUT.
     configBypass(DOMAIN_INPUT, RANGE_OUTPUT);
@@ -755,7 +760,9 @@ struct Drifter : Module {
       if (!offset_unipolar) {
         range -= 5.0f;
       }
-      outputs[RANGE_OUTPUT].setVoltage(range);
+      // Take into account bias and attenuverting on the way out.
+      outputs[RANGE_OUTPUT].setVoltage(
+          params[BIAS_PARAM].getValue() + (range * params[ATTENUVERTER_PARAM].getValue()));
       if (outputs[TRIGGER_OUTPUT].isConnected()) {
         // Send a trigger when we change segments.
         if (new_segment != prev_segment) {
@@ -962,15 +969,6 @@ struct DrifterWidget : ModuleWidget {
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Drifter.svg"),
                          asset::plugin(pluginInstance, "res/Drifter-dark.svg")));
 
-    addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ThemedScrew>(
-        Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ThemedScrew>(
-        Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    addChild(createWidget<ThemedScrew>(
-        Vec(box.size.x - 2 * RACK_GRID_WIDTH,
-            RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-
     DrifterDisplay* display = createWidget<DrifterDisplay>(
         mm2px(Vec(0.360, 11.844)));
     display->box.size = mm2px(Vec(45.0, 30.0));
@@ -985,17 +983,17 @@ struct DrifterWidget : ModuleWidget {
                                              Drifter::OFFSET_LIGHT));
     // ENDS
     RoundBlackSnapKnob* ends_knob = createParamCentered<RoundBlackSnapKnob>(
-         mm2px(Vec(37.224, 64.0)), module, Drifter::ENDPOINTS_PARAM);
+         mm2px(Vec(37.224, 62.0)), module, Drifter::ENDPOINTS_PARAM);
     ends_knob->minAngle = -0.28f * M_PI;
     ends_knob->maxAngle = 0.28f * M_PI;
     addParam(ends_knob);
 
     // Line Count.
     addParam(createParamCentered<RoundBlackKnob>(
-         mm2px(Vec(37.224, 80.0)), module, Drifter::SEGMENTS_PARAM));
+         mm2px(Vec(37.224, 76.0)), module, Drifter::SEGMENTS_PARAM));
     // Line Style
     RoundBlackSnapKnob* line_knob = createParamCentered<RoundBlackSnapKnob>(
-         mm2px(Vec(37.224, 96.0)), module, Drifter::LINETYPE_PARAM);
+         mm2px(Vec(37.224, 91.0)), module, Drifter::LINETYPE_PARAM);
     line_knob->minAngle = -0.28f * M_PI;
     line_knob->maxAngle = 0.28f * M_PI;
     addParam(line_knob);
@@ -1042,15 +1040,18 @@ struct DrifterWidget : ModuleWidget {
                                              module, Drifter::RESET_PARAM,
                                              Drifter::RESET_LIGHT));
 
+		addParam(createParamCentered<Trimpot>(mm2px(Vec(28.0, 107.0)), module, Drifter::BIAS_PARAM));
+		addParam(createParamCentered<Trimpot>(mm2px(Vec(40.392, 107.0)), module, Drifter::ATTENUVERTER_PARAM));
+
     // Input
     addInput(createInputCentered<ThemedPJ301MPort>(
-        mm2px(Vec(9.43, 112.0)), module, Drifter::DOMAIN_INPUT));
+        mm2px(Vec(9.43, 116.0)), module, Drifter::DOMAIN_INPUT));
 
     // The Outputs
     addOutput(createOutputCentered<ThemedPJ301MPort>(
-        mm2px(Vec(22.86, 112.000)), module, Drifter::TRIGGER_OUTPUT));
+        mm2px(Vec(22.86, 116.000)), module, Drifter::TRIGGER_OUTPUT));
     addOutput(createOutputCentered<ThemedPJ301MPort>(
-        mm2px(Vec(36.29, 112.000)), module, Drifter::RANGE_OUTPUT));
+        mm2px(Vec(36.29, 116.000)), module, Drifter::RANGE_OUTPUT));
   }
 
   void appendContextMenu(Menu* menu) override {
