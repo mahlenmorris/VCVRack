@@ -382,11 +382,6 @@ struct EmbellishWidget : ModuleWidget {
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Embellish.svg"),
                          asset::plugin(pluginInstance, "res/Embellish-dark.svg")));
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-
     addParam(createLightParamCentered<VCVLightLatch<
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(6.35, 14.0)),
                                              module, Embellish::BOUNCE_PARAM,

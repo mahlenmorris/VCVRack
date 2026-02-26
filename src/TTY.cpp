@@ -562,8 +562,6 @@ const float NON_SCREEN_WIDTH = 2.0f;
 const float CONTROL_WIDTH = 13.0f;
 
 struct TTYWidget : ModuleWidget {
-  Widget* topRightScrew;
-  Widget* bottomRightScrew;
   StochasticTelegraph::STResizeHandle<TTY, TTYUndoRedoAction>* rightHandle;
   TTYTextField* textDisplay;
   FramebufferWidget* main_text_framebuffer;
@@ -582,18 +580,6 @@ struct TTYWidget : ModuleWidget {
       // Like when showing the module in the module browser.
       box.size.x = TTY::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
-
-    addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
-    topRightScrew = createWidget<ThemedScrew>(
-        Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0));
-    addChild(topRightScrew);
-    // TODO: this next line's Y coordinate is very odd.
-    addChild(createWidget<ThemedScrew>(
-        Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    bottomRightScrew = createWidget<ThemedScrew>(
-        Vec(box.size.x - 2 * RACK_GRID_WIDTH,
-            RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
-    addChild(bottomRightScrew);
 
     addParam(createParamCentered<RoundBlackKnob>(
          mm2px(Vec(8.938, 22.329)), module, TTY::SAMPLE_PARAM));
@@ -656,14 +642,6 @@ struct TTYWidget : ModuleWidget {
         // This forces the other modules to the right place if needed.
         APP->scene->rack->setModulePosForce(this, box.pos);
       }
-      // The right-hand screws have slightly different logic.
-      if (module->width < 8) {
-        topRightScrew->hide();
-        bottomRightScrew->hide();
-      } else {
-        topRightScrew->show();
-        bottomRightScrew->show();
-      }
     } else {
       // Like when showing the module in the module browser.
       box.size.x = TTY::DEFAULT_WIDTH * RACK_GRID_WIDTH;
@@ -671,9 +649,6 @@ struct TTYWidget : ModuleWidget {
     // Adjust size of area we display text in; it's a function of the size
     // of the module minus some set width.
     textDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH - mm2px(CONTROL_WIDTH);
-    // Move the right side screws to follow.
-    topRightScrew->box.pos.x = box.size.x - 30;
-    bottomRightScrew->box.pos.x = box.size.x - 30;
     rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
 
     ModuleWidget::step();

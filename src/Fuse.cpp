@@ -475,15 +475,6 @@ struct FuseWidget : ModuleWidget {
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Fuse.svg"),
                          asset::plugin(pluginInstance, "res/Fuse-dark.svg")));
 
-    addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ThemedScrew>(
-        Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ThemedScrew>(
-        Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    addChild(createWidget<ThemedScrew>(
-        Vec(box.size.x - 2 * RACK_GRID_WIDTH,
-            RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-
     // Screen at the top.
     FuseDisplay* display = createWidget<FuseDisplay>(
       mm2px(Vec(1.240, 17.5)));

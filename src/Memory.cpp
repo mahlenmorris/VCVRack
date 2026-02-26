@@ -1564,11 +1564,6 @@ struct MemoryWidget : ModuleWidget {
     setModule(module);
     this->SetPanels();  // this-> forces the call to the overidden method.
 
-    // Module is so narrow that we only include two screws instead of four.
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,
-                                           RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-
     // WIPE button and trigger.
     addParam(createLightParamCentered<VCVLightButton<
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(14.886, 14.817)),

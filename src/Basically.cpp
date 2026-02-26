@@ -1241,8 +1241,6 @@ struct ProgramNameMenuItem : TextFieldMenuItem {
 };
 
 struct BasicallyWidget : ModuleWidget {
-  Widget* topRightScrew;
-  Widget* bottomRightScrew;
   Widget* rightHandle;
   BasicallyTextField* codeDisplay;
   FramebufferWidget* main_text_framebuffer;
@@ -1261,18 +1259,6 @@ struct BasicallyWidget : ModuleWidget {
       // Like when showing the module in the module browser.
       box.size.x = Basically::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
-
-    addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
-    topRightScrew = createWidget<ThemedScrew>(
-        Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0));
-    addChild(topRightScrew);
-    // TODO: this next line's Y coordinate is very odd.
-    addChild(createWidget<ThemedScrew>(
-        Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    bottomRightScrew = createWidget<ThemedScrew>(
-        Vec(box.size.x - 2 * RACK_GRID_WIDTH,
-            RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
-    addChild(bottomRightScrew);
 
     // The FramebufferWidget that caches the appearence of the text, so we
     // don't have to keep redrawing it (and wasting UI CPU to do it).
@@ -1390,9 +1376,6 @@ struct BasicallyWidget : ModuleWidget {
     // Adjust size of area we display code in.
     // "7.5" here is ~6 on the left side plus ~1.1 on the right.
     codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 7.1;
-    // Move the right side screws to follow.
-    topRightScrew->box.pos.x = box.size.x - 30;
-    bottomRightScrew->box.pos.x = box.size.x - 30;
     rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
 
     ModuleWidget::step();

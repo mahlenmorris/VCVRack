@@ -486,8 +486,6 @@ const float NON_SCREEN_WIDTH = 2.0f;
 const float NON_TITLE_WIDTH = 4.6f;
 
 struct FermataWidget : ModuleWidget {
-  Widget* topRightScrew;
-  Widget* bottomRightScrew;
   StochasticTelegraph::STResizeHandle<Fermata, FermataUndoRedoAction>* rightHandle;
   FermataTextField* textField;
   FermataTitleTextField* title;
@@ -508,18 +506,6 @@ struct FermataWidget : ModuleWidget {
       // Like when showing the module in the module browser.
       box.size.x = Fermata::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
-
-    addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
-    topRightScrew = createWidget<ThemedScrew>(
-        Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0));
-    addChild(topRightScrew);
-    // TODO: this next line's Y coordinate is very odd.
-    addChild(createWidget<ThemedScrew>(
-        Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    bottomRightScrew = createWidget<ThemedScrew>(
-        Vec(box.size.x - 2 * RACK_GRID_WIDTH,
-            RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
-    addChild(bottomRightScrew);
 
     // User created title.
     title = createWidget<FermataTitleTextField>(mm2px(Vec(12.029, 122.3)));
@@ -590,14 +576,6 @@ struct FermataWidget : ModuleWidget {
         closed_title->hide();
         title->show();
       }
-      // The right-hand screws have to disappear when we get thin enough.
-      if (module->width < 8) {
-        topRightScrew->hide();
-        bottomRightScrew->hide();
-      } else {
-        topRightScrew->show();
-        bottomRightScrew->show();
-      }
       if (module->update_pos) {
         module->update_pos = false;
         box.pos.x = module->box_pos_x;
@@ -611,9 +589,6 @@ struct FermataWidget : ModuleWidget {
     textField->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
     // Adjust size of area we display title in.
     title->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_TITLE_WIDTH;
-    // Move the right side screws to follow.
-    topRightScrew->box.pos.x = box.size.x - 30;
-    bottomRightScrew->box.pos.x = box.size.x - 30;
     rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
 
     ModuleWidget::step();
