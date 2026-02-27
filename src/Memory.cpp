@@ -1670,7 +1670,7 @@ struct MemoryWidget : ModuleWidget {
                                          &(module->load_latest_file_on_start)));
 
     // Option to (re)load the most recent file immediately.
-    menu->addChild(createMenuItem("Reload most recent file now...", "",
+    menu->addChild(createMenuItem("Reload most recent file now", "",
       [=]() {
         PrepareTask* task = PrepareTask::LoadFileTask(nullptr,
           module->loaded_file, module->load_folder_name);

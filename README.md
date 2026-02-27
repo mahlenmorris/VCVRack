@@ -984,10 +984,11 @@ points doing random walks connected into a series.
 ### Examples
 ![Simple Example](images/DrifterSimplestExample.png)
 
+* Download [this small patch](examples/MinimalDrifter.vcv) here.
 * Set this up, and you'll just hear a single tone.
 * Now try tapping the DRIFT button a few times, and you'll hear the frequency change.
- * The IN signal is the value coming out of the Saw wave, and is shown in the display as a short line moving from left to right along the bottom.  
- * The OUT signal is the height (Y position) of the line in the display that jumps whenever you press DRIFT at the X position of IN.
+* The IN signal is the value coming out of the Saw wave, and is shown in the display as a short line moving from left to right along the bottom.  
+* The OUT signal is the height (Y position) of the line in the display that jumps whenever you press DRIFT at the X position of IN.
 * Set the TOTAL DRIFT value to something larger, like 5.0.
 * Now press DRIFT; the line moves a lot more now!
 * Play with the STYLE knob, which changes the shape of the line in the display and hear how that changes the OUT values.
@@ -1001,6 +1002,11 @@ waveforms, CV levels. Note that the use of a Saw wave as the input in the
 sample rack is just to better illustrate the idea of it being a
 transformation function; you can put whatever you like into IN. Sine wave,
 oscillator output, random,... Drifter alters signals, basically.
+
+And with the addition of the TRIG output, you do things like drive a sequencer with TRIG, but let the trigger points move. This changes the timing of the sequencer notes, yet
+keeps the length of the whole phrase the same length.
+
+You can also undrift points back to where they were.
 
 [Here's a video from Pazi K.](https://www.youtube.com/watch?v=L5No8J7SPK4) showing two Drifters being used to simultaneously
 create the timbre of two sounds **and** create matching visuals in Etchasketchoscope.
@@ -1034,10 +1040,15 @@ at their current value OR end points drift up and down when DRIFT events occur.
 #### DRIFT Input and Button
 A trigger to the Input or a Button press will
 cause all of the points defining the output curve to move once, within the
-limits set by X DRIFT, TOTAL DRIFT, and ENDS.
+limits set by X DRIFT, TOTAL DRIFT, and ENDS. Compare to UNDRIFT.
 #### COUNT Knob
 The number of segments in the steps/line/curve, from 1 (just
 connecting the endpoints) to 32. **Takes effect at the next RESET.**
+#### UNDRIFT Input and Button
+A trigger to the Input or a Button press will
+cause all of the points defining the output curve to move once, within the
+limits set by X DRIFT, TOTAL DRIFT, and ENDS, but instead of DRIFT, which allows the
+control points to move in any direction, UNDRIFT moves them eventually back towards the state they would be if you clicked RESET. DRIFT loosens the constraints on the curve, UNDRIFT tightens it back up. 
 #### RESET Input and Button
 A trigger to the Input or a Button press resets the line to its
 starting position (see Menu Options below for choosing a starting position).
@@ -1045,6 +1056,11 @@ This also applies any change to COUNT.
 #### STYLE Knob
 Selects one of three different line types, Steps/Lines/Curves.
 Changes are applied instantly.
+#### BIAS Knob
+This value is added to OUT. The combination of BIAS and ATTN make it easier to directly
+use the value of OUT.
+#### ATTN knob
+This attenuates and optionally inverts the value of OUT before BIAS is added to it.
 #### IN Input
 Selects the horizontal position of the point on the line to be
 selected. Shown on the display as a short line at the bottom of the display.

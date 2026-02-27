@@ -94,6 +94,10 @@ Memory buffers can be quite a bit larger than 10 seconds, I decided to just map 
 Pressing the button or sending a trigger to the WIPE input will keep the length of the Memory the same, but reset all of the values within it to 0.0V.
 #### LENGTH Knob
 The length of the Memory audio buffer, in seconds, ranging from 1 - 1000. Changes do not take effect until the RESET button is pressed.
+#### LENGTH Output
+The output sends out a steady signal, which is simply the number of seconds in the current Memory.
+
+The display above the port is the length of the buffer in seconds and hundreths of a second (e.g., 15.00), unless the Memory is longer than 60 seconds, in which case it displays it in minutes and seconds (e.g., 3:14).
 #### RESET Button
 Gets rid of the previous audio buffer, creates a new one of LENGTH seconds, then sets it to 0.0V.
 #### LOAD Tipsy Input
@@ -140,16 +144,21 @@ If you want to see a human-readable log of load and save events, a cable from th
 any messages it has, including the length of files it reads in. This is especially useful if files aren't loading or saving as you expect.
 
 ### Menu Options
-#### Pick Folder for Loading
-Select a folder to load audio files from. Once this is done, the "Load File" submenu will be populated with all of the WAV or [CSV](#csv-files) files it can load. Any inputs to the
-LOAD Tipsy input will be relative to this folder.  
-#### Load File
-Once the Load Folder has been selected, any files Memory thinks it can read (currently only .WAV files) will be listed here, and selecting one will
-immediately load it into the Memory.
-#### Load most recent file on module start
-If set, when the patch is loaded (or even when the module is duplicated), it will attempt to load
-in the last file that was loaded.
-#### Pick Folder for Saving
+#### Autoload most recent file when this module starts
+If set, when the patch is loaded (or even when the module is duplicated), it will attempt to load in the last file that was loaded.
+#### Reload most recent file now
+Immediately loads into Memory the last file this module loaded. What file that is
+will be shown by the **Current:** items in the Directory and File parts of the menu.
+#### Most Recently Used Directories
+This shows a submenu of the twenty directories most recently used by any Memory module.
+#### Pick via Directory Selector...
+Using the OS file browser, select a directory to load audio files from. Once this is done, the "Pick file from Loading Directory" submenu will be populated with all of the WAV and [CSV](#csv-files) files it can load. Any inputs to the
+LOAD Tipsy input will be relative to this directory.  
+#### Pick file from Loading directory
+Once the Load Folder has been selected, any files Memory thinks it can read (currently only .WAV and .CSV files) will be listed in this submenu, and selecting one will immediately load it into the Memory.
+#### Pick file via dialog...
+Using the OS file browser, select a WAV and [CSV](#csv-files) file to load into Memory immediately.  
+#### Pick via Directory Selector...
 Select a folder to Save WAV or [CSV](#csv-files) files to. Once this is done, any inputs to the SAVE Tipsy input will be relative to this folder.  
 #### Save to WAV File...
 A standard dialog box to save files will appear. The entire current contents of the Memory buffer will be saved as a WAV file.
@@ -186,6 +195,10 @@ MemoryCV buffers can be quite a bit larger than 10 seconds, I decided to just ma
 Pressing the button or sending a trigger to the WIPE input will keep the length of the MemoryCV the same, but reset all of the values within it to 0.0V.
 #### LENGTH Knob
 The length of the MemoryCV buffer, in seconds, ranging from 1 - 1000. Changes do not take effect until the RESET button is pressed.
+#### LENGTH Output
+The output sends out a steady signal, which is simply the number of seconds in the current Memory.
+
+The display above the port is the length of the buffer in seconds and hundreths of a second (e.g., 15.00), unless the Memory is longer than 60 seconds, in which case it displays it in minutes and seconds (e.g., 3:14).
 #### RESET Button
 Gets rid of the previous buffer, creates a new one of LENGTH seconds, then sets it to 0.0V.
 #### LOAD Tipsy Input
@@ -204,14 +217,21 @@ If you want to see a human-readable log of load and save events, a cable from th
 any messages it has, including the length of files it reads in. This is especially useful if files aren't loading or saving as you expect.
 
 ### Menu Options
-#### Pick Folder for Loading
-Select a folder to load audio files from. Once this is done, the "Load File" submenu will be populated with all of the WAV or [CSV](#csv-files) files it can load. Any inputs to the
-LOAD Tipsy input will be relative to this folder.  
-#### Load File
-Once the Load Folder has been selected, any files MemoryCV thinks it can read (currently only WAV and [CSV](#csv-files) files) will be listed here, and selecting one will immediately load it into the MemoryCV.
-#### Load most recent file on module start
+#### Autoload most recent file when this module starts
 If set, when the patch is loaded (or even when the module is duplicated), it will attempt to load in the last file that was loaded.
-#### Pick Folder for Saving
+#### Reload most recent file now
+Immediately loads into MemoryCV the last file this module loaded. What file that is
+will be shown by the **Current:** items in the Directory and File parts of the menu.
+#### Most Recently Used Directories
+This shows a submenu of the twenty directories most recently used by any MemoryCV module.
+#### Pick via Directory Selector...
+Using the OS file browser, select a directory to load audio files from. Once this is done, the "Pick file from Loading Directory" submenu will be populated with all of the WAV and [CSV](#csv-files) files it can load. Any inputs to the
+LOAD Tipsy input will be relative to this directory.  
+#### Pick file from Loading directory
+Once the Load Folder has been selected, any files MemoryCV thinks it can read (currently only .WAV and .CSV files) will be listed in this submenu, and selecting one will immediately load it into the Memory.
+#### Pick file via dialog...
+Using the OS file browser, select a WAV and [CSV](#csv-files) file to load into MemoryCV immediately.  
+#### Pick via Directory Selector...
 Select a folder to Save WAV or [CSV](#csv-files) files to. Once this is done, any inputs to the SAVE Tipsy input will be relative to this folder.  
 #### Save to WAV File...
 A standard dialog box to save files will appear. The entire current contents of the MemoryCV buffer will be saved as a WAV file.

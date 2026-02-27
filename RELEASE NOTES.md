@@ -2,9 +2,21 @@
 
 ### 2.0.25
 #### [fill in date when released]
-* Drifter now has a TRIG output.
-* * Outputs a short trigger each time the IN value moves to a new "section" of the graph (i.e., changes which two points it is between).
-* * Putting a phasor into IN, TRIG now turns that phasor into a set number of triggers, which can drift in time (on each click of/trigger into DRIFT).
+* My very first module, [Drifter](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#drifter), has had many new features added:
+* * Drifter now has a TRIG output.
+* * * Outputs a short trigger each time the IN value moves to a new "section" of the graph (i.e., changes which two points it is between).
+* * * Putting a phasor into IN, TRIG now turns that phasor into a set number of triggers, which can drift in timing individually (on each click of/trigger into DRIFT), but will complete all triggers in the length of the phasor. For example, sending Drifter's TRIG to the CLOCK input of a sequencer and drifting with a non-zero X DRIFT value will cause the timing of each note to vary, yet complete the cycle in the same length of time. 
+* * Drifter now has an UNDRIFT input and button. UNDRIFT will cause the points to drift back to their original locations each time it's pressed. If you've changed the RESET shape from the menu, then UNDRIFT will move the points towards what that shape would be.
+* * Trimpots for BIAS and ATTN have been added to OUT, allowing the output to be used more directly for some applications.
+* * A bug in the Drifting math has been fixed; previously, X DRIFT and TOTAL DRIFT values were used as if they had a value half the value actually set. Meaning that the same X DRIFT and TOTAL DRIFT values will now allow more movement.
+* In the Memory modules:
+* * Memory and MemoryCV now show the length of it's contents, and also output that length as seconds. This makes it easier to do computation on the Memory.
+* * Memory and MemoryCV now have a better menu for loading files, including remembering recently used loading directories.
+* * The L & R outputs in Embellish now fall back to zero when recording stops, just like the other playback modules.
+* Fixed bugs, including:
+* * a flaky bug that would sometimes make playback much faster than desired.
+* * heads on a Depict appearing outside of the Depict screen.  
+* Finally, to avoid a future parts shortage, all of the screws have been removed from all of the modules :) The modules now look a bit cleaner and more contemporary, and it gives me more room to move UI elements around when adding new features.
 
 ### 2.0.24
 #### January 2, 2026
