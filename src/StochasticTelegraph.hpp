@@ -125,6 +125,9 @@ struct STResizeHandle : OpaqueWidget {
   }
 
   void drawLayer(const DrawArgs& args, int layer) override {
+    // TODO: Should this be a FrameBuffer widget, instead of redrawing every frame?
+    // Or maybe an illustration, although then I have to think about scaling? Maybe.
+    // Drawing once into a buffer seems pretty cheap and a smaller leap.
     if (layer == 1) {
       // Draw two lines to give people something to grab for.
       // Lifted from the VCV Blank module.

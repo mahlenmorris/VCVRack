@@ -2,7 +2,7 @@
 
 namespace StochasticTelegraph {
 
-const size_t MAX_MRU_DIRECTORIES = 10;
+const size_t MAX_MRU_DIRECTORIES = 20;
 
 static std::string stochasticTelegraphSettingsFileName = asset::user("StochasticTelegraph.json");
 

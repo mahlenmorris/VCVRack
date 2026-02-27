@@ -1664,8 +1664,24 @@ struct MemoryWidget : ModuleWidget {
     Memory* module = dynamic_cast<Memory*>(this->module);
     assert(module);
 
+    // Simple choices for user at the top. Items below these are about picking from lists.
     menu->addChild(new MenuSeparator);
-    menu->addChild(createMenuLabel("Loading Directory"));
+    menu->addChild(createBoolPtrMenuItem("Autoload most recent file when this module starts", "",
+                                         &(module->load_latest_file_on_start)));
+
+    // Option to (re)load the most recent file immediately.
+    menu->addChild(createMenuItem("Reload most recent file now...", "",
+      [=]() {
+        PrepareTask* task = PrepareTask::LoadFileTask(nullptr,
+          module->loaded_file, module->load_folder_name);
+        if (!module->widget_module_queue.tasks.push(task)) {
+          delete task;
+        }
+      }
+    ));
+    
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createMenuLabel("*** Loading Directory ***"));
     menu->addChild(createMenuLabel("Current: " + 
       (module->load_folder_name.empty() ? "<none>" : betterDirectoryPath(module->load_folder_name))));
 
@@ -1722,7 +1738,7 @@ struct MemoryWidget : ModuleWidget {
     menu->addChild(menu_item_load_folder);
 
     menu->addChild(new MenuSeparator);
-    menu->addChild(createMenuLabel("Load File"));
+    menu->addChild(createMenuLabel("*** Load File ***"));
     menu->addChild(createMenuLabel("Current: " + 
       (module->loaded_file.empty() ? "<none>" : betterDirectoryPath(module->loaded_file))));
 
@@ -1756,22 +1772,7 @@ struct MemoryWidget : ModuleWidget {
     menu->addChild(menu_item_load_file);
 
     menu->addChild(new MenuSeparator);
-    menu->addChild(createBoolPtrMenuItem("Autoload most recent file when this module starts", "",
-                                         &(module->load_latest_file_on_start)));
-
-    // Option to (re)load the most recent file immediately.
-    menu->addChild(createMenuItem("Reload most recent file now...", "",
-      [=]() {
-        PrepareTask* task = PrepareTask::LoadFileTask(nullptr,
-          module->loaded_file, module->load_folder_name);
-        if (!module->widget_module_queue.tasks.push(task)) {
-          delete task;
-        }
-      }
-    ));
-    
-    menu->addChild(new MenuSeparator);
-    menu->addChild(createMenuLabel("Pick Folder for Saving"));
+    menu->addChild(createMenuLabel("*** Saving Directory ***"));
 
     MenuItemPickSaveFolder* menu_item_save_folder = new MenuItemPickSaveFolder;
     if (module->save_folder_name.empty()) {
