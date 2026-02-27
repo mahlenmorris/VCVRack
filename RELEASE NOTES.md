@@ -10,7 +10,7 @@
 * * Trimpots for BIAS and ATTN have been added to OUT, allowing the output to be used more directly for some applications.
 * * A bug in the Drifting math has been fixed; previously, X DRIFT and TOTAL DRIFT values were used as if they had a value half the value actually set. Meaning that the same X DRIFT and TOTAL DRIFT values will now allow more movement.
 * In the Memory modules:
-* * Memory and MemoryCV now show the length of it's contents, and also output that length as seconds. This makes it easier to do computation on the Memory.
+* * Memory and MemoryCV now show the length of its contents, and also output that length as seconds. This makes it easier to do some kinds of computation on the Memory with other modules.
 * * Memory and MemoryCV now have a better menu for loading files, including remembering recently used loading directories.
 * * The L & R outputs in Embellish now fall back to zero when recording stops, just like the other playback modules.
 * Fixed bugs, including:

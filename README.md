@@ -1056,11 +1056,9 @@ This also applies any change to COUNT.
 #### STYLE Knob
 Selects one of three different line types, Steps/Lines/Curves.
 Changes are applied instantly.
-#### BIAS Knob
-This value is added to OUT. The combination of BIAS and ATTN make it easier to directly
+#### BIAS and ATTN Knobs
+ATTN  attenuates and optionally inverts the value of OUT before BIAS is added to it. The combination of BIAS and ATTN make it easier to directly
 use the value of OUT.
-#### ATTN knob
-This attenuates and optionally inverts the value of OUT before BIAS is added to it.
 #### IN Input
 Selects the horizontal position of the point on the line to be
 selected. Shown on the display as a short line at the bottom of the display.
