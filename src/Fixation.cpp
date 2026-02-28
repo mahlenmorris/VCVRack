@@ -693,27 +693,8 @@ struct Fixation : PositionedModule {
         double left = fade * play_fade * gotten.left;
         double right = fade * play_fade * gotten.right;
 
-        // If the values we're outputting here are at or very close to zero,
-        // we can end a FADE_DOWN_* immediately. 
-        if ((play_state == FADE_DOWN ||
-             play_state == FADE_DOWN_TO_RESTART ||
-             play_state == FADE_DOWN_TO_WAIT) &&
-            fabs(left) < 0.1 &&
-            fabs(right) < 0.1) {
-          // Doing this can make the timing slightly off? Is that bad?
-          // If we're playing to length, but we keep shortening, then that could throw off beat!
-          // But I think it's good when the CLOCK induces the change.
-          // Logic above will change us to FADE_UP and change position.
-          play_fade = 0.0;
-        }
-        // The equivalent for FADE_UP -> PLAYING transition.
-        // Happens if the distance between the faded and unfaded values is < 0.1.
-        if (play_state == FADE_UP &&
-            fabs(left - gotten.left) < 0.1 &&
-            fabs(right - gotten.right) < 0.1) {
-          play_fade = 1.0;    
-        }
         if (play_state == PLAYING) {
+          // Not sure when this can happen, but bad if it did.
           play_fade = 1.0;
         }
 
