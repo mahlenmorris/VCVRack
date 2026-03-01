@@ -13,6 +13,7 @@
 * * Memory and MemoryCV now show the length of its contents, and also output that length as seconds. This makes it easier to do some kinds of computation on the Memory with other modules.
 * * Memory and MemoryCV now have a better menu for loading files, including remembering recently used loading directories.
 * * The L & R outputs in Embellish now fall back to zero when recording stops, just like the other playback modules.
+* * Fixed a clicking issue with Fixation that makes it sound much better in some circumstances. Thanks to @shrymusic for sending me the test case.
 * Fixed bugs, including:
 * * a flaky bug that would sometimes make playback much faster than desired.
 * * heads on a Depict appearing outside of the Depict screen.  
