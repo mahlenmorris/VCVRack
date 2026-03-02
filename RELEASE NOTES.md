@@ -15,7 +15,7 @@
 * * The L & R outputs in Embellish now fall back to zero when recording stops, just like the other playback modules.
 * * Fixed a clicking issue with Fixation that makes it sound much better in some circumstances. Thanks to @shrymusic for sending me the test case.
 * Fixed bugs, including:
-* * a flaky bug that would sometimes make playback much faster than desired.
+* * a flaky bug that would sometimes make playback much faster than desired. Thanks to @fiddlercrabseason for making me realize that the bug wasn't just my imagination.
 * * heads on a Depict appearing outside of the Depict screen.  
 * Finally, to avoid a future parts shortage, all of the screws have been removed from all of the modules :) The modules now look a bit cleaner and more contemporary, and it gives me more room to move UI elements around when adding new features.
 
