@@ -693,27 +693,8 @@ struct Fixation : PositionedModule {
         double left = fade * play_fade * gotten.left;
         double right = fade * play_fade * gotten.right;
 
-        // If the values we're outputting here are at or very close to zero,
-        // we can end a FADE_DOWN_* immediately. 
-        if ((play_state == FADE_DOWN ||
-             play_state == FADE_DOWN_TO_RESTART ||
-             play_state == FADE_DOWN_TO_WAIT) &&
-            fabs(left) < 0.1 &&
-            fabs(right) < 0.1) {
-          // Doing this can make the timing slightly off? Is that bad?
-          // If we're playing to length, but we keep shortening, then that could throw off beat!
-          // But I think it's good when the CLOCK induces the change.
-          // Logic above will change us to FADE_UP and change position.
-          play_fade = 0.0;
-        }
-        // The equivalent for FADE_UP -> PLAYING transition.
-        // Happens if the distance between the faded and unfaded values is < 0.1.
-        if (play_state == FADE_UP &&
-            fabs(left - gotten.left) < 0.1 &&
-            fabs(right - gotten.right) < 0.1) {
-          play_fade = 1.0;    
-        }
         if (play_state == PLAYING) {
+          // Not sure when this can happen, but bad if it did.
           play_fade = 1.0;
         }
 
@@ -758,28 +739,6 @@ struct Fixation : PositionedModule {
   }
 };
 
-struct NowFixationTimestamp : TimestampField {
-  NowFixationTimestamp() {
-  }
-
-  Fixation* module;
-
-  double getPosition() override {
-    if (module && module->length > 0) {
-      return module->display_position * module->seconds / module->length;
-    }
-    return 0.00;  // Dummy display value.
-  }
-
-  double getSeconds() override {
-    if (module && module->seconds > 0.0) {
-      return module->seconds;
-    }
-    return 2.0;
-  }
-};
-
-
 struct FixationWidget : ModuleWidget {
   // Need to be able to show/hide these.
   Trimpot* length_trimpot = nullptr;
@@ -790,12 +749,6 @@ struct FixationWidget : ModuleWidget {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Fixation.svg"),
                          asset::plugin(pluginInstance, "res/Fixation-dark.svg")));
-
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-    // To eek out a bit more room, we move the lower screws outwards.
-    addChild(createWidget<ScrewSilver>(Vec(0, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(21.166, 15.743)), module, Fixation::CLOCK_INPUT));
 
@@ -822,9 +775,9 @@ struct FixationWidget : ModuleWidget {
 
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.575, 70.509)), module, Fixation::CURRENT_OUTPUT));
     // A timestamp is 10 wide.
-    NowFixationTimestamp* now_timestamp = createWidget<NowFixationTimestamp>(mm2px(
+    TimestampField<Fixation>* now_timestamp = createWidget<TimestampField<Fixation>>(mm2px(
         Vec(8.575 - (10.0 / 2.0), 74.509)));
-    now_timestamp->module = module;
+    now_timestamp->setModule(module);
     addChild(now_timestamp);
 
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 70.509)), module, Fixation::TRIG_OUT_OUTPUT));

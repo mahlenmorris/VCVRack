@@ -366,11 +366,6 @@ struct BrainwashWidget : ModuleWidget {
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Brainwash.svg"),
                          asset::plugin(pluginInstance, "res/Brainwash-dark.svg")));
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-
     // CLOCK and clock counting.
     addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(6.35, 63.0)), module, Brainwash::CLOCK_COUNT_PARAM));
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 63.0)), module, Brainwash::CLOCK_TRIGGER_INPUT));

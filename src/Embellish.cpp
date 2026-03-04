@@ -357,6 +357,8 @@ struct Embellish : PositionedModule {
           getId());
         lights[RECORD_BUTTON_LIGHT].setBrightness(1.0f);
       } else {
+        outputs[LEFT_OUTPUT].setVoltage(0.0f);
+        outputs[RIGHT_OUTPUT].setVoltage(0.0f);
         lights[RECORD_BUTTON_LIGHT].setBrightness(0.0f);
       }
     } else {
@@ -372,35 +374,6 @@ struct Embellish : PositionedModule {
   }
 };
 
-struct NowEmbellishTimestamp : TimestampField {
-  NowEmbellishTimestamp() {
-  }
-
-  Embellish* module;
-
-  double getPosition() override {
-    if (module && module->length > 0) {
-      return module->display_position * module->seconds / module->length;
-    }
-    return 0.00;  // Dummy display value.
-  }
-
-  double getSeconds() override {
-    if (module && module->seconds > 0.0) {
-      return module->seconds;
-    }
-    return 2.0;
-  }
-};
-
-struct AdjustSliderEmbellish : VCVSlider {
-  void onDragEnd(const DragEndEvent& e) override {
-    getParamQuantity()->setImmediateValue(0.0);
-    VCVSlider::onDragEnd(e);
-  }
-};
-
-
 struct EmbellishWidget : ModuleWidget {
   VCVLightSlider<WhiteLight>* adjust_slider;
 
@@ -408,11 +381,6 @@ struct EmbellishWidget : ModuleWidget {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Embellish.svg"),
                          asset::plugin(pluginInstance, "res/Embellish-dark.svg")));
-
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
     addParam(createLightParamCentered<VCVLightLatch<
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(6.35, 14.0)),
@@ -423,7 +391,7 @@ struct EmbellishWidget : ModuleWidget {
                                              module, Embellish::REVERSE_PARAM,
                                              Embellish::REVERSE_LIGHT));
 
-    addParam(createParamCentered<AdjustSliderEmbellish>(mm2px(Vec(6.35, 43.0)),
+    addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6.35, 43.0)),
        module, Embellish::ADJUST_PARAM));
 
     // TODO: make this a tiny attenuator knob?
@@ -443,9 +411,9 @@ struct EmbellishWidget : ModuleWidget {
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.7, 65.0)),
                                                module, Embellish::NOW_POSITION_OUTPUT));
     // A timestamp is 10 wide.
-    NowEmbellishTimestamp* now_timestamp = createWidget<NowEmbellishTimestamp>(mm2px(
+    TimestampField<Embellish>* now_timestamp = createWidget<TimestampField<Embellish>>(mm2px(
         Vec(12.7 - (10.0 / 2.0), 69.0)));
-    now_timestamp->module = module;
+    now_timestamp->setModule(module);
     addChild(now_timestamp);
 
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.35, 103.646)),

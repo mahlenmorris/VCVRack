@@ -424,50 +424,16 @@ struct Ruminate : PositionedModule {
   }
 };
 
-struct NowTimestamp : TimestampField {
-  NowTimestamp() {
-  }
-
-  Ruminate* module;
-
-  double getPosition() override {
-    if (module && module->length > 0 && module->seconds > 0.0) {
-      return module->display_position * module->seconds / module->length;
-    }
-    return 0.00;  // Dummy display value.
-  }
-
-  double getSeconds() override {
-    if (module && module->seconds > 0.0) {
-      return module->seconds;
-    }
-    return 2.0;
-  }
-};
-
-struct AdjustSliderRuminate : VCVSlider {
-  
-  void onDragEnd(const DragEndEvent& e) override {
-    getParamQuantity()->setImmediateValue(0.0);
-    VCVSlider::onDragEnd(e);
-  }
-};
-
 struct RuminateWidget : ModuleWidget {
   RuminateWidget(Ruminate* module) {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Ruminate.svg"),
                          asset::plugin(pluginInstance, "res/Ruminate-dark.svg")));
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-
     addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 97.087)), module, Ruminate::SPEED_INPUT));
     addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(19.05, 97.087)), module, Ruminate::SPEED_PARAM));
 
-    addParam(createParamCentered<AdjustSliderRuminate>(mm2px(Vec(6.35, 43.0)),
+    addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6.35, 43.0)),
        module, Ruminate::ADJUST_PARAM));
     addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(19.05, 50.8)),
        module, Ruminate::INIT_POSITION_PARAM));
@@ -484,9 +450,9 @@ struct RuminateWidget : ModuleWidget {
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.7, 65.0)),
                                                module, Ruminate::NOW_POSITION_OUTPUT));
     // A timestamp is 10 wide.
-    NowTimestamp* now_timestamp = createWidget<NowTimestamp>(mm2px(
+    TimestampField<Ruminate>* now_timestamp = createWidget<TimestampField<Ruminate>>(mm2px(
         Vec(12.7 - (10.0 / 2.0), 69.0)));
-    now_timestamp->module = module;
+    now_timestamp->setModule(module);
     addChild(now_timestamp);
 
     addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.035, 112.0)), module, Ruminate::LEFT_OUTPUT));

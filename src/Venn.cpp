@@ -1793,11 +1793,6 @@ struct VennWidget : ModuleWidget {
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Venn.svg"),
                          asset::plugin(pluginInstance, "res/Venn-dark.svg")));
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-
 		addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(166.582, 11.906)), module, Venn::EXP_LIN_LOG_PARAM));
 		addParam(createParamCentered<Trimpot>(mm2px(Vec(9.446, 25.0)), module, Venn::X_POSITION_ATTN_PARAM));
 		addParam(createParamCentered<Trimpot>(mm2px(Vec(21.034, 25.0)), module, Venn::Y_POSITION_ATTN_PARAM));

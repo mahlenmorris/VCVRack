@@ -7,6 +7,7 @@
 
 #include "plugin.hpp"
 #include "st_textfield.hpp"
+#include "StochasticTelegraph.hpp"
 
 struct Fermata : Module {
   static const int DEFAULT_WIDTH = 18;
@@ -167,90 +168,6 @@ struct FermataUndoRedoAction : history::ModuleAction {
         module->update_pos = true;
       }
       module->RedrawText();
-    }
-  }
-};
-
-// Needs to have a different name than the one in BASICally, or it
-// compiles but just won't work.
-// TODO: Possible to make this a reusable class between the two? Unlikely.
-struct FermataModuleResizeHandle : OpaqueWidget {
-  Vec dragPos;
-  Rect originalBox;
-  Fermata* module;
-  bool right = false;  // True for one on the right side.
-
-  FermataModuleResizeHandle() {
-    // One hole wide and full length tall.
-    box.size = Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
-  }
-
-  void onDragStart(const DragStartEvent& e) override {
-    if (e.button != GLFW_MOUSE_BUTTON_LEFT)
-      return;
-
-    dragPos = APP->scene->rack->getMousePos();
-    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
-    assert(mw);
-    originalBox = mw->box;
-  }
-
-  void onDragMove(const DragMoveEvent& e) override {
-    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
-    assert(mw);
-    int original_width = module->width;
-
-    Vec newDragPos = APP->scene->rack->getMousePos();
-    float deltaX = newDragPos.x - dragPos.x;
-
-    Rect newBox = originalBox;
-    Rect oldBox = mw->box;
-    // Minimum and maximum number of holes we allow the module to be.
-    const float minWidth = 3 * RACK_GRID_WIDTH;
-    const float maxWidth = 300 * RACK_GRID_WIDTH;
-    if (right) {
-      newBox.size.x += deltaX;
-      newBox.size.x = std::fmax(newBox.size.x, minWidth);
-      newBox.size.x = std::fmin(newBox.size.x, maxWidth);
-      newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
-    } else {
-      newBox.size.x -= deltaX;
-      newBox.size.x = std::fmax(newBox.size.x, minWidth);
-      newBox.size.x = std::fmin(newBox.size.x, maxWidth);
-      newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
-      newBox.pos.x = originalBox.pos.x + originalBox.size.x - newBox.size.x;
-    }
-    // Set box and test whether it's valid.
-    mw->box = newBox;
-    if (!APP->scene->rack->requestModulePos(mw, newBox.pos)) {
-      mw->box = oldBox;
-    }
-    module->width = std::round(mw->box.size.x / RACK_GRID_WIDTH);
-    if (original_width != module->width) {
-      // Make resizing an undo/redo action. If I don't do this, undoing a
-      // different module's move will cause them to overlap (aka, a
-      // transporter malfunction).
-      APP->history->push(
-        new FermataUndoRedoAction(module->id, original_width, module->width,
-                                  oldBox.pos.x, mw->box.pos.x));
-      // Also need to tell FramebufferWidget to update the appearance.
-      module->RedrawText();
-    }
-  }
-
-  void drawLayer(const DrawArgs& args, int layer) override {
-    if (layer == 1) {
-      // Draw two lines to give people something to grab for.
-      // Lifted from the VCV Blank module.
-      for (float x = 5.0; x <= 10.0; x += 5.0) {
-        nvgBeginPath(args.vg);
-        const float margin = 5.0;
-        nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
-        nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
-        nvgStrokeWidth(args.vg, 1.0);
-        nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
-        nvgStroke(args.vg);
-      }
     }
   }
 };
@@ -569,9 +486,7 @@ const float NON_SCREEN_WIDTH = 2.0f;
 const float NON_TITLE_WIDTH = 4.6f;
 
 struct FermataWidget : ModuleWidget {
-  Widget* topRightScrew;
-  Widget* bottomRightScrew;
-  FermataModuleResizeHandle* rightHandle;
+  StochasticTelegraph::STResizeHandle<Fermata, FermataUndoRedoAction>* rightHandle;
   FermataTextField* textField;
   FermataTitleTextField* title;
   ClosedTitleTextField* closed_title;
@@ -591,18 +506,6 @@ struct FermataWidget : ModuleWidget {
       // Like when showing the module in the module browser.
       box.size.x = Fermata::DEFAULT_WIDTH * RACK_GRID_WIDTH;
     }
-
-    addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
-    topRightScrew = createWidget<ThemedScrew>(
-        Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0));
-    addChild(topRightScrew);
-    // TODO: this next line's Y coordinate is very odd.
-    addChild(createWidget<ThemedScrew>(
-        Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    bottomRightScrew = createWidget<ThemedScrew>(
-        Vec(box.size.x - 2 * RACK_GRID_WIDTH,
-            RACK_GRID_HEIGHT - RACK_GRID_WIDTH));
-    addChild(bottomRightScrew);
 
     // User created title.
     title = createWidget<FermataTitleTextField>(mm2px(Vec(12.029, 122.3)));
@@ -632,7 +535,8 @@ struct FermataWidget : ModuleWidget {
     }
 
     // Resize bar on left.
-    FermataModuleResizeHandle* leftHandle = new FermataModuleResizeHandle;
+    StochasticTelegraph::STResizeHandle<Fermata, FermataUndoRedoAction>* leftHandle = 
+        new StochasticTelegraph::STResizeHandle<Fermata, FermataUndoRedoAction>(false, 3, 300);
     leftHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module
     // browser.
@@ -640,8 +544,7 @@ struct FermataWidget : ModuleWidget {
     addChild(leftHandle);
 
     // Resize bar on right.
-    rightHandle = new FermataModuleResizeHandle;
-    rightHandle->right = true;
+    rightHandle = new StochasticTelegraph::STResizeHandle<Fermata, FermataUndoRedoAction>(true, 3, 300);
     rightHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module
     // browser.
@@ -673,14 +576,6 @@ struct FermataWidget : ModuleWidget {
         closed_title->hide();
         title->show();
       }
-      // The right-hand screws have to disappear when we get thin enough.
-      if (module->width < 8) {
-        topRightScrew->hide();
-        bottomRightScrew->hide();
-      } else {
-        topRightScrew->show();
-        bottomRightScrew->show();
-      }
       if (module->update_pos) {
         module->update_pos = false;
         box.pos.x = module->box_pos_x;
@@ -694,9 +589,6 @@ struct FermataWidget : ModuleWidget {
     textField->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
     // Adjust size of area we display title in.
     title->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_TITLE_WIDTH;
-    // Move the right side screws to follow.
-    topRightScrew->box.pos.x = box.size.x - 30;
-    bottomRightScrew->box.pos.x = box.size.x - 30;
     rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
 
     ModuleWidget::step();

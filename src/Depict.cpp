@@ -113,7 +113,7 @@ struct MemoryDepict : Widget {
   std::vector<LineRecord> dummy_lines = {
     {2.34, SCHEME_RED, RUMINATE, 1},
     {7.9, SCHEME_BLUE, RUMINATE, 2},
-    {5.5, SCHEME_ORANGE, EMBELLISH, 3},
+    {5.5, SCHEME_ORANGE, FIXATION, 3},
     {0.3, SCHEME_PURPLE, EMBELLISH, 4}
   };
 
@@ -161,6 +161,7 @@ struct MemoryDepict : Widget {
       int max_distance;
       int line_record_size;
       int buffer_length;
+      bool is_cv_rate;
       PointBuffer* waveform;
       // True iff point_buffer was allocated just for this call.
       bool free_point_buffer = false;
@@ -173,11 +174,13 @@ struct MemoryDepict : Widget {
         if (buffer && buffer->IsValid()) {
           waveform = &(buffer->waveform);
           buffer_length = buffer->length;
+          is_cv_rate = buffer->cv_rate;
         } else {
           waveform = new PointBuffer();
           FillDummyWaveform(waveform, false);
           buffer_length = 100000;
           free_point_buffer = true;
+          is_cv_rate = false;
         }
       } else {
         // Dummy data for the module browser.
@@ -187,6 +190,7 @@ struct MemoryDepict : Widget {
         FillDummyWaveform(waveform, true);
         free_point_buffer = true;
         buffer_length = 10;
+        is_cv_rate = false;
       }
        
       // just in case max_distance is zero somehow, I don't want to divide by it.
@@ -201,94 +205,97 @@ struct MemoryDepict : Widget {
       double zero_volt_mid_right = bounding_box.x * 0.75;
       double y_per_point = bounding_box.y / WAVEFORM_SIZE;
 
-
       // Make half-white.
       nvgFillColor(args.vg, nvgRGBA(140, 140, 140, 255));
 
       nvgSave(args.vg);
       nvgScissor(args.vg, RECT_ARGS(r));  // Not sure this is right?
 
-      if (buffer && buffer->cv_rate) {
-        // We draw vertical oscilliscope signals for CV, since positive and
-        // negative values matter more than amplitude.
-        // Left side:
-        // Make half-white.
-        nvgStrokeColor(args.vg, SCHEME_WHITE);
-        nvgStrokeWidth(args.vg, 1);
+      // Don't draw anything if disconnected from a Memory[CV], unless we are
+      // drawing the module browser image.
+      if (buffer.get() != nullptr || free_point_buffer) {
+        if (is_cv_rate) {
+          // We draw vertical oscilliscope signals for CV, since positive and
+          // negative values matter more than amplitude.
+          // Left side:
+          // Make half-white.
+          nvgStrokeColor(args.vg, SCHEME_WHITE);
+          nvgStrokeWidth(args.vg, 1);
 
-        // Draw left points on the left of the midline.
-        nvgBeginPath(args.vg);
-        for (int i = 0; i < WAVEFORM_SIZE; i++) {
-          float max = waveform->points[i][0] * waveform->normalize_factor;
-          float x = zero_volt_mid_left - (max * x_per_volt / 2);
-          float y = (WAVEFORM_SIZE - i) * y_per_point;
-          if (i == 0) {
-            nvgMoveTo(args.vg, x, y);
-          } else {
+          // Draw left points on the left of the midline.
+          nvgBeginPath(args.vg);
+          for (int i = 0; i < WAVEFORM_SIZE; i++) {
+            float max = waveform->points[i][0] * waveform->normalize_factor;
+            float x = zero_volt_mid_left - (max * x_per_volt / 2);
+            float y = (WAVEFORM_SIZE - i) * y_per_point;
+            if (i == 0) {
+              nvgMoveTo(args.vg, x, y);
+            } else {
+              nvgLineTo(args.vg, x, y);
+            }
+          }
+          nvgStroke(args.vg);
+          nvgClosePath(args.vg);
+
+          // Draw right points on the right of the midline.
+          nvgBeginPath(args.vg);
+          for (int i = 0; i < WAVEFORM_SIZE; i++) {
+            float max = waveform->points[i][1] * waveform->normalize_factor_right;
+            float x = zero_volt_mid_right - (max * x_per_volt / 2);
+            float y = (WAVEFORM_SIZE - i) * y_per_point;
+            if (i == 0) {
+              nvgMoveTo(args.vg, x, y);
+            } else {
+              nvgLineTo(args.vg, x, y);
+            }
+          }
+          nvgStroke(args.vg);
+          nvgClosePath(args.vg);
+          // Draw center line downs the middle of L and R.
+          nvgBeginPath(args.vg);
+          nvgRect(args.vg, zero_volt_mid_left, 0, 0.5f, bounding_box.y);
+          nvgRect(args.vg, zero_volt_mid_right, 0, 0.5f, bounding_box.y);
+          nvgFillColor(args.vg, nvgRGBA(140, 140, 140, 128));
+          nvgFill(args.vg);
+        } else {
+          // Draw the wave forms.
+          // In one shape we:
+          // * Draw the left side side from bottom to top.
+          // * Draw the right side line from top to bottom.
+          // * Join them. Draw that shape.
+          // Then draw a white line down the middle to suggest that these are
+          // two separate channels.
+          nvgBeginPath(args.vg);
+          // Draw left points on the left of the mid.
+          for (int i = 0; i < WAVEFORM_SIZE; i++) {
+            float max = waveform->points[i][0] * waveform->normalize_factor;
+            float x = zero_volt_left - (max * x_per_volt);
+            float y = (WAVEFORM_SIZE - i) * y_per_point;
+            if (i == 0) {
+              nvgMoveTo(args.vg, x, y);
+            } else {
+              nvgLineTo(args.vg, x, y);
+            }
+          }
+
+          // Now do the right channel.
+          for (int i = WAVEFORM_SIZE - 1; i >= 0; i--) {
+            float max = waveform->points[i][1] * waveform->normalize_factor;
+            float x = zero_volt_right + (max * x_per_volt);
+            float y = (WAVEFORM_SIZE - 1 - i) * y_per_point;
             nvgLineTo(args.vg, x, y);
           }
-        }
-        nvgStroke(args.vg);
-        nvgClosePath(args.vg);
 
-        // Draw right points on the right of the midline.
-        nvgBeginPath(args.vg);
-        for (int i = 0; i < WAVEFORM_SIZE; i++) {
-          float max = waveform->points[i][1] * waveform->normalize_factor_right;
-          float x = zero_volt_mid_right - (max * x_per_volt / 2);
-          float y = (WAVEFORM_SIZE - i) * y_per_point;
-          if (i == 0) {
-            nvgMoveTo(args.vg, x, y);
-          } else {
-            nvgLineTo(args.vg, x, y);
-          }
-        }
-        nvgStroke(args.vg);
-        nvgClosePath(args.vg);
-        // Draw center line downs the middle of L and R.
-        nvgBeginPath(args.vg);
-        nvgRect(args.vg, zero_volt_mid_left, 0, 0.5f, bounding_box.y);
-        nvgRect(args.vg, zero_volt_mid_right, 0, 0.5f, bounding_box.y);
-        nvgFillColor(args.vg, nvgRGBA(140, 140, 140, 128));
-        nvgFill(args.vg);
-      } else {
-        // Draw the wave forms.
-        // In one shape we:
-        // * Draw the left side side from bottom to top.
-        // * Draw the right side line from top to bottom.
-        // * Join them. Draw that shape.
-        // Then draw a white line down the middle to suggest that these are
-        // two separate channels.
-        nvgBeginPath(args.vg);
-        // Draw left points on the left of the mid.
-        for (int i = 0; i < WAVEFORM_SIZE; i++) {
-          float max = waveform->points[i][0] * waveform->normalize_factor;
-          float x = zero_volt_left - (max * x_per_volt);
-          float y = (WAVEFORM_SIZE - i) * y_per_point;
-          if (i == 0) {
-            nvgMoveTo(args.vg, x, y);
-          } else {
-            nvgLineTo(args.vg, x, y);
-          }
-        }
+          nvgClosePath(args.vg);
+          nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
+          nvgFill(args.vg);
 
-        // Now do the right channel.
-        for (int i = WAVEFORM_SIZE - 1; i >= 0; i--) {
-          float max = waveform->points[i][1] * waveform->normalize_factor;
-          float x = zero_volt_right + (max * x_per_volt);
-          float y = (WAVEFORM_SIZE - 1 - i) * y_per_point;
-          nvgLineTo(args.vg, x, y);
+          // Draw center line down the middle, separating L and R.
+          nvgBeginPath(args.vg);
+          nvgRect(args.vg, zero_volt_left, 0, 0.5f, bounding_box.y);
+          nvgFillColor(args.vg, SCHEME_WHITE);
+          nvgFill(args.vg);
         }
-
-        nvgClosePath(args.vg);
-        nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
-        nvgFill(args.vg);
-
-        // Draw center line down the middle, separating L and R.
-        nvgBeginPath(args.vg);
-        nvgRect(args.vg, zero_volt_left, 0, 0.5f, bounding_box.y);
-        nvgFillColor(args.vg, SCHEME_WHITE);
-        nvgFill(args.vg);
       }
 
       // Add text to indicate the largest value we currently display.
@@ -313,41 +320,45 @@ struct MemoryDepict : Widget {
         // Place on the line just off the left edge.
         nvgText(args.vg, zero_volt_right + 4, 10, waveform->text_factor_right.c_str(), NULL);
       }
+
+      // Then draw the recording heads on top.
+      // Don't draw anything if disconnected from a Memory[CV], unless we are
+      // drawing the module browser image.
+      if (buffer.get() != nullptr || free_point_buffer) {
+        for (int i = 0; i < line_record_size; i++) {
+          LineRecord line;
+          if (module) {
+            line = module->line_records[i];
+          } else {
+            line = dummy_lines[i];
+          }
+          nvgBeginPath(args.vg);
+          // I picture 0.0 at the bottom.
+          double y_pos = bounding_box.y *
+                          (1 - ((double) line.position / buffer_length));
+          // Line is changed by distance and type.
+          if (line.type == RUMINATE) {
+            // Endpoint of line suggests which module it is.
+            double len = bounding_box.x * line.distance / max_distance;
+            nvgRect(args.vg, 0.0, y_pos, len, 1);
+          } else if (line.type == EMBELLISH) {
+            double len = bounding_box.x * (max_distance - line.distance) / max_distance;
+            nvgRect(args.vg, bounding_box.x - len, y_pos, len, 2);
+          } else if (line.type == FIXATION) {
+            double center = bounding_box.x * line.distance / max_distance;
+            // Make these lines one fifth of the way across. Sure they'll overlap sometimes,
+            // but they typically don't travel the whole vertical length of the buffer, and
+            // they have to show up againt the white waveform.
+            double len = bounding_box.x * 0.2;
+            nvgRect(args.vg, center - len / 2.0, y_pos, len, 2);
+          }
+          nvgFillColor(args.vg, line.color);
+          nvgFill(args.vg);
+        }
+      }
       // Restore previous state.
       nvgResetScissor(args.vg);
       nvgRestore(args.vg);
-
-      // Then draw the recording heads on top.
-      for (int i = 0; i < line_record_size; i++) {
-        LineRecord line;
-        if (module) {
-          line = module->line_records[i];
-        } else {
-          line = dummy_lines[i];
-        }
-        nvgBeginPath(args.vg);
-        // I picture 0.0 at the bottom. TODO: is that a good idea?
-        double y_pos = bounding_box.y *
-                        (1 - ((double) line.position / buffer_length));
-        // Line is changed by distance and type.
-        if (line.type == RUMINATE) {
-          // Endpoint of line suggests which module it is.
-          double len = bounding_box.x * line.distance / max_distance;
-          nvgRect(args.vg, 0.0, y_pos, len, 1);
-        } else if (line.type == EMBELLISH) {
-          double len = bounding_box.x * (max_distance - line.distance) / max_distance;
-          nvgRect(args.vg, bounding_box.x - len, y_pos, len, 2);
-        } else if (line.type == FIXATION) {
-          double center = bounding_box.x * line.distance / max_distance;
-          // Make these lines one fifth of the way across. Sure they'll overlap sometimes,
-          // but they typically don't travel the whole vertical length of the buffer, and
-          // they have to show up againt the white waveform.
-          double len = bounding_box.x * 0.2;
-          nvgRect(args.vg, center - len / 2.0, y_pos, len, 2);
-        }
-        nvgFillColor(args.vg, line.color);
-        nvgFill(args.vg);
-      }
 
       if (free_point_buffer) {
         delete waveform;
@@ -361,11 +372,6 @@ struct DepictWidget : ModuleWidget {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Depict.svg"),
                          asset::plugin(pluginInstance, "res/Depict-dark.svg")));
-
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
     // Screen.
     MemoryDepict* display = createWidget<MemoryDepict>(

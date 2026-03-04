@@ -5,7 +5,7 @@
    viewBox="0 0 20.320001 128.50002"
    version="1.1"
    id="svg8"
-   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
    sodipodi:docname="Memory.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -23,9 +23,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="5.6568544"
-     inkscape:cx="15.998291"
-     inkscape:cy="363.09932"
+     inkscape:zoom="2.0000001"
+     inkscape:cx="24.499999"
+     inkscape:cy="243.74999"
      inkscape:document-units="mm"
      inkscape:current-layer="g1684"
      showgrid="false"
@@ -34,10 +34,10 @@
      inkscape:snap-page="true"
      inkscape:bbox-nodes="false"
      inkscape:snap-bbox-edge-midpoints="false"
-     inkscape:window-width="1108"
-     inkscape:window-height="1295"
-     inkscape:window-x="398"
-     inkscape:window-y="79"
+     inkscape:window-width="902"
+     inkscape:window-height="1371"
+     inkscape:window-x="456"
+     inkscape:window-y="27"
      inkscape:window-maximized="0"
      inkscape:snap-bbox-midpoints="true"
      inkscape:snap-nodes="false"
@@ -246,24 +246,6 @@
          id="path1227-8-9"
          style="fill:#e8f1f2;fill-opacity:1" />
     </g>
-    <rect
-       style="display:inline;fill:#000000;fill-opacity:1;stroke-width:0.187101"
-       id="rect652-5"
-       width="10.287325"
-       height="9.7920055"
-       x="9.742363"
-       y="74.428696"
-       ry="3.854296"
-       transform="translate(0,168.49998)" />
-    <rect
-       style="display:inline;fill:#000000;fill-opacity:1;stroke-width:0.187101"
-       id="rect652-5-0"
-       width="10.287325"
-       height="9.7920055"
-       x="9.742363"
-       y="90.898773"
-       ry="3.854296"
-       transform="translate(0,168.49998)" />
     <g
        aria-label="SAVE"
        id="text2727"
@@ -306,6 +288,33 @@
          d="m -108.42932,4.4904755 q -0.25218,0.1157551 -0.55191,0.2025715 -0.29765,0.084749 -0.57671,0.084749 -0.35966,0 -0.65939,-0.099219 -0.29972,-0.099219 -0.51056,-0.297656 -0.21291,-0.2005044 -0.32866,-0.5002275 -0.11576,-0.3017901 -0.11576,-0.7048659 0,-0.7379388 0.42995,-1.1637523 0.43202,-0.4278805 1.18442,-0.4278805 0.26252,0 0.53537,0.064079 0.27492,0.062012 0.59118,0.2129068 v 0.485758 h -0.0372 q -0.0641,-0.049609 -0.18603,-0.1302245 -0.12196,-0.080615 -0.23978,-0.1343586 -0.14263,-0.064079 -0.32453,-0.1054198 -0.17983,-0.043408 -0.40928,-0.043408 -0.51676,0 -0.81855,0.332796 -0.29972,0.3307288 -0.29972,0.8971021 0,0.597379 0.31419,0.930175 0.31419,0.3307289 0.85576,0.3307289 0.19844,0 0.39481,-0.039274 0.19844,-0.039274 0.34726,-0.1012857 V 3.5292947 h -0.82475 V 3.169627 h 1.2299 z"
          id="path368" />
     </g>
+    <rect
+       style="display:inline;fill:#000000;fill-opacity:0.88755;stroke-width:0.175583;image-rendering:auto"
+       id="rect652-7"
+       width="10.616776"
+       height="8.3559361"
+       x="9.5716124"
+       y="197.15901"
+       ry="1.9487509"
+       rx="1.9487509" />
+    <rect
+       style="display:inline;fill:#000000;fill-opacity:0.88755;stroke-width:0.175583;image-rendering:auto"
+       id="rect652-7-8"
+       width="10.616776"
+       height="8.3559361"
+       x="9.5776367"
+       y="243.64671"
+       ry="1.9487509"
+       rx="1.9487509" />
+    <rect
+       style="display:inline;fill:#000000;fill-opacity:0.88755;stroke-width:0.175583;image-rendering:auto"
+       id="rect652-7-8-4"
+       width="10.616776"
+       height="8.3559361"
+       x="9.5776367"
+       y="260.11679"
+       ry="1.9487509"
+       rx="1.9487509" />
   </g>
   <g
      inkscape:groupmode="layer"
@@ -350,7 +359,7 @@
     <circle
        style="display:inline;opacity:1;vector-effect:none;fill:#ff0000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
        id="path4954"
-       cx="10.16"
+       cx="5.4400001"
        cy="32.836842"
        r="4"
        inkscape:label="seconds" />
@@ -368,6 +377,13 @@
        cy="79.324699"
        r="4"
        inkscape:label="load_trigger" />
+    <circle
+       style="display:inline;vector-effect:none;fill:#0000ff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
+       id="circle4958-6-94"
+       cx="14.88"
+       cy="32.837002"
+       r="4"
+       inkscape:label="len_output" />
     <circle
        r="4"
        cy="95.794785"
