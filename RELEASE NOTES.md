@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.25
-#### [fill in date when released]
+#### March 3rd, 2026
 * My very first module, [Drifter](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#drifter), has had many new features added:
 * * Drifter now has a TRIG output.
 * * * Outputs a short trigger each time the IN value moves to a new "section" of the graph (i.e., changes which two points it is between).
