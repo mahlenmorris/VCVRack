@@ -20,7 +20,7 @@
 * Finally, to avoid a future parts shortage, all of the screws have been removed from all of the modules :) The modules now look a bit cleaner and more contemporary, and it gives me more room to move UI elements around when adding new features.
 
 ### 2.0.24
-#### January 2, 2026
+#### January 2nd, 2026
 * Many changes to Memory modules:
 * * Fixation now has a menu option that changes the LENGTH from "time in milliseconds" to "tempo input + note length". I think this will make it far more suited to tempo-synced playback. Thanks to @cothiele for a discussion that got me to think of this.
 * * Brainwash now has a new method to determining when to record and for how long. It takes a CLOCK signal and a count of CLOCK triggers, and after being ARM'ed, records for that many CLOCK triggers. COUNT doesn't have to be an integer; fractional values can make for *interesting* polyrhythmic effects.
