@@ -1857,7 +1857,7 @@ struct VennWidget : ModuleWidget {
 
     // The Circles.
     display = createWidget<CircleDisplay>(
-      mm2px(Vec(31.0, 1.7)));
+      mm2px(Vec(31.0, 1.435)));
     display->box.size = mm2px(Vec(125.0, 125.0));
     display->module = module;
     display->widget_updater = &widget_updater;
