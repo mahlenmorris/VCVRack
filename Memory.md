@@ -47,7 +47,7 @@ And these videos discuss Fixation in particular:
 
 In addition to [Omri Cohen](https://www.youtube.com/@OmriCohen-Music)'s [video about Memory](https://www.youtube.com/watch?v=JyQDlhEvEPA), here's a couple of his [shorter](https://www.youtube.com/watch?v=WQ9XN9qqOYI&t=14s) [demonstrations](https://www.youtube.com/watch?v=AjKC7IPgZZM&t=767s). And here's a short demo of his regarding the [MemoryCV module in particular](https://www.youtube.com/watch?v=r3QMHA-M_ZM&t=40s).
 
-Here's a demonstration of a technique for [glitching a drum loop](https://youtu.be/kz3D2xjEqnY?si=AGD7G_KlP6RZ8WRJ) using the CURRENT from a Ruminate as a phasor that guides other phasors, by [AndreyaMakesMusic](https://www.youtube.com/@andreyamakesmusic).
+Here's a demonstration of a technique for [glitching a drum loop](https://youtu.be/kz3D2xjEqnY?si=AGD7G_KlP6RZ8WRJ) using the CURRENT from a Ruminate as a phasor that guides other phasors, by [AndreyaMakesMusic](https://www.youtube.com/@andreyamakesmusic). [This video](https://www.youtube.com/watch?v=auDa_udrQtA) showcases a [technique for adding musical color](https://community.vcvrack.com/t/modular-percussion-fx/25769) to a frame drum being played live by [Jacobus Thiele](https://www.youtube.com/@jacobusthiele5286). 
 
 # The Memory Ensemble
 A Memory/MemoryCV ensemble is a set of at least some of these modules next to each other (like extensions). The modules in a single ensemble can be in any order from left-to-right, with the exception that the required Memory or MemoryCV module is always the left-most module.
