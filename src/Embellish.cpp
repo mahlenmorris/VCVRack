@@ -72,6 +72,7 @@ struct Embellish : PositionedModule {
   // To display timestamps correctly.
   double seconds = 0.0;
   int length = 0;
+  bool two_channel_current_position = true;  // Works better as a phasor with just a single channel.
 
   double fade = 1.0f;
 
@@ -108,6 +109,19 @@ struct Embellish : PositionedModule {
     prev_abs_position = -20.0;
     abs_changed = false;
     record_state = NO_RECORD;
+  }
+
+  json_t* dataToJson() override {
+    json_t* rootJ = json_object();
+    json_object_set_new(rootJ, "two_channel_current_position", json_integer(two_channel_current_position ? 1 : 0));
+    return rootJ;
+  }
+
+  void dataFromJson(json_t* rootJ) override {
+    json_t* twoChannelJ = json_object_get(rootJ, "two_channel_current_position");
+    if (twoChannelJ) {
+      two_channel_current_position = json_integer_value(twoChannelJ) == 1;
+    }
   }
 
   // Overriding solely to make sure Adjust isn't left in a non-zero state.
@@ -313,13 +327,17 @@ struct Embellish : PositionedModule {
 
       if (outputs[NOW_POSITION_OUTPUT].isConnected()) {
         // Output phasor and seconds.
-        outputs[NOW_POSITION_OUTPUT].setChannels(2);
+        outputs[NOW_POSITION_OUTPUT].setChannels(two_channel_current_position ? 2 : 1);
         if (length > 0) {
           outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length, 0);
-          outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * seconds / length, 1);
+          if (two_channel_current_position) {
+            outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * seconds / length, 1);
+          }
         } else {
           outputs[NOW_POSITION_OUTPUT].setVoltage(0.0f, 0);
-          outputs[NOW_POSITION_OUTPUT].setVoltage(0.0f, 1);
+          if (two_channel_current_position) {
+            outputs[NOW_POSITION_OUTPUT].setVoltage(0.0f, 1);
+          }
         }
       }
 
@@ -436,7 +454,11 @@ struct EmbellishWidget : ModuleWidget {
     Embellish* module = dynamic_cast<Embellish*>(this->module);
     assert(module);
 
+    menu->addChild(new MenuSeparator);
     // Be a little clearer how to make this module do anything.
+    menu->addChild(createBoolPtrMenuItem("Have 2nd channel of seconds on CURRENT", "",
+                                      &module->two_channel_current_position));
+
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel(
       "Embellish only works when touching a group of modules with a Memory or MemoryCV"));

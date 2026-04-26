@@ -175,6 +175,7 @@ struct Fixation : PositionedModule {
   bool reverse_direction = false;  // Saved in the patch.
   EndsBehavior ends_behavior = LOOPING;  // Saved in the patch.
   bool tempo_length = false;  // Saved in the patch.
+  bool two_channel_current_position = true;  // Works better as a phasor with just a single channel.
 
   bool currently_bouncing = false;
   bool currently_stopped = false;
@@ -270,6 +271,7 @@ struct Fixation : PositionedModule {
     json_object_set_new(rootJ, "reverse_direction", json_integer(reverse_direction ? 1 : 0));
     json_object_set_new(rootJ, "tempo_length", json_integer(tempo_length ? 1 : 0));
     json_object_set_new(rootJ, "ends_behavior", json_integer(ends_behavior));
+    json_object_set_new(rootJ, "two_channel_current_position", json_integer(two_channel_current_position ? 1 : 0));
     return rootJ;
   }
 
@@ -289,6 +291,10 @@ struct Fixation : PositionedModule {
     json_t* endsJ = json_object_get(rootJ, "ends_behavior");
     if (endsJ) {
       ends_behavior = (EndsBehavior) json_integer_value(endsJ);
+    }
+    json_t* twoChannelJ = json_object_get(rootJ, "two_channel_current_position");
+    if (twoChannelJ) {
+      two_channel_current_position = json_integer_value(twoChannelJ) == 1;
     }
   }
 
@@ -664,13 +670,17 @@ struct Fixation : PositionedModule {
 
       if (outputs[CURRENT_OUTPUT].isConnected()) {
         // Output phasor and seconds.
-        outputs[CURRENT_OUTPUT].setChannels(2);
+        outputs[CURRENT_OUTPUT].setChannels(two_channel_current_position ? 2 : 1);
         if (length > 0) {
           outputs[CURRENT_OUTPUT].setVoltage(display_position * 10.0 / length, 0);
-          outputs[CURRENT_OUTPUT].setVoltage(display_position * seconds / length, 1);
+          if (two_channel_current_position) {
+            outputs[CURRENT_OUTPUT].setVoltage(display_position * seconds / length, 1);
+          }
         } else {
           outputs[CURRENT_OUTPUT].setVoltage(0.0f, 0);
-          outputs[CURRENT_OUTPUT].setVoltage(0.0f, 1);
+          if (two_channel_current_position) {
+            outputs[CURRENT_OUTPUT].setVoltage(0.0f, 1);
+          }
         }
       }
 
@@ -829,6 +839,8 @@ struct FixationWidget : ModuleWidget {
                                           &module->tempo_length));
     menu->addChild(createBoolPtrMenuItem("Default direction is reverse", "",
                                          &module->reverse_direction));
+    menu->addChild(createBoolPtrMenuItem("Have 2nd channel of seconds on CURRENT", "",
+                                          &module->two_channel_current_position));    
 
     std::pair<std::string, Fixation::EndsBehavior> ends_behavior[] = {
       {"Loop Around", Fixation::LOOPING},
