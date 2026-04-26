@@ -1610,6 +1610,35 @@ struct MemoryWidget : ModuleWidget {
                          asset::plugin(pluginInstance, "res/Memory-dark.svg")));
   }
 
+  bool canLoadFile(const std::string& path) {
+    return ((rack::string::lowercase(system::getExtension(path)) == "wav") ||
+            (rack::string::lowercase(system::getExtension(path)) == ".wav") ||
+            (rack::string::lowercase(system::getExtension(path)) == "csv") ||
+            (rack::string::lowercase(system::getExtension(path)) == ".csv"));
+  }
+
+  // To allow users to drop files directly onto the module.
+  virtual void onPathDrop(const PathDropEvent &	e) {
+    if (!module) {
+      return;
+    }
+    Memory* mem_module = dynamic_cast<Memory*>(this->module);
+    assert(mem_module);
+
+    for (const std::string& path : e.paths) {
+      if (!canLoadFile(path)) {
+        continue;
+      }
+
+      PrepareTask* task = PrepareTask::LoadFileTask(nullptr, path, "");
+      if (!mem_module->widget_module_queue.tasks.push(task)) {
+        delete task;
+      } else {
+        return;  // Can't wait around to see if the file loads or not.
+      }
+    }
+  }
+
   // Shortens really long directory paths for display.
   std::string betterDirectoryPath(const std::string& path) {
     if (path.length() < 50) {
