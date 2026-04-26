@@ -176,6 +176,7 @@ struct Fixation : PositionedModule {
   EndsBehavior ends_behavior = LOOPING;  // Saved in the patch.
   bool tempo_length = false;  // Saved in the patch.
   bool two_channel_current_position = true;  // Works better as a phasor with just a single channel.
+  bool outputs_zero = true;
 
   bool currently_bouncing = false;
   bool currently_stopped = false;
@@ -268,6 +269,7 @@ struct Fixation : PositionedModule {
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "speed_is_voct", json_integer(speed_is_voct ? 1 : 0));
+    json_object_set_new(rootJ, "outputs_zero", json_integer(outputs_zero ? 1 : 0));
     json_object_set_new(rootJ, "reverse_direction", json_integer(reverse_direction ? 1 : 0));
     json_object_set_new(rootJ, "tempo_length", json_integer(tempo_length ? 1 : 0));
     json_object_set_new(rootJ, "ends_behavior", json_integer(ends_behavior));
@@ -279,6 +281,10 @@ struct Fixation : PositionedModule {
     json_t* speedJ = json_object_get(rootJ, "speed_is_voct");
     if (speedJ) {
       speed_is_voct = json_integer_value(speedJ) == 1;
+    }
+    json_t* outputsJ = json_object_get(rootJ, "outputs_zero");
+    if (outputsJ) {
+      outputs_zero = json_integer_value(outputsJ) == 1;
     }
     json_t* reverseJ = json_object_get(rootJ, "reverse_direction");
     if (reverseJ) {
@@ -712,8 +718,10 @@ struct Fixation : PositionedModule {
         outputs[RIGHT_OUTPUT].setVoltage(right);
         lights[PLAY_BUTTON_LIGHT].setBrightness(1.0f);
       } else {
-        outputs[LEFT_OUTPUT].setVoltage(0.0f);
-        outputs[RIGHT_OUTPUT].setVoltage(0.0f);
+        if (outputs_zero) {
+          outputs[LEFT_OUTPUT].setVoltage(0.0f);
+          outputs[RIGHT_OUTPUT].setVoltage(0.0f);
+        }
         lights[PLAY_BUTTON_LIGHT].setBrightness(0.0f);
       }
       outputs[TRIG_OUT_OUTPUT].setVoltage(
@@ -835,6 +843,8 @@ struct FixationWidget : ModuleWidget {
     menu->addChild(new MenuSeparator);
     menu->addChild(createBoolPtrMenuItem("Use Speed as V/Oct", "",
                                           &module->speed_is_voct));
+    menu->addChild(createBoolPtrMenuItem("Zero the outputs when not playing", "",
+                                         &module->outputs_zero));
     menu->addChild(createBoolPtrMenuItem("Interpret LENGTH as tempo and note length", "",
                                           &module->tempo_length));
     menu->addChild(createBoolPtrMenuItem("Default direction is reverse", "",
