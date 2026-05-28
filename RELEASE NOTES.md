@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.26
-#### [Date TBD]
+#### May 28, 2026
 * You can now drag-and-drop .wav and .csv files onto a Memory/MemoryCV module, causing it to load the file.
 Thanks to Joseph in the Discord for mentioning this was even possible.
 * Better interaction with the Stroke module. Typing into BASICally/Fermata/TTY no longer also triggers actions in Stroke. Thanks to @Alphagem-O for mentioning this.
