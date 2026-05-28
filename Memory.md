@@ -90,6 +90,10 @@ Memory buffers can be quite a bit larger than 10 seconds, I decided to just map 
 * Memory modules can consume *a lot* of your computer's RAM when running. The higher the LENGTH, the more data Memory will be storing. The larger the VCV Sample Rate, the more data Memory will be storing. A single Memory set to 1000 seconds (i.e., 16m 40s) at a Sample Rate of 48 kHz is using 366 Mb of RAM.
 
 ### Controls
+
+#### Drag and Drop
+You can drag a .wav or .csv file from your OS's file browser and drop it onto the Memory module; this will cause that file to be immediately loaded by Memory.
+
 #### WIPE Input and Button
 Pressing the button or sending a trigger to the WIPE input will keep the length of the Memory the same, but reset all of the values within it to 0.0V.
 #### LENGTH Knob
@@ -192,6 +196,10 @@ MemoryCV buffers can be quite a bit larger than 10 seconds, I decided to just ma
 * MemoryCV modules can consume a bit of your computer's RAM when running. The higher the LENGTH, the more data MemoryCV will be storing. A single MemoryCV set to 1000 seconds (i.e., 16m 40s) is using 8 Mb of RAM.
 
 ### Controls
+
+#### Drag and Drop
+You can drag a .wav or .csv file from your OS's file browser and drop it onto the MemoryCV module; this will cause that file to be immediately loaded by MemoryCV.
+
 #### WIPE Input and Button
 Pressing the button or sending a trigger to the WIPE input will keep the length of the MemoryCV the same, but reset all of the values within it to 0.0V.
 #### LENGTH Knob
@@ -343,7 +351,7 @@ If there are multiple Embellishes in an ensemble, it is useful to set this value
 #### Position CURRENT Output
 This is a two-channel output indicating the current position of the play/record head:
 * The first channel is the position from 0.0V to 10.0V. This can be useful as an input [phasor](https://github.com/mhetrick/hetrickcv/blob/master/docs/Topics/Phasors.md) which [some modules](https://library.vcvrack.com/?query=phasor&brand=HetrickCV&tag=&license=) can use to great effect for controlling other Ruminate and Fixation play heads.
-* The second channel is the position in seconds from the start.
+* The second channel is the position in seconds from the start. This can be turned off via a menu option.
 
 Below this is a display showing this position in either:
 * seconds.hundredths - if the Memory size is less than 60 seconds OR
@@ -354,6 +362,15 @@ Embellish will record audio if either the button has been pressed into the Recor
 To facilitate sound-on-sound techniques and other techniques of manipulation, there are OUT (Left and Right) outputs, which can be routed to any processing you desire and then routed back to the IN inputs.
 #### IN (Left and Right)
 While running, the Embellish module writes whatever signal is arriving in the IN (Left and Right) inputs to the Memory. If no signal is present or the cables are disconnected, it will zero out where it is writing to.
+
+### Menu Options
+
+#### Zero the outputs when not playing
+Defaults to true. If true, then when RECORD stops, the L and R OUT ports will drop to 0.0V; if false, then the outputs will remain at the values they stopped at.
+
+#### Have 2nd channel of seconds on CURRENT
+Defaults to true. If true, then the second channel is the position in seconds from the start.
+
 ### Bypass Behavior
 If Bypass is enabled, Embellish will stop writing. However, turning Embellish on and off using Bypass while recording will also bypass the module's Click Avoidance behavior, so it's not generally advised; it will almost surely add clicks to the recording.
 
@@ -385,7 +402,7 @@ If there are multiple Ruminates in an ensemble and they are moving at the same s
 #### Position CURRENT Output
 This is a two-channel output indicating the current position of the play head:
 * The first channel is the position from 0.0V to 10.0V. This can be useful as an input [phasor](https://github.com/mhetrick/hetrickcv/blob/master/docs/Topics/Phasors.md) which [some modules](https://library.vcvrack.com/?query=phasor&brand=HetrickCV&tag=&license=) can use to great effect for controlling other Ruminate and Fixation play heads.
-* The second channel is the position in seconds from the start.
+* The second channel is the position in seconds from the start. This can be turned off via a menu option.
 
 Below this is a display showing this position in either:
 * seconds.hundredths - if the Memory size is less than 60 seconds OR
@@ -413,11 +430,15 @@ If Ruminate is playing, the audio output is emitted here.
 Affects the behavior when the slider or SET moves the position of the head.
 If checked (the default), the L&R outputs will be silent until the position stops changing. If not checked, then the playback will continue as it's being moved.
 See [example video](https://www.youtube.com/watch?v=dOsupn0-Mxw).
+#### Zero the outputs when not playing
+Defaults to true. If true, then when RECORD stops, the L and R OUT ports will drop to 0.0V; if false, then the outputs will remain at the values they stopped at.
 #### Use Speed as V/Oct
 Affects how the SPEED is interpreted. When unchecked (the default),
 the sum of the SPEED input and control is how many samples the playhead moves forward per sample emitted, so 1 is normal speed, .5 is half-speed. When checked, this sum will be interpreted the way that V/Oct is interpreted in most modules. See [example video](https://www.youtube.com/watch?v=kGKmS2WjqIs).
 #### Default direction is reverse
 When set, the play head will start by playing in reverse (i.e., from top to bottom). This allows one to use Speed as V/Oct and still play the sample in reverse.
+#### Have 2nd channel of seconds on CURRENT
+Defaults to true. If true, then the second channel is the position in seconds from the start.
 #### Behavior at ends
 This is a sub-menu with three options, which determine what Ruminate will do when the playhead hits the top or bottom of memory:
 * **Loop Around** - Continue playing at the other end of Memory in the same direction.
@@ -501,7 +522,7 @@ playback stops, otherwise we move to POSITION and play again for LENGTH (which i
 #### Position CURRENT Output
 This is a two-channel output indicating the current position of the play head:
 * The first channel is the position from 0.0V to 10.0V. This can be useful as an input [phasor](https://github.com/mhetrick/hetrickcv/blob/master/docs/Topics/Phasors.md) which [some modules](https://library.vcvrack.com/?query=phasor&brand=HetrickCV&tag=&license=) can use to great effect for controlling other Ruminate and Fixation play heads.
-* The second channel is the position in seconds from the start.
+* The second channel is the position in seconds from the start. This can be turned off via a menu option.
 
 #### TRIG Output
 This will output a short trigger whenever the play head starts playing from a POSITION. This can be useful for starting an envelope around the sound that Fixation outputs.
@@ -534,6 +555,8 @@ If Fixation is playing, the audio output is emitted here.
 Affects the behavior when the slider or SET moves the position of the head.
 If checked (the default), the L&R outputs will be silent until the position stops changing. If not checked, then the playback will continue as it's being moved.
 See [example video](https://www.youtube.com/watch?v=dOsupn0-Mxw).
+#### Zero the outputs when not playing
+Defaults to true. If true, then when RECORD stops, the L and R OUT ports will drop to 0.0V; if false, then the outputs will remain at the values they stopped at.
 #### Use Speed as V/Oct
 Affects how the SPEED is interpreted. When unchecked (the default),
 the sum of the SPEED input and control is how many samples the playhead moves forward per sample emitted, so 1 is normal speed, .5 is half-speed. When checked, this sum will be interpreted the way that V/Oct is interpreted in most modules. See [example video](https://www.youtube.com/watch?v=kGKmS2WjqIs).
@@ -541,6 +564,8 @@ the sum of the SPEED input and control is how many samples the playhead moves fo
 When set, the length controls change their meaning. The attenuverter disappears, the input acts like a clock measuring the tempo of triggers to it, and the knob now selects from a variety of note lengths based on that tempo.
 #### Default direction is reverse
 When set, the play head will start by playing in reverse (i.e., from top to bottom). This allows one to use Speed as V/Oct and still play the sample in reverse.
+#### Have 2nd channel of seconds on CURRENT
+Defaults to true. If true, then the second channel is the position in seconds from the start.
 #### Behavior at ends
 This is a sub-menu with three options, which determine what Fixation will do when the playhead hits the top or bottom of memory:
 * **Loop Around** - Continue playing at the other end of Memory in the same direction.

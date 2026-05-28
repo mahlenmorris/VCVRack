@@ -96,11 +96,14 @@ struct Ruminate : PositionedModule {
   double play_fade = 1.0;
   PlayState play_state;
   bool fade_on_move = true;  // Saved in the patch.
+  // Useful to turn this off when pausing and unpausing a movement WAVE file (e.g., circle).
+  bool outputs_zero = true;
   bool speed_is_voct = false;  // Saved in the patch.
   bool reverse_direction = false;  // Saved in the patch.
   EndsBehavior ends_behavior = LOOPING;  // Saved in the patch.
   bool currently_bouncing = false;
   bool currently_stopped = false;
+  bool two_channel_current_position = true;  // Works better as a phasor with just a single channel.
   
   Ruminate() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -114,7 +117,7 @@ struct Ruminate : PositionedModule {
     configInput(SPEED_INPUT, "Playback speed (added to knob value)");
     configInput(PLAY_GATE_INPUT, "Gate to start/stop playing");
   
-    configOutput(NOW_POSITION_OUTPUT, "Position as phasor (0V -> 10V), and in seconds,");
+    configOutput(NOW_POSITION_OUTPUT, "Position as phasor (0V -> 10V), and (optionally) in seconds,");
     configOutput(LEFT_OUTPUT, "Left");
     configOutput(RIGHT_OUTPUT, "Right");
 
@@ -133,9 +136,11 @@ struct Ruminate : PositionedModule {
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "fade_on_move", json_integer(fade_on_move ? 1 : 0));
+    json_object_set_new(rootJ, "outputs_zero", json_integer(outputs_zero ? 1 : 0));
     json_object_set_new(rootJ, "speed_is_voct", json_integer(speed_is_voct ? 1 : 0));
     json_object_set_new(rootJ, "reverse_direction", json_integer(reverse_direction ? 1 : 0));
     json_object_set_new(rootJ, "ends_behavior", json_integer(ends_behavior));
+    json_object_set_new(rootJ, "two_channel_current_position", json_integer(two_channel_current_position ? 1 : 0));
     return rootJ;
   }
 
@@ -143,6 +148,10 @@ struct Ruminate : PositionedModule {
     json_t* fadeJ = json_object_get(rootJ, "fade_on_move");
     if (fadeJ) {
       fade_on_move = json_integer_value(fadeJ) == 1;
+    }
+    json_t* outputsJ = json_object_get(rootJ, "outputs_zero");
+    if (outputsJ) {
+      outputs_zero = json_integer_value(outputsJ) == 1;
     }
     json_t* speedJ = json_object_get(rootJ, "speed_is_voct");
     if (speedJ) {
@@ -158,6 +167,10 @@ struct Ruminate : PositionedModule {
       ends_behavior = (EndsBehavior) json_integer_value(endsJ);
     } else {
       ends_behavior = (params[BOUNCE_PARAM].getValue() > 0.5f) ? BOUNCING : LOOPING;
+    }
+    json_t* twoChannelJ = json_object_get(rootJ, "two_channel_current_position");
+    if (twoChannelJ) {
+      two_channel_current_position = json_integer_value(twoChannelJ) == 1;
     }
   }
 
@@ -371,13 +384,17 @@ struct Ruminate : PositionedModule {
       display_position = playback_position;
 
       if (outputs[NOW_POSITION_OUTPUT].isConnected()) {
-        outputs[NOW_POSITION_OUTPUT].setChannels(2);
+        outputs[NOW_POSITION_OUTPUT].setChannels(two_channel_current_position ? 2 : 1);
         if (length > 0) {
           outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * 10.0 / length, 0);
-          outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * seconds / length, 1);
+          if (two_channel_current_position) {
+            outputs[NOW_POSITION_OUTPUT].setVoltage(display_position * seconds / length, 1);
+          }
         } else {
           outputs[NOW_POSITION_OUTPUT].setVoltage(0.0f, 0);
-          outputs[NOW_POSITION_OUTPUT].setVoltage(0.0f, 1);
+          if (two_channel_current_position) {
+            outputs[NOW_POSITION_OUTPUT].setVoltage(0.0f, 1);
+          }
         }
       }
       
@@ -412,8 +429,10 @@ struct Ruminate : PositionedModule {
         outputs[RIGHT_OUTPUT].setVoltage(right);
         lights[PLAY_BUTTON_LIGHT].setBrightness(1.0f);
       } else {
-        outputs[LEFT_OUTPUT].setVoltage(0.0f);
-        outputs[RIGHT_OUTPUT].setVoltage(0.0f);
+        if (outputs_zero) {
+          outputs[LEFT_OUTPUT].setVoltage(0.0f);
+          outputs[RIGHT_OUTPUT].setVoltage(0.0f);
+        }
         lights[PLAY_BUTTON_LIGHT].setBrightness(0.0f);
       }
     } else {
@@ -469,10 +488,14 @@ struct RuminateWidget : ModuleWidget {
     menu->addChild(new MenuSeparator);
     menu->addChild(createBoolPtrMenuItem("Fade on Move", "",
                                           &module->fade_on_move));
+    menu->addChild(createBoolPtrMenuItem("Zero the outputs when not playing", "",
+                                          &module->outputs_zero));
     menu->addChild(createBoolPtrMenuItem("Use Speed as V/Oct", "",
                                           &module->speed_is_voct));
     menu->addChild(createBoolPtrMenuItem("Default direction is reverse", "",
                                           &module->reverse_direction));
+    menu->addChild(createBoolPtrMenuItem("Have 2nd channel of seconds on CURRENT", "",
+                                          &module->two_channel_current_position));
 
     std::pair<std::string, Ruminate::EndsBehavior> ends_behavior[] = {
       {"Loop Around", Ruminate::LOOPING},

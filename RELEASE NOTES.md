@@ -1,5 +1,15 @@
 # Release Notes
 
+### 2.0.26
+#### [Date TBD]
+* You can now drag-and-drop .wav and .csv files onto a Memory/MemoryCV module, causing it to load the file.
+Thanks to Joseph in the Discord for mentioning this was even possible.
+* Better interaction with the Stroke module. Typing into BASICally/Fermata/TTY no longer also triggers actions in Stroke. Thanks to @Alphagem-O for mentioning this.
+* In BASICally, you can now use OUTn[m] values within expressions. A strange oversight on my part. Thanks to @cothiele for noting this.
+* Ruminate, Fixation, and Embellish all have two new menu items:
+* * One to choose whether or not to have CURRENT send out the 2nd channel of timestamp info or not. I'd gotten word that the addition of the channel was making phasors from Memory modules more difficult, so now they it can be turned off.
+* * One to say whether or not the L and R outputs of these modules fall to zero when not playing. They previously always did, and that's not always ideal.
+
 ### 2.0.25
 #### March 3rd, 2026
 * My very first module, [Drifter](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#drifter), has had many new features added:

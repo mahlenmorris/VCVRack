@@ -293,6 +293,7 @@ struct Venn : Module {
 
     current_circle = -1;
     check_live_circles = 0;
+    live_circle_count = 0;
 
     for (int i = 0; i < 16; ++i) {
       circles[i].present = false;  // Start empty; every circle is not present.
@@ -311,28 +312,9 @@ struct Venn : Module {
 
     // For compiling typed-in expressions.
     variables = std::make_shared<VennVariables>();
-  /*
-    compile_in_progress = false;
-    compiler = new CompilationThread(&driver);
-    compile_thread = new std::thread(&CompilationThread::Compile, compiler);
-  */
   }
   
-  ~Venn() {
-    /*
-    // A LOT of this would be better handled with shared_ptr.
-    if (compiler) {
-      compiler->Halt();
-    }
-    if (compile_thread) {
-      compile_thread->join();
-      delete compile_thread;
-    }
-    if (compiler) {
-      delete compiler;
-    }
-    */
-  }
+  ~Venn() { }
 
   // Turns a set of shapes into a text string that we can parse later to recreate the shapes.
   std::string to_string(Circle the_circles[16]) {
@@ -920,13 +902,12 @@ struct VennNameTextField;
 struct VennMath1TextField;
 
 struct WidgetUpdater {
-  Venn* module;
+  Venn* module = nullptr;
   VennNameTextField* name_widget = nullptr;
   VennMath1TextField* math1_widget = nullptr;
 
   void UpdateWidgets();
 };
-
 /*
 Principles for the UI:
 * There are these states for the editor:
@@ -958,8 +939,7 @@ struct VennNameTextField : STTextField {
   std::string venn_text;
   WidgetUpdater* widget_updater;
 
-  VennNameTextField() {
-    module = nullptr;
+  VennNameTextField() : module{nullptr}, widget_updater{nullptr} {
     this->text = &venn_text;
     fontPath = asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf");
     fontSize = 12.0f;
@@ -1058,7 +1038,7 @@ struct VennErrorTooltip : ui::Tooltip {
   VennErrorWidget* errorWidget;
   std::string error_text;
 
-  VennErrorTooltip(const std::string &text) : error_text{text} {}
+  VennErrorTooltip(const std::string &text) : errorWidget{nullptr}, error_text{text} {}
 
   void step() override;
 };
@@ -1068,7 +1048,7 @@ struct VennErrorWidget : widget::OpaqueWidget {
   VennErrorTooltip* tooltip;
 
   VennErrorWidget() {
-    tooltip = NULL;
+    tooltip = nullptr;
   }
 
   void setDriver(std::shared_ptr<VennDriver> the_driver) {
@@ -1166,8 +1146,7 @@ struct VennMath1TextField : STTextField {
   std::shared_ptr<VennDriver> driver;
   WidgetUpdater* widget_updater;
 
-  VennMath1TextField() {
-    module = nullptr;
+  VennMath1TextField() : module{nullptr}, driver{nullptr}, widget_updater{nullptr} {
     this->text = &math1_text;
     fontPath = asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf");
     fontSize = 12.0f;
@@ -1339,7 +1318,7 @@ struct CircleDisplay : OpaqueWidget {
   Vec last_hover_pos;
   WidgetUpdater* widget_updater;
 
-  CircleDisplay() {}
+  CircleDisplay() : module{nullptr}, widget_updater{nullptr} {}
 
   // Move point to current location if left clicked.
   void onButton(const ButtonEvent& e) override {
@@ -1595,135 +1574,133 @@ struct CircleDisplay : OpaqueWidget {
     }
   }
 
-  // By using drawLayer() instead of draw(), this becomes a glowing display
-  // when the "room lights" are turned down. That seems correct to me.
-  void drawLayer(const DrawArgs& args, int layer) override {
-    if (layer == 1) {
-      Circle dummy[16];
-      Circle *circles;
-      int circle_count;
-      int current_circle;
-      bool solo; 
-      Vec point;
-      bool currently_editing;
-      bool currently_keyboard;
-      bool show_full_keyboard;
-      if (module) {
-        // If we have a module, but the circles are being updated, best not to draw anything.
-        // TODO: reconsider this decision, since we no longer have the issue of out-of-range indexies.
-        if (!module->circles_loaded) {
-          return;
-        } else {
-          circles = module->circles;
-          circle_count = module->live_circle_count;
-          current_circle = module->current_circle;
-          solo = module->solo;
-          point = module->point;
-          currently_editing = module->editing;
-          currently_keyboard = module->keystrokes_accepted;
-          show_full_keyboard = module->show_keyboard;
-        }
+  // Using drawLayer() makes it so the F3 CPU monitoring appears under this
+  // layer, which looks wrong. So I use draw instead.
+  void draw(const DrawArgs& args) override {
+    Circle dummy[16];
+    Circle *circles;
+    int circle_count;
+    int current_circle;
+    bool solo; 
+    Vec point;
+    bool currently_editing;
+    bool currently_keyboard;
+    bool show_full_keyboard;
+    if (module) {
+      // If we have a module, but the circles are being updated, best not to draw anything.
+      // TODO: reconsider this decision, since we no longer have the issue of out-of-range indexies.
+      if (!module->circles_loaded) {
+        return;
       } else {
-        // Simple demo values to show in the browser and library page.
-        default_circles(dummy);
-        circles = dummy;
-        circle_count = 6;
-        current_circle = 2;
-        solo = false;
-        point.x = 0.0;
-        point.y = 0.2345;
-        currently_editing = false;
-        currently_keyboard = false;
-        show_full_keyboard = false;
+        circles = module->circles;
+        circle_count = module->live_circle_count;
+        current_circle = module->current_circle;
+        solo = module->solo;
+        point = module->point;
+        currently_editing = module->editing;
+        currently_keyboard = module->keystrokes_accepted;
+        show_full_keyboard = module->show_keyboard;
       }
-      nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-      Rect r = box.zeroPos();
-      Vec bounding_box = r.getBottomRight();
-      // Assuming that we are always on a square-pixeled surface, with X and Y the same distances.
-      double pixels_per_volt = bounding_box.x / 10.0;
+    } else {
+      // Simple demo values to show in the browser and library page.
+      default_circles(dummy);
+      circles = dummy;
+      circle_count = 6;
+      current_circle = 2;
+      solo = false;
+      point.x = 0.0;
+      point.y = 0.2345;
+      currently_editing = false;
+      currently_keyboard = false;
+      show_full_keyboard = false;
+    }
+    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+    Rect r = box.zeroPos();
+    Vec bounding_box = r.getBottomRight();
+    // Assuming that we are always on a square-pixeled surface, with X and Y the same distances.
+    double pixels_per_volt = bounding_box.x / 10.0;
 
-      // Background first.
-      // The background (with keyboard hints) is in the SVG template. We just hide it when
-      // keyboard input isn't accepted.
-      if (!currently_keyboard || !show_full_keyboard) {
+    // Background first.
+    // The background (with keyboard hints) is in the SVG template. We just hide it when
+    // keyboard input isn't accepted.
+    if (!currently_keyboard || !show_full_keyboard) {
+      nvgBeginPath(args.vg);
+      nvgRect(args.vg, 0.0, 0.0, bounding_box.x, bounding_box.y);
+      nvgFillColor(args.vg, SCHEME_DARK_GRAY);
+      nvgFill(args.vg);
+    }
+
+    // The circles.
+    std::shared_ptr<Font> font = APP->window->loadFont(
+      asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
+
+    for (int index = 0; index < circle_count; index++) {
+      const Circle& circle = circles[index];
+      if (circle.present) {
+        // Draw the circle itself.
         nvgBeginPath(args.vg);
-        nvgRect(args.vg, 0.0, 0.0, bounding_box.x, bounding_box.y);
-        nvgFillColor(args.vg, SCHEME_DARK_GRAY);
-        nvgFill(args.vg);
-      }
-
-      // The circles.
-      std::shared_ptr<Font> font = APP->window->loadFont(
-        asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
-
-      for (int index = 0; index < circle_count; index++) {
-        const Circle& circle = circles[index];
-        if (circle.present) {
-          // Draw the circle itself.
-          nvgBeginPath(args.vg);
-          nvgCircle(args.vg, nvg_x(circle.x_center, bounding_box.x), nvg_y(circle.y_center, bounding_box.x),
-                  pixels_per_volt * circle.radius);
-          NVGcolor circle_color = venn_colors[index % VENN_COLOR_COUNT];
-          if (solo && current_circle != index) {
-            // Dim the muted circles.
-            circle_color = nvgTransRGBAf(circle_color, 0.3);
+        nvgCircle(args.vg, nvg_x(circle.x_center, bounding_box.x), nvg_y(circle.y_center, bounding_box.x),
+                pixels_per_volt * circle.radius);
+        NVGcolor circle_color = venn_colors[index % VENN_COLOR_COUNT];
+        if (solo && current_circle != index) {
+          // Dim the muted circles.
+          circle_color = nvgTransRGBAf(circle_color, 0.3);
+        }
+        nvgStrokeColor(args.vg, circle_color);
+        nvgStrokeWidth(args.vg, index == current_circle && currently_editing ? 2.0 : 1.0);
+        nvgStroke(args.vg);
+        
+        // Now draw the text in the center.
+        nvgFillColor(args.vg, venn_colors[index % VENN_COLOR_COUNT]);
+        nvgFontSize(args.vg, index == current_circle && currently_editing ? 15 : 13);
+        nvgFontFaceId(args.vg, font->handle);
+        // Place in the center.
+        std::string center_number = std::to_string(index + 1);
+        nvgTextAlign(args.vg, NVG_ALIGN_MIDDLE | NVG_ALIGN_CENTER);
+        nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
+                        nvg_y(circle.y_center, bounding_box.x),
+                        center_number.c_str(), NULL);
+        // If we can find some text to put in it, we can add a name.
+        std::string name(circle.name);
+        if (name.empty()) {
+          name = circle.math1;
+        } 
+        if (!name.empty()) {
+          nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
+          // Break name into lines by newlines.
+          std::vector<std::string> lines;
+          // Break this into words. Since I don't know the font,
+          // too much effort to predict length, and don't want to use a
+          // TextField.
+          // TODO: cache this computation by moving this elsewhere? This
+          // section only takes about 5 usec to run.
+          auto start = 0U;
+          auto end = name.find('\n');
+          while (end != std::string::npos) {
+            lines.push_back(name.substr(start, end - start));
+            start = end + 1;
+            end = name.find('\n', start);
           }
-          nvgStrokeColor(args.vg, circle_color);
-          nvgStrokeWidth(args.vg, index == current_circle && currently_editing ? 2.0 : 1.0);
-          nvgStroke(args.vg);
-          
-          // Now draw the text in the center.
-          nvgFillColor(args.vg, venn_colors[index % VENN_COLOR_COUNT]);
-          nvgFontSize(args.vg, index == current_circle && currently_editing ? 15 : 13);
-          nvgFontFaceId(args.vg, font->handle);
-          // Place in the center.
-          std::string center_number = std::to_string(index + 1);
-          nvgTextAlign(args.vg, NVG_ALIGN_MIDDLE | NVG_ALIGN_CENTER);
-          nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
-                          nvg_y(circle.y_center, bounding_box.x),
-                          center_number.c_str(), NULL);
-          // If we can find some text to put in it, we can add a name.
-          std::string name(circle.name);
-          if (name.empty()) {
-            name = circle.math1;
-          } 
-          if (!name.empty()) {
-            nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
-            // Break name into lines by newlines.
-            std::vector<std::string> lines;
-            // Break this into words. Since I don't know the font,
-            // too much effort to predict length, and don't want to use a
-            // TextField.
-            // TODO: cache this computation by moving this elsewhere? This
-            // section only takes about 5 usec to run.
-            auto start = 0U;
-            auto end = name.find('\n');
-            while (end != std::string::npos) {
-              lines.push_back(name.substr(start, end - start));
-              start = end + 1;
-              end = name.find('\n', start);
-            }
-            std::string last = name.substr(start);
-            lines.push_back(last);
-            for (int i = 0; i < (int) lines.size(); i++) {
-              nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
-                      nvg_y(circle.y_center, bounding_box.x) + 5.0 + i * 10.0, lines[i].c_str(), NULL);
-            }
+          std::string last = name.substr(start);
+          lines.push_back(last);
+          for (int i = 0; i < (int) lines.size(); i++) {
+            nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
+                    nvg_y(circle.y_center, bounding_box.x) + 5.0 + i * 10.0, lines[i].c_str(), NULL);
           }
         }
       }
-
-      // Draw the Point.
-      nvgBeginPath(args.vg);
-      nvgCircle(args.vg, nvg_x(point.x, bounding_box.x), nvg_y(point.y, bounding_box.x),
-              pixels_per_volt * 0.15);
-      nvgStrokeColor(args.vg, SCHEME_WHITE);
-      nvgStrokeWidth(args.vg, 1.0);
-      nvgStroke(args.vg);
-
-      OpaqueWidget::draw(args);
-      nvgResetScissor(args.vg);
     }
+
+    // Draw the Point.
+    nvgBeginPath(args.vg);
+    nvgCircle(args.vg, nvg_x(point.x, bounding_box.x), nvg_y(point.y, bounding_box.x),
+            pixels_per_volt * 0.15);
+    nvgStrokeColor(args.vg, SCHEME_WHITE);
+    nvgStrokeWidth(args.vg, 1.0);
+    nvgStroke(args.vg);
+
+    OpaqueWidget::draw(args);
+    nvgResetScissor(args.vg);
 	}
 };
 
@@ -1731,8 +1708,7 @@ struct CircleDisplay : OpaqueWidget {
 struct VennNumberDisplayWidget : TransparentWidget {
   Venn* module;
 
-  VennNumberDisplayWidget() {
-  }
+  VennNumberDisplayWidget() : module{nullptr}  {}
 
   void drawLayer(const DrawArgs& args, int layer) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
@@ -1769,7 +1745,7 @@ struct VennNumberDisplayWidget : TransparentWidget {
 struct VennKeyboardIcon : SvgWidget {
   Venn* module;
 
-  VennKeyboardIcon() {
+  VennKeyboardIcon() : module{nullptr} {
     box.size = mm2px(Vec(8.0, 6.0));
     setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/Venn-key-icon.svg")));
   }
@@ -1788,7 +1764,7 @@ struct VennWidget : ModuleWidget {
   VennMath1TextField* math1_field;
   WidgetUpdater widget_updater;
 
-  VennWidget(Venn* module) {
+  VennWidget(Venn* module) : display{nullptr}, name_field{nullptr}, math1_field{nullptr} {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Venn.svg"),
                          asset::plugin(pluginInstance, "res/Venn-dark.svg")));
@@ -1857,7 +1833,7 @@ struct VennWidget : ModuleWidget {
 
     // The Circles.
     display = createWidget<CircleDisplay>(
-      mm2px(Vec(31.0, 1.7)));
+      mm2px(Vec(31.0, 1.435)));
     display->box.size = mm2px(Vec(125.0, 125.0));
     display->module = module;
     display->widget_updater = &widget_updater;
