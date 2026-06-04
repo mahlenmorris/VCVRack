@@ -494,8 +494,9 @@ struct FermataWidget : ModuleWidget {
 
   FermataWidget(Fermata* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/Fermata.svg"),
-                         asset::plugin(pluginInstance, "res/Fermata-dark.svg")));
+    setPanel(createPanel<StochasticTelegraph::RestrictedThemedSvgPanel>(
+      asset::plugin(pluginInstance, "res/Fermata.svg"),
+      asset::plugin(pluginInstance, "res/Fermata-dark.svg")));
 
     // Set reasonable initial size of module. Will likely get updated below.
     box.size = Vec(RACK_GRID_WIDTH * Fermata::DEFAULT_WIDTH, RACK_GRID_HEIGHT);

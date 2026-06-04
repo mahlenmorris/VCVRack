@@ -1618,7 +1618,7 @@ struct MemoryWidget : ModuleWidget {
   }
 
   // To allow users to drop files directly onto the module.
-  virtual void onPathDrop(const PathDropEvent &	e) {
+  virtual void onPathDrop(const PathDropEvent &	e) override {
     if (!module) {
       return;
     }

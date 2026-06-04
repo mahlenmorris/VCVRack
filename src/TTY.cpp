@@ -568,8 +568,9 @@ struct TTYWidget : ModuleWidget {
 
   TTYWidget(TTY* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/TTY.svg"),
-                         asset::plugin(pluginInstance, "res/TTY-dark.svg")));
+    setPanel(createPanel<StochasticTelegraph::RestrictedThemedSvgPanel>(
+      asset::plugin(pluginInstance, "res/TTY.svg"),
+      asset::plugin(pluginInstance, "res/TTY-dark.svg")));
 
     // Set reasonable initial size of module. Will likely get updated below.
     box.size = Vec(RACK_GRID_WIDTH * TTY::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
