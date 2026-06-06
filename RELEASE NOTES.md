@@ -1,5 +1,10 @@
 # Release Notes
 
+### 2.0.27
+#### [TBD]
+* The disappearing frame for Fermata and TTY is now fixed, thanks to @stoermelder for providing the fix.
+
+
 ### 2.0.26
 #### May 28, 2026
 * You can now drag-and-drop .wav and .csv files onto a Memory/MemoryCV module, causing it to load the file.
