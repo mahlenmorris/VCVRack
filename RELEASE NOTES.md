@@ -3,6 +3,7 @@
 ### 2.0.27
 #### [TBD]
 * The disappearing frame for Fermata and TTY is now fixed, thanks to @stoermelder for providing the fix.
+* Fix for crash-on-startup bug in BASICally when STYLE is set to start on trigger and trigger happens before it's had time to compile.
 
 
 ### 2.0.26
