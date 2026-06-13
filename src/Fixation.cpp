@@ -229,8 +229,6 @@ struct Fixation : PositionedModule {
                   "1/32 (Thirty-Second Note)",
                   "t1/32 (Triplet Thirty-Second Note)",
                  });
-    // This has distinct values.
-    getParamQuantity(STYLE_KNOB_PARAM)->snapEnabled = true;
 
     configParam(COUNT_KNOB_PARAM, 1, 128, 1,
       "Number of repetitions per CLOCK (in STYLE 'CLOCK starts COUNT repeats...')");
