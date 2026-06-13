@@ -426,7 +426,7 @@ struct EmbellishWidget : ModuleWidget {
     // TODO: make this a tiny attenuator knob?
     addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(19.05, 50.8)),
        module, Embellish::INIT_POSITION_PARAM));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 34.396)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(19.05, 34.396)),
        module, Embellish::ABS_POSITION_INPUT));
 
     // Record button and trigger.
@@ -434,10 +434,10 @@ struct EmbellishWidget : ModuleWidget {
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(19.05, 87.408)),
                                              module, Embellish::RECORD_BUTTON_PARAM,
                                              Embellish::RECORD_BUTTON_LIGHT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.35, 87.408)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.35, 87.408)), module,
                                              Embellish::RECORD_GATE_INPUT));
 
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.7, 65.0)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(12.7, 65.0)),
                                                module, Embellish::NOW_POSITION_OUTPUT));
     // A timestamp is 10 wide.
     TimestampField<Embellish>* now_timestamp = createWidget<TimestampField<Embellish>>(mm2px(
@@ -445,14 +445,14 @@ struct EmbellishWidget : ModuleWidget {
     now_timestamp->setModule(module);
     addChild(now_timestamp);
 
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.35, 103.646)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(6.35, 103.646)),
                                                module, Embellish::LEFT_OUTPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.35, 113.965)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(6.35, 113.965)),
                                                module, Embellish::RIGHT_OUTPUT));
 
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 103.646)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(19.05, 103.646)), module,
                                              Embellish::LEFT_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 113.965)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(19.05, 113.965)), module,
                                              Embellish::RIGHT_INPUT));
 
     ConnectedLight* connect_light = createLightCentered<ConnectedLight>(

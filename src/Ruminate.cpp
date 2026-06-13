@@ -449,14 +449,14 @@ struct RuminateWidget : ModuleWidget {
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Ruminate.svg"),
                          asset::plugin(pluginInstance, "res/Ruminate-dark.svg")));
 
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 97.087)), module, Ruminate::SPEED_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.035, 97.087)), module, Ruminate::SPEED_INPUT));
     addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(19.05, 97.087)), module, Ruminate::SPEED_PARAM));
 
     addParam(createParamCentered<AdjustSlider>(mm2px(Vec(6.35, 43.0)),
        module, Ruminate::ADJUST_PARAM));
     addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(19.05, 50.8)),
        module, Ruminate::INIT_POSITION_PARAM));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 34.396)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(19.05, 34.396)),
        module, Ruminate::ABS_POSITION_INPUT));
 
     // Play button and trigger.
@@ -464,9 +464,9 @@ struct RuminateWidget : ModuleWidget {
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(19.05, 80.0)),
                                              module, Ruminate::PLAY_BUTTON_PARAM,
                                              Ruminate::PLAY_BUTTON_LIGHT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.035, 80.0)), module, Ruminate::PLAY_GATE_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.035, 80.0)), module, Ruminate::PLAY_GATE_INPUT));
 
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.7, 65.0)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(12.7, 65.0)),
                                                module, Ruminate::NOW_POSITION_OUTPUT));
     // A timestamp is 10 wide.
     TimestampField<Ruminate>* now_timestamp = createWidget<TimestampField<Ruminate>>(mm2px(
@@ -474,8 +474,8 @@ struct RuminateWidget : ModuleWidget {
     now_timestamp->setModule(module);
     addChild(now_timestamp);
 
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(6.035, 112.0)), module, Ruminate::LEFT_OUTPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(19.05, 112.0)), module, Ruminate::RIGHT_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(6.035, 112.0)), module, Ruminate::LEFT_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(19.05, 112.0)), module, Ruminate::RIGHT_OUTPUT));
 
     ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
       mm2px(Vec(12.7, 3.2)), module, Ruminate::CONNECTED_LIGHT);

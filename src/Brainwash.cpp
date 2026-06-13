@@ -368,14 +368,14 @@ struct BrainwashWidget : ModuleWidget {
 
     // CLOCK and clock counting.
     addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(6.35, 63.0)), module, Brainwash::CLOCK_COUNT_PARAM));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(19.05, 63.0)), module, Brainwash::CLOCK_TRIGGER_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(19.05, 63.0)), module, Brainwash::CLOCK_TRIGGER_INPUT));
 
     // ARM button and trigger.
     addParam(createLightParamCentered<VCVLightLatch<
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(19.05, 75.0)),
                                              module, Brainwash::ARM_BUTTON_PARAM,
                                              Brainwash::ARM_BUTTON_LIGHT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.35, 75.0)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.35, 75.0)), module,
                                              Brainwash::ARM_TRIGGER_INPUT));
 
     // Record button and trigger.
@@ -383,13 +383,13 @@ struct BrainwashWidget : ModuleWidget {
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(19.05, 90.0)),
                                              module, Brainwash::RECORD_BUTTON_PARAM,
                                              Brainwash::RECORD_BUTTON_LIGHT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(6.35, 90.0)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.35, 90.0)), module,
                                              Brainwash::RECORD_GATE_INPUT));
 
     // Signal Inputs.                                         
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(14.638, 107.525)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(14.638, 107.525)), module,
                                              Brainwash::LEFT_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(14.638, 117.844)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(14.638, 117.844)), module,
                                              Brainwash::RIGHT_INPUT));
 
     // Our light is not colored, since we don't have a position in Depict.

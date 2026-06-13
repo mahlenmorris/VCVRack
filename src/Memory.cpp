@@ -1569,12 +1569,12 @@ struct MemoryWidget : ModuleWidget {
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(14.886, 14.817)),
                                              module, Memory::WIPE_BUTTON_PARAM,
                                              Memory::WIPE_BUTTON_LIGHT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.378, 14.817)), module,
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(5.378, 14.817)), module,
                                              Memory::WIPE_TRIGGER_INPUT));
 
     addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(5.44, 32.837)),
              module, Memory::SECONDS_PARAM));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(14.88, 32.837)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(14.88, 32.837)),
              module, Memory::LENGTH_OUTPUT));
     // A timestamp is 10 wide.
     LengthField* now_timestamp = createWidget<LengthField>(mm2px(
@@ -1588,16 +1588,16 @@ struct MemoryWidget : ModuleWidget {
                                              module, Memory::RESET_BUTTON_PARAM,
                                              Memory::RESET_BUTTON_LIGHT));
 
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.378, 79.325)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(5.378, 79.325)),
              module, Memory::TIPSY_LOAD_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.378, 95.795)),
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(5.378, 95.795)),
              module, Memory::TIPSY_SAVE_INPUT));
 
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(14.886, 79.325)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(14.886, 79.325)),
              module, Memory::LOAD_TRIGGER_OUTPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(14.886, 95.795)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(14.886, 95.795)),
              module, Memory::SAVE_TRIGGER_OUTPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(12.806, 112.537)),
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(12.806, 112.537)),
              module, Memory::TIPSY_LOGGING_OUTPUT));
 
     // FILE I/O light.
