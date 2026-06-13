@@ -696,7 +696,7 @@ struct Basically : Module {
     if (style == ALWAYS_STYLE) {
       if (compiles) running = true;
     } else if (style == TRIGGER_LOOP_STYLE || style == TRIGGER_NO_LOOP_STYLE) {
-      if (!running) {
+      if (compiles && !running) {
         bool run_was_low = !runTrigger.isHigh();
         runTrigger.process(rescale(
             inputs[RUN_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
