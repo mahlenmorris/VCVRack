@@ -669,37 +669,38 @@ struct Venn : Module {
     }
     update_circle_count(args);
     // Determine where "point" is.
+    Vec new_point;  // Don't make point jump around while computing it.
     // Update X and Y inputs.
     if (inputs[X_POSITION_INPUT].isConnected()) {
-      point.x = inputs[X_POSITION_INPUT].getVoltage();
+      new_point.x = inputs[X_POSITION_INPUT].getVoltage();
     } else {
       // We do these separately, so human can control one axis but not the other, if desired.
-      point.x = human_point.x + (offset_point_x ? 5.0f : 0.0f);
+      new_point.x = human_point.x + (offset_point_x ? 5.0f : 0.0f);
     }
     if (inputs[Y_POSITION_INPUT].isConnected()) {
-      point.y = inputs[Y_POSITION_INPUT].getVoltage();
+      new_point.y = inputs[Y_POSITION_INPUT].getVoltage();
     } else {
-      point.y = human_point.y + (offset_point_y ? 5.0f : 0.0f);
+      new_point.y = human_point.y + (offset_point_y ? 5.0f : 0.0f);
     }
 
     if (params[X_POSITION_ATTN_PARAM].getValue() != 0.0f) {
-      point.x += params[X_POSITION_ATTN_PARAM].getValue() *
+      new_point.x += params[X_POSITION_ATTN_PARAM].getValue() *
         inputs[X_POSITION_WIGGLE_INPUT].getVoltage();
     }
     if (params[Y_POSITION_ATTN_PARAM].getValue() != 0.0f) {
-      point.y += params[Y_POSITION_ATTN_PARAM].getValue() *
+      new_point.y += params[Y_POSITION_ATTN_PARAM].getValue() *
         inputs[Y_POSITION_WIGGLE_INPUT].getVoltage();
     }
 
     // Keep within walls.
     if (offset_point_x) {
-      point.x = point.x - 5.0f;
+      new_point.x = new_point.x - 5.0f;
     }
     if (offset_point_y) {
-      point.y = point.y - 5.0f;
+      new_point.y = new_point.y - 5.0f;
     }
-    point.x = fmax(-5, fmin(5, point.x));
-    point.y = fmax(-5, fmin(5, point.y));
+    point.x = fmax(-5, fmin(5, new_point.x));
+    point.y = fmax(-5, fmin(5, new_point.y));
 
     // We have now determined the postion of "point".
     outputs[X_POSITION_OUTPUT].setVoltage(point.x + (offset_point_x ? 5.0f : 0.0f));
