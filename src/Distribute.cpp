@@ -2,6 +2,7 @@
 
 #include "plugin.hpp"
 
+#include "controlled_random_distribution.h"
 #include "distribution_graphs.h"
 
 struct Distribute : Module {
@@ -13,10 +14,12 @@ struct Distribute : Module {
 		PARAMS_LEN
 	};
 	enum InputId {
+		TRIG_INPUT,
 		INPUTS_LEN
 	};
 	enum OutputId {
-		OUTPUTS_LEN
+		OUT_OUTPUT,
+    OUTPUTS_LEN
 	};
 	enum LightId {
 		LIGHTS_LEN
@@ -27,7 +30,8 @@ struct Distribute : Module {
 		configParam(UPPER_LIMIT_PARAM, -10.f, 10.f, 10.f, "Upper limit for randomization");
 		configParam(DISTRIBUTION_PARAM, 0.f, 4.f, 1.f, "Affects how random outputs for the squares are chosen.");
 		configParam(LOWER_LIMIT_PARAM, -10.f, 10.f, -10.f, "Lower limit for randomization");
-
+		configInput(TRIG_INPUT, "Triggeres here will cause a new random number to be sent to the output.");
+		configOutput(OUT_OUTPUT, "Emits random voltages according to the distribution and limits.");
   }
   
   ~Distribute() {
@@ -48,8 +52,28 @@ struct Distribute : Module {
   void processBypass(const ProcessArgs& args) override {
   }
 
-  void process(const ProcessArgs& args) override {
+  // For detecting input triggers.
+  dsp::SchmittTrigger inputTrigger;
 
+  void process(const ProcessArgs& args) override {
+    // If we get a trigger, output a new number.    // Determine if we have a DRIFT event from button or input.
+    bool trig_was_low = !inputTrigger.isHigh();
+    inputTrigger.process(rescale(
+        inputs[TRIG_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+    bool trig_from_input = trig_was_low && inputTrigger.isHigh();
+
+    if (trig_from_input) {
+      float distribution = params[DISTRIBUTION_PARAM].getValue();
+      float lower_limit = params[LOWER_LIMIT_PARAM].getValue();
+      float upper_limit = params[UPPER_LIMIT_PARAM].getValue();
+      if (lower_limit > upper_limit) {
+        // Swap the limits if they're in the wrong order.
+        std::swap(lower_limit, upper_limit);
+      }
+      RandomDistribution dist(lower_limit, upper_limit, distribution);
+
+      outputs[OUT_OUTPUT].setVoltage(dist.next());
+    }
   }
 };
 
@@ -181,6 +205,10 @@ struct DistributeWidget : ModuleWidget {
     addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(23.967, 20.704)), module, Distribute::UPPER_LIMIT_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(23.967, 32.643)), module, Distribute::LOWER_LIMIT_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(23.967, 43.332)), module, Distribute::DISTRIBUTION_PARAM));
+
+		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(7.191, 120.053)), module, Distribute::TRIG_INPUT));
+
+		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(22.256, 119.887)), module, Distribute::OUT_OUTPUT));
 
     // 1st limit picker.
     DistributeNumberDisplayWidget* number_1 = createWidget<DistributeNumberDisplayWidget>(mm2px(Vec(3.0, 17.0)));
