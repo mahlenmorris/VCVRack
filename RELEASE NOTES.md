@@ -4,7 +4,7 @@
 #### [TBD]
 * The disappearing frame for Fermata and TTY is now fixed, thanks to @stoermelder for providing the fix.
 * Fix for crash-on-startup bug in BASICally when STYLE is set to start on trigger and trigger happens before it's had time to compile.
-
+* Used the themed ports consistently.
 
 ### 2.0.26
 #### May 28, 2026
