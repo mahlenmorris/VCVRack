@@ -10,6 +10,7 @@ extern Plugin* pluginInstance;
 extern Model* modelBasically;
 extern Model* modelBrainwash;
 extern Model* modelDepict;
+extern Model* modelDistribute;
 extern Model* modelDrifter;
 extern Model* modelEmbellish;
 extern Model* modelFermata;
