@@ -32,6 +32,23 @@ float RandomDistribution::next() const {
     result_0_to_1 = v3 + (v4 - v3) * (dist_clamped - 3.0f);
   }
 
+  if (bias_c != 1.0f) {
+    result_0_to_1 = result_0_to_1 / (result_0_to_1 + (1.0f - result_0_to_1) * bias_c);
+  }
+
+  // Fold the unwanted half into the desired half (Mirroring)
+  if (pdf_section == LEFT) {
+    if (result_0_to_1 > 0.5f) {
+      result_0_to_1 = (1.0f - result_0_to_1);
+    }
+    result_0_to_1 *= 2.0f; // Scale back to [0, 1].
+  } else if (pdf_section == RIGHT) {
+    if (result_0_to_1 < 0.5f) {
+      result_0_to_1 = (1.0f - result_0_to_1);
+    }
+    result_0_to_1 = (result_0_to_1 - 0.5f) * 2.0f; // Shift left and scale to [0, 1].
+  }
+
   // Map the [0, 1] result to the requested bounds
   return lower_bound + result_0_to_1 * (upper_bound - lower_bound);
 }

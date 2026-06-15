@@ -2,12 +2,16 @@
 
 class RandomDistribution {
  public:
+  enum PDFSection { BOTH, LEFT, RIGHT };
+
   ~RandomDistribution() {}
   // Caller is responsible for ensuring that lower_bound <= upper_bound.
-  RandomDistribution(float lower_bound, float upper_bound, float distribution) {
+  RandomDistribution(float lower_bound, float upper_bound, float distribution, float bias = 0.0f, PDFSection section = BOTH) {
     this->lower_bound = lower_bound;
     this->upper_bound = upper_bound;
     this->distribution = distribution;
+    this->bias_c = (bias != 0.0f) ? std::pow(4.0f, -bias) : 1.0f;
+    this->pdf_section = section;
   }
   float next() const;
 
@@ -31,6 +35,10 @@ class RandomDistribution {
   // and using it to pick between the output of the two distributions. 
   float distribution;
 
+  float bias_c;
+
+  PDFSection pdf_section;
+
   // Constants for the U-shaped distribution. The k parameter controls how
   // extreme the distribution is, with higher values being more extreme.
   // The divisor and exponent are derived from k.
@@ -40,8 +48,6 @@ class RandomDistribution {
 
 
 
-// TODO: someday, consider adding a bias parameter, which would bias the
-// distribution towards one end or the other.
 // TODO: if this were to become the basis of a separate module, we
 // might want to add a seed-based implementation of this class,
 // so that the same sequence of random numbers could be generated each time.

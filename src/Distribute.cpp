@@ -11,6 +11,8 @@ struct Distribute : Module {
 		UPPER_LIMIT_PARAM,
 		DISTRIBUTION_PARAM,
 		LOWER_LIMIT_PARAM,
+		BIAS_PARAM,
+    SECTION_PARAM,
 		PARAMS_LEN
 	};
 	enum InputId {
@@ -30,6 +32,10 @@ struct Distribute : Module {
 		configParam(UPPER_LIMIT_PARAM, -10.f, 10.f, 10.f, "Upper limit for randomization");
 		configParam(DISTRIBUTION_PARAM, 0.f, 4.f, 1.f, "Affects how random outputs for the squares are chosen.");
 		configParam(LOWER_LIMIT_PARAM, -10.f, 10.f, -10.f, "Lower limit for randomization");
+		configParam(BIAS_PARAM, -1.0f, 1.0f, 0.0f, "Biases the random outputs towards the lower or upper limit.");
+    // A 3-position toggle switch (values: 0, 1, 2)
+    configSwitch(SECTION_PARAM, 0.0f, 2.0f, 1.0f, "PDF Section", {"Left", "Both", "Right"});
+
 		configInput(TRIG_INPUT, "Triggeres here will cause a new random number to be sent to the output.");
 		configOutput(OUT_OUTPUT, "Emits random voltages according to the distribution and limits.");
   }
@@ -70,23 +76,37 @@ struct Distribute : Module {
         // Swap the limits if they're in the wrong order.
         std::swap(lower_limit, upper_limit);
       }
-      RandomDistribution dist(lower_limit, upper_limit, distribution);
+      float bias = params[BIAS_PARAM].getValue();
+      RandomDistribution::PDFSection pdf_section = GetSection();
+      RandomDistribution dist(lower_limit, upper_limit, distribution,
+          pdf_section == RandomDistribution::BOTH ? bias: 0.0f, pdf_section);
 
       outputs[OUT_OUTPUT].setVoltage(dist.next());
     }
   }
+
+RandomDistribution::PDFSection GetSection() { 
+  int section = params[SECTION_PARAM].getValue();
+  switch (section) {
+    case 0:
+      return RandomDistribution::LEFT;
+    case 1:
+      return RandomDistribution::BOTH;
+    case 2:
+      return RandomDistribution::RIGHT;
+    default:
+      // This should never happen, but just in case, we'll default to BOTH.
+      return RandomDistribution::BOTH;
+  }
+}
+
 };
-
-// TODO: I will need to make widgets to display the limits more visibly
-// (something like the current square number widget).
-// and the distribution graphic.
-// May interpolate the graphic when between the two values? Figure it out when I'm doing it.
-
 
 // Shows the distribution currently dialed in.
 // Surround this by a FramebufferWidget. Or not? Measurement indicates this
 // costs about 2-4 micros per frame, or 2-4 millis every 30 seconds.
 // Not worth the extra complication of the FramebufferWidget, I think.
+// TODO: remeasure this draw time, after adding bias and section.
 struct DistributionWidget : Widget {
   Distribute* module;
 
@@ -95,27 +115,49 @@ struct DistributionWidget : Widget {
   void drawLayer(const DrawArgs& args, int layer) override {
     if (layer == 1) {
       float distribution;
+      float bias;
+      RandomDistribution::PDFSection pdf_section;
       if (module) {
         distribution = module->params[Distribute::DISTRIBUTION_PARAM].getValue();
+        pdf_section = module->GetSection();
+        // bias is only useful when we're at BOTH.
+        bias = pdf_section == RandomDistribution::BOTH ? module->params[Distribute::BIAS_PARAM].getValue() : 0.0f;
       } else {
         // A Gaussian distribution, surely the canonical probability
         // distribution in people's minds.
         distribution = 1.0;
+        bias = 0.0f;
+        pdf_section = RandomDistribution::BOTH;
       }
        
       Rect r = box.zeroPos();
       Vec bounding_box = r.getBottomRight();
 
+      // Displaying sections other than BOTH changes the range of bins we look at.
+      int first_bin = 0;
+      int last_bin = NUM_DISTRIBUTION_BINS - 1;
+      if (pdf_section == RandomDistribution::LEFT) {
+        last_bin = floor(NUM_DISTRIBUTION_BINS / 2);  // i.e., 30. We use 31 bins.
+      } else if (pdf_section == RandomDistribution::RIGHT) {
+        first_bin = floor(NUM_DISTRIBUTION_BINS / 2); // i.e., 30. We use 31 bins.
+      }
+
       // Want the left-side line to not be slanted, so this makes the last
       // point be directly above bounding_box.x.
-      double x_per_slice = bounding_box.x / (NUM_DISTRIBUTION_BINS - 1);
+      double x_per_slice = bounding_box.x / (last_bin - first_bin);
       // Find specific graph to use.
       float index_exact = distribution * 10.0f;
       int index_lower = static_cast<int>(std::floor(index_exact));
       int index_upper = std::min(NUM_DISTRIBUTION_GRAPHS - 1, index_lower + 1);
       float fraction = index_exact - index_lower;
 
-      // Make half-white.
+      // Find specific bias graph to use.
+      float bias_index_exact = (bias + 1.0f) * 10.0f;
+      int bias_index_lower = static_cast<int>(std::floor(bias_index_exact));
+      int bias_index_upper = std::min(NUM_BIAS_GRAPHS - 1, bias_index_lower + 1);
+      float bias_fraction = bias_index_exact - bias_index_lower;
+
+      // Make pretty bright white.
       // TODO: consider other possibilities...
       nvgFillColor(args.vg, nvgRGBA(250, 250, 250, 255));
 
@@ -130,12 +172,18 @@ struct DistributionWidget : Widget {
       // * Join back to the bottom left corner.
       nvgBeginPath(args.vg);
       nvgMoveTo(args.vg, 0, bounding_box.y);
-      for (int i = 0; i < NUM_DISTRIBUTION_BINS; i++) {
-        float h_lower = DISTRIBUTION_GRAPHS[index_lower][i];
-        float h_upper = DISTRIBUTION_GRAPHS[index_upper][i];
-        float height = h_lower + fraction * (h_upper - h_lower);
+      for (int i = first_bin; i <= last_bin; i++) {
+        float h_00 = DISTRIBUTION_GRAPHS[index_lower][bias_index_lower][i];
+        float h_10 = DISTRIBUTION_GRAPHS[index_upper][bias_index_lower][i];
+        float h_01 = DISTRIBUTION_GRAPHS[index_lower][bias_index_upper][i];
+        float h_11 = DISTRIBUTION_GRAPHS[index_upper][bias_index_upper][i];
 
-        float x = i * x_per_slice;
+        // Bilinear interpolation
+        float h_0 = h_00 + fraction * (h_10 - h_00);
+        float h_1 = h_01 + fraction * (h_11 - h_01);
+        float height = h_0 + bias_fraction * (h_1 - h_0);
+
+        float x = (i - first_bin) * x_per_slice;
         float y = bounding_box.y * (1 - height);
         nvgLineTo(args.vg, x, y);
       }
@@ -148,8 +196,6 @@ struct DistributionWidget : Widget {
     }
 	}
 };
-
-
 
 // Just the tiny window showing the number more obviously,
 // as we have room and it's good to make it very obvious.
@@ -205,6 +251,8 @@ struct DistributeWidget : ModuleWidget {
     addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(23.967, 20.704)), module, Distribute::UPPER_LIMIT_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(23.967, 32.643)), module, Distribute::LOWER_LIMIT_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(23.967, 43.332)), module, Distribute::DISTRIBUTION_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(23.967, 60.0)), module, Distribute::BIAS_PARAM));
+    addParam(createParamCentered<CKSSThreeHorizontal>(mm2px(Vec(7.191, 60.0)), module, Distribute::SECTION_PARAM));
 
 		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(7.191, 120.053)), module, Distribute::TRIG_INPUT));
 
