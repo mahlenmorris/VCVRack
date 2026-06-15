@@ -32,11 +32,11 @@ struct Distribute : Module {
 		configParam(UPPER_LIMIT_PARAM, -10.f, 10.f, 10.f, "Upper limit for randomization");
 		configParam(DISTRIBUTION_PARAM, 0.f, 4.f, 1.f, "Affects how random outputs for the squares are chosen.");
 		configParam(LOWER_LIMIT_PARAM, -10.f, 10.f, -10.f, "Lower limit for randomization");
-		configParam(BIAS_PARAM, -1.0f, 1.0f, 0.0f, "Biases the random outputs towards the lower or upper limit.");
+		configParam(BIAS_PARAM, -1.0f, 1.0f, 0.0f, "(Both only) Biases the random outputs towards the lower or upper limit.");
     // A 3-position toggle switch (values: 0, 1, 2)
-    configSwitch(SECTION_PARAM, 0.0f, 2.0f, 1.0f, "PDF Section", {"Left", "Both", "Right"});
+    configSwitch(SECTION_PARAM, 0.0f, 2.0f, 1.0f, "Section", {"Left", "Both", "Right"});
 
-		configInput(TRIG_INPUT, "Triggeres here will cause a new random number to be sent to the output.");
+		configInput(TRIG_INPUT, "Triggers here will cause a new random number to be sent to the output.");
 		configOutput(OUT_OUTPUT, "Emits random voltages according to the distribution and limits.");
   }
   
@@ -250,9 +250,9 @@ struct DistributeWidget : ModuleWidget {
 
     addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(23.967, 20.704)), module, Distribute::UPPER_LIMIT_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(23.967, 32.643)), module, Distribute::LOWER_LIMIT_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(23.967, 43.332)), module, Distribute::DISTRIBUTION_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(23.967, 60.0)), module, Distribute::BIAS_PARAM));
-    addParam(createParamCentered<CKSSThreeHorizontal>(mm2px(Vec(7.191, 60.0)), module, Distribute::SECTION_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(5.513, 58.678)), module, Distribute::DISTRIBUTION_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(24.967, 58.678)), module, Distribute::BIAS_PARAM));
+    addParam(createParamCentered<CKSSThreeHorizontal>(mm2px(Vec(15.24, 58.678)), module, Distribute::SECTION_PARAM));
 
 		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(7.191, 120.053)), module, Distribute::TRIG_INPUT));
 
@@ -275,9 +275,9 @@ struct DistributeWidget : ModuleWidget {
     addChild(number_2);
     
     // PDF display.
-    DistributionWidget* dist_graph = createWidget<DistributionWidget>(mm2px(Vec(2.878, 39.237)));
+    DistributionWidget* dist_graph = createWidget<DistributionWidget>(mm2px(Vec(3.0, 39.3)));
     dist_graph->module = module;
-    dist_graph->box.size = mm2px(Vec(15.0, 8.0));
+    dist_graph->box.size = mm2px(Vec(24.0, 13.0));
     addChild(dist_graph);
   }
 };
