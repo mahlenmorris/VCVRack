@@ -250,9 +250,9 @@ struct DistributeWidget : ModuleWidget {
 
     addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(23.967, 20.704)), module, Distribute::UPPER_LIMIT_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(23.967, 32.643)), module, Distribute::LOWER_LIMIT_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(5.513, 58.678)), module, Distribute::DISTRIBUTION_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(24.967, 58.678)), module, Distribute::BIAS_PARAM));
-    addParam(createParamCentered<CKSSThreeHorizontal>(mm2px(Vec(15.24, 58.678)), module, Distribute::SECTION_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(5.513, 60.678)), module, Distribute::DISTRIBUTION_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(24.967, 60.678)), module, Distribute::BIAS_PARAM));
+    addParam(createParamCentered<CKSSThreeHorizontal>(mm2px(Vec(15.24, 56.678)), module, Distribute::SECTION_PARAM));
 
 		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(7.191, 120.053)), module, Distribute::TRIG_INPUT));
 
