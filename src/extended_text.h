@@ -16,7 +16,8 @@ features like being longer than the screen and support up/down keys.
 // and Y offset.
 // Each entry is:
 //   [line_count, font size, Y_offset]
-extern int LARGER_TEXT_INFO[13][3];
+constexpr int LARGER_TEXT_COUNT = 14;
+extern int LARGER_TEXT_INFO[LARGER_TEXT_COUNT][3];
 
 struct TextLine {
   int line_number;
