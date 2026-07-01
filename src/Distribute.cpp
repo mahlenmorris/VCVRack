@@ -182,10 +182,10 @@ struct DistributionWidget : Widget {
       nvgBeginPath(args.vg);
       nvgMoveTo(args.vg, 0, bounding_box.y);
       for (int i = first_bin; i <= last_bin; i++) {
-        float h_00 = DISTRIBUTION_GRAPHS[index_lower][bias_index_lower][i];
-        float h_10 = DISTRIBUTION_GRAPHS[index_upper][bias_index_lower][i];
-        float h_01 = DISTRIBUTION_GRAPHS[index_lower][bias_index_upper][i];
-        float h_11 = DISTRIBUTION_GRAPHS[index_upper][bias_index_upper][i];
+        float h_00 = DISTRIBUTION_GRAPHS[index_lower][bias_index_lower][i] / 255.0f;
+        float h_10 = DISTRIBUTION_GRAPHS[index_upper][bias_index_lower][i] / 255.0f;
+        float h_01 = DISTRIBUTION_GRAPHS[index_lower][bias_index_upper][i] / 255.0f;
+        float h_11 = DISTRIBUTION_GRAPHS[index_upper][bias_index_upper][i] / 255.0f;
 
         // Bilinear interpolation
         float h_0 = h_00 + fraction * (h_10 - h_00);

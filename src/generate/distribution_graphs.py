@@ -93,24 +93,25 @@ def main():
     cpp_header_path = os.path.join(cpp_dir, 'distribution_graphs.h')
     with open(cpp_header_path, 'w') as f:
         f.write('#pragma once\n\n')
+        f.write('#include <cstdint>\n\n')
         f.write(f'constexpr int NUM_DISTRIBUTION_GRAPHS = {len(all_counts)};\n')
         f.write(f'constexpr int NUM_BIAS_GRAPHS = {len(all_counts[0])};\n')
         f.write(f'constexpr int NUM_DISTRIBUTION_BINS = {num_bins};\n\n')
-        f.write('extern const float DISTRIBUTION_GRAPHS[NUM_DISTRIBUTION_GRAPHS][NUM_BIAS_GRAPHS][NUM_DISTRIBUTION_BINS];\n')
+        f.write('extern const uint8_t DISTRIBUTION_GRAPHS[NUM_DISTRIBUTION_GRAPHS][NUM_BIAS_GRAPHS][NUM_DISTRIBUTION_BINS];\n')
         
     print(f"Saved {cpp_header_path}")
 
     cpp_source_path = os.path.join(cpp_dir, 'distribution_graphs.cpp')
     with open(cpp_source_path, 'w') as f:
         f.write('#include "distribution_graphs.h"\n\n')
-        f.write('const float DISTRIBUTION_GRAPHS[NUM_DISTRIBUTION_GRAPHS][NUM_BIAS_GRAPHS][NUM_DISTRIBUTION_BINS] = {\n')
+        f.write('const uint8_t DISTRIBUTION_GRAPHS[NUM_DISTRIBUTION_GRAPHS][NUM_BIAS_GRAPHS][NUM_DISTRIBUTION_BINS] = {\n')
         for i, dist_counts in enumerate(all_counts):
             f.write(f'  // Distribution {i / 10.0:.1f}\n')
             f.write('  {\n')
             for j, counts in enumerate(dist_counts):
                 f.write(f'    // Bias {(j - 10) / 10.0:.1f}\n')
                 f.write('    {\n      ')
-                formatted_counts = [f"{c:.5f}f" for c in counts]
+                formatted_counts = [f"{int(round(c * 255.0))}" for c in counts]
                 for k in range(0, len(formatted_counts), 10):
                     f.write(', '.join(formatted_counts[k:k+10]))
                     if k + 10 < len(formatted_counts):
