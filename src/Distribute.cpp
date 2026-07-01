@@ -13,6 +13,7 @@ struct Distribute : Module {
 		LOWER_LIMIT_PARAM,
 		BIAS_PARAM,
     SECTION_PARAM,
+		CONTINUOUS_PARAM,
 		PARAMS_LEN
 	};
 	enum InputId {
@@ -24,6 +25,7 @@ struct Distribute : Module {
     OUTPUTS_LEN
 	};
 	enum LightId {
+    CONTINUOUS_LIGHT,
 		LIGHTS_LEN
 	};
 
@@ -35,8 +37,11 @@ struct Distribute : Module {
 		configParam(BIAS_PARAM, -1.0f, 1.0f, 0.0f, "(Both only) Biases the random outputs towards the lower or upper limit.");
     // A 3-position toggle switch (values: 0, 1, 2)
     configSwitch(SECTION_PARAM, 0.0f, 2.0f, 1.0f, "Section", {"Left", "Both", "Right"});
+    // A latched button.
+    configSwitch(CONTINUOUS_PARAM, 0, 1, 0, "Ignore trigger and continuously outputs random numbers.",
+                 {"Off", "On"});
 
-		configInput(TRIG_INPUT, "Triggers here will cause a new random number to be sent to the output.");
+ 		configInput(TRIG_INPUT, "Triggers here will cause a new random number to be sent to the output.");
 		configOutput(OUT_OUTPUT, "Emits random voltages according to the distribution and limits.");
   }
   
@@ -67,8 +72,9 @@ struct Distribute : Module {
     inputTrigger.process(rescale(
         inputs[TRIG_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
     bool trig_from_input = trig_was_low && inputTrigger.isHigh();
+    bool continuous = params[CONTINUOUS_PARAM].getValue() > 0.5f;
 
-    if (trig_from_input) {
+    if (trig_from_input || continuous) {
       float distribution = params[DISTRIBUTION_PARAM].getValue();
       float lower_limit = params[LOWER_LIMIT_PARAM].getValue();
       float upper_limit = params[UPPER_LIMIT_PARAM].getValue();
@@ -83,6 +89,9 @@ struct Distribute : Module {
 
       outputs[OUT_OUTPUT].setVoltage(dist.next());
     }
+
+    // Lights.
+    lights[CONTINUOUS_LIGHT].setBrightness(continuous ? 1.f : 0.f);
   }
 
 RandomDistribution::PDFSection GetSection() { 
@@ -253,10 +262,14 @@ struct DistributeWidget : ModuleWidget {
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(5.513, 60.678)), module, Distribute::DISTRIBUTION_PARAM));
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(24.967, 60.678)), module, Distribute::BIAS_PARAM));
     addParam(createParamCentered<CKSSThreeHorizontal>(mm2px(Vec(15.24, 56.678)), module, Distribute::SECTION_PARAM));
+    addParam(createLightParamCentered<VCVLightLatch<
+             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(7.191, 104.0)),
+                                             module, Distribute::CONTINUOUS_PARAM,
+                                             Distribute::CONTINUOUS_LIGHT));
 
-		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(7.191, 120.053)), module, Distribute::TRIG_INPUT));
+		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(7.191, 118.0)), module, Distribute::TRIG_INPUT));
 
-		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(22.256, 119.887)), module, Distribute::OUT_OUTPUT));
+		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(22.256, 111.0)), module, Distribute::OUT_OUTPUT));
 
     // 1st limit picker.
     DistributeNumberDisplayWidget* number_1 = createWidget<DistributeNumberDisplayWidget>(mm2px(Vec(3.0, 17.0)));
