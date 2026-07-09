@@ -2,7 +2,7 @@
 
 ### 2.0.27
 #### [TBD]
-* Added new random numbere generator, Distribute.
+* Added new random number generator, Distribute.
 * The disappearing frame for Fermata and TTY is now fixed, thanks to @stoermelder for providing the fix.
 * Fix for crash-on-startup bug in BASICally when STYLE is set to start on trigger and trigger happens before it's had time to compile.
 * Used the themed ports consistently.
