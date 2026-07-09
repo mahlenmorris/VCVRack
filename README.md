@@ -1003,6 +1003,13 @@ swap the limits in a sensical way.
 Shapes the probability density function (PDF) curve of the random values. The curve is visually represented on the little display, allowing you to change the range and distribution of the random values in a number of useful ways.
 
 ![DIST Knob GIF](images/DIST%20Knob%20Small.gif)
+
+Example DIST settings when the switch is set to "Both":
+* 0 -> A single value that is the average of the two limits.
+* 1 -> A bell curve or Gaussian distribution, favoring values in the middle.
+* 2 -> A uniform distribution, equally likely to pick any value between the limits.
+* 3 -> An inverted Gaussian, picking nothing in the middle.
+* 4 -> Only picks the two limit values.
 #### BIAS Knob
 Only applied when the switch is set to "Both". This allows the PDF curve to be "biased" to higher or lower values.
 
