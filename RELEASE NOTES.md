@@ -2,7 +2,7 @@
 
 ### 2.0.27
 #### [TBD]
-* Added new random number generator, Distribute.
+* I wouldn't have thought there was anything new to add to random number generation, but then I stumbled upon this idea. This release adds a new random number generator, [Distribute](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#distribute). It emits a wide variety of tunable distributions for the values generated, including non-symmetric ones.  
 * The disappearing frame for Fermata and TTY is now fixed, thanks to @stoermelder for providing the fix.
 * Fix for crash-on-startup bug in BASICally when STYLE is set to start on trigger and trigger happens before it's had time to compile.
 * Used the themed ports consistently.
