@@ -1001,10 +1001,13 @@ swap the limits in a sensical way.
 * Right: Use only the right side of the distribution curve. Note that BIAS has no effect when Right is chosen.
 #### DIST Knob
 Shapes the probability density function (PDF) curve of the random values. The curve is visually represented on the little display, allowing you to bias the random results in a number of useful ways.
-![Distribute Dist Knob GIF](images/DIST Knob Small.gif)
+
+![DIST Knob GIF](images/DIST%20Knob%20Small.gif)
 #### BIAS Knob
 Only applied when the switch is set to "Both". This allows the PDF curve to be "biased" to higher or lower values.
-[TODO: show GIF of the probability distribution changing]
+
+![BIAS Knob GIF](images/BIAS%20Knob%20Small.gif)
+
 #### CONT Button
 If set (light is lit), then Distribute will continuously generate new random values.
 #### TRIG Input
