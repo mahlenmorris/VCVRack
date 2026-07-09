@@ -1000,7 +1000,7 @@ swap the limits in a sensical way.
 * Both: Use the full width of the distribution curve. BIAS can further affect the shape of the value distribution.
 * Right: Use only the right side of the distribution curve. Note that BIAS has no effect when Right is chosen.
 #### DIST Knob
-Shapes the probability density function (PDF) curve of the random values. The curve is visually represented on the little display, allowing you to bias the random results in a number of useful ways.
+Shapes the probability density function (PDF) curve of the random values. The curve is visually represented on the little display, allowing you to change the range and distribution of the random values in a number of useful ways.
 
 ![DIST Knob GIF](images/DIST%20Knob%20Small.gif)
 #### BIAS Knob
