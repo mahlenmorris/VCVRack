@@ -981,6 +981,8 @@ VCV Rack version 1. But you can write code in Lua or Javascript (in an external 
 # Distribute
 Generates random values with flexible output ranges and unusually tunable probability distributions.
 
+![Distribute](images/DistributeHiLo.png)
+
 ### Uses
 * Create random CV values within a desired range.
 * Bias the output of random values in a variety of ways. For example, if you wanted a V/Oct source that usually stayed 
