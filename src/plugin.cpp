@@ -9,6 +9,7 @@ void init(Plugin* p) {
   p->addModel(modelBasically);
   p->addModel(modelBrainwash);
   p->addModel(modelDepict);
+  p->addModel(modelDistribute);
   p->addModel(modelDrifter);
   p->addModel(modelEmbellish);
   p->addModel(modelFermata);

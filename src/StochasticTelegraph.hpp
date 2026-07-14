@@ -144,4 +144,61 @@ struct STResizeHandle : OpaqueWidget {
   }
 };
 
+
+// This struct written by @stoermelder to help me fix TTY and Fermata's zoomed-in bug.
+// https://github.com/mahlenmorris/VCVRack/issues/133
+// ThemedSvgPanel variant that keeps its internal FramebufferWidget sized to
+// the actually-visible portion of the panel (the ModuleWidget's box) instead
+// of the full SVG. At high zoom the full-SVG size in pixels can exceed the
+// GPU's max texture size, causing the framebuffer allocation to fail and the
+// panel to disappear. Bounding it to the visible area fixes that.
+//
+// We also avoid re-rendering the framebuffer on every frame: the cache is
+// only invalidated when the panel width or the rack zoom changes
+// meaningfully, so a panning motion reuses the cached framebuffer.
+struct RestrictedThemedSvgPanel : ThemedSvgPanel {
+  // Re-render when the panel width or world zoom changes by more than this.
+  float widthChangeThreshold = 1.0f;
+  float zoomChangeThreshold = 0.01f;
+
+  // Last values we rendered for. Initialise to "unset" so the first step
+  // always triggers a render.
+  float lastRenderedWidth = -1.0f;
+  float lastRenderedZoom = 0.0f;
+
+  void step() override {
+    ThemedSvgPanel::step();
+    if (!fb) return;
+
+    // The SvgPanel sits at (0,0) inside the ModuleWidget, and the
+    // ModuleWidget's box width is the visible portion of the panel. Use that
+    // as the framebuffer's width. The SvgWidget child is still positioned at
+    // (0,0) with the full SVG size, so it renders the correct slice.
+    ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
+    if (!mw) return;
+
+    float zoom = getAbsoluteZoom();
+
+    bool widthChanged = std::fabs(fb->box.size.x - mw->box.size.x) > widthChangeThreshold;
+    bool zoomChanged = std::fabs(zoom - lastRenderedZoom) > zoomChangeThreshold;
+
+    if (widthChanged || zoomChanged) {
+      // Keep the full height so the panel border (panelBorder->box.size) still
+      // covers the entire panel. Only restrict the width.
+      Vec newSize = Vec(mw->box.size.x, box.size.y);
+      if (!newSize.equals(fb->box.size)) {
+        // Size the framebuffer to the visible portion. Setting viewportMargin
+        // to zero ensures render() clips localBox to the visible viewport
+        // rather than the full SVG, which is what prevents the oversized
+        // allocation.
+        fb->box.size = newSize;
+        fb->viewportMargin = Vec(0, 0);
+      }
+      lastRenderedWidth = fb->box.size.x;
+      lastRenderedZoom = zoom;
+      fb->setDirty();
+    }
+  }
+};
+
 } // namespace StochasticTelegraph

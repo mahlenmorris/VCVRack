@@ -434,7 +434,7 @@ struct TTYTextField : STTextField {
   int previous_visible_lines = -1;
 
   TTYTextField() {
-    for (int index = 0; index < 13; index++) {
+    for (int index = 0; index < LARGER_TEXT_COUNT; index++) {
       lines_to_font_size_and_offset.insert({LARGER_TEXT_INFO[index][0],
          std::make_pair(LARGER_TEXT_INFO[index][1], LARGER_TEXT_INFO[index][2])});
     }
@@ -568,8 +568,9 @@ struct TTYWidget : ModuleWidget {
 
   TTYWidget(TTY* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/TTY.svg"),
-                         asset::plugin(pluginInstance, "res/TTY-dark.svg")));
+    setPanel(createPanel<StochasticTelegraph::RestrictedThemedSvgPanel>(
+      asset::plugin(pluginInstance, "res/TTY.svg"),
+      asset::plugin(pluginInstance, "res/TTY-dark.svg")));
 
     // Set reasonable initial size of module. Will likely get updated below.
     box.size = Vec(RACK_GRID_WIDTH * TTY::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
@@ -712,7 +713,7 @@ struct TTYWidget : ModuleWidget {
 
     MenuItem* visible_lines_menu = createSubmenuItem("Visible Lines", "",
       [=](Menu* menu) {
-          for (int index = 0; index < 13; index++) {
+          for (int index = 0; index < LARGER_TEXT_COUNT; index++) {
             int lines = LARGER_TEXT_INFO[index][0];
             menu->addChild(createCheckMenuItem(std::to_string(lines), "",
                 [=]() {return lines == module->visible_lines;},

@@ -669,37 +669,38 @@ struct Venn : Module {
     }
     update_circle_count(args);
     // Determine where "point" is.
+    Vec new_point;  // Don't make point jump around while computing it.
     // Update X and Y inputs.
     if (inputs[X_POSITION_INPUT].isConnected()) {
-      point.x = inputs[X_POSITION_INPUT].getVoltage();
+      new_point.x = inputs[X_POSITION_INPUT].getVoltage();
     } else {
       // We do these separately, so human can control one axis but not the other, if desired.
-      point.x = human_point.x + (offset_point_x ? 5.0f : 0.0f);
+      new_point.x = human_point.x + (offset_point_x ? 5.0f : 0.0f);
     }
     if (inputs[Y_POSITION_INPUT].isConnected()) {
-      point.y = inputs[Y_POSITION_INPUT].getVoltage();
+      new_point.y = inputs[Y_POSITION_INPUT].getVoltage();
     } else {
-      point.y = human_point.y + (offset_point_y ? 5.0f : 0.0f);
+      new_point.y = human_point.y + (offset_point_y ? 5.0f : 0.0f);
     }
 
     if (params[X_POSITION_ATTN_PARAM].getValue() != 0.0f) {
-      point.x += params[X_POSITION_ATTN_PARAM].getValue() *
+      new_point.x += params[X_POSITION_ATTN_PARAM].getValue() *
         inputs[X_POSITION_WIGGLE_INPUT].getVoltage();
     }
     if (params[Y_POSITION_ATTN_PARAM].getValue() != 0.0f) {
-      point.y += params[Y_POSITION_ATTN_PARAM].getValue() *
+      new_point.y += params[Y_POSITION_ATTN_PARAM].getValue() *
         inputs[Y_POSITION_WIGGLE_INPUT].getVoltage();
     }
 
     // Keep within walls.
     if (offset_point_x) {
-      point.x = point.x - 5.0f;
+      new_point.x = new_point.x - 5.0f;
     }
     if (offset_point_y) {
-      point.y = point.y - 5.0f;
+      new_point.y = new_point.y - 5.0f;
     }
-    point.x = fmax(-5, fmin(5, point.x));
-    point.y = fmax(-5, fmin(5, point.y));
+    point.x = fmax(-5, fmin(5, new_point.x));
+    point.y = fmax(-5, fmin(5, new_point.y));
 
     // We have now determined the postion of "point".
     outputs[X_POSITION_OUTPUT].setVoltage(point.x + (offset_point_x ? 5.0f : 0.0f));
@@ -1773,19 +1774,19 @@ struct VennWidget : ModuleWidget {
 		addParam(createParamCentered<Trimpot>(mm2px(Vec(9.446, 25.0)), module, Venn::X_POSITION_ATTN_PARAM));
 		addParam(createParamCentered<Trimpot>(mm2px(Vec(21.034, 25.0)), module, Venn::Y_POSITION_ATTN_PARAM));
 
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(9.446, 16.0)), module, Venn::X_POSITION_INPUT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(21.034, 16.0)), module, Venn::Y_POSITION_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(9.446, 34.0)), module, Venn::X_POSITION_WIGGLE_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(21.034, 34.0)), module, Venn::Y_POSITION_WIGGLE_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(9.446, 16.0)), module, Venn::X_POSITION_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(21.034, 16.0)), module, Venn::Y_POSITION_INPUT));
+		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(9.446, 34.0)), module, Venn::X_POSITION_WIGGLE_INPUT));
+		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(21.034, 34.0)), module, Venn::Y_POSITION_WIGGLE_INPUT));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(9.446, 45.0)), module, Venn::X_POSITION_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.034, 45.0)), module, Venn::Y_POSITION_OUTPUT));
+		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(9.446, 45.0)), module, Venn::X_POSITION_OUTPUT));
+		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(21.034, 45.0)), module, Venn::Y_POSITION_OUTPUT));
 
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 11.906)), module, Venn::DISTANCE_OUTPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 30.162)), module, Venn::WITHIN_GATE_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(166.582, 47.286)), module, Venn::X_DISTANCE_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 47.286)), module, Venn::Y_DISTANCE_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(178.17, 92.963)), module, Venn::MATH1_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(178.17, 11.906)), module, Venn::DISTANCE_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(178.17, 30.162)), module, Venn::WITHIN_GATE_OUTPUT));
+		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(166.582, 47.286)), module, Venn::X_DISTANCE_OUTPUT));
+		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(178.17, 47.286)), module, Venn::Y_DISTANCE_OUTPUT));
+		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(178.17, 92.963)), module, Venn::MATH1_OUTPUT));
 
     addParam(createLightParamCentered<VCVLightLatch<
           MediumSimpleLight<WhiteLight>>>(mm2px(Vec(166.582, 28.78)), module, Venn::INV_WITHIN_PARAM, Venn::INV_WITHIN_LIGHT));

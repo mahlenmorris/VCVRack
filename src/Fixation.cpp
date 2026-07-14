@@ -229,8 +229,6 @@ struct Fixation : PositionedModule {
                   "1/32 (Thirty-Second Note)",
                   "t1/32 (Triplet Thirty-Second Note)",
                  });
-    // This has distinct values.
-    getParamQuantity(STYLE_KNOB_PARAM)->snapEnabled = true;
 
     configParam(COUNT_KNOB_PARAM, 1, 128, 1,
       "Number of repetitions per CLOCK (in STYLE 'CLOCK starts COUNT repeats...')");
@@ -768,11 +766,11 @@ struct FixationWidget : ModuleWidget {
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Fixation.svg"),
                          asset::plugin(pluginInstance, "res/Fixation-dark.svg")));
 
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(21.166, 15.743)), module, Fixation::CLOCK_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(21.166, 15.743)), module, Fixation::CLOCK_INPUT));
 
     addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 25.737)), module, Fixation::POSITION_KNOB_PARAM));
     addParam(createParamCentered<Trimpot>(mm2px(Vec(15.24, 25.737)), module, Fixation::POSITION_ATTN_PARAM));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.236, 25.737)), module, Fixation::POSITION_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.236, 25.737)), module, Fixation::POSITION_INPUT));
 
     length_knob = createParamCentered<RoundBlackKnob>(mm2px(Vec(6.035, 40.188)), module, Fixation::LENGTH_KNOB_PARAM);
     addParam(length_knob);
@@ -781,7 +779,7 @@ struct FixationWidget : ModuleWidget {
     note_length_knob->hide();  // Hidden unless tempo_length is true.
     length_trimpot = createParamCentered<Trimpot>(mm2px(Vec(15.24, 40.188)), module, Fixation::LENGTH_ATTN_PARAM);
     addParam(length_trimpot);
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(24.236, 40.188)), module, Fixation::LENGTH_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.236, 40.188)), module, Fixation::LENGTH_INPUT));
 
     addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(8.575, 56.279)), module, Fixation::COUNT_KNOB_PARAM));
     RoundSmallBlackKnob* style_knob = createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(21.59, 56.279)),
@@ -791,16 +789,16 @@ struct FixationWidget : ModuleWidget {
     style_knob->maxAngle = 0.33f * M_PI;
     addParam(style_knob);
 
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.575, 70.509)), module, Fixation::CURRENT_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(8.575, 70.509)), module, Fixation::CURRENT_OUTPUT));
     // A timestamp is 10 wide.
     TimestampField<Fixation>* now_timestamp = createWidget<TimestampField<Fixation>>(mm2px(
         Vec(8.575 - (10.0 / 2.0), 74.509)));
     now_timestamp->setModule(module);
     addChild(now_timestamp);
 
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 70.509)), module, Fixation::TRIG_OUT_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(21.59, 70.509)), module, Fixation::TRIG_OUT_OUTPUT));
 
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 101.487)), module, Fixation::SPEED_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.575, 101.487)), module, Fixation::SPEED_INPUT));
     addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(21.59, 101.487)), module, Fixation::SPEED_PARAM));
 
     // Play button and trigger.
@@ -808,10 +806,10 @@ struct FixationWidget : ModuleWidget {
              MediumSimpleLight<WhiteLight>>>(mm2px(Vec(21.59, 88.76)),
                                              module, Fixation::PLAY_BUTTON_PARAM,
                                              Fixation::PLAY_BUTTON_LIGHT));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.575, 88.76)), module, Fixation::PLAY_GATE_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.575, 88.76)), module, Fixation::PLAY_GATE_INPUT));
 
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.575, 116.4)), module, Fixation::LEFT_OUTPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(21.59, 116.4)), module, Fixation::RIGHT_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(8.575, 116.4)), module, Fixation::LEFT_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(21.59, 116.4)), module, Fixation::RIGHT_OUTPUT));
 
     ConnectedLight* connect_light = createLightCentered<ConnectedLight>(
       mm2px(Vec(15.24, 3.0)), module, Fixation::CONNECTED_LIGHT);

@@ -4,12 +4,13 @@
 
 #include "extended_text.h"
 
-int LARGER_TEXT_INFO[13][3] = {
+int LARGER_TEXT_INFO[LARGER_TEXT_COUNT][3] = {
   {28, 12, 3},
   {24, 14, 4},
   {20, 17, 4},
   {17, 20, 6},
   {14, 24, 10},
+  {12, 29, 9},  // Added so as to match the Twixt ports!
   {11, 31, 14},
   {8, 42, 20},
   {6, 56, 28},

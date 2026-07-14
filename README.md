@@ -7,6 +7,7 @@ self-regulating structure. Exploring the region between random and static.
 
 * [Memory System](Memory.md): A set of seven interrelated recording/playback modules with [their own documentation](Memory.md).
 * [BASICally](#basically): A simple, likely familiar procedural programming language within the context of VCV Rack.
+* [Distribute](#distribute): A random number generator with flexible output ranges and unusually tunable probability distributions.
 * [Drifter](#drifter): Creates sequences of values that can slowly (or quickly) vary, like a series of points doing random walks connected into a series.
 * [Fermata](#fermata): A text editor and labeling module. Write much longer text notes. Resizable, scrolls, font choices, and more. Or just add some visual emphasis,
 Stochastic Telegraph-style.
@@ -974,6 +975,61 @@ which uses the very powerful [CSound](https://csound.com/) engine.
  Not in the Library as I write this (January 2023).
 * [VCV Prototype](https://vcvrack.com/Prototype#manual), which I _think_ is only available for
 VCV Rack version 1. But you can write code in Lua or Javascript (in an external editor).
+
+![Line Break image](images/Separator.png)
+
+# Distribute
+Generates random values with flexible output ranges and unusually tunable probability distributions.
+
+![Distribute](images/DistributeHiLo.png)
+
+### Uses
+* Create random CV values within a desired range.
+* Bias the output of random values in a variety of ways. For example, if you wanted a V/Oct source that usually stayed 
+in a small range of values, but occasionally produced a note outside that range.
+
+### Controls
+#### Upper Limit Knob
+The maximum value of the range of OUT values. Defaults to 10.0V.
+Don't worry if this is below the lower limit, Distribute will automatically
+swap the limits in a sensical way.
+#### Lower Limit Knob
+The minimum value of the range of OUT values. Defaults to -10.0V.
+Don't worry if this is above the upper limit, Distribute will automatically
+swap the limits in a sensical way.
+#### Left/Both/Right Switch
+* Left: Use only the left side of the distribution curve. Note that BIAS has no effect when Left is chosen.
+* Both: Use the full width of the distribution curve. BIAS can further affect the shape of the value distribution.
+* Right: Use only the right side of the distribution curve. Note that BIAS has no effect when Right is chosen.
+#### DIST Knob
+Shapes the probability density function (PDF) curve of the random values. The curve is visually represented on the little display, allowing you to change the range and distribution of the random values in a number of useful ways.
+
+![DIST Knob GIF](images/DIST%20Knob%20Small.gif)
+
+Example DIST settings when the switch is set to "Both":
+* 0 -> A single value that is the average of the two limits.
+* 1 -> A bell curve or Gaussian distribution, favoring values in the middle.
+* 2 -> A uniform distribution, equally likely to pick any value between the limits.
+* 3 -> An inverted Gaussian, picking nothing in the middle.
+* 4 -> Only picks the two limit values.
+#### BIAS Knob
+Only applied when the switch is set to "Both". This allows the PDF curve to be "biased" to higher or lower values.
+
+![BIAS Knob GIF](images/BIAS%20Knob%20Small.gif)
+
+#### CONT Button
+If set (light is lit), then Distribute will continuously generate new random values.
+#### TRIG Input
+If CONT is off, then new random values will only be generated when TRIG receives a trigger. The value at OUT value 
+will be held until the next trigger occurs.
+#### OUT Output
+Outputs a stream of random values based on the controls above. 
+
+### Bypass Behavior
+If this module is bypassed, then OUT will equal 0.0.
+
+### Related Modules
+Many modules tagged with "Random" will also produce random values.
 
 ![Line Break image](images/Separator.png)
 
