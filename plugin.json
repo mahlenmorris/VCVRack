@@ -35,7 +35,8 @@
       "description": "Tunable random voltage generator, with a large variety of random distributions.",
       "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/README.md#distribute",
       "tags": [
-        "Random"
+        "Random",
+        "Polyphonic"
       ]
     },
     {
