@@ -325,7 +325,7 @@ struct DistributeWidget : ModuleWidget {
 
     // PDF display.
     DistributionWidget *dist_graph =
-        createWidget<DistributionWidget>(mm2px(Vec(3.0, 39.3)));
+        createWidget<DistributionWidget>(mm2px(Vec(3.24, 39.7)));
     dist_graph->module = module;
     dist_graph->box.size = mm2px(Vec(24.0, 13.0));
     addChild(dist_graph);
