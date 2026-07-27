@@ -167,11 +167,56 @@ struct ChancesDisplay : Widget {
       }
 
       float rect_width = 3.0f;  // Skinnier rectangles
-      if (max_count > 0) {
-        float min_val = aggregated_counts.begin()->first;
-        float max_val = aggregated_counts.rbegin()->first;
-        float range = max_val - min_val;
 
+      float min_val = 0.0f;
+      float max_val = 0.0f;
+      float range = 0.0f;
+      if (max_count > 0) {
+        min_val = aggregated_counts.begin()->first;
+        max_val = aggregated_counts.rbegin()->first;
+        range = max_val - min_val;
+      }
+
+      // Make sure background lines and labels are not drawn outside the
+      // display.
+      nvgScissor(args.vg, RECT_ARGS(r));
+
+      // Draw faint grid background
+      nvgBeginPath(args.vg);
+      // Horizontal lines (Y-axis / counts)
+      for (int i = 1; i <= 4; ++i) {
+        float y = bounding_box.y - (i * 0.25f) * (0.9f * bounding_box.y);
+        nvgMoveTo(args.vg, 0, y);
+        nvgLineTo(args.vg, bounding_box.x, y);
+      }
+
+      // Vertical lines (X-axis / voltages)
+      if (max_count > 0) {
+        if (range > 0.0f) {
+          int start_v = std::floor(min_val);
+          int end_v = std::ceil(max_val);
+          for (int v = start_v; v <= end_v; ++v) {
+            float drawable_width = bounding_box.x - rect_width;
+            float mapped_x =
+                (rect_width / 2.0f) + ((v - min_val) / range) * drawable_width;
+            nvgMoveTo(args.vg, mapped_x, 0);
+            nvgLineTo(args.vg, mapped_x, bounding_box.y);
+          }
+        } else {
+          // If all values are the same, draw one vertical line in the center
+          nvgMoveTo(args.vg, bounding_box.x / 2.0f, 0);
+          nvgLineTo(args.vg, bounding_box.x / 2.0f, bounding_box.y);
+        }
+      }
+
+      nvgStrokeColor(args.vg, nvgRGBA(255, 255, 255, 30));
+      nvgStrokeWidth(args.vg, 1.0f);
+      nvgStroke(args.vg);
+
+      // Draw rectangles for PDF
+      nvgBeginPath(args.vg);
+      nvgFillColor(args.vg, nvgRGBA(250, 250, 250, 255));
+      if (max_count > 0) {
         for (const auto& pair : aggregated_counts) {
           float val = pair.first;
           int count = pair.second;
@@ -191,22 +236,50 @@ struct ChancesDisplay : Widget {
           // Center the rectangle on the mapped X coordinate
           float x = mapped_x - (rect_width / 2.0f);
 
-          // 0.9 of height so rects don't peek over the top of the black square.
-          // TODO: resize screen so this isn't needed.
           float height =
-              (static_cast<float>(count) / max_count) * (0.9 * bounding_box.y);
+              (static_cast<float>(count) / max_count) * bounding_box.y;
           float y = bounding_box.y - height;
 
           nvgRect(args.vg, x, y, rect_width, height);
         }
       }
       nvgFill(args.vg);
+
+      // Draw text labels for integer voltages.
+
+      std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
+      if (font && max_count > 0 && range > 0.0f) {
+        nvgSave(args.vg);
+        nvgFontSize(args.vg, 11);
+        nvgFontFaceId(args.vg, font->handle);
+        nvgTextLetterSpacing(args.vg, -1);
+        nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+
+        // NanoVG does not have a built-in NVG_DIFFERENCE enum, but we can
+        // easily synthesize it! By using custom blend functions and multiplying
+        // the source (white text) by (1 - destination color), it perfectly
+        // inverts whatever is underneath the text.
+        nvgGlobalCompositeBlendFunc(args.vg, NVG_ONE_MINUS_DST_COLOR,
+                                    NVG_ONE_MINUS_SRC_COLOR);
+        nvgFillColor(args.vg, nvgRGBA(255, 255, 255, 255));
+
+        int start_v = std::floor(min_val);
+        int end_v = std::ceil(max_val);
+        for (int v = start_v; v <= end_v; ++v) {
+          float drawable_width = bounding_box.x - rect_width;
+          float mapped_x =
+              (rect_width / 2.0f) + ((v - min_val) / range) * drawable_width;
+          nvgText(args.vg, mapped_x, 2, std::to_string(v).c_str(), NULL);
+        }
+        nvgRestore(args.vg);
+      }
+      nvgResetScissor(args.vg);
     }
   }
 };
 
 struct ChancesWidget : ModuleWidget {
-  static constexpr float X_DIFF_MM = 11.0;
+  static constexpr float X_DIFF_MM = 11.5;
 
   ChancesWidget(Chances* module) {
     setModule(module);
@@ -215,8 +288,8 @@ struct ChancesWidget : ModuleWidget {
         createPanel(asset::plugin(pluginInstance, "res/Chances.svg")));
 
     ChancesDisplay* display =
-        createWidget<ChancesDisplay>(mm2px(Vec(1.9, 10.0)));
-    display->box.size = mm2px(Vec(72.0, 30.0));
+        createWidget<ChancesDisplay>(mm2px(Vec(1.9, 11.5)));
+    display->box.size = mm2px(Vec(72.0, 29.0));
     display->module = module;
     addChild(display);
 
