@@ -147,6 +147,8 @@ struct ChancesDisplay : Widget {
         counts[0] = 10;
         values[1] = 0.5;
         counts[1] = 16;
+        values[2] = 1.2;
+        counts[2] = 5;
       }
 
       Rect r = box.zeroPos();  // .shrink(Vec(4, 5));  // TODO: ???
@@ -177,17 +179,37 @@ struct ChancesDisplay : Widget {
         range = max_val - min_val;
       }
 
+      // We should display at least one voltage indicator.
+      range = std::max(range, 1.2f);
+
       // Make sure background lines and labels are not drawn outside the
       // display.
       nvgScissor(args.vg, RECT_ARGS(r));
 
+      int y_interval = 1;
+      if (max_count >= 500)
+        y_interval = 100;
+      else if (max_count >= 200)
+        y_interval = 50;
+      else if (max_count >= 80)
+        y_interval = 25;
+      else if (max_count >= 35)
+        y_interval = 10;
+      else if (max_count >= 16)
+        y_interval = 5;
+      else if (max_count >= 8)
+        y_interval = 2;
+
       // Draw faint grid background
       nvgBeginPath(args.vg);
       // Horizontal lines (Y-axis / counts)
-      for (int i = 1; i <= 4; ++i) {
-        float y = bounding_box.y - (i * 0.25f) * (0.9f * bounding_box.y);
-        nvgMoveTo(args.vg, 0, y);
-        nvgLineTo(args.vg, bounding_box.x, y);
+      if (max_count > 0) {
+        for (int c = y_interval; c <= max_count; c += y_interval) {
+          float y = bounding_box.y -
+                    (static_cast<float>(c) / max_count) * bounding_box.y;
+          nvgMoveTo(args.vg, 0, y);
+          nvgLineTo(args.vg, bounding_box.x, y);
+        }
       }
 
       // Vertical lines (X-axis / voltages)
@@ -246,7 +268,6 @@ struct ChancesDisplay : Widget {
       nvgFill(args.vg);
 
       // Draw text labels for integer voltages.
-
       std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
       if (font && max_count > 0 && range > 0.0f) {
         nvgSave(args.vg);
@@ -270,6 +291,17 @@ struct ChancesDisplay : Widget {
           float mapped_x =
               (rect_width / 2.0f) + ((v - min_val) / range) * drawable_width;
           nvgText(args.vg, mapped_x, 2, std::to_string(v).c_str(), NULL);
+        }
+
+        // Text labels for counts (Y-axis)
+        nvgTextAlign(args.vg, NVG_ALIGN_RIGHT | NVG_ALIGN_MIDDLE);
+        for (int c = y_interval; c <= max_count; c += y_interval) {
+          float y = bounding_box.y -
+                    (static_cast<float>(c) / max_count) * bounding_box.y;
+          // Slight padding from the right edge, drawn vertically centered on
+          // the line
+          nvgText(args.vg, bounding_box.x - 2, y, std::to_string(c).c_str(),
+                  NULL);
         }
         nvgRestore(args.vg);
       }
