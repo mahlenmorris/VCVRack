@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <map>
+#include <random>
 #include <vector>
 
 #include "plugin.hpp"
@@ -45,8 +47,9 @@ struct Chances : Module {
                  "Ignore trigger and continuously output values.",
                  {"Off", "On"});
 
-    configInput(TRIG_INPUT, "Triggers here will cause a new random number to "
-                            "be sent to the output.");
+    configInput(TRIG_INPUT,
+                "Triggers here will cause a new random number to "
+                "be sent to the output.");
     configOutput(OUT_OUTPUT,
                  "Emits values according to the relative chances set above.");
     // Init with impossible values, to guarantee a refresh at the start.
@@ -57,14 +60,14 @@ struct Chances : Module {
   }
 
   // If asked to, save the curve data in json for reading when loaded.
-  json_t *dataToJson() override {
-    json_t *rootJ = json_object();
+  json_t* dataToJson() override {
+    json_t* rootJ = json_object();
     return rootJ;
   }
 
-  void dataFromJson(json_t *rootJ) override {}
+  void dataFromJson(json_t* rootJ) override {}
 
-  void process(const ProcessArgs &args) override {
+  void process(const ProcessArgs& args) override {
     // Determine if we need to recompute the probability field.
     // If knobs have changed, then yes!
     bool need_update = false;
@@ -119,95 +122,85 @@ struct Chances : Module {
 };
 
 struct ChancesDisplay : Widget {
-  Chances *module;
+  Chances* module;
   std::string fontPath;
 
   ChancesDisplay() {
     fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
   }
 
-  // We'll want a Framebuffer for this at some point?
+  // TODO: We'll want a Framebuffer for this at some point?
   // Which will require this to be draw().
-  void drawLayer(const DrawArgs &args, int layer) override {
+  void drawLayer(const DrawArgs& args, int layer) override {
     if (layer == 1) {
-
+      float values[12] = {0};
+      int counts[12] = {0};
       if (module) {
         // Get values from actual module.
+        for (int i = 0; i < 12; ++i) {
+          values[i] = module->prev_values[i];
+          counts[i] = module->prev_counts[i];
+        }
       } else {
         // Default values to show in module browser and library.
+        values[0] = -2.5;
+        counts[0] = 10;
+        values[1] = 0.5;
+        counts[1] = 16;
       }
 
-      Rect r = box.zeroPos(); // .shrink(Vec(4, 5));  // TODO: ???
+      Rect r = box.zeroPos();  // .shrink(Vec(4, 5));  // TODO: ???
       Vec bounding_box = r.getBottomRight();
-      /*
-      Vec p0 =
-          transform((module && module->initialized) ? module->display_points[0]
-                                                    : demo_display_points[0],
-                    bounding_box);
 
-      // Draw middle line.
       nvgBeginPath(args.vg);
-      nvgMoveTo(args.vg, 0.0, bounding_box.y / 2.0);
-      nvgLineTo(args.vg, bounding_box.x, bounding_box.y / 2.0);
-      nvgLineCap(args.vg, NVG_ROUND);
-      nvgMiterLimit(args.vg, 2.f);
-      nvgStrokeWidth(args.vg, 1.5f);
-      nvgStrokeColor(args.vg, nvgRGBA(0xff, 0xff, 0xff, 0x80));
-      nvgStroke(args.vg);
+      nvgFillColor(args.vg, nvgRGBA(250, 250, 250, 255));
 
-      // Draw voltage numbers, to make the IN and OUT range more obvious.
-      std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
-      if (font) {
-        nvgFontSize(args.vg, 13);
-        nvgFontFaceId(args.vg, font->handle);
-        nvgTextLetterSpacing(args.vg, -2);
-
-        std::string text = unipolar ? "5" : "0";
-        // Place on the line just off the left edge.
-        nvgText(args.vg, 1, bounding_box.y / 2.0 + 4, text.c_str(), NULL);
-
-        text = unipolar ? "0" : "-5";
-        // Place a little above the bottom just off the left edge.
-        nvgText(args.vg, 1, bounding_box.y - 5, text.c_str(), NULL);
-
-        text = unipolar ? "10" : "5";
-        // Place a little above the bottom just off the right edge.
-        nvgText(args.vg, bounding_box.x - 12, bounding_box.y - 5, text.c_str(),
-                NULL);
-        // Place a little below the top just off the left edge.
-        nvgText(args.vg, 1, 12, text.c_str(), NULL);
+      std::map<float, int> aggregated_counts;
+      int max_count = 0;
+      for (int i = 0; i < 12; ++i) {
+        if (counts[i] > 0) {
+          aggregated_counts[values[i]] += counts[i];
+          if (aggregated_counts[values[i]] > max_count) {
+            max_count = aggregated_counts[values[i]];
+          }
+        }
       }
 
-      // The graph of the output function.
-      nvgBeginPath(args.vg);
-      nvgMoveTo(args.vg, p0.x, p0.y);
-      for (int i = 1; i < DISPLAY_POINT_COUNT; i++) {
-        Vec next = transform((module && module->initialized)
-                                 ? module->display_points[i]
-                                 : demo_display_points[i],
-                             bounding_box);
-        nvgLineTo(args.vg, next.x, next.y);
-      }
-      nvgLineCap(args.vg, NVG_ROUND);
-      nvgMiterLimit(args.vg, 2.f);
-      nvgStrokeWidth(args.vg, 1.5f);
-      nvgStrokeColor(args.vg, outputColor);
-      nvgStroke(args.vg);
+      float rect_width = 3.0f;  // Skinnier rectangles
+      if (max_count > 0) {
+        float min_val = aggregated_counts.begin()->first;
+        float max_val = aggregated_counts.rbegin()->first;
+        float range = max_val - min_val;
 
-      // And a short vertical line indicating the position of IN.
-      if (input_connected) {
-        float x = domain_value * bounding_box.x * 0.1f;
-        nvgBeginPath(args.vg);
-        nvgMoveTo(args.vg, x, bounding_box.y);
-        nvgLineTo(args.vg, x, bounding_box.y * 0.8);
-        nvgLineCap(args.vg, NVG_ROUND);
-        nvgMiterLimit(args.vg, 2.f);
-        nvgStrokeWidth(args.vg, 1.5f);
-        nvgStrokeColor(args.vg, inputColor);
-        nvgStroke(args.vg);
+        for (const auto& pair : aggregated_counts) {
+          float val = pair.first;
+          int count = pair.second;
+
+          float mapped_x;
+          if (range > 0.0f) {
+            // Map value from [min_val, max_val] to fit within the box width
+            // We subtract rect_width from bounding box so the edges don't clip.
+            float drawable_width = bounding_box.x - rect_width;
+            mapped_x = (rect_width / 2.0f) +
+                       ((val - min_val) / range) * drawable_width;
+          } else {
+            // If all values are the same, draw in the center
+            mapped_x = bounding_box.x / 2.0f;
+          }
+
+          // Center the rectangle on the mapped X coordinate
+          float x = mapped_x - (rect_width / 2.0f);
+
+          // 0.9 of height so rects don't peek over the top of the black square.
+          // TODO: resize screen so this isn't needed.
+          float height =
+              (static_cast<float>(count) / max_count) * (0.9 * bounding_box.y);
+          float y = bounding_box.y - height;
+
+          nvgRect(args.vg, x, y, rect_width, height);
+        }
       }
-    }
-    */
+      nvgFill(args.vg);
     }
   }
 };
@@ -215,14 +208,14 @@ struct ChancesDisplay : Widget {
 struct ChancesWidget : ModuleWidget {
   static constexpr float X_DIFF_MM = 11.0;
 
-  ChancesWidget(Chances *module) {
+  ChancesWidget(Chances* module) {
     setModule(module);
     setPanel(
         // TODO: add dark version.
         createPanel(asset::plugin(pluginInstance, "res/Chances.svg")));
 
-    ChancesDisplay *display =
-        createWidget<ChancesDisplay>(mm2px(Vec(1.0, 10.0)));
+    ChancesDisplay* display =
+        createWidget<ChancesDisplay>(mm2px(Vec(1.9, 10.0)));
     display->box.size = mm2px(Vec(72.0, 30.0));
     display->module = module;
     addChild(display);
@@ -250,9 +243,9 @@ struct ChancesWidget : ModuleWidget {
         mm2px(Vec(68.819, 116.0)), module, Chances::OUT_OUTPUT));
   }
 
-  void appendContextMenu(Menu *menu) override {
-    Chances *module = dynamic_cast<Chances *>(this->module);
+  void appendContextMenu(Menu* menu) override {
+    // Chances* module = dynamic_cast<Chances*>(this->module);
   }
 };
 
-Model *modelChances = createModel<Chances, ChancesWidget>("Chances");
+Model* modelChances = createModel<Chances, ChancesWidget>("Chances");
