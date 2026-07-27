@@ -167,6 +167,14 @@
         "Recording",
         "Sampler"
       ]
+    },
+    {
+      "slug": "Chances",
+      "name": "Chances",
+      "description": "Discrete probabilities for particular values.",
+      "tags": [
+        "Random"
+      ]
     }
   ]
 }
