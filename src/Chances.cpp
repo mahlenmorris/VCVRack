@@ -126,6 +126,7 @@ struct Chances : Module {
 struct ChancesDisplay : Widget {
   Chances* module;
   std::string fontPath;
+  int hovered_pair = -1;
 
   ChancesDisplay() {
     fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
@@ -238,8 +239,6 @@ struct ChancesDisplay : Widget {
       nvgStroke(args.vg);
 
       // Draw rectangles for PDF
-      nvgBeginPath(args.vg);
-      nvgFillColor(args.vg, nvgRGBA(250, 250, 250, 255));
       if (max_count > 0) {
         for (const auto& pair : aggregated_counts) {
           float val = pair.first;
@@ -264,10 +263,35 @@ struct ChancesDisplay : Widget {
               (static_cast<float>(count) / max_count) * bounding_box.y;
           float y = bounding_box.y - height;
 
+          nvgBeginPath(args.vg);
+          if (hovered_pair != -1 && val == values[hovered_pair]) {
+            nvgFillColor(args.vg, nvgRGBA(0, 255, 255, 255));  // Cyan highlight
+          } else {
+            nvgFillColor(args.vg, nvgRGBA(250, 250, 250, 255));  // Normal white
+          }
           nvgRect(args.vg, x, y, rect_width, height);
+          nvgFill(args.vg);
+        }
+
+        // If a knob is hovered, draw a faint vertical cyan line so the user can
+        // see where it points even if the count is zero.
+        if (hovered_pair != -1 && range > 0.0f) {
+          float h_val = values[hovered_pair];
+          // Only draw the line if it falls within our current min/max display
+          // range
+          if (h_val >= min_val && h_val <= max_val) {
+            float drawable_width = bounding_box.x - rect_width;
+            float h_mapped_x = (rect_width / 2.0f) +
+                               ((h_val - min_val) / range) * drawable_width;
+            nvgBeginPath(args.vg);
+            nvgMoveTo(args.vg, h_mapped_x, 0);
+            nvgLineTo(args.vg, h_mapped_x, bounding_box.y);
+            nvgStrokeColor(args.vg, nvgRGBA(0, 255, 255, 100));
+            nvgStrokeWidth(args.vg, 1.0f);
+            nvgStroke(args.vg);
+          }
         }
       }
-      nvgFill(args.vg);
 
       // Draw text labels for integer voltages.
       std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
@@ -312,6 +336,23 @@ struct ChancesDisplay : Widget {
   }
 };
 
+struct ChancesKnob : RoundBlackKnob {
+  ChancesDisplay* display = nullptr;
+  int pair_index = -1;
+
+  void onEnter(const EnterEvent& e) override {
+    RoundBlackKnob::onEnter(e);
+    if (display) display->hovered_pair = pair_index;
+  }
+
+  void onLeave(const LeaveEvent& e) override {
+    RoundBlackKnob::onLeave(e);
+    if (display && display->hovered_pair == pair_index) {
+      display->hovered_pair = -1;
+    }
+  }
+};
+
 struct ChancesWidget : ModuleWidget {
   static constexpr float X_DIFF_MM = 11.5;
 
@@ -329,20 +370,34 @@ struct ChancesWidget : ModuleWidget {
 
     // The value-count pairs.
     for (int pos = 0; pos < 5; ++pos) {
-      addParam(createParamCentered<RoundBlackKnob>(
+      ChancesKnob* ck_count = createParamCentered<ChancesKnob>(
           mm2px(Vec(22.0 + pos * X_DIFF_MM, 46.0)), module,
-          Chances::COUNT_PARAM + pos));
-      addParam(createParamCentered<RoundBlackKnob>(
+          Chances::COUNT_PARAM + pos);
+      ck_count->display = display;
+      ck_count->pair_index = pos;
+      addParam(ck_count);
+
+      ChancesKnob* ck_val = createParamCentered<ChancesKnob>(
           mm2px(Vec(22.0 + pos * X_DIFF_MM, 56.0)), module,
-          Chances::VALUE_PARAM + pos));
+          Chances::VALUE_PARAM + pos);
+      ck_val->display = display;
+      ck_val->pair_index = pos;
+      addParam(ck_val);
     }
     for (int pos = 5; pos < Chances::PAIR_COUNT; ++pos) {
-      addParam(createParamCentered<RoundBlackKnob>(
+      ChancesKnob* ck_count = createParamCentered<ChancesKnob>(
           mm2px(Vec(22.0 + (pos - 5) * X_DIFF_MM, 69.0)), module,
-          Chances::COUNT_PARAM + pos));
-      addParam(createParamCentered<RoundBlackKnob>(
+          Chances::COUNT_PARAM + pos);
+      ck_count->display = display;
+      ck_count->pair_index = pos;
+      addParam(ck_count);
+
+      ChancesKnob* ck_val = createParamCentered<ChancesKnob>(
           mm2px(Vec(22.0 + (pos - 5) * X_DIFF_MM, 79.0)), module,
-          Chances::VALUE_PARAM + pos));
+          Chances::VALUE_PARAM + pos);
+      ck_val->display = display;
+      ck_val->pair_index = pos;
+      addParam(ck_val);
     }
 
     addParam(
