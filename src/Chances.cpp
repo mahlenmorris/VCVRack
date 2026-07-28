@@ -6,12 +6,14 @@
 #include "plugin.hpp"
 
 struct Chances : Module {
+  static constexpr int PAIR_COUNT = 10;
+
   enum ParamId {
     CONTINUOUS_BUTTON_PARAM,
     STYLE_PARAM,
 
-    ENUMS(VALUE_PARAM, 12),
-    ENUMS(COUNT_PARAM, 12),
+    ENUMS(VALUE_PARAM, PAIR_COUNT),
+    ENUMS(COUNT_PARAM, PAIR_COUNT),
     PARAMS_LEN
   };
   enum InputId { TRIG_INPUT, INPUTS_LEN };
@@ -20,8 +22,8 @@ struct Chances : Module {
 
   // For detecting output triggers.
   dsp::SchmittTrigger inputTrigger;
-  float prev_values[12];
-  int prev_counts[12];
+  float prev_values[PAIR_COUNT];
+  int prev_counts[PAIR_COUNT];
   // A vector of possibilities. While doing this prohibits non-integral
   // COUNT_PARAM values, it the data structure we want anyway for Shuffling,
   // and makes for a simple Sampling as well.
@@ -35,7 +37,7 @@ struct Chances : Module {
     // This has distinct values.
     getParamQuantity(STYLE_PARAM)->snapEnabled = true;
 
-    for (int i = 0; i < 12; ++i) {
+    for (int i = 0; i < PAIR_COUNT; ++i) {
       configParam(VALUE_PARAM + i, -10.f, 10.f, 0.f, "Value to possibly emit");
       configParam(COUNT_PARAM + i, 0, 100, 0,
                   "Count of relative chance that this value will be chosen");
@@ -53,7 +55,7 @@ struct Chances : Module {
     configOutput(OUT_OUTPUT,
                  "Emits values according to the relative chances set above.");
     // Init with impossible values, to guarantee a refresh at the start.
-    for (int pos = 0; pos < 12; ++pos) {
+    for (int pos = 0; pos < PAIR_COUNT; ++pos) {
       prev_values[pos] = -12.0;
       prev_counts[pos] = -1;
     }
@@ -71,7 +73,7 @@ struct Chances : Module {
     // Determine if we need to recompute the probability field.
     // If knobs have changed, then yes!
     bool need_update = false;
-    for (int pos = 0; pos < 12; ++pos) {
+    for (int pos = 0; pos < PAIR_COUNT; ++pos) {
       if ((prev_values[pos] != params[VALUE_PARAM + pos].getValue()) ||
           (prev_counts[pos] != params[COUNT_PARAM + pos].getValue())) {
         need_update = true;
@@ -81,7 +83,7 @@ struct Chances : Module {
     if (need_update) {
       // Doing this the simple way, may optimize later.
       samples.clear();
-      for (int pos = 0; pos < 12; ++pos) {
+      for (int pos = 0; pos < PAIR_COUNT; ++pos) {
         float value = params[VALUE_PARAM + pos].getValue();
         int count = params[COUNT_PARAM + pos].getValue();
         prev_values[pos] = value;
@@ -133,11 +135,11 @@ struct ChancesDisplay : Widget {
   // Which will require this to be draw().
   void drawLayer(const DrawArgs& args, int layer) override {
     if (layer == 1) {
-      float values[12] = {0};
-      int counts[12] = {0};
+      float values[Chances::PAIR_COUNT] = {0};
+      int counts[Chances::PAIR_COUNT] = {0};
       if (module) {
         // Get values from actual module.
-        for (int i = 0; i < 12; ++i) {
+        for (int i = 0; i < Chances::PAIR_COUNT; ++i) {
           values[i] = module->prev_values[i];
           counts[i] = module->prev_counts[i];
         }
@@ -159,7 +161,7 @@ struct ChancesDisplay : Widget {
 
       std::map<float, int> aggregated_counts;
       int max_count = 0;
-      for (int i = 0; i < 12; ++i) {
+      for (int i = 0; i < Chances::PAIR_COUNT; ++i) {
         if (counts[i] > 0) {
           aggregated_counts[values[i]] += counts[i];
           if (aggregated_counts[values[i]] > max_count) {
@@ -325,6 +327,7 @@ struct ChancesWidget : ModuleWidget {
     display->module = module;
     addChild(display);
 
+    // The value-count pairs.
     for (int pos = 0; pos < 5; ++pos) {
       addParam(createParamCentered<RoundBlackKnob>(
           mm2px(Vec(22.0 + pos * X_DIFF_MM, 46.0)), module,
@@ -333,6 +336,15 @@ struct ChancesWidget : ModuleWidget {
           mm2px(Vec(22.0 + pos * X_DIFF_MM, 56.0)), module,
           Chances::VALUE_PARAM + pos));
     }
+    for (int pos = 5; pos < Chances::PAIR_COUNT; ++pos) {
+      addParam(createParamCentered<RoundBlackKnob>(
+          mm2px(Vec(22.0 + (pos - 5) * X_DIFF_MM, 69.0)), module,
+          Chances::COUNT_PARAM + pos));
+      addParam(createParamCentered<RoundBlackKnob>(
+          mm2px(Vec(22.0 + (pos - 5) * X_DIFF_MM, 79.0)), module,
+          Chances::VALUE_PARAM + pos));
+    }
+
     addParam(
         createLightParamCentered<VCVLightLatch<MediumSimpleLight<WhiteLight>>>(
             mm2px(Vec(21.822, 116.0)), module, Chances::CONTINUOUS_BUTTON_PARAM,
