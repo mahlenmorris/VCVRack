@@ -29,6 +29,12 @@ struct Chances : Module {
   // and makes for a simple Sampling as well.
   std::vector<float> samples;
 
+  // Data for shuffling.
+  bool shuffled = false;
+  std::vector<float> shuffled_samples;
+  int shuffled_index =
+      -1;  // -1 -> we've finished a pass through shuffled_samples.
+
   Chances() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     // TODO: need to add a Trigger detector that means to reshuffle.
@@ -73,6 +79,8 @@ struct Chances : Module {
     // Determine if we need to recompute the probability field.
     // If knobs have changed, then yes!
     bool need_update = false;
+    bool need_shuffle = false;
+
     for (int pos = 0; pos < PAIR_COUNT; ++pos) {
       if ((prev_values[pos] != params[VALUE_PARAM + pos].getValue()) ||
           (prev_counts[pos] != params[COUNT_PARAM + pos].getValue())) {
@@ -97,8 +105,44 @@ struct Chances : Module {
       // TODO: if shuffling, arrange for that? Or not until shuffle is
       // triggered? What if this is first entry?? Think more on what user
       // expects.
+      // That decision might need to be a menu option.
       // TODO: this should dirty the Framebuffer?
     }
+
+    // Determine if we need to shuffle.
+    if (params[STYLE_PARAM].getValue() < 0.5f) {
+      need_shuffle = false;
+      // If shuffled style is turned off, we consider ourselves not shuffled.
+      shuffled = false;
+    } else {
+      if (!shuffled) {
+        need_shuffle = true;
+      } else {
+        // If we've exhausted the shuffled_samples, then we need to shuffle.
+        if (shuffled_index < 0) {
+          need_shuffle = true;
+        }
+      }
+    }
+
+    if (need_shuffle) {
+      // Copy the samples vector.
+      shuffled_samples.assign(samples.begin(), samples.end());
+
+      // Seed with high-entropy source if available.
+      std::random_device rd;
+
+      // Initialize Mersenne Twister generator with seed.
+      std::mt19937 g(rd());
+
+      // 3. Perform shuffle.
+      std::shuffle(shuffled_samples.begin(), shuffled_samples.end(), g);
+
+      shuffled = true;
+      // Start from the end.
+      shuffled_index = shuffled_samples.size() - 1;
+    }
+
     // Time to output new value?
     bool trig_was_low = !inputTrigger.isHigh();
     inputTrigger.process(
@@ -107,14 +151,22 @@ struct Chances : Module {
 
     bool continuous = params[CONTINUOUS_BUTTON_PARAM].getValue() > 0.5f;
     if (trig_from_input || continuous) {
-      // TODO: see if shuffling.
-      if (samples.size() > 0) {
-        size_t position =
-            (size_t)floor(rack::random::uniform() * samples.size());
-        assert(position < samples.size());
-        outputs[OUT_OUTPUT].setVoltage(samples.at(position));
+      if (params[STYLE_PARAM].getValue() > 0.5f) {
+        // shuffling.
+        if (shuffled_samples.size() > 0) {
+          outputs[OUT_OUTPUT].setVoltage(shuffled_samples.at(shuffled_index));
+          --shuffled_index;
+        } else {
+          outputs[OUT_OUTPUT].setVoltage(0.0f);
+        }
       } else {
-        outputs[OUT_OUTPUT].setVoltage(0.0f);
+        if (samples.size() > 0) {
+          size_t position =
+              (size_t)floor(rack::random::uniform() * samples.size());
+          outputs[OUT_OUTPUT].setVoltage(samples.at(position));
+        } else {
+          outputs[OUT_OUTPUT].setVoltage(0.0f);
+        }
       }
     }
 
@@ -405,8 +457,11 @@ struct ChancesWidget : ModuleWidget {
             mm2px(Vec(21.822, 116.0)), module, Chances::CONTINUOUS_BUTTON_PARAM,
             Chances::CONTINUOUS_BUTTON_LIGHT));
 
-    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(35.487, 116.0)),
-                                                 module, Chances::STYLE_PARAM));
+    RoundBlackKnob* style_knob = createParamCentered<RoundBlackKnob>(
+        mm2px(Vec(35.487, 116.0)), module, Chances::STYLE_PARAM);
+    style_knob->minAngle = -0.28f * M_PI;
+    style_knob->maxAngle = 0.28f * M_PI;
+    addParam(style_knob);
 
     addInput(createInputCentered<ThemedPJ301MPort>(
         mm2px(Vec(8.032, 116.0)), module, Chances::TRIG_INPUT));
