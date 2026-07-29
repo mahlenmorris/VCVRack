@@ -35,11 +35,15 @@ struct Chances : Module {
   int shuffled_index =
       -1;  // -1 -> we've finished a pass through shuffled_samples.
 
+  // Data for no repeats.
+  std::map<float, std::pair<int, int>> block_map;
+  float last_output_value = 0.0f;
+
   Chances() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     // TODO: need to add a Trigger detector that means to reshuffle.
-    configSwitch(STYLE_PARAM, 0, 1, 0, "Value Choosen by",
-                 {"Sampling", "Shuffling"});
+    configSwitch(STYLE_PARAM, 0, 2, 0, "Value Choosen by",
+                 {"Sampling", "Shuffling", "No Repeats"});
     // This has distinct values.
     getParamQuantity(STYLE_PARAM)->snapEnabled = true;
 
@@ -89,17 +93,23 @@ struct Chances : Module {
       }
     }
     if (need_update) {
-      // Doing this the simple way, may optimize later.
-      samples.clear();
+      std::map<float, int> aggregated_counts;
       for (int pos = 0; pos < PAIR_COUNT; ++pos) {
         float value = params[VALUE_PARAM + pos].getValue();
         int count = params[COUNT_PARAM + pos].getValue();
         prev_values[pos] = value;
         prev_counts[pos] = count;
         if (count > 0) {
-          for (int i = 0; i < count; ++i) {
-            samples.push_back(value);
-          }
+          aggregated_counts[value] += count;
+        }
+      }
+
+      samples.clear();
+      block_map.clear();
+      for (const auto& pair : aggregated_counts) {
+        block_map[pair.first] = {pair.second, samples.size()};
+        for (int i = 0; i < pair.second; ++i) {
+          samples.push_back(pair.first);
         }
       }
       // TODO: if shuffling, arrange for that? Or not until shuffle is
@@ -110,7 +120,8 @@ struct Chances : Module {
     }
 
     // Determine if we need to shuffle.
-    if (params[STYLE_PARAM].getValue() < 0.5f) {
+    int style = std::round(params[STYLE_PARAM].getValue());
+    if (style != 1) {
       need_shuffle = false;
       // If shuffled style is turned off, we consider ourselves not shuffled.
       shuffled = false;
@@ -151,19 +162,44 @@ struct Chances : Module {
 
     bool continuous = params[CONTINUOUS_BUTTON_PARAM].getValue() > 0.5f;
     if (trig_from_input || continuous) {
-      if (params[STYLE_PARAM].getValue() > 0.5f) {
+      if (style == 1) {
         // shuffling.
         if (shuffled_samples.size() > 0) {
-          outputs[OUT_OUTPUT].setVoltage(shuffled_samples.at(shuffled_index));
+          float out_val = shuffled_samples.at(shuffled_index);
+          outputs[OUT_OUTPUT].setVoltage(out_val);
+          last_output_value = out_val;
           --shuffled_index;
         } else {
           outputs[OUT_OUTPUT].setVoltage(0.0f);
         }
+      } else if (style == 2 && block_map.size() >= 2) {
+        // no repeats.
+        int n = 0;
+        int s = 0;
+        auto it = block_map.find(last_output_value);
+        if (it != block_map.end()) {
+          n = it->second.first;
+          s = it->second.second;
+        }
+
+        int valid_size = samples.size() - n;
+        if (valid_size > 0) {
+          size_t r = (size_t)floor(rack::random::uniform() * valid_size);
+          size_t position = (r < (size_t)s) ? r : (r + n);
+          float out_val = samples.at(position);
+          outputs[OUT_OUTPUT].setVoltage(out_val);
+          last_output_value = out_val;
+        } else {
+          outputs[OUT_OUTPUT].setVoltage(0.0f);
+        }
       } else {
+        // standard sampling.
         if (samples.size() > 0) {
           size_t position =
               (size_t)floor(rack::random::uniform() * samples.size());
-          outputs[OUT_OUTPUT].setVoltage(samples.at(position));
+          float out_val = samples.at(position);
+          outputs[OUT_OUTPUT].setVoltage(out_val);
+          last_output_value = out_val;
         } else {
           outputs[OUT_OUTPUT].setVoltage(0.0f);
         }
