@@ -3,6 +3,11 @@
 #include <random>
 #include <vector>
 
+// #define MEASURE_FRAME_TIME 1
+#ifdef MEASURE_FRAME_TIME
+#include <chrono>
+#endif
+
 #include "plugin.hpp"
 
 struct Chances : Module {
@@ -216,13 +221,27 @@ struct ChancesDisplay : Widget {
   std::string fontPath;
   int hovered_pair = -1;
 
+#ifdef MEASURE_FRAME_TIME
+  std::chrono::nanoseconds total_time_nanos = std::chrono::nanoseconds(0);
+  int frame_count = 0;
+#endif
+
   ChancesDisplay() {
     fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
   }
 
   // TODO: We'll want a Framebuffer for this at some point?
+  // As of July 28, 2026, the unbuffered drawLayer is consuming less than
+  // 20ms every 40 seconds (when running at 30fps). I'll check this
+  // every now and then, but that rate is likely not worth the complication
+  // of adding a Framebuffer.
+
   // Which will require this to be draw().
   void drawLayer(const DrawArgs& args, int layer) override {
+#ifdef MEASURE_FRAME_TIME
+    auto start_time = std::chrono::high_resolution_clock::now();
+#endif
+
     if (layer == 1) {
       float values[Chances::PAIR_COUNT] = {0};
       int counts[Chances::PAIR_COUNT] = {0};
@@ -454,6 +473,23 @@ struct ChancesDisplay : Widget {
       }
       nvgResetScissor(args.vg);
     }
+
+#ifdef MEASURE_FRAME_TIME
+    if (layer == 1) {
+      auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
+      total_time_nanos = total_time_nanos + elapsed;
+      ++frame_count;
+      if (frame_count >= 1000) {
+        double average_frame_time = total_time_nanos.count() /
+                                    (double)frame_count /
+                                    1000.0;  // Convert to microseconds.
+        WARN("Average frame time after %d frames: %f us", frame_count,
+             average_frame_time);
+        frame_count = 0;
+        total_time_nanos = std::chrono::nanoseconds(0);
+      }
+    }
+#endif
   }
 };
 
