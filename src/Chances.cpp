@@ -21,7 +21,7 @@ struct Chances : Module {
     ENUMS(COUNT_PARAM, PAIR_COUNT),
     PARAMS_LEN
   };
-  enum InputId { TRIG_INPUT, INPUTS_LEN };
+  enum InputId { TRIG_INPUT, POSITION_INPUT, INPUTS_LEN };
   enum OutputId { OUT_OUTPUT, OUTPUTS_LEN };
   enum LightId { CONTINUOUS_BUTTON_LIGHT, LIGHTS_LEN };
 
@@ -43,12 +43,15 @@ struct Chances : Module {
   // Data for no repeats.
   std::map<float, std::pair<int, int>> block_map;
   float last_output_value = 0.0f;
+  
+  // Data for input selection
+  int input_range = 0; // 0: [-5, 5], 1: [0, 10], 2: [-10, 10]
 
   Chances() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     // TODO: need to add a Trigger detector that means to reshuffle.
-    configSwitch(STYLE_PARAM, 0, 2, 0, "Value Choosen by",
-                 {"Sampling", "Shuffling", "No Repeats"});
+    configSwitch(STYLE_PARAM, 0, 3, 0, "Value Choosen by",
+                 {"Sampling", "Shuffling", "No Repeats", "Input Selection"});
     // This has distinct values.
     getParamQuantity(STYLE_PARAM)->snapEnabled = true;
 
@@ -67,6 +70,9 @@ struct Chances : Module {
     configInput(TRIG_INPUT,
                 "Triggers here will cause a new random number to "
                 "be sent to the output.");
+    configInput(POSITION_INPUT,
+                "(Only for Input Selection STYLE.) Voltages here will select "
+                "the appropriate output value.");
     configOutput(OUT_OUTPUT,
                  "Emits values according to the relative chances set above.");
     // Init with impossible values, to guarantee a refresh at the start.
@@ -79,10 +85,16 @@ struct Chances : Module {
   // If asked to, save the curve data in json for reading when loaded.
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
+    json_object_set_new(rootJ, "input_range", json_integer(input_range));
     return rootJ;
   }
 
-  void dataFromJson(json_t* rootJ) override {}
+  void dataFromJson(json_t* rootJ) override {
+    json_t* input_range_json = json_object_get(rootJ, "input_range");
+    if (input_range_json) {
+      input_range = json_integer_value(input_range_json);
+    }
+  }
 
   void process(const ProcessArgs& args) override {
     // Determine if we need to recompute the probability field.
@@ -192,6 +204,31 @@ struct Chances : Module {
           size_t r = (size_t)floor(rack::random::uniform() * valid_size);
           size_t position = (r < (size_t)s) ? r : (r + n);
           float out_val = samples.at(position);
+          outputs[OUT_OUTPUT].setVoltage(out_val);
+          last_output_value = out_val;
+        } else {
+          outputs[OUT_OUTPUT].setVoltage(0.0f);
+        }
+      } else if (style == 3) {
+        // Input Selection
+        if (samples.size() > 0) {
+          float cv = inputs[POSITION_INPUT].getVoltage();
+          float min_cv, max_cv;
+          if (input_range == 1) { // 0 to 10
+            min_cv = 0.0f; max_cv = 10.0f;
+          } else if (input_range == 2) { // -10 to 10
+            min_cv = -10.0f; max_cv = 10.0f;
+          } else { // -5 to 5
+            min_cv = -5.0f; max_cv = 5.0f;
+          }
+          
+          float normalized = (cv - min_cv) / (max_cv - min_cv);
+          normalized = clamp(normalized, 0.0f, 1.0f);
+          
+          size_t index = (size_t)(normalized * samples.size());
+          if (index >= samples.size()) index = samples.size() - 1;
+          
+          float out_val = samples.at(index);
           outputs[OUT_OUTPUT].setVoltage(out_val);
           last_output_value = out_val;
         } else {
@@ -563,7 +600,7 @@ struct ChancesWidget : ModuleWidget {
             Chances::CONTINUOUS_BUTTON_LIGHT));
 
     RoundBlackKnob* style_knob = createParamCentered<RoundBlackKnob>(
-        mm2px(Vec(35.487, 116.0)), module, Chances::STYLE_PARAM);
+        mm2px(Vec(38.0, 116.0)), module, Chances::STYLE_PARAM);
     style_knob->minAngle = -0.28f * M_PI;
     style_knob->maxAngle = 0.28f * M_PI;
     addParam(style_knob);
@@ -571,12 +608,46 @@ struct ChancesWidget : ModuleWidget {
     addInput(createInputCentered<ThemedPJ301MPort>(
         mm2px(Vec(8.032, 116.0)), module, Chances::TRIG_INPUT));
 
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(53.0, 116.0)), module, Chances::POSITION_INPUT));
+
     addOutput(createOutputCentered<ThemedPJ301MPort>(
         mm2px(Vec(68.819, 116.0)), module, Chances::OUT_OUTPUT));
   }
 
   void appendContextMenu(Menu* menu) override {
-    // Chances* module = dynamic_cast<Chances*>(this->module);
+    Chances* module = dynamic_cast<Chances*>(this->module);
+    if (!module) return;
+
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createMenuLabel("Input Selection Range"));
+
+    struct InputRangeItem : MenuItem {
+      Chances* module;
+      int range;
+      void onAction(const event::Action& e) override {
+        module->input_range = range;
+      }
+      void step() override {
+        rightText = (module->input_range == range) ? "✔" : "";
+        MenuItem::step();
+      }
+    };
+
+    InputRangeItem* item1 = createMenuItem<InputRangeItem>("[-5V, 5V]");
+    item1->module = module;
+    item1->range = 0;
+    menu->addChild(item1);
+
+    InputRangeItem* item2 = createMenuItem<InputRangeItem>("[0V, 10V]");
+    item2->module = module;
+    item2->range = 1;
+    menu->addChild(item2);
+
+    InputRangeItem* item3 = createMenuItem<InputRangeItem>("[-10V, 10V]");
+    item3->module = module;
+    item3->range = 2;
+    menu->addChild(item3);
   }
 };
 
