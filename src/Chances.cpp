@@ -190,12 +190,14 @@ struct ChancesDisplay : Widget {
     if (layer == 1) {
       float values[Chances::PAIR_COUNT] = {0};
       int counts[Chances::PAIR_COUNT] = {0};
+      float current_out;
       if (module) {
         // Get values from actual module.
         for (int i = 0; i < Chances::PAIR_COUNT; ++i) {
           values[i] = module->prev_values[i];
           counts[i] = module->prev_counts[i];
         }
+        current_out = module->outputs[Chances::OUT_OUTPUT].getVoltage();
       } else {
         // Default values to show in module browser and library.
         values[0] = -2.5;
@@ -204,6 +206,7 @@ struct ChancesDisplay : Widget {
         counts[1] = 16;
         values[2] = 1.2;
         counts[2] = 5;
+        current_out = 0.5;
       }
 
       Rect r = box.zeroPos();  // .shrink(Vec(4, 5));  // TODO: ???
@@ -342,6 +345,36 @@ struct ChancesDisplay : Widget {
             nvgStrokeWidth(args.vg, 1.0f);
             nvgStroke(args.vg);
           }
+        }
+
+        // Draw current output indicator.
+        // Verify that this output matches an active value (to avoid plotting
+        // the default 0.0v)
+        bool matches = false;
+        for (int i = 0; i < Chances::PAIR_COUNT; ++i) {
+          if (counts[i] > 0 && std::abs(values[i] - current_out) < 1e-4f) {
+            matches = true;
+            break;
+          }
+        }
+        if (matches) {
+          float out_mapped_x;
+          if (range > 0.0f) {
+            float drawable_width = bounding_box.x - rect_width;
+            out_mapped_x = (rect_width / 2.0f) +
+                           ((current_out - min_val) / range) * drawable_width;
+          } else {
+            out_mapped_x = bounding_box.x / 2.0f;
+          }
+
+          // Draw a small red triangle pointing up from the bottom edge
+          nvgBeginPath(args.vg);
+          nvgMoveTo(args.vg, out_mapped_x, bounding_box.y - 6.0f);
+          nvgLineTo(args.vg, out_mapped_x - 3.5f, bounding_box.y);
+          nvgLineTo(args.vg, out_mapped_x + 3.5f, bounding_box.y);
+          nvgClosePath(args.vg);
+          nvgFillColor(args.vg, SCHEME_RED);
+          nvgFill(args.vg);
         }
       }
 
