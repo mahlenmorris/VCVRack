@@ -25,8 +25,8 @@ struct Chances : Module {
   enum OutputId { OUT_OUTPUT, OUTPUTS_LEN };
   enum LightId { CONTINUOUS_BUTTON_LIGHT, LIGHTS_LEN };
 
-  // For detecting output triggers.
-  dsp::SchmittTrigger inputTrigger;
+  // For detecting output triggers (polyphonic).
+  dsp::SchmittTrigger inputTrigger[PORT_MAX_CHANNELS];
   float prev_values[PAIR_COUNT];
   int prev_counts[PAIR_COUNT];
   // A vector of possibilities. While doing this prohibits non-integral
@@ -35,17 +35,16 @@ struct Chances : Module {
   std::vector<float> samples;
 
   // Data for shuffling.
-  bool shuffled = false;
-  std::vector<float> shuffled_samples;
-  int shuffled_index =
-      -1;  // -1 -> we've finished a pass through shuffled_samples.
+  std::mt19937 random_source;
+  std::vector<float> shuffled_samples[PORT_MAX_CHANNELS];
+  int shuffled_index[PORT_MAX_CHANNELS];
 
   // Data for no repeats.
   std::map<float, std::pair<int, int>> block_map;
-  float last_output_value = 0.0f;
-  
+  float last_output_value[PORT_MAX_CHANNELS] = {};
+
   // Data for input selection
-  int input_range = 0; // 0: [-5, 5], 1: [0, 10], 2: [-10, 10]
+  int input_range = 0;  // 0: [-5, 5], 1: [0, 10], 2: [-10, 10]
 
   Chances() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -80,6 +79,17 @@ struct Chances : Module {
       prev_values[pos] = -12.0;
       prev_counts[pos] = -1;
     }
+    // Prepare a source of randomness that shuffle will like.
+    // Seed with high-entropy source.
+    std::random_device rd;
+
+    // Initialize Mersenne Twister generator with seed.
+    random_source.seed(rd());
+
+    // Mark all channels as not having a shuffled_samples prepared yet.
+    for (int c = 0; c < PORT_MAX_CHANNELS; ++c) {
+      shuffled_index[c] = -1;
+    }
   }
 
   // If asked to, save the curve data in json for reading when loaded.
@@ -96,11 +106,21 @@ struct Chances : Module {
     }
   }
 
+  void perform_shuffle(int channel) {
+    // Copy the samples vector.
+    shuffled_samples[channel].assign(samples.begin(), samples.end());
+
+    // 3. Perform shuffle.
+    std::shuffle(shuffled_samples[channel].begin(),
+                 shuffled_samples[channel].end(), random_source);
+    // Start from the end.
+    shuffled_index[channel] = shuffled_samples[channel].size() - 1;
+  };
+
   void process(const ProcessArgs& args) override {
     // Determine if we need to recompute the probability field.
     // If knobs have changed, then yes!
     bool need_update = false;
-    bool need_shuffle = false;
 
     for (int pos = 0; pos < PAIR_COUNT; ++pos) {
       if ((prev_values[pos] != params[VALUE_PARAM + pos].getValue()) ||
@@ -138,112 +158,104 @@ struct Chances : Module {
 
     // Determine if we need to shuffle.
     int style = std::round(params[STYLE_PARAM].getValue());
-    if (style != 1) {
-      need_shuffle = false;
-      // If shuffled style is turned off, we consider ourselves not shuffled.
-      shuffled = false;
-    } else {
-      if (!shuffled) {
-        need_shuffle = true;
-      } else {
-        // If we've exhausted the shuffled_samples, then we need to shuffle.
-        if (shuffled_index < 0) {
-          need_shuffle = true;
+    if (style == 1) {
+      // In case we are just switching to Shuffled, better shuffle now.
+      for (int c = 0; c < PORT_MAX_CHANNELS; ++c) {
+        if (shuffled_index[c] < 0) {
+          perform_shuffle(c);
         }
       }
     }
 
-    if (need_shuffle) {
-      // Copy the samples vector.
-      shuffled_samples.assign(samples.begin(), samples.end());
-
-      // Seed with high-entropy source if available.
-      std::random_device rd;
-
-      // Initialize Mersenne Twister generator with seed.
-      std::mt19937 g(rd());
-
-      // 3. Perform shuffle.
-      std::shuffle(shuffled_samples.begin(), shuffled_samples.end(), g);
-
-      shuffled = true;
-      // Start from the end.
-      shuffled_index = shuffled_samples.size() - 1;
+    int channels = std::max(1, inputs[TRIG_INPUT].getChannels());
+    // If we're using "Input Selection" STYLE, then the number of channels in
+    // POSITION_INPUT is more significant.
+    if (style == 3) {
+      channels = std::max(1, inputs[POSITION_INPUT].getChannels());
     }
-
-    // Time to output new value?
-    bool trig_was_low = !inputTrigger.isHigh();
-    inputTrigger.process(
-        rescale(inputs[TRIG_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
-    bool trig_from_input = trig_was_low && inputTrigger.isHigh();
+    outputs[OUT_OUTPUT].setChannels(channels);
 
     bool continuous = params[CONTINUOUS_BUTTON_PARAM].getValue() > 0.5f;
-    if (trig_from_input || continuous) {
-      if (style == 1) {
-        // shuffling.
-        if (shuffled_samples.size() > 0) {
-          float out_val = shuffled_samples.at(shuffled_index);
-          outputs[OUT_OUTPUT].setVoltage(out_val);
-          last_output_value = out_val;
-          --shuffled_index;
-        } else {
-          outputs[OUT_OUTPUT].setVoltage(0.0f);
-        }
-      } else if (style == 2 && block_map.size() >= 2) {
-        // no repeats.
-        int n = 0;
-        int s = 0;
-        auto it = block_map.find(last_output_value);
-        if (it != block_map.end()) {
-          n = it->second.first;
-          s = it->second.second;
-        }
+    for (int c = 0; c < channels; ++c) {
+      // Time to output new value?
+      bool trig_was_low = !inputTrigger[c].isHigh();
+      inputTrigger[c].process(
+          rescale(inputs[TRIG_INPUT].getVoltage(c), 0.1f, 2.f, 0.f, 1.f));
+      bool trig_from_input = trig_was_low && inputTrigger[c].isHigh();
 
-        int valid_size = samples.size() - n;
-        if (valid_size > 0) {
-          size_t r = (size_t)floor(rack::random::uniform() * valid_size);
-          size_t position = (r < (size_t)s) ? r : (r + n);
-          float out_val = samples.at(position);
-          outputs[OUT_OUTPUT].setVoltage(out_val);
-          last_output_value = out_val;
-        } else {
-          outputs[OUT_OUTPUT].setVoltage(0.0f);
-        }
-      } else if (style == 3) {
-        // Input Selection
-        if (samples.size() > 0) {
-          float cv = inputs[POSITION_INPUT].getVoltage();
-          float min_cv, max_cv;
-          if (input_range == 1) { // 0 to 10
-            min_cv = 0.0f; max_cv = 10.0f;
-          } else if (input_range == 2) { // -10 to 10
-            min_cv = -10.0f; max_cv = 10.0f;
-          } else { // -5 to 5
-            min_cv = -5.0f; max_cv = 5.0f;
+      if (trig_from_input || continuous) {
+        if (style == 1) {
+          // shuffling.
+          if (shuffled_samples[c].size() > 0) {
+            if (shuffled_index[c] < 0) {
+              perform_shuffle(c);
+            }
+            float out_val = shuffled_samples[c].at(shuffled_index[c]);
+            outputs[OUT_OUTPUT].setVoltage(out_val, c);
+            last_output_value[c] = out_val;
+            --shuffled_index[c];
+          } else {
+            outputs[OUT_OUTPUT].setVoltage(0.0f, c);
           }
-          
-          float normalized = (cv - min_cv) / (max_cv - min_cv);
-          normalized = clamp(normalized, 0.0f, 1.0f);
-          
-          size_t index = (size_t)(normalized * samples.size());
-          if (index >= samples.size()) index = samples.size() - 1;
-          
-          float out_val = samples.at(index);
-          outputs[OUT_OUTPUT].setVoltage(out_val);
-          last_output_value = out_val;
+        } else if (style == 2 && block_map.size() >= 2) {
+          // no repeats.
+          int n = 0;
+          int s = 0;
+          auto it = block_map.find(last_output_value[c]);
+          if (it != block_map.end()) {
+            n = it->second.first;
+            s = it->second.second;
+          }
+
+          int valid_size = samples.size() - n;
+          if (valid_size > 0) {
+            size_t r = (size_t)floor(rack::random::uniform() * valid_size);
+            size_t position = (r < (size_t)s) ? r : (r + n);
+            float out_val = samples.at(position);
+            outputs[OUT_OUTPUT].setVoltage(out_val, c);
+            last_output_value[c] = out_val;
+          } else {
+            outputs[OUT_OUTPUT].setVoltage(0.0f, c);
+          }
+        } else if (style == 3) {
+          // Input Selection
+          if (samples.size() > 0) {
+            float cv = inputs[POSITION_INPUT].getVoltage(c);
+            float min_cv, max_cv;
+            if (input_range == 1) {  // 0 to 10
+              min_cv = 0.0f;
+              max_cv = 10.0f;
+            } else if (input_range == 2) {  // -10 to 10
+              min_cv = -10.0f;
+              max_cv = 10.0f;
+            } else {  // -5 to 5
+              min_cv = -5.0f;
+              max_cv = 5.0f;
+            }
+
+            float normalized = (cv - min_cv) / (max_cv - min_cv);
+            normalized = clamp(normalized, 0.0f, 1.0f);
+
+            size_t index = (size_t)(normalized * samples.size());
+            if (index >= samples.size()) index = samples.size() - 1;
+
+            float out_val = samples.at(index);
+            outputs[OUT_OUTPUT].setVoltage(out_val, c);
+            last_output_value[c] = out_val;
+          } else {
+            outputs[OUT_OUTPUT].setVoltage(0.0f, c);
+          }
         } else {
-          outputs[OUT_OUTPUT].setVoltage(0.0f);
-        }
-      } else {
-        // standard sampling.
-        if (samples.size() > 0) {
-          size_t position =
-              (size_t)floor(rack::random::uniform() * samples.size());
-          float out_val = samples.at(position);
-          outputs[OUT_OUTPUT].setVoltage(out_val);
-          last_output_value = out_val;
-        } else {
-          outputs[OUT_OUTPUT].setVoltage(0.0f);
+          // standard sampling.
+          if (samples.size() > 0) {
+            size_t position =
+                (size_t)floor(rack::random::uniform() * samples.size());
+            float out_val = samples.at(position);
+            outputs[OUT_OUTPUT].setVoltage(out_val, c);
+            last_output_value[c] = out_val;
+          } else {
+            outputs[OUT_OUTPUT].setVoltage(0.0f, c);
+          }
         }
       }
     }
@@ -439,9 +451,9 @@ struct ChancesDisplay : Widget {
           }
         }
 
-        // Draw current output indicator.
+        // Draw current output indicator (a red triangle).
         // Verify that this output matches an active value (to avoid plotting
-        // the default 0.0v)
+        // the default 0.0v).
         bool matches = false;
         for (int i = 0; i < Chances::PAIR_COUNT; ++i) {
           if (counts[i] > 0 && std::abs(values[i] - current_out) < 1e-4f) {
