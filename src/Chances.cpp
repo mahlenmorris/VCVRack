@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <map>
 #include <random>
+#include <set>
 #include <vector>
 
 // #define MEASURE_FRAME_TIME 1
@@ -280,7 +281,7 @@ struct ChancesDisplay : Widget {
   }
 
   // TODO: We'll want a Framebuffer for this at some point?
-  // As of July 28, 2026, the unbuffered drawLayer is consuming less than
+  // As of July 29, 2026, the unbuffered drawLayer is consuming less than
   // 20ms every 40 seconds (when running at 30fps). I'll check this
   // every now and then, but that rate is likely not worth the complication
   // of adding a Framebuffer.
@@ -294,14 +295,19 @@ struct ChancesDisplay : Widget {
     if (layer == 1) {
       float values[Chances::PAIR_COUNT] = {0};
       int counts[Chances::PAIR_COUNT] = {0};
-      float current_out;
+      float current_outs[PORT_MAX_CHANNELS] = {0};
+      int out_channels = 1;
       if (module) {
         // Get values from actual module.
         for (int i = 0; i < Chances::PAIR_COUNT; ++i) {
           values[i] = module->prev_values[i];
           counts[i] = module->prev_counts[i];
         }
-        current_out = module->outputs[Chances::OUT_OUTPUT].getVoltage();
+        out_channels =
+            std::max(1, module->outputs[Chances::OUT_OUTPUT].getChannels());
+        for (int c = 0; c < out_channels; ++c) {
+          current_outs[c] = module->outputs[Chances::OUT_OUTPUT].getVoltage(c);
+        }
       } else {
         // Default values to show in module browser and library.
         values[0] = -2.5;
@@ -310,7 +316,8 @@ struct ChancesDisplay : Widget {
         counts[1] = 16;
         values[2] = 1.2;
         counts[2] = 5;
-        current_out = 0.5;
+        out_channels = 1;
+        current_outs[0] = 0.5;
       }
 
       Rect r = box.zeroPos();  // .shrink(Vec(4, 5));  // TODO: ???
@@ -451,17 +458,24 @@ struct ChancesDisplay : Widget {
           }
         }
 
-        // Draw current output indicator (a red triangle).
-        // Verify that this output matches an active value (to avoid plotting
-        // the default 0.0v).
-        bool matches = false;
-        for (int i = 0; i < Chances::PAIR_COUNT; ++i) {
-          if (counts[i] > 0 && std::abs(values[i] - current_out) < 1e-4f) {
-            matches = true;
-            break;
+        // Draw current output indicators (red triangles).
+        // Collect unique active output values.
+        std::set<float> active_outs;
+        for (int c = 0; c < out_channels; ++c) {
+          float current_out = current_outs[c];
+          bool matches = false;
+          for (int i = 0; i < Chances::PAIR_COUNT; ++i) {
+            if (counts[i] > 0 && std::abs(values[i] - current_out) < 1e-4f) {
+              matches = true;
+              break;
+            }
+          }
+          if (matches) {
+            active_outs.insert(current_out);
           }
         }
-        if (matches) {
+
+        for (float current_out : active_outs) {
           float out_mapped_x;
           if (range > 0.0f) {
             float drawable_width = bounding_box.x - rect_width;
