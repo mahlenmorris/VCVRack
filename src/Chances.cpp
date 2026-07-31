@@ -107,6 +107,13 @@ struct Chances : Module {
     }
   }
 
+  void onRandomize(const RandomizeEvent& e) override {
+    Module::onRandomize(e);
+
+    // I'm fairly certain a user would want them sorted at this point.
+    sortPairs();
+  }
+
   void perform_shuffle(int channel) {
     // Copy the samples vector.
     shuffled_samples[channel].assign(samples.begin(), samples.end());
@@ -116,7 +123,38 @@ struct Chances : Module {
                  shuffled_samples[channel].end(), random_source);
     // Start from the end.
     shuffled_index[channel] = shuffled_samples[channel].size() - 1;
-  };
+  }
+
+  // Sorts the pairs so that:
+  // The pairs with non-zero counts are "first", and those are sorted by
+  // value.
+  // Thus the pairs move left -> right the same as the vertical lines do.
+  void sortPairs() {
+    struct PairData {
+      float value;
+      float count;
+    };
+    std::vector<PairData> pairs;
+    for (int i = 0; i < PAIR_COUNT; ++i) {
+      pairs.push_back({params[VALUE_PARAM + i].getValue(),
+                       params[COUNT_PARAM + i].getValue()});
+    }
+
+    std::sort(pairs.begin(), pairs.end(),
+              [](const PairData& a, const PairData& b) {
+                bool a_zero = (a.count <= 0.0f);
+                bool b_zero = (b.count <= 0.0f);
+                if (a_zero != b_zero) {
+                  return b_zero;
+                }
+                return a.value < b.value;
+              });
+
+    for (int i = 0; i < PAIR_COUNT; ++i) {
+      getParamQuantity(VALUE_PARAM + i)->setValue(pairs[i].value);
+      getParamQuantity(COUNT_PARAM + i)->setValue(pairs[i].count);
+    }
+  }
 
   void process(const ProcessArgs& args) override {
     // Determine if we need to recompute the probability field.
@@ -646,34 +684,24 @@ struct ChancesWidget : ModuleWidget {
     if (!module) return;
 
     menu->addChild(new MenuSeparator);
-    menu->addChild(createMenuLabel("Input Selection Range"));
 
-    struct InputRangeItem : MenuItem {
-      Chances* module;
-      int range;
-      void onAction(const event::Action& e) override {
-        module->input_range = range;
-      }
-      void step() override {
-        rightText = (module->input_range == range) ? "✔" : "";
-        MenuItem::step();
-      }
-    };
+    // Option to sort the pairs.
+    menu->addChild(createMenuItem("Sort pairs by value now", "",
+                                  [=]() { module->sortPairs(); }));
 
-    InputRangeItem* item1 = createMenuItem<InputRangeItem>("[-5V, 5V]");
-    item1->module = module;
-    item1->range = 0;
-    menu->addChild(item1);
+    std::pair<std::string, int> input_ranges[] = {
+        {"[-5V, 5V]", 0}, {"[0V, 10V]", 1}, {"[-10V, 10V]", 2}};
 
-    InputRangeItem* item2 = createMenuItem<InputRangeItem>("[0V, 10V]");
-    item2->module = module;
-    item2->range = 1;
-    menu->addChild(item2);
-
-    InputRangeItem* item3 = createMenuItem<InputRangeItem>("[-10V, 10V]");
-    item3->module = module;
-    item3->range = 2;
-    menu->addChild(item3);
+    MenuItem* range_menu =
+        createSubmenuItem("Input Selection Range", "", [=](Menu* menu) {
+          for (auto line : input_ranges) {
+            menu->addChild(createCheckMenuItem(
+                line.first, "",
+                [=]() { return line.second == module->input_range; },
+                [=]() { module->input_range = line.second; }));
+          }
+        });
+    menu->addChild(range_menu);
   }
 };
 
