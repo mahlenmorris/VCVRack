@@ -752,8 +752,8 @@ struct ChancesWidget : ModuleWidget {
   ChancesWidget(Chances* module) {
     setModule(module);
     setPanel(
-        // TODO: add dark version.
-        createPanel(asset::plugin(pluginInstance, "res/Chances.svg")));
+        createPanel(asset::plugin(pluginInstance, "res/Chances.svg"),
+                    asset::plugin(pluginInstance, "res/Chances-dark.svg")));
 
     ChancesDisplay* display =
         createWidget<ChancesDisplay>(mm2px(Vec(1.9, 11.5)));
