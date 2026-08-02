@@ -17,16 +17,17 @@ struct Chances : Module {
   enum ParamId {
     CONTINUOUS_BUTTON_PARAM,
     STYLE_PARAM,
-
     ENUMS(VALUE_PARAM, PAIR_COUNT),
     ENUMS(COUNT_PARAM, PAIR_COUNT),
+    SPREAD_PARAM,
+    SORT_PARAM,
     PARAMS_LEN
   };
   enum InputId { TRIG_INPUT, POSITION_INPUT, INPUTS_LEN };
   enum OutputId { OUT_OUTPUT, OUTPUTS_LEN };
-  enum LightId { CONTINUOUS_BUTTON_LIGHT, LIGHTS_LEN };
+  enum LightId { CONTINUOUS_BUTTON_LIGHT, SORT_LIGHT, LIGHTS_LEN };
 
-  // For detecting output triggers (polyphonic).
+  // For detecting input triggers (polyphonic).
   dsp::SchmittTrigger inputTrigger[PORT_MAX_CHANNELS];
   float prev_values[PAIR_COUNT];
   int prev_counts[PAIR_COUNT];
@@ -47,6 +48,11 @@ struct Chances : Module {
   // Data for input selection
   int input_range = 0;  // 0: [-5, 5], 1: [0, 10], 2: [-10, 10]
 
+  // For sorting.
+  dsp::SchmittTrigger sortTrigger;
+  int sort_light_countdown = 0;
+  bool sort_button_pressed = false;  // Only sort once per press.
+
   Chances() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     // TODO: need to add a Trigger detector that means to reshuffle.
@@ -62,19 +68,28 @@ struct Chances : Module {
       getParamQuantity(COUNT_PARAM + i)->snapEnabled = true;
     }
 
+    // A momentary button.
+    configSwitch(SORT_PARAM, 0, 1, 0, "Press to sort pairs by value",
+                 {"Off", "On"});
+
+    configParam(
+        SPREAD_PARAM, 0.0f, 2.0f, 0.0f,
+        "Allow outputs to randomly be at most this many volts away from "
+        "their value");
+
     // A latched button.
     configSwitch(CONTINUOUS_BUTTON_PARAM, 0, 1, 0,
-                 "Ignore trigger and continuously output values.",
+                 "Ignore trigger and continuously output values",
                  {"Off", "On"});
 
     configInput(TRIG_INPUT,
                 "Triggers here will cause a new random number to "
-                "be sent to the output.");
+                "be sent to the output");
     configInput(POSITION_INPUT,
                 "(Only for Input Selection STYLE.) Voltages here will select "
-                "the appropriate output value.");
+                "the appropriate output value");
     configOutput(OUT_OUTPUT,
-                 "Emits values according to the relative chances set above.");
+                 "Emits values according to the relative chances set above");
     // Init with impossible values, to guarantee a refresh at the start.
     for (int pos = 0; pos < PAIR_COUNT; ++pos) {
       prev_values[pos] = -12.0;
@@ -157,6 +172,24 @@ struct Chances : Module {
   }
 
   void process(const ProcessArgs& args) override {
+    // Some lights are lit by triggers or button presses; these enable them to
+    // be lit long enough to be seen by humans.
+    if (sort_light_countdown > 0) {
+      sort_light_countdown--;
+    }
+
+    if ((params[SORT_PARAM].getValue() > 0.1f)) {
+      if (!sort_button_pressed) {
+        sort_button_pressed = true;
+        // Do the sorting.
+        sortPairs();
+        // Light up for one tenth of a second.
+        sort_light_countdown = std::floor(args.sampleRate / 10.0f);
+      }
+    } else {
+      sort_button_pressed = false;
+    }
+
     // Determine if we need to recompute the probability field.
     // If knobs have changed, then yes!
     bool need_update = false;
@@ -223,18 +256,18 @@ struct Chances : Module {
       bool trig_from_input = trig_was_low && inputTrigger[c].isHigh();
 
       if (trig_from_input || continuous) {
+        float out_val = 0.0f;
+        bool has_val = false;
+
         if (style == 1) {
           // shuffling.
           if (shuffled_samples[c].size() > 0) {
             if (shuffled_index[c] < 0) {
               perform_shuffle(c);
             }
-            float out_val = shuffled_samples[c].at(shuffled_index[c]);
-            outputs[OUT_OUTPUT].setVoltage(out_val, c);
-            last_output_value[c] = out_val;
+            out_val = shuffled_samples[c].at(shuffled_index[c]);
+            has_val = true;
             --shuffled_index[c];
-          } else {
-            outputs[OUT_OUTPUT].setVoltage(0.0f, c);
           }
         } else if (style == 2 && block_map.size() >= 2) {
           // no repeats.
@@ -250,57 +283,68 @@ struct Chances : Module {
           if (valid_size > 0) {
             size_t r = (size_t)floor(rack::random::uniform() * valid_size);
             size_t position = (r < (size_t)s) ? r : (r + n);
-            float out_val = samples.at(position);
-            outputs[OUT_OUTPUT].setVoltage(out_val, c);
-            last_output_value[c] = out_val;
-          } else {
-            outputs[OUT_OUTPUT].setVoltage(0.0f, c);
+            out_val = samples.at(position);
+            has_val = true;
           }
         } else if (style == 3) {
           // Input Selection
           if (samples.size() > 0) {
-            float cv = inputs[POSITION_INPUT].getVoltage(c);
-            float min_cv, max_cv;
+            float range_min, range_max;
             if (input_range == 1) {  // 0 to 10
-              min_cv = 0.0f;
-              max_cv = 10.0f;
+              range_min = 0.0f;
+              range_max = 10.0f;
             } else if (input_range == 2) {  // -10 to 10
-              min_cv = -10.0f;
-              max_cv = 10.0f;
+              range_min = -10.0f;
+              range_max = 10.0f;
             } else {  // -5 to 5
-              min_cv = -5.0f;
-              max_cv = 5.0f;
+              range_min = -5.0f;
+              range_max = 5.0f;
             }
 
-            float normalized = (cv - min_cv) / (max_cv - min_cv);
-            normalized = clamp(normalized, 0.0f, 1.0f);
-
-            size_t index = (size_t)(normalized * samples.size());
-            if (index >= samples.size()) index = samples.size() - 1;
-
-            float out_val = samples.at(index);
-            outputs[OUT_OUTPUT].setVoltage(out_val, c);
-            last_output_value[c] = out_val;
-          } else {
-            outputs[OUT_OUTPUT].setVoltage(0.0f, c);
+            size_t index =
+                (size_t)(rescale(inputs[POSITION_INPUT].getVoltage(c),
+                                 range_min, range_max, 0.0, samples.size()));
+            // Let's just make really sure we never exceed the bounds.
+            // After all, user could be wrong about the actual input_range.
+            index = clamp(index, 0, samples.size() - 1);
+            out_val = samples.at(index);
+            has_val = true;
           }
         } else {
           // standard sampling.
           if (samples.size() > 0) {
             size_t position =
                 (size_t)floor(rack::random::uniform() * samples.size());
-            float out_val = samples.at(position);
-            outputs[OUT_OUTPUT].setVoltage(out_val, c);
-            last_output_value[c] = out_val;
-          } else {
-            outputs[OUT_OUTPUT].setVoltage(0.0f, c);
+            out_val = samples.at(position);
+            has_val = true;
           }
+        }
+
+        if (has_val) {
+          last_output_value[c] = out_val;
+          float fuzziness = params[SPREAD_PARAM].getValue();
+          float actual_out = out_val;
+          // Add spread, if any.
+          if (fuzziness > 0.0f) {
+            // An approximation of a Gaussian. Known as the Irwin-Hall
+            // distribution curve, I recently discovered.
+            float noise = ((rack::random::uniform() + rack::random::uniform() +
+                            rack::random::uniform()) /
+                               3.0f -
+                           0.5f) *
+                          2.0f * fuzziness;
+            actual_out += noise;
+          }
+          outputs[OUT_OUTPUT].setVoltage(actual_out, c);
+        } else {
+          outputs[OUT_OUTPUT].setVoltage(0.0f, c);
         }
       }
     }
 
     // Lights.
     lights[CONTINUOUS_BUTTON_LIGHT].setBrightness(continuous ? 1.f : 0.f);
+    lights[SORT_LIGHT].setBrightness(sort_light_countdown > 0 ? 1.f : 0.f);
   }
 };
 
@@ -320,7 +364,7 @@ struct ChancesDisplay : Widget {
 
   // TODO: We'll want a Framebuffer for this at some point?
   // As of July 29, 2026, the unbuffered drawLayer is consuming less than
-  // 20ms every 40 seconds (when running at 30fps). I'll check this
+  // 40ms every 40 seconds (when running at 30fps). I'll check this
   // every now and then, but that rate is likely not worth the complication
   // of adding a Framebuffer.
 
@@ -335,6 +379,7 @@ struct ChancesDisplay : Widget {
       int counts[Chances::PAIR_COUNT] = {0};
       float current_outs[PORT_MAX_CHANNELS] = {0};
       int out_channels = 1;
+      float fuzz = 0.0f;
       if (module) {
         // Get values from actual module.
         for (int i = 0; i < Chances::PAIR_COUNT; ++i) {
@@ -344,8 +389,9 @@ struct ChancesDisplay : Widget {
         out_channels =
             std::max(1, module->outputs[Chances::OUT_OUTPUT].getChannels());
         for (int c = 0; c < out_channels; ++c) {
-          current_outs[c] = module->outputs[Chances::OUT_OUTPUT].getVoltage(c);
+          current_outs[c] = module->last_output_value[c];
         }
+        fuzz = module->params[Chances::SPREAD_PARAM].getValue();
       } else {
         // Default values to show in module browser and library.
         values[0] = -2.5;
@@ -358,12 +404,13 @@ struct ChancesDisplay : Widget {
         current_outs[0] = 0.5;
       }
 
-      Rect r = box.zeroPos();  // .shrink(Vec(4, 5));  // TODO: ???
+      Rect r = box.zeroPos();
       Vec bounding_box = r.getBottomRight();
 
-      nvgBeginPath(args.vg);
-      nvgFillColor(args.vg, nvgRGBA(250, 250, 250, 255));
-
+      // Since values can be the same on multiple knobs, we need to combine them
+      // and sort them by value (map does the sorting).
+      // TODO: this map would only change when the knobs change. And process()
+      // recomputes it when the knobs move. Maybe just grab it from there?
       std::map<float, int> aggregated_counts;
       int max_count = 0;
       for (int i = 0; i < Chances::PAIR_COUNT; ++i) {
@@ -381,39 +428,106 @@ struct ChancesDisplay : Widget {
       float max_val = 0.0f;
       float range = 0.0f;
       if (max_count > 0) {
-        min_val = aggregated_counts.begin()->first;
-        max_val = aggregated_counts.rbegin()->first;
+        min_val = aggregated_counts.begin()->first - fuzz;
+        max_val = aggregated_counts.rbegin()->first + fuzz;
         range = max_val - min_val;
       }
 
-      // We should display at least one voltage indicator.
+      // We should display at least one voltage indicator at all times, so make
+      // the range slightly larger than one volt.
       range = std::max(range, 1.2f);
+
+      // Pre-compute curve heights and overall peak height across all overlaps.
+      float peak_height = static_cast<float>(max_count);
+      float drawable_width = bounding_box.x - rect_width;
+      static constexpr int MAX_STEPS = 512;
+      int num_steps =
+          std::min(static_cast<int>(std::ceil(bounding_box.x)), MAX_STEPS - 1);
+      float curve_heights[MAX_STEPS] = {0.0f};
+
+      // In case there's a curve, we need to compute the curve before we draw
+      // anything, because the curve might extend above our assumed peak_height
+      // and thus our Y dimension.
+      if (max_count > 0 && fuzz > 0.0f) {
+        // There is actually a spread curve to draw.
+        // We'll fill in curve_heights[] and update peak_height if needed.
+        for (int i = 0; i <= num_steps; ++i) {
+          // The voltage we are determining the height of the curve for.
+          float voltage =
+              (i - (rect_width / 2.0f)) / drawable_width * range + min_val;
+
+          float total_height = 0.0f;
+          for (const auto& pair : aggregated_counts) {
+            float val = pair.first;
+            float count = pair.second;
+
+            float distance = voltage - val;
+            if (std::abs(distance) < fuzz) {
+              // Exact PDF of Irwin-Hall distribution for n=3 (sum of 3
+              // uniforms): In process(), noise is ((u1 + u2 + u3)/3 - 0.5) * 2
+              // * fuzz. S = (u1 + u2 + u3) ranges from [0, 3], centered at 1.5.
+              // Map distance in [-fuzz, +fuzz] back to s in [0, 3]:
+              float s = (distance + fuzz) * (3.0f / (2.0f * fuzz));
+              // I.e., rescale(distance, -fuzz, fuzz, 0, 3);
+
+              // Standard piecewise quadratic equation for Irwin-Hall (n=3):
+              float f = 0.0f;
+              if (s <= 1.0f) {
+                // Left tail: [0, 1]
+                f = 0.5f * s * s;
+              } else if (s <= 2.0f) {
+                // Center hump: [1, 2], peak is at s = 1.5 where f = 0.75
+                f = 0.5f * (-2.0f * s * s + 6.0f * s - 3.0f);
+              } else {
+                // Right tail: [2, 3]
+                float d = s - 3.0f;
+                f = 0.5f * d * d;
+              }
+
+              // Since f(1.5) = 0.75, multiply by (4/3) to normalize peak
+              // to 1.0, then multiply by count so the peak height matches the
+              // anchor count.
+              total_height += count * (f * (4.0f / 3.0f));
+            }
+          }
+          curve_heights[i] = total_height;
+          // In case the curve pops above the tent poles, we want to see the
+          // whole curve.
+          if (total_height > peak_height) {
+            peak_height = total_height;
+          }
+        }
+      }
+
+      float display_max_count = peak_height;
+
+      int y_interval = 1;
+      int rounded_max_count = static_cast<int>(std::ceil(display_max_count));
+      if (rounded_max_count >= 500)
+        y_interval = 100;
+      else if (rounded_max_count >= 200)
+        y_interval = 50;
+      else if (rounded_max_count >= 80)
+        y_interval = 25;
+      else if (rounded_max_count >= 35)
+        y_interval = 10;
+      else if (rounded_max_count >= 16)
+        y_interval = 5;
+      else if (rounded_max_count >= 8)
+        y_interval = 2;
 
       // Make sure background lines and labels are not drawn outside the
       // display.
       nvgScissor(args.vg, RECT_ARGS(r));
 
-      int y_interval = 1;
-      if (max_count >= 500)
-        y_interval = 100;
-      else if (max_count >= 200)
-        y_interval = 50;
-      else if (max_count >= 80)
-        y_interval = 25;
-      else if (max_count >= 35)
-        y_interval = 10;
-      else if (max_count >= 16)
-        y_interval = 5;
-      else if (max_count >= 8)
-        y_interval = 2;
-
-      // Draw faint grid background
+      // Draw faint grid background.
       nvgBeginPath(args.vg);
-      // Horizontal lines (Y-axis / counts)
-      if (max_count > 0) {
-        for (int c = y_interval; c <= max_count; c += y_interval) {
-          float y = bounding_box.y -
-                    (static_cast<float>(c) / max_count) * bounding_box.y;
+      // Horizontal lines (Y-axis / counts).
+      if (display_max_count > 0.0f) {
+        for (int c = y_interval; c <= display_max_count; c += y_interval) {
+          float y =
+              bounding_box.y -
+              (static_cast<float>(c) / display_max_count) * bounding_box.y;
           nvgMoveTo(args.vg, 0, y);
           nvgLineTo(args.vg, bounding_box.x, y);
         }
@@ -424,8 +538,8 @@ struct ChancesDisplay : Widget {
         if (range > 0.0f) {
           int start_v = std::floor(min_val);
           int end_v = std::ceil(max_val);
+          float drawable_width = bounding_box.x - rect_width;
           for (int v = start_v; v <= end_v; ++v) {
-            float drawable_width = bounding_box.x - rect_width;
             float mapped_x =
                 (rect_width / 2.0f) + ((v - min_val) / range) * drawable_width;
             nvgMoveTo(args.vg, mapped_x, 0);
@@ -442,7 +556,26 @@ struct ChancesDisplay : Widget {
       nvgStrokeWidth(args.vg, 1.0f);
       nvgStroke(args.vg);
 
-      // Draw rectangles for PDF
+      // Draw continuous PDF curve, if applicable.
+      if (display_max_count > 0.0f && fuzz > 0.0f) {
+        nvgBeginPath(args.vg);
+        nvgMoveTo(args.vg, 0, bounding_box.y);
+
+        for (int i = 0; i <= num_steps; ++i) {
+          float x = i;
+          float y = bounding_box.y -
+                    (curve_heights[i] / display_max_count) * bounding_box.y;
+          nvgLineTo(args.vg, x, y);
+        }
+        nvgLineTo(args.vg, bounding_box.x, bounding_box.y);
+        nvgClosePath(args.vg);
+
+        // Semi-transparent blueish glow
+        nvgFillColor(args.vg, nvgRGBA(150, 150, 250, 150));
+        nvgFill(args.vg);
+      }
+
+      // Draw rectangles for exact anchors.
       if (max_count > 0) {
         for (const auto& pair : aggregated_counts) {
           float val = pair.first;
@@ -464,7 +597,7 @@ struct ChancesDisplay : Widget {
           float x = mapped_x - (rect_width / 2.0f);
 
           float height =
-              (static_cast<float>(count) / max_count) * bounding_box.y;
+              (static_cast<float>(count) / display_max_count) * bounding_box.y;
           float y = bounding_box.y - height;
 
           nvgBeginPath(args.vg);
@@ -482,7 +615,7 @@ struct ChancesDisplay : Widget {
         if (hovered_pair != -1 && range > 0.0f) {
           float h_val = values[hovered_pair];
           // Only draw the line if it falls within our current min/max display
-          // range
+          // range.
           if (h_val >= min_val && h_val <= max_val) {
             float drawable_width = bounding_box.x - rect_width;
             float h_mapped_x = (rect_width / 2.0f) +
@@ -534,7 +667,7 @@ struct ChancesDisplay : Widget {
         }
       }
 
-      // Draw text labels for integer voltages.
+      // Draw text labels for integer voltages (X-axis).
       std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
       if (font && max_count > 0 && range > 0.0f) {
         nvgSave(args.vg);
@@ -543,10 +676,11 @@ struct ChancesDisplay : Widget {
         nvgTextLetterSpacing(args.vg, -1);
         nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 
-        // NanoVG does not have a built-in NVG_DIFFERENCE enum, but we can
-        // easily synthesize it! By using custom blend functions and multiplying
+        // NanoVG does not have a built-in NVG_DIFFERENCE enum, so we
+        // synthesize it. By using custom blend functions and multiplying
         // the source (white text) by (1 - destination color), it perfectly
-        // inverts whatever is underneath the text.
+        // inverts whatever is underneath the text. This is
+        // a good reason to draw the text *after* everything else is drawn.
         nvgGlobalCompositeBlendFunc(args.vg, NVG_ONE_MINUS_DST_COLOR,
                                     NVG_ONE_MINUS_SRC_COLOR);
         nvgFillColor(args.vg, nvgRGBA(255, 255, 255, 255));
@@ -560,11 +694,12 @@ struct ChancesDisplay : Widget {
           nvgText(args.vg, mapped_x, 2, std::to_string(v).c_str(), NULL);
         }
 
-        // Text labels for counts (Y-axis)
+        // Text labels for counts (Y-axis).
         nvgTextAlign(args.vg, NVG_ALIGN_RIGHT | NVG_ALIGN_MIDDLE);
-        for (int c = y_interval; c <= max_count; c += y_interval) {
-          float y = bounding_box.y -
-                    (static_cast<float>(c) / max_count) * bounding_box.y;
+        for (int c = y_interval; c <= display_max_count; c += y_interval) {
+          float y =
+              bounding_box.y -
+              (static_cast<float>(c) / display_max_count) * bounding_box.y;
           // Slight padding from the right edge, drawn vertically centered on
           // the line
           nvgText(args.vg, bounding_box.x - 2, y, std::to_string(c).c_str(),
@@ -580,7 +715,7 @@ struct ChancesDisplay : Widget {
       auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
       total_time_nanos = total_time_nanos + elapsed;
       ++frame_count;
-      if (frame_count >= 1000) {
+      if (frame_count >= 500) {
         double average_frame_time = total_time_nanos.count() /
                                     (double)frame_count /
                                     1000.0;  // Convert to microseconds.
@@ -658,9 +793,16 @@ struct ChancesWidget : ModuleWidget {
       addParam(ck_val);
     }
 
+    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(22.0, 92.0)), module,
+                                                 Chances::SPREAD_PARAM));
+    addParam(
+        createLightParamCentered<VCVLightButton<MediumSimpleLight<WhiteLight>>>(
+            mm2px(Vec(53.0, 92.0)), module, Chances::SORT_PARAM,
+            Chances::SORT_LIGHT));
+
     addParam(
         createLightParamCentered<VCVLightLatch<MediumSimpleLight<WhiteLight>>>(
-            mm2px(Vec(21.822, 116.0)), module, Chances::CONTINUOUS_BUTTON_PARAM,
+            mm2px(Vec(22.0, 116.0)), module, Chances::CONTINUOUS_BUTTON_PARAM,
             Chances::CONTINUOUS_BUTTON_LIGHT));
 
     RoundBlackKnob* style_knob = createParamCentered<RoundBlackKnob>(
@@ -684,10 +826,6 @@ struct ChancesWidget : ModuleWidget {
     if (!module) return;
 
     menu->addChild(new MenuSeparator);
-
-    // Option to sort the pairs.
-    menu->addChild(createMenuItem("Sort pairs by value now", "",
-                                  [=]() { module->sortPairs(); }));
 
     std::pair<std::string, int> input_ranges[] = {
         {"[-5V, 5V]", 0}, {"[0V, 10V]", 1}, {"[-10V, 10V]", 2}};
