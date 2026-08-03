@@ -776,6 +776,23 @@ struct ChancesKnob : RoundBlackKnob {
   }
 };
 
+struct ChancesSmallKnob : RoundSmallBlackKnob {
+  ChancesDisplay* display = nullptr;
+  int pair_index = -1;
+
+  void onEnter(const EnterEvent& e) override {
+    RoundSmallBlackKnob::onEnter(e);
+    if (display) display->hovered_pair = pair_index;
+  }
+
+  void onLeave(const LeaveEvent& e) override {
+    RoundSmallBlackKnob::onLeave(e);
+    if (display && display->hovered_pair == pair_index) {
+      display->hovered_pair = -1;
+    }
+  }
+};
+
 struct ChancesWidget : ModuleWidget {
   static constexpr float X_DIFF_MM = 11.5;
 
@@ -793,7 +810,7 @@ struct ChancesWidget : ModuleWidget {
 
     // The value-count pairs.
     for (int pos = 0; pos < 5; ++pos) {
-      ChancesKnob* ck_count = createParamCentered<ChancesKnob>(
+      ChancesSmallKnob* ck_count = createParamCentered<ChancesSmallKnob>(
           mm2px(Vec(22.0 + pos * X_DIFF_MM, 46.0)), module,
           Chances::COUNT_PARAM + pos);
       ck_count->display = display;
@@ -808,7 +825,7 @@ struct ChancesWidget : ModuleWidget {
       addParam(ck_val);
     }
     for (int pos = 5; pos < Chances::PAIR_COUNT; ++pos) {
-      ChancesKnob* ck_count = createParamCentered<ChancesKnob>(
+      ChancesSmallKnob* ck_count = createParamCentered<ChancesSmallKnob>(
           mm2px(Vec(22.0 + (pos - 5) * X_DIFF_MM, 69.0)), module,
           Chances::COUNT_PARAM + pos);
       ck_count->display = display;
