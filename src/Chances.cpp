@@ -17,10 +17,11 @@ struct Chances : Module {
   enum ParamId {
     CONTINUOUS_BUTTON_PARAM,
     STYLE_PARAM,
-    ENUMS(VALUE_PARAM, PAIR_COUNT),
-    ENUMS(COUNT_PARAM, PAIR_COUNT),
+    SPREAD_TYPE_PARAM,
     SPREAD_PARAM,
     SORT_PARAM,
+    ENUMS(VALUE_PARAM, PAIR_COUNT),
+    ENUMS(COUNT_PARAM, PAIR_COUNT),
     PARAMS_LEN
   };
   enum InputId { TRIG_INPUT, POSITION_INPUT, INPUTS_LEN };
@@ -71,6 +72,10 @@ struct Chances : Module {
     // A momentary button.
     configSwitch(SORT_PARAM, 0, 1, 0, "Press to sort pairs by value",
                  {"Off", "On"});
+
+    // A 2-position toggle switch (values: 0, 1)
+    configSwitch(SPREAD_TYPE_PARAM, 0.0f, 1.0f, 0.0f, "Kind of Spread",
+                 {"Gaussian", "Uniform"});
 
     configParam(
         SPREAD_PARAM, 0.0f, 2.0f, 0.0f,
@@ -326,13 +331,19 @@ struct Chances : Module {
           float actual_out = out_val;
           // Add spread, if any.
           if (fuzziness > 0.0f) {
-            // An approximation of a Gaussian. Known as the Irwin-Hall
-            // distribution curve, I recently discovered.
-            float noise = ((rack::random::uniform() + rack::random::uniform() +
-                            rack::random::uniform()) /
-                               3.0f -
-                           0.5f) *
-                          2.0f * fuzziness;
+            float noise;
+            if (params[SPREAD_TYPE_PARAM].getValue() == 0) {
+              // An approximation of a Gaussian. Known as the Irwin-Hall
+              // distribution curve, I recently discovered.
+              noise = ((rack::random::uniform() + rack::random::uniform() +
+                        rack::random::uniform()) /
+                           3.0f -
+                       0.5f) *
+                      2.0f * fuzziness;
+            } else {
+              noise = rescale(rack::random::uniform(), 0.0, 1.0, -fuzziness,
+                              fuzziness);
+            }
             actual_out += noise;
           }
           outputs[OUT_OUTPUT].setVoltage(actual_out, c);
@@ -380,6 +391,7 @@ struct ChancesDisplay : Widget {
       float current_outs[PORT_MAX_CHANNELS] = {0};
       int out_channels = 1;
       float fuzz = 0.0f;
+      bool fuzz_uniform = false;
       if (module) {
         // Get values from actual module.
         for (int i = 0; i < Chances::PAIR_COUNT; ++i) {
@@ -392,9 +404,11 @@ struct ChancesDisplay : Widget {
           current_outs[c] = module->last_output_value[c];
         }
         fuzz = module->params[Chances::SPREAD_PARAM].getValue();
+        fuzz_uniform =
+            module->params[Chances::SPREAD_TYPE_PARAM].getValue() > 0.5;
       } else {
         // Default values to show in module browser and library.
-        values[0] = -2.5;
+        values[0] = -1.5;
         counts[0] = 10;
         values[1] = 0.5;
         counts[1] = 16;
@@ -402,6 +416,8 @@ struct ChancesDisplay : Widget {
         counts[2] = 5;
         out_channels = 1;
         current_outs[0] = 0.5;
+        fuzz = 0.25;
+        fuzz_uniform = false;
       }
 
       Rect r = box.zeroPos();
@@ -411,6 +427,7 @@ struct ChancesDisplay : Widget {
       // and sort them by value (map does the sorting).
       // TODO: this map would only change when the knobs change. And process()
       // recomputes it when the knobs move. Maybe just grab it from there?
+      // Not sure how to do in a thread-safe way.
       std::map<float, int> aggregated_counts;
       int max_count = 0;
       for (int i = 0; i < Chances::PAIR_COUNT; ++i) {
@@ -450,51 +467,64 @@ struct ChancesDisplay : Widget {
       // and thus our Y dimension.
       if (max_count > 0 && fuzz > 0.0f) {
         // There is actually a spread curve to draw.
-        // We'll fill in curve_heights[] and update peak_height if needed.
-        for (int i = 0; i <= num_steps; ++i) {
-          // The voltage we are determining the height of the curve for.
-          float voltage =
-              (i - (rect_width / 2.0f)) / drawable_width * range + min_val;
+        // Iterate through each pair and accumulate its contribution only across
+        // the pixel span it actually covers [val - fuzz, val + fuzz].
+        for (const auto& pair : aggregated_counts) {
+          float val = pair.first;
+          float count = pair.second;
 
-          float total_height = 0.0f;
-          for (const auto& pair : aggregated_counts) {
-            float val = pair.first;
-            float count = pair.second;
+          // Convert [val - fuzz, val + fuzz] to display pixel index bounds.
+          float min_x = (rect_width / 2.0f) +
+                        ((val - fuzz - min_val) / range) * drawable_width;
+          float max_x = (rect_width / 2.0f) +
+                        ((val + fuzz - min_val) / range) * drawable_width;
 
-            float distance = voltage - val;
-            if (std::abs(distance) < fuzz) {
+          int i_start = std::max(0, static_cast<int>(std::floor(min_x)));
+          int i_end = std::min(num_steps, static_cast<int>(std::ceil(max_x)));
+
+          for (int i = i_start; i <= i_end; ++i) {
+            float voltage =
+                (i - (rect_width / 2.0f)) / drawable_width * range + min_val;
+
+            float curve_addition = 0.0f;
+            if (fuzz_uniform) {
+              curve_heights[i] += count;
+            } else {
+              float distance = voltage - val;
               // Exact PDF of Irwin-Hall distribution for n=3 (sum of 3
-              // uniforms): In process(), noise is ((u1 + u2 + u3)/3 - 0.5) * 2
-              // * fuzz. S = (u1 + u2 + u3) ranges from [0, 3], centered at 1.5.
+              // uniforms): In process(), noise is:
+              //   ((u1 + u2 + u3)/3 - 0.5) * 2 * fuzz
+              // S = (u1 + u2 + u3) ranges from [0, 3], centered at 1.5.
               // Map distance in [-fuzz, +fuzz] back to s in [0, 3]:
               float s = (distance + fuzz) * (3.0f / (2.0f * fuzz));
-              // I.e., rescale(distance, -fuzz, fuzz, 0, 3);
-
+              s = clamp(s, 0.0f,
+                        3.0f);  // Guard against float rounding at edges.
               // Standard piecewise quadratic equation for Irwin-Hall (n=3):
-              float f = 0.0f;
               if (s <= 1.0f) {
                 // Left tail: [0, 1]
-                f = 0.5f * s * s;
+                curve_addition = 0.5f * s * s;
               } else if (s <= 2.0f) {
                 // Center hump: [1, 2], peak is at s = 1.5 where f = 0.75
-                f = 0.5f * (-2.0f * s * s + 6.0f * s - 3.0f);
+                // 0.5 * (-2s^2 + 6s - 3)
+                curve_addition = 0.5f * (-2.0f * s * s + 6.0f * s - 3.0f);
               } else {
                 // Right tail: [2, 3]
                 float d = s - 3.0f;
-                f = 0.5f * d * d;
+                curve_addition = 0.5f * d * d;
               }
-
               // Since f(1.5) = 0.75, multiply by (4/3) to normalize peak
               // to 1.0, then multiply by count so the peak height matches the
               // anchor count.
-              total_height += count * (f * (4.0f / 3.0f));
+              curve_heights[i] += count * (curve_addition * (4.0f / 3.0f));
             }
           }
-          curve_heights[i] = total_height;
-          // In case the curve pops above the tent poles, we want to see the
-          // whole curve.
-          if (total_height > peak_height) {
-            peak_height = total_height;
+        }
+
+        // In case the accumulated curve pops above the tent poles, find the
+        // highest peak across the entire curve.
+        for (int i = 0; i <= num_steps; ++i) {
+          if (curve_heights[i] > peak_height) {
+            peak_height = curve_heights[i];
           }
         }
       }
@@ -792,6 +822,9 @@ struct ChancesWidget : ModuleWidget {
       ck_val->pair_index = pos;
       addParam(ck_val);
     }
+
+    addParam(createParamCentered<CKSS>(mm2px(Vec(8.032, 92.0)), module,
+                                       Chances::SPREAD_TYPE_PARAM));
 
     addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(22.0, 92.0)), module,
                                                  Chances::SPREAD_PARAM));

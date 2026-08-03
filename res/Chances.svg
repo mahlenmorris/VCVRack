@@ -33,8 +33,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.979899"
-     inkscape:cx="133.0876"
-     inkscape:cy="272.48865"
+     inkscape:cx="105.81348"
+     inkscape:cy="241.67899"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -43,10 +43,10 @@
      inkscape:snap-page="true"
      inkscape:bbox-nodes="false"
      inkscape:snap-bbox-edge-midpoints="false"
-     inkscape:window-width="1207"
-     inkscape:window-height="1315"
-     inkscape:window-x="34"
-     inkscape:window-y="37"
+     inkscape:window-width="1460"
+     inkscape:window-height="1183"
+     inkscape:window-x="139"
+     inkscape:window-y="63"
      inkscape:window-maximized="0"
      inkscape:snap-bbox-midpoints="true"
      inkscape:snap-nodes="false"
@@ -204,6 +204,27 @@
        style="display:inline;font-size:4.23333px;line-height:1.25;-inkscape-font-specification:sans-serif;word-spacing:0px;stroke-width:0.264583"
        aria-label="SORT"
        transform="translate(0,168.49998)" />
+    <g
+       id="g6"
+       style="display:inline;fill:#000000;fill-opacity:1"
+       transform="matrix(1.2840528,0,0,1.2905291,40.708604,-75.726664)">
+      <g
+         id="g5"
+         style="fill:#000000;fill-opacity:1">
+        <path
+           style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.0647533px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           d="m -26.9572,268.61658 c 0,0 0.506653,-0.15812 0.809206,-1.36404 0.302553,-1.20592 0.174732,-3.03883 0.717123,-3.02994 0.542392,0.009 0.497358,1.8786 0.752529,3.04073 0.260873,1.18811 0.73911,1.34168 0.73911,1.34168"
+           id="path4"
+           sodipodi:nodetypes="czzsc" />
+      </g>
+    </g>
+    <rect
+       style="display:inline;fill:#000000;fill-rule:evenodd;stroke-width:0.110317"
+       id="rect6"
+       width="2.5"
+       height="5.6578417"
+       x="6.7819138"
+       y="249.94321" />
   </g>
   <g
      inkscape:groupmode="layer"
@@ -266,6 +287,13 @@
        cy="92"
        r="4"
        inkscape:label="spread" />
+    <circle
+       style="display:inline;vector-effect:none;fill:#ff0000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
+       id="path4954-0-6-4-9"
+       cx="8.0319138"
+       cy="92"
+       r="4"
+       inkscape:label="spread_type" />
     <circle
        style="display:inline;opacity:1;vector-effect:none;fill:#ff0000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
        id="path4954-3-0-2-5"
