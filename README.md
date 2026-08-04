@@ -6,7 +6,8 @@ self-regulating structure. Exploring the region between random and static.
 ![Memory Modules image](images/TheFamilyRowTwo.png)
 
 * [Memory System](Memory.md): A set of seven interrelated recording/playback modules with [their own documentation](Memory.md).
-* [BASICally](#basically): A simple, likely familiar procedural programming language within the context of VCV Rack.
+* [BASICally](#basically): A simple, possibly familiar procedural programming language designed to work within the context of VCV Rack. 
+* [Chances](#chances): A random number generator where you select the desired values, their relative frequency, and how values are chosen (e.g., no repeats). Useful as both as a tightly constrained random number generator and as a quantizer for non-note values.
 * [Distribute](#distribute): A random number generator with flexible output ranges and unusually tunable probability distributions.
 * [Drifter](#drifter): Creates sequences of values that can slowly (or quickly) vary, like a series of points doing random walks connected into a series.
 * [Fermata](#fermata): A text editor and labeling module. Write much longer text notes. Resizable, scrolls, font choices, and more. Or just add some visual emphasis,
@@ -978,10 +979,63 @@ VCV Rack version 1. But you can write code in Lua or Javascript (in an external 
 
 ![Line Break image](images/Separator.png)
 
+# Chances
+A random number generator where you select the desired values and their relative frequency. You also select how values are chosen; e.g., sampling with repetition, shuffled into an order, or sampled but with no repeats. You can also specify the allowed SPREAD of output values from your desired values, allowing as much or as little variation from the desired values as you like.
+
+![Chances Examples](images/Chances.png)
+
+### Uses
+* Create a random, quasi-random, or dare I say, stochastic stream of CV values with highly controlled constraints. These might be:
+* * A particular set of V/Oct notes.
+* * A set of note-like V/Oct values, but not constrained to any known scale.
+* * Values that change the V/Oct octave (e.g., -2, -1, 0, 1), but the COUNT specifies the likelyhood of each value being chosen. 
+* * Use the values to specify particular amounts of an effect, like distortion or delay lengths. 
+* Choosing the "Input Selection" STYLE effectively quantizes an incoming signal to one of ten values, and here the COUNT dictates how much of the input range quantizes to any specific value. 
+### Controls
+#### Pairs of COUNT and VALUE Knobs
+There are ten pairs of COUNT and VALUE knobs. VALUE ranges from -10V to 10V, and COUNT ranges from 0 to 100. When the COUNT is zero (the default), then that pair will not contribute to the PDF (Probability Distribution Function) displayed at the top of Chances.
+
+When the COUNT is more than zero, the larger the COUNT, the greater the chance that value will be output. See the STYLE knob below for details about how COUNT's affect the chances of the value being output.
+
+Note that VCV Rack has [a number of ways to enter particular values](https://vcvrack.com/manual/KeyCommands#Parameter-commands) into a knob. For example, right-clicking a knob and typing "d#3v" will set the knob to the V/Oct value of the D#3 note.
+#### SORT Button
+It's often simpler to manipulate the COUNT and VALUE knobs when the VALUEs are sorted from smallest to largest. Pressing this button will sort the knob pairs that way, with all of the COUNT==0 pairs at the end. THis will not affect the PDF or output stream in any way.
+#### SPREAD
+Ranges from 0V to 2V, defaults to 0V. 
+
+
+#### Kind of SPREAD Switch
+
+(1) OK, it's not *exactly* Gaussian, it's Irwin-Hall with N=3. Please do not use Chances for cryptography purposes :)
+
+
+
+
+#### CONT Button
+If set (light is lit), then Chances will continuously generate new random values.
+#### TRIG Input
+If CONT is off, then new random values will only be generated when TRIG receives a trigger. The value at OUT value 
+will be held until the next trigger occurs.
+#### STYLE
+
+#### IN Input
+
+
+#### OUT Output
+Outputs a stream of random values based on the controls above. 
+
+### Bypass Behavior
+If this module is bypassed, then OUT will equal 0.0.
+
+### Related Modules
+Many modules tagged with "Random" will also produce random values. See also my [Distribute](#distribute) module.
+
+![Line Break image](images/Separator.png)
+
 # Distribute
 Generates random values with flexible output ranges and unusually tunable probability distributions.
 
-![Distribute](images/DistributeHiLo.png)
+![Distribute Examples](images/Distribute.png)
 
 ### Uses
 * Create random CV values within a desired range.
@@ -1029,13 +1083,15 @@ Outputs a stream of random values based on the controls above.
 If this module is bypassed, then OUT will equal 0.0.
 
 ### Related Modules
-Many modules tagged with "Random" will also produce random values.
+Many modules tagged with "Random" will also produce random values. See also my [Chances](#chances) module.
 
 ![Line Break image](images/Separator.png)
 
 # Drifter
 Creates sequences of values that can slowly (or quickly) vary, like a series of
 points doing random walks connected into a series.
+
+![Drifter Examples](images/Drifter.png)
 
 ### Examples
 ![Simple Example](images/DrifterSimplestExample.png)
