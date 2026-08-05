@@ -2,11 +2,7 @@
 Modules for use with VCV Rack 2.0, with an emphasis on generative and
 self-regulating structure. Exploring the region between random and static.
 
-![All Modules image](images/TheFamily.png)
-![Memory Modules image](images/TheFamilyRowTwo.png)
-
-* [Memory System](Memory.md): A set of seven interrelated recording/playback modules with [their own documentation](Memory.md).
-* [BASICally](#basically): A simple, possibly familiar procedural programming language designed to work within the context of VCV Rack. 
+![Stochastic Telegraph Modules](images/TheFamily.png)
 * [Chances](#chances): A random number generator where you select the desired values, their relative frequency, and how values are chosen (e.g., no repeats). Useful as both as a tightly constrained random number generator and as a quantizer for non-note values.
 * [Distribute](#distribute): A random number generator with flexible output ranges and unusually tunable probability distributions.
 * [Drifter](#drifter): Creates sequences of values that can slowly (or quickly) vary, like a series of points doing random walks connected into a series.
@@ -14,7 +10,16 @@ self-regulating structure. Exploring the region between random and static.
 Stochastic Telegraph-style.
 * [Fuse](#fuse): Block, allow, or attenuate a signal passing through, based on the number of triggers observed in a different signal.
 * [TTY](#tty): A scrolling text window that displays distinct values it gets, and also displays [Tipsy](https://github.com/baconpaul/tipsy-encoder) text messages sent by other modules (like BASICally).
+
+![Stochastic Telegraph Modules](images/TheFamilyRowTwo.png)
+* [BASICally](#basically): A simple, possibly familiar procedural programming language designed to work within the context of VCV Rack. 
 * [Venn](#venn): A 2D graphical signal generator consisting of up to sixteen visible Circles and a visible Point chosen by mouse or CV. Where the Point is in relation to a Circle determines five CV values per Circle. 
+
+![Memory Modules](images/MemoryFamilySameHeight.png)
+* [The Memory System](Memory.md): A set of seven interrelated recording/playback modules with [their own documentation](Memory.md).
+
+![Twixt Modules](images/TwixtFamily.png)
+Twixt and Mixt, a pair of premium modules, with [their own documentation](https://github.com/mahlenmorris/STPremium/blob/main/Twixt.md).
 
 ![Line Break image](images/Separator.png)
 
