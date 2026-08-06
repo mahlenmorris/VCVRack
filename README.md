@@ -946,9 +946,10 @@ it can be useful (especially for debugging a script) to see the true value of
 a variable in an OUTn. You can clamp/unclamp each of the OUTn ports individually
 in this menu.
 
-Two modules that can usefully display the unclamped values are
-[ML Modules' Volt Meter](https://library.vcvrack.com/ML_modules/VoltMeter) and
-[NYSTHI's MultiVoltimetro](https://library.vcvrack.com/NYSTHI/MultiVoltimetro).
+Modules that can usefully display the unclamped values include:
+* [ML Modules' Volt Meter](https://library.vcvrack.com/ML_modules/VoltMeter),
+* [my own TTY](#tty), and
+* [NYSTHI's MultiVoltimetro](https://library.vcvrack.com/NYSTHI/MultiVoltimetro).
 
 #### Syntax/Math Hints
 Just in case you're in the middle of coding and you don't want to look up
