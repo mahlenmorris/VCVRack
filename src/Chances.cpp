@@ -44,6 +44,8 @@ struct Chances : Module {
 
   // Data for no repeats.
   std::map<float, std::pair<int, int>> block_map;
+
+  // Data for displaying the red triangles.
   float last_output_value[PORT_MAX_CHANNELS] = {};
 
   // Data for input selection
@@ -53,6 +55,9 @@ struct Chances : Module {
   dsp::SchmittTrigger sortTrigger;
   int sort_light_countdown = 0;
   bool sort_button_pressed = false;  // Only sort once per press.
+
+  // Unless otherwise indicated, output this many channels.
+  int default_out_channel_count = 1;
 
   Chances() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -117,6 +122,8 @@ struct Chances : Module {
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "input_range", json_integer(input_range));
+    json_object_set_new(rootJ, "default_out_channel_count",
+                        json_integer(default_out_channel_count));
     return rootJ;
   }
 
@@ -124,6 +131,12 @@ struct Chances : Module {
     json_t* input_range_json = json_object_get(rootJ, "input_range");
     if (input_range_json) {
       input_range = json_integer_value(input_range_json);
+    }
+    json_t* default_out_channel_count_json =
+        json_object_get(rootJ, "default_out_channel_count");
+    if (default_out_channel_count_json) {
+      default_out_channel_count =
+          json_integer_value(default_out_channel_count_json);
     }
   }
 
@@ -244,21 +257,44 @@ struct Chances : Module {
       }
     }
 
-    int channels = std::max(1, inputs[TRIG_INPUT].getChannels());
+    // Need to have distinct notions of input channels vs output channels.
+    // This allows me to have a single clock signal to TRIG that creates N
+    // outputs.
+    int in_channels = std::max(1, inputs[TRIG_INPUT].getChannels());
+    int out_channels =
+        in_channels < 2 ? default_out_channel_count : in_channels;
     // If we're using "Input Selection" STYLE, then the number of channels in
     // POSITION_INPUT is more significant.
     if (style == 3) {
-      channels = std::max(1, inputs[POSITION_INPUT].getChannels());
+      out_channels = std::max(1, inputs[POSITION_INPUT].getChannels());
     }
-    outputs[OUT_OUTPUT].setChannels(channels);
+    outputs[OUT_OUTPUT].setChannels(out_channels);
 
     bool continuous = params[CONTINUOUS_BUTTON_PARAM].getValue() > 0.5f;
-    for (int c = 0; c < channels; ++c) {
+    bool universal_trigger = false;
+    // If we only have one channel on TRIG input and it triggers, that applies
+    // to multiple output channels.
+    if (inputs[TRIG_INPUT].getChannels() == 1) {
+      bool trig_was_low = !inputTrigger[0].isHigh();
+      inputTrigger[0].process(
+          rescale(inputs[TRIG_INPUT].getVoltage(0), 0.1f, 2.f, 0.f, 1.f));
+      universal_trigger = trig_was_low && inputTrigger[0].isHigh();
+    }
+
+    for (int curr_channel = 0; curr_channel < out_channels; ++curr_channel) {
       // Time to output new value?
-      bool trig_was_low = !inputTrigger[c].isHigh();
-      inputTrigger[c].process(
-          rescale(inputs[TRIG_INPUT].getVoltage(c), 0.1f, 2.f, 0.f, 1.f));
-      bool trig_from_input = trig_was_low && inputTrigger[c].isHigh();
+      bool trig_from_input = false;
+      if (universal_trigger) {
+        // Just one TRIG channel, it it triggered? Yes, we have a new output.
+        trig_from_input = true;
+      } else if (in_channels > 1) {
+        // if there is more than in channel to TRIG, then we check them
+        // individually.
+        bool trig_was_low = !inputTrigger[curr_channel].isHigh();
+        inputTrigger[curr_channel].process(rescale(
+            inputs[TRIG_INPUT].getVoltage(curr_channel), 0.1f, 2.f, 0.f, 1.f));
+        trig_from_input = trig_was_low && inputTrigger[curr_channel].isHigh();
+      }
 
       if (trig_from_input || continuous) {
         float out_val = 0.0f;
@@ -266,19 +302,20 @@ struct Chances : Module {
 
         if (style == 1) {
           // shuffling.
-          if (shuffled_samples[c].size() > 0) {
-            if (shuffled_index[c] < 0) {
-              perform_shuffle(c);
+          if (shuffled_samples[curr_channel].size() > 0) {
+            if (shuffled_index[curr_channel] < 0) {
+              perform_shuffle(curr_channel);
             }
-            out_val = shuffled_samples[c].at(shuffled_index[c]);
+            out_val =
+                shuffled_samples[curr_channel].at(shuffled_index[curr_channel]);
             has_val = true;
-            --shuffled_index[c];
+            --shuffled_index[curr_channel];
           }
         } else if (style == 2 && block_map.size() >= 2) {
           // no repeats.
           int n = 0;
           int s = 0;
-          auto it = block_map.find(last_output_value[c]);
+          auto it = block_map.find(last_output_value[curr_channel]);
           if (it != block_map.end()) {
             n = it->second.first;
             s = it->second.second;
@@ -306,9 +343,9 @@ struct Chances : Module {
               range_max = 5.0f;
             }
 
-            size_t index =
-                (size_t)(rescale(inputs[POSITION_INPUT].getVoltage(c),
-                                 range_min, range_max, 0.0, samples.size()));
+            size_t index = (size_t)(rescale(
+                inputs[POSITION_INPUT].getVoltage(curr_channel), range_min,
+                range_max, 0.0, samples.size()));
             // Let's just make really sure we never exceed the bounds.
             // After all, user could be wrong about the actual input_range.
             index = clamp(index, 0, samples.size() - 1);
@@ -326,7 +363,7 @@ struct Chances : Module {
         }
 
         if (has_val) {
-          last_output_value[c] = out_val;
+          last_output_value[curr_channel] = out_val;
           float fuzziness = params[SPREAD_PARAM].getValue();
           float actual_out = out_val;
           // Add spread, if any.
@@ -346,9 +383,9 @@ struct Chances : Module {
             }
             actual_out += noise;
           }
-          outputs[OUT_OUTPUT].setVoltage(actual_out, c);
+          outputs[OUT_OUTPUT].setVoltage(actual_out, curr_channel);
         } else {
-          outputs[OUT_OUTPUT].setVoltage(0.0f, c);
+          outputs[OUT_OUTPUT].setVoltage(0.0f, curr_channel);
         }
       }
     }
@@ -880,7 +917,7 @@ struct ChancesWidget : ModuleWidget {
     std::pair<std::string, int> input_ranges[] = {
         {"[-5V, 5V]", 0}, {"[0V, 10V]", 1}, {"[-10V, 10V]", 2}};
 
-    MenuItem* range_menu =
+    menu->addChild(
         createSubmenuItem("Input Selection Range", "", [=](Menu* menu) {
           for (auto line : input_ranges) {
             menu->addChild(createCheckMenuItem(
@@ -888,8 +925,18 @@ struct ChancesWidget : ModuleWidget {
                 [=]() { return line.second == module->input_range; },
                 [=]() { module->input_range = line.second; }));
           }
-        });
-    menu->addChild(range_menu);
+        }));
+    menu->addChild(createSubmenuItem(
+        "Default number of OUT channels",
+        string::f("%d", module->default_out_channel_count), [=](Menu* menu) {
+          for (int c = 1; c <= PORT_MAX_CHANNELS; c++) {
+            std::string channelsLabel = string::f("%d", c);
+            menu->addChild(createCheckMenuItem(
+                channelsLabel, "",
+                [=]() { return module->default_out_channel_count == c; },
+                [=]() { module->default_out_channel_count = c; }));
+          }
+        }));
   }
 };
 

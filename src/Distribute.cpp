@@ -1,13 +1,11 @@
 // Distribute is a random number generator with tunable distributions, based on
 // Mixt.
 
-#include "plugin.hpp"
-
 #include "controlled_random_distribution.h"
 #include "distribution_graphs.h"
+#include "plugin.hpp"
 
 struct Distribute : Module {
-
   enum ParamId {
     UPPER_LIMIT_PARAM,
     DISTRIBUTION_PARAM,
@@ -20,6 +18,9 @@ struct Distribute : Module {
   enum InputId { TRIG_INPUT, INPUTS_LEN };
   enum OutputId { OUT_OUTPUT, OUTPUTS_LEN };
   enum LightId { CONTINUOUS_LIGHT, LIGHTS_LEN };
+
+  // Unless otherwise indicated, output this many channels.
+  int default_out_channel_count = 1;
 
   Distribute() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -40,8 +41,9 @@ struct Distribute : Module {
                  "Ignore trigger and continuously outputs random numbers.",
                  {"Off", "On"});
 
-    configInput(TRIG_INPUT, "Triggers here will cause a new random number to "
-                            "be sent to the output.");
+    configInput(TRIG_INPUT,
+                "Triggers here will cause a new random number to "
+                "be sent to the output.");
     configOutput(
         OUT_OUTPUT,
         "Emits random voltages according to the distribution and limits.");
@@ -54,15 +56,23 @@ struct Distribute : Module {
   // Save and retrieve menu choice(s) and data.
   // For now we have an empty version, as I've been told it's better to have
   // one in case you add to it later.
-  json_t *dataToJson() override {
-    json_t *rootJ = json_object();
-
+  json_t* dataToJson() override {
+    json_t* rootJ = json_object();
+    json_object_set_new(rootJ, "default_out_channel_count",
+                        json_integer(default_out_channel_count));
     return rootJ;
   }
 
-  void dataFromJson(json_t *rootJ) override {}
+  void dataFromJson(json_t* rootJ) override {
+    json_t* default_out_channel_count_json =
+        json_object_get(rootJ, "default_out_channel_count");
+    if (default_out_channel_count_json) {
+      default_out_channel_count =
+          json_integer_value(default_out_channel_count_json);
+    }
+  }
 
-  void processBypass(const ProcessArgs &args) override {}
+  void processBypass(const ProcessArgs& args) override {}
 
   // For detecting input triggers (polyphonic).
   dsp::SchmittTrigger inputTrigger[PORT_MAX_CHANNELS];
@@ -71,14 +81,27 @@ struct Distribute : Module {
   dsp::ClockDivider paramDivider;
   RandomDistribution dist{-10.f, 10.f, 1.f};
 
-  void process(const ProcessArgs &args) override {
-    int channels = std::max(1, inputs[TRIG_INPUT].getChannels());
-    outputs[OUT_OUTPUT].setChannels(channels);
+  void process(const ProcessArgs& args) override {
+    // Need to have distinct notions of input channels vs output channels.
+    // This allows me to have a single clock signal to TRIG that creates N
+    // outputs.
+    int in_channels = std::max(1, inputs[TRIG_INPUT].getChannels());
+    int out_channels =
+        in_channels < 2 ? default_out_channel_count : in_channels;
+    outputs[OUT_OUTPUT].setChannels(out_channels);
 
     bool continuous = params[CONTINUOUS_PARAM].getValue() > 0.5f;
+    bool universal_trigger = false;
+    // If we only have one channel on TRIG input and it triggers, that applies
+    // to multiple output channels.
+    if (inputs[TRIG_INPUT].getChannels() == 1) {
+      bool trig_was_low = !inputTrigger[0].isHigh();
+      inputTrigger[0].process(
+          rescale(inputs[TRIG_INPUT].getVoltage(0), 0.1f, 2.f, 0.f, 1.f));
+      universal_trigger = trig_was_low && inputTrigger[0].isHigh();
+    }
 
     if (paramDivider.process()) {
-
       float distribution = params[DISTRIBUTION_PARAM].getValue();
       float lower_limit = params[LOWER_LIMIT_PARAM].getValue();
       float upper_limit = params[UPPER_LIMIT_PARAM].getValue();
@@ -94,16 +117,24 @@ struct Distribute : Module {
           pdf_section == RandomDistribution::BOTH ? bias : 0.0f, pdf_section);
     }
 
-    for (int c = 0; c < channels; c++) {
-      bool trig_was_low = !inputTrigger[c].isHigh();
-      inputTrigger[c].process(
-          rescale(inputs[TRIG_INPUT].getVoltage(c), 0.1f, 2.f, 0.f, 1.f));
-      bool trig_from_input = trig_was_low && inputTrigger[c].isHigh();
+    for (int curr_channel = 0; curr_channel < out_channels; curr_channel++) {
+      bool trig_from_input = false;
+      if (universal_trigger) {
+        // Just one TRIG channel, it it triggered? Yes, we have a new output.
+        trig_from_input = true;
+      } else if (in_channels > 1) {
+        // if there is more than in channel to TRIG, then we check them
+        // individually.
+        bool trig_was_low = !inputTrigger[curr_channel].isHigh();
+        inputTrigger[curr_channel].process(rescale(
+            inputs[TRIG_INPUT].getVoltage(curr_channel), 0.1f, 2.f, 0.f, 1.f));
+        trig_from_input = trig_was_low && inputTrigger[curr_channel].isHigh();
+      }
 
       if (trig_from_input || continuous) {
-        outVolts[c] = dist.next();
+        outVolts[curr_channel] = dist.next();
       }
-      outputs[OUT_OUTPUT].setVoltage(outVolts[c], c);
+      outputs[OUT_OUTPUT].setVoltage(outVolts[curr_channel], curr_channel);
     }
 
     // Lights.
@@ -113,15 +144,15 @@ struct Distribute : Module {
   RandomDistribution::PDFSection GetSection() {
     int section = params[SECTION_PARAM].getValue();
     switch (section) {
-    case 0:
-      return RandomDistribution::LEFT;
-    case 1:
-      return RandomDistribution::BOTH;
-    case 2:
-      return RandomDistribution::RIGHT;
-    default:
-      // This should never happen, but just in case, we'll default to BOTH.
-      return RandomDistribution::BOTH;
+      case 0:
+        return RandomDistribution::LEFT;
+      case 1:
+        return RandomDistribution::BOTH;
+      case 2:
+        return RandomDistribution::RIGHT;
+      default:
+        // This should never happen, but just in case, we'll default to BOTH.
+        return RandomDistribution::BOTH;
     }
   }
 };
@@ -132,11 +163,11 @@ struct Distribute : Module {
 // Not worth the extra complication of the FramebufferWidget, I think.
 // TODO: remeasure this draw time, after adding bias and section.
 struct DistributionWidget : Widget {
-  Distribute *module;
+  Distribute* module;
 
   DistributionWidget() {}
 
-  void drawLayer(const DrawArgs &args, int layer) override {
+  void drawLayer(const DrawArgs& args, int layer) override {
     if (layer == 1) {
       float distribution;
       float bias;
@@ -166,10 +197,10 @@ struct DistributionWidget : Widget {
       int last_bin = NUM_DISTRIBUTION_BINS - 1;
       if (pdf_section == RandomDistribution::LEFT) {
         last_bin =
-            floor(NUM_DISTRIBUTION_BINS / 2); // i.e., 30. We use 31 bins.
+            floor(NUM_DISTRIBUTION_BINS / 2);  // i.e., 30. We use 31 bins.
       } else if (pdf_section == RandomDistribution::RIGHT) {
         first_bin =
-            floor(NUM_DISTRIBUTION_BINS / 2); // i.e., 30. We use 31 bins.
+            floor(NUM_DISTRIBUTION_BINS / 2);  // i.e., 30. We use 31 bins.
       }
 
       // Want the left-side line to not be slanted, so this makes the last
@@ -193,7 +224,7 @@ struct DistributionWidget : Widget {
       nvgFillColor(args.vg, nvgRGBA(250, 250, 250, 255));
 
       nvgSave(args.vg);
-      nvgScissor(args.vg, RECT_ARGS(r)); // Not sure this is right?
+      nvgScissor(args.vg, RECT_ARGS(r));  // Not sure this is right?
 
       // Draw the Distribution.
       // In one shape we:
@@ -236,13 +267,13 @@ struct DistributionWidget : Widget {
 // as we have room and it's good to make it very obvious.
 struct DistributeNumberDisplayWidget : TransparentWidget {
   // 'module' must be set by creator.
-  Distribute *module;
+  Distribute* module;
   Distribute::ParamId my_param_id;
   float default_for_browser;
 
   DistributeNumberDisplayWidget() : module{nullptr} {}
 
-  void drawLayer(const DrawArgs &args, int layer) override {
+  void drawLayer(const DrawArgs& args, int layer) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
     if (layer == 1) {
       // No background color!
@@ -277,8 +308,7 @@ struct DistributeRandomButton : VCVLightButton<MediumSimpleLight<WhiteLight>> {
 };
 
 struct DistributeWidget : ModuleWidget {
-
-  DistributeWidget(Distribute *module) {
+  DistributeWidget(Distribute* module) {
     setModule(module);
     setPanel(
         createPanel(asset::plugin(pluginInstance, "res/Distribute.svg"),
@@ -306,7 +336,7 @@ struct DistributeWidget : ModuleWidget {
         mm2px(Vec(22.256, 111.0)), module, Distribute::OUT_OUTPUT));
 
     // 1st limit picker.
-    DistributeNumberDisplayWidget *number_1 =
+    DistributeNumberDisplayWidget* number_1 =
         createWidget<DistributeNumberDisplayWidget>(mm2px(Vec(3.0, 17.0)));
     number_1->box.size = mm2px(Vec(15.0, 6.0));
     number_1->module = module;
@@ -315,7 +345,7 @@ struct DistributeWidget : ModuleWidget {
     addChild(number_1);
 
     // 2nd limit picker.
-    DistributeNumberDisplayWidget *number_2 =
+    DistributeNumberDisplayWidget* number_2 =
         createWidget<DistributeNumberDisplayWidget>(mm2px(Vec(3.0, 29.0)));
     number_2->box.size = mm2px(Vec(15.0, 6.0));
     number_2->module = module;
@@ -324,13 +354,31 @@ struct DistributeWidget : ModuleWidget {
     addChild(number_2);
 
     // PDF display.
-    DistributionWidget *dist_graph =
+    DistributionWidget* dist_graph =
         createWidget<DistributionWidget>(mm2px(Vec(3.24, 39.7)));
     dist_graph->module = module;
     dist_graph->box.size = mm2px(Vec(24.0, 13.0));
     addChild(dist_graph);
   }
+
+  void appendContextMenu(Menu* menu) override {
+    Distribute* module = dynamic_cast<Distribute*>(this->module);
+    if (!module) return;
+
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createSubmenuItem(
+        "Default number of OUT channels",
+        string::f("%d", module->default_out_channel_count), [=](Menu* menu) {
+          for (int c = 1; c <= PORT_MAX_CHANNELS; c++) {
+            std::string channelsLabel = string::f("%d", c);
+            menu->addChild(createCheckMenuItem(
+                channelsLabel, "",
+                [=]() { return module->default_out_channel_count == c; },
+                [=]() { module->default_out_channel_count = c; }));
+          }
+        }));
+  }
 };
 
-Model *modelDistribute =
+Model* modelDistribute =
     createModel<Distribute, DistributeWidget>("Distribute");
