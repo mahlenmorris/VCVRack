@@ -1,5 +1,14 @@
 # Release Notes
 
+### 2.0.28
+#### (Date unknown)
+* Another "random" module? It's like I'm trying to **earn** the "Stochastic" in my name! Meet [Chances](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#chances), which lets you specify precise values to select and their relative frequency. It's like picking values from a highly stacked deck of cards.
+* * There's four different STYLE's of picking values, including one that makes Chances an unusual kind of Quantizer.
+* * The module also allows for a SPREAD of results at a distance from the precise values you pick.
+* * It's quite visual, showing you the PDF of what you've dialed in.
+* * Polyphonic!
+* As per the suggestion of @andreya.ek.frisk, Distribute is now polyphonic. Not only can you have multiple channels to TRIG running at different rates, there's also a menu option for generating 1-16 values for a single TRIG channel. 
+
 ### 2.0.27
 #### July 13, 2026
 * I wouldn't have thought there was anything new to add to random number generation, but then I stumbled upon this idea. This release adds a new random number generator, [Distribute](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#distribute). It emits a wide variety of tunable distributions for the values generated, including non-symmetric ones.  
