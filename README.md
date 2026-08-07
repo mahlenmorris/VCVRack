@@ -6,8 +6,8 @@ self-regulating structure. Exploring the region between random and static.
 * [Chances](#chances): A random number generator where you select the desired values, their relative frequency, and how values are chosen (e.g., no repeats). Useful as both as a tightly constrained random number generator and as a quantizer for non-note values.
 * [Distribute](#distribute): A random number generator with flexible output ranges and unusually tunable probability distributions.
 * [Drifter](#drifter): Creates sequences of values that can slowly (or quickly) vary, like a series of points doing random walks connected into a series.
-* [Fermata](#fermata): A text editor and labeling module. Write much longer text notes. Resizable, scrolls, font choices, and more. Or just add some visual emphasis,
-Stochastic Telegraph-style.
+* [Fermata](#fermata): A text editor and labeling module. Write much longer text notes than the VCV Notes module. It's resizable, scrolls, has font choices, and more. Or just add some visual emphasis,
+Stochastic Telegraph slant-bang style.
 * [Fuse](#fuse): Block, allow, or attenuate a signal passing through, based on the number of triggers observed in a different signal.
 * [TTY](#tty): A scrolling text window that displays distinct values it gets, and also displays [Tipsy](https://github.com/baconpaul/tipsy-encoder) text messages sent by other modules (like BASICally).
 
