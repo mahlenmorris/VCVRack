@@ -76,5 +76,11 @@
     "variant": "cpp"
   },
   "cmake.sourceDirectory": "C:/msys64/home/mahle/VCVRack/googletest-main",
-  "C_Cpp.default.compilerPath": "C:/msys64/mingw64/bin/g++.exe"
+  "C_Cpp.default.compilerPath": "C:/msys64/mingw64/bin/g++.exe",
+  "c-cpp-flylint.cppcheck.executable": "C:/msys64/mingw64/bin/cppcheck.exe",
+  "c-cpp-flylint.cppcheck.enable": true,
+  "c-cpp-flylint.cppcheck.extraArgs": [
+    "--enable=all",
+    "--suppress=missingIncludeSystem"
+  ]
 }

@@ -23,27 +23,26 @@ structure are properly flattened into the whole program.
 
 struct PCode {
   enum Type {
-    ARRAY_ASSIGNMENT,          // array_ptr[expr1] = (expr2|expr_list)
-    STRING_ARRAY_ASSIGNMENT,   // str_array_ptr$[expr1] = (expr2|expr_list)
-    ASSIGNMENT,                // *variable_ptr = expr1
-    STRING_ASSIGNMENT,         // *str_variable_ptr = expr1
-    WAIT,        // wait expr1
-    IFNOT,       // ifnot expr1 jump jump_count
-    RELATIVE_JUMP,  // add jump_count to line_number.
+    ARRAY_ASSIGNMENT,         // array_ptr[expr1] = (expr2|expr_list)
+    STRING_ARRAY_ASSIGNMENT,  // str_array_ptr$[expr1] = (expr2|expr_list)
+    ASSIGNMENT,               // *variable_ptr = expr1
+    STRING_ASSIGNMENT,        // *str_variable_ptr = expr1
+    WAIT,                     // wait expr1
+    IFNOT,                    // ifnot expr1 jump jump_count
+    RELATIVE_JUMP,            // add jump_count to line_number.
     FORLOOP,      // On ENTERING_FOR_LOOP, compute limit (expr1) & step (expr2).
-                 // if beyond limit, jump jump_count.
-                 // On NONE, add step to str1 value.
-                 // if beyond limit, jump jump_count.
-    CLEAR,       // If this were a function, it would need to return something,
-                 // so making a special command for it was fine.
-                 // And may have a list of variables later.
-                 // TODO: Maybe make a Type for one-off commands?
-    RESET,       // Like CLEAR, A command with no return value.
+                  // if beyond limit, jump jump_count.
+                  // On NONE, add step to loop variable value.
+                  // if beyond limit, jump jump_count.
+    CLEAR,        // If this were a function, it would need to return something,
+                  // so making a special command for it was fine.
+                  // And may have a list of variables later.
+                  // TODO: Maybe make a Type for one-off commands?
+    RESET,        // Like CLEAR, A command with no return value.
     PRINT,        // Sends strings to be sent out via a port.
-    SET_CHANNELS // Set number of polyphonic channels on OUTn ports.
+    SET_CHANNELS  // Set number of polyphonic channels on OUTn ports.
   };
   Type type;
-  std::string str1;
   // For assignments to variables/ports.
   float* variable_ptr;
   std::string* str_variable_ptr;
@@ -63,7 +62,14 @@ struct PCode {
   };
   State state;
 
-  PCode() {
+  PCode()
+      : type{WAIT},
+        variable_ptr{nullptr},
+        str_variable_ptr{nullptr},
+        array_ptr{nullptr},
+        str_array_ptr{nullptr},
+        step{1.0f},
+        limit{0.0f} {
     jump_count = 0;
     state = NONE;
     stop_execution = false;
@@ -72,7 +78,7 @@ struct PCode {
   void DoArrayAssignment();
   void DoStringArrayAssignment();
 
-  static PCode Wait(const Expression &expr1);
+  static PCode Wait(const Expression& expr1);
   std::string to_string();
 };
 
@@ -80,7 +86,8 @@ struct PCode {
 struct Loop {
   const std::string loop_type;  // E.g., "for" or "while"
   const int line_number;        // Position of the loop start (e.g., FORLOOP).
-  Loop(const std::string type, int line) : loop_type{type}, line_number{line} {}
+  Loop(const std::string& type, int line)
+      : loop_type{type}, line_number{line} {}
 };
 
 // Helps resolve "exit" statements.
@@ -92,8 +99,10 @@ struct Exit {
   // is exiting.
   const int loop_start_Line_number;
   // When an Exit is created, we typically do not know the exit_line_number.
-  Exit(const std::string type, int loop_pos) : exit_type{type},
-      loop_start_Line_number{loop_pos} {}
+  Exit(const std::string& type, int loop_pos)
+      : exit_type{type},
+        exit_line_number{-1},
+        loop_start_Line_number{loop_pos} {}
 };
 
-#endif // PCODE_H
+#endif  // PCODE_H

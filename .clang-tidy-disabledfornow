@@ -1,0 +1,13 @@
+Checks: >
+  -*,
+  bugprone-*,
+  performance-*,
+  modernize-*,
+  readability-*,
+  misc-*,
+  cppcoreguidelines-*,
+  -modernize-use-trailing-return-type,
+  -cppcoreguidelines-owning-memory
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle: none

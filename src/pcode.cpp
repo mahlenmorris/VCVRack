@@ -1,17 +1,18 @@
 /* Class for manipulating PCode structures.
-*/
+ */
 
 // First order of business is to turn a vector of Lines (which may have
 // nested Lines) into a flat vector of PCodes.
+#include "pcode.h"
+
 #include <algorithm>
 #include <cmath>
 #include <vector>
 
 #include "parser/tree.h"
-#include "pcode.h"
 #include "pcode_trans.h"
 
-PCode PCode::Wait(const Expression &expr1) {
+PCode PCode::Wait(const Expression& expr1) {
   PCode new_pcode;
   new_pcode.type = PCode::WAIT;
   new_pcode.expr1 = expr1;
@@ -19,7 +20,7 @@ PCode PCode::Wait(const Expression &expr1) {
 }
 
 void PCode::DoArrayAssignment() {
-  int index = (int) floor(expr1.Compute());
+  int index = (int)floor(expr1.Compute());
   // Nothing we can do when index is negative, and we have no runtime
   // error mechanism.
   if (index < 0) return;
@@ -31,12 +32,12 @@ void PCode::DoArrayAssignment() {
     // foo[1] = { 6, 5, 4, 3} -> foo[1] = 6, foo[2] = 5, ...
     required_size = index + expr_list.size() + 1;
   }
-  if (required_size > (int) array_ptr->size()) {
+  if (required_size > (int)array_ptr->size()) {
     // Need to build out the vector until we reach the point before we can add
     // this value. NB: this has potential to wreck responsiveness.
     // TODO: should i ALSO be testing capacity()?
     // Note that adding this call to reserve() had very bad CPU results.
-    //array_ptr->reserve(required_size);
+    // array_ptr->reserve(required_size);
     array_ptr->resize(required_size, 0.0f);
   }
 
@@ -52,7 +53,7 @@ void PCode::DoArrayAssignment() {
 
 // Just different types than the float version.
 void PCode::DoStringArrayAssignment() {
-  int index = (int) floor(expr1.Compute());
+  int index = (int)floor(expr1.Compute());
   // Nothing we can do when index is negative, and we have no runtime
   // error mechanism.
   if (index < 0) return;
@@ -64,7 +65,7 @@ void PCode::DoStringArrayAssignment() {
     // foo$[1] = { 6, 5, 4, 3} -> foo[1] = 6, foo[2] = 5, ...
     required_size = index + expr_list.size() + 1;
   }
-  if (required_size > (int) str_array_ptr->size()) {
+  if (required_size > (int)str_array_ptr->size()) {
     // Need to build out the vector until we reach the point before we can add
     // this value. NB: this has potential to wreck responsiveness.
     // TODO: should i ALSO be testing capacity()?
@@ -83,30 +84,27 @@ void PCode::DoStringArrayAssignment() {
   }
 }
 
-bool PCodeTranslator::BlockToCodeBlock(CodeBlock* dest, const Block &source) {
+bool PCodeTranslator::BlockToCodeBlock(CodeBlock* dest, const Block& source) {
   LinesToPCode(source.lines, &(dest->pcodes));
   dest->type = source.type;
   dest->condition = source.condition;
   return driver->errors.empty();
 }
 
-PCode PCodeTranslator::Assignment(const std::string str1, float* variable_ptr,
-                                  const PortPointer &port,
-                                  const Expression &expr1) {
+PCode PCodeTranslator::Assignment(float* variable_ptr, const PortPointer& port,
+                                  const Expression& expr1) {
   PCode assign;
   assign.type = PCode::ASSIGNMENT;
-  assign.str1 = str1;
   assign.variable_ptr = variable_ptr;
   assign.assign_port = port;
   assign.expr1 = expr1;
   return assign;
 }
 
-PCode PCodeTranslator::StringAssignment(const std::string str1,
-  std::string* str_variable_ptr, const Expression &expr1) {
+PCode PCodeTranslator::StringAssignment(std::string* str_variable_ptr,
+                                        const Expression& expr1) {
   PCode assign;
   assign.type = PCode::STRING_ASSIGNMENT;
-  assign.str1 = str1;
   assign.str_variable_ptr = str_variable_ptr;
   assign.expr1 = expr1;
   return assign;
@@ -114,28 +112,28 @@ PCode PCodeTranslator::StringAssignment(const std::string str1,
 
 // Note; caller should _probably_ reset the line position after this.
 // And should definitely NOT access 'pcodes' while this is running.
-void PCodeTranslator::LinesToPCode(const std::vector<Line> &lines,
-                                   std::vector<PCode> *new_pcodes) {
+void PCodeTranslator::LinesToPCode(const std::vector<Line>& lines,
+                                   std::vector<PCode>* new_pcodes) {
   pcodes = new_pcodes;
   pcodes->clear();
   loops.clear();
   exits.clear();
-  for (auto &line : lines) {
+  for (auto& line : lines) {
     AddLineToPCode(line);
   }
 }
 
 std::string PCode::to_string() {
   return "PCode(" + std::to_string(type) + ", " + std::to_string(jump_count) +
-    ")";
+         ")";
 }
 
 void PCodeTranslator::AddElseifs(std::vector<int>* jump_positions,
-                                 const Statements &elseifs,
+                                 const Statements& elseifs,
                                  bool last_falls_through) {
   // Each 'elseif' is effectively an IFTHEN with no elseifs in it. I think?
-  for (int i = 0; i < (int) elseifs.lines.size(); i++) {
-    const Line &line = elseifs.lines[i];
+  for (int i = 0; i < (int)elseifs.lines.size(); i++) {
+    const Line& line = elseifs.lines[i];
     // IFNOT
     // then Statements
     // (if not the last elseif) JUMP past all elseifs
@@ -148,12 +146,12 @@ void PCodeTranslator::AddElseifs(std::vector<int>* jump_positions,
     int ifnot_position = pcodes->size() - 1;
     // Add all of the THEN-clause Lines. Note that some of these might
     // also be control-flow Lines of unknown PCode length.
-    for (auto &loop_line : line.statements[0].lines) {
+    for (auto& loop_line : line.statements[0].lines) {
       AddLineToPCode(loop_line);
     }
     // If we're not doing the last elseif, then we'll need to add a JUMP to
     // the end of the whole statement.
-    if (!last_falls_through || ((int) elseifs.size()) - i > 1) {
+    if (!last_falls_through || ((int)elseifs.size()) - i > 1) {
       PCode jump_over_elseifs;
       jump_over_elseifs.type = PCode::RELATIVE_JUMP;
       pcodes->push_back(jump_over_elseifs);
@@ -163,7 +161,7 @@ void PCodeTranslator::AddElseifs(std::vector<int>* jump_positions,
   }
 }
 
-void PCodeTranslator::AddLineToPCode(const Line &line) {
+void PCodeTranslator::AddLineToPCode(const Line& line) {
   switch (line.type) {
     case Line::ARRAY_ASSIGNMENT: {
       PCode assign;
@@ -174,8 +172,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       assign.expr2 = line.expr2;
       assign.expr_list = line.expr_list;
       pcodes->push_back(assign);
-    }
-    break;
+    } break;
     case Line::STRING_ARRAY_ASSIGNMENT: {
       PCode assign;
       assign.type = PCode::STRING_ARRAY_ASSIGNMENT;
@@ -184,32 +181,26 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       assign.expr2 = line.expr2;
       assign.expr_list = line.expr_list;
       pcodes->push_back(assign);
-    }
-    break;
+    } break;
     case Line::ASSIGNMENT: {
-      pcodes->push_back(Assignment(
-          line.str1, line.variable_ptr, line.assign_port, line.expr1));
-    }
-    break;
+      pcodes->push_back(
+          Assignment(line.variable_ptr, line.assign_port, line.expr1));
+    } break;
     case Line::STRING_ASSIGNMENT: {
-      pcodes->push_back(StringAssignment(
-          line.str1, line.str_variable_ptr, line.expr1));
-    }
-    break;
+      pcodes->push_back(StringAssignment(line.str_variable_ptr, line.expr1));
+    } break;
     case Line::CLEAR: {
       PCode clear;
       // Currently no more complicated than that.
       clear.type = PCode::CLEAR;
       pcodes->push_back(clear);
-    }
-    break;
+    } break;
     case Line::RESET: {
       PCode reset;
       // Currently no more complicated than that.
       reset.type = PCode::RESET;
       pcodes->push_back(reset);
-    }
-    break;
+    } break;
     case Line::CONTINUE: {
       // See what type of continue this is, and then see what the latest
       // loop of that type I can find. Then jump to it.
@@ -222,7 +213,8 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
         pcodes->push_back(jump_back);
       } else {
         std::string loop_type = line.str1;
-        auto result = std::find_if(loops.rbegin(), loops.rend(),
+        auto result = std::find_if(
+            loops.rbegin(), loops.rend(),
             [loop_type](Loop l) { return loop_type == l.loop_type; });
         if (result != loops.rend()) {  // Found it, which is to be expected.
           int jump_to = result->line_number;
@@ -235,14 +227,13 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
           // Not finding an enclosing loop of correct type is an error.
           std::string upper;
           upper.resize(loop_type.size());
-          std::transform(loop_type.begin(), loop_type.end(),
-                 upper.begin(), ::toupper);
-          driver->AddError(
-            "'CONTINUE " + upper + "' statement is not in a " + upper + " loop.");
+          std::transform(loop_type.begin(), loop_type.end(), upper.begin(),
+                         ::toupper);
+          driver->AddError("'CONTINUE " + upper + "' statement is not in a " +
+                           upper + " loop.");
         }
       }
-    }
-    break;
+    } break;
     case Line::EXIT: {
       // Like a CONTINUE, but different. We place a RELATIVE_JUMP, but we don't
       // know where to jump to until we've placed the entire loop.
@@ -258,7 +249,8 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
         pcodes->push_back(jump_out);
       } else {
         std::string loop_type = line.str1;
-        auto result = std::find_if(loops.rbegin(), loops.rend(),
+        auto result = std::find_if(
+            loops.rbegin(), loops.rend(),
             [loop_type](Loop l) { return loop_type == l.loop_type; });
         if (result != loops.rend()) {  // Found it, which is to be expected.
           Exit this_exit(loop_type, result->line_number);
@@ -270,18 +262,16 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
           // Not finding an enclosing loop of correct type is an error.
           std::string upper;
           upper.resize(loop_type.size());
-          std::transform(loop_type.begin(), loop_type.end(),
-                 upper.begin(), ::toupper);
-          driver->AddError(
-            "'EXIT " + upper + "' statement is not in a " + upper + " loop.");
+          std::transform(loop_type.begin(), loop_type.end(), upper.begin(),
+                         ::toupper);
+          driver->AddError("'EXIT " + upper + "' statement is not in a " +
+                           upper + " loop.");
         }
       }
-    }
-    break;
+    } break;
     case Line::WAIT: {
       pcodes->push_back(PCode::Wait(line.expr1));
-    }
-    break;
+    } break;
     case Line::IFTHEN: {
       // IFNOT
       // then Statements
@@ -302,7 +292,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       int ifnot_position = pcodes->size() - 1;
       // Add all of the THEN-clause Lines. Note that some of these might
       // also be control-flow Lines of unknown PCode length.
-      for (auto &loop_line : line.statements[0].lines) {
+      for (auto& loop_line : line.statements[0].lines) {
         AddLineToPCode(loop_line);
       }
       // All JUMP's that need to be updated to point past the whole structure.
@@ -323,12 +313,10 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       for (int position : jump_positions) {
         pcodes->at(position).jump_count = pcodes->size() - position;
       }
-    }
-    break;
+    } break;
     case Line::ELSEIF: {
       // The compiler is broken if we land here.
-    }
-    break;
+    } break;
     case Line::IFTHENELSE: {
       // IFNOT
       // then Statements
@@ -352,7 +340,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       int ifnot_position = pcodes->size() - 1;
       // Add all of the THEN-clause Lines. Note that some of these might
       // also be control-flow Lines of unknown PCode length.
-      for (auto &loop_line : line.statements[0].lines) {
+      for (auto& loop_line : line.statements[0].lines) {
         AddLineToPCode(loop_line);
       }
       // All JUMP's that need to be updated to point past the whole structure.
@@ -370,7 +358,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       AddElseifs(&jump_positions, line.statements[2], false);
 
       // Add the ELSE clause.
-      for (auto &loop_line : line.statements[1].lines) {
+      for (auto& loop_line : line.statements[1].lines) {
         AddLineToPCode(loop_line);
       }
       // Now resolve the jumps, if any.
@@ -378,24 +366,22 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
         pcodes->at(position).jump_count = pcodes->size() - position;
       }
 
-    }
-    break;
+    } break;
     case Line::FORNEXT: {
       // ASSIGNMENT var = Expression
       // FORLOOP (var, expr1, expr2)
       // statements
       // WAIT 0 (iff wait_on_next is set)
       // RELATIVE_JUMP (back to FORLOOP).
-      PCode assign = Assignment(line.str1, line.variable_ptr,
-                                line.assign_port, line.expr1);
+      PCode assign =
+          Assignment(line.variable_ptr, line.assign_port, line.expr1);
       // Tells the FORLOOP to re-evaluate limit
       assign.state = PCode::ENTERING_FOR_LOOP;
       pcodes->push_back(assign);
       PCode forloop;
       forloop.type = PCode::FORLOOP;
-      forloop.str1 = line.str1;  // Variable name.
-      forloop.assign_port = line.assign_port;
       forloop.variable_ptr = line.variable_ptr;
+      forloop.assign_port = line.assign_port;
       forloop.expr1 = line.expr2;  // Limit.
       forloop.expr2 = line.expr3;  // Step.
       pcodes->push_back(forloop);
@@ -406,7 +392,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       loops.push_back(Loop("for", forloop_position));
       // Any "exit for" statements we add must be pointed back to the end of
       // *this* loop.
-      for (auto &loop_line : line.statements[0].lines) {
+      for (auto& loop_line : line.statements[0].lines) {
         AddLineToPCode(loop_line);
       }
       // Remove from stack.
@@ -433,8 +419,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
           // iterators, so we'll just leave it. It won't get matched again.
         }
       }
-    }
-    break;
+    } break;
     case Line::WHILE: {
       // IFNOT
       // statements
@@ -453,7 +438,7 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       // Any "exit while" statements we add must be pointed back to the end of
       // *this* loop.
       // Translate the statements within the while loop.
-      for (auto &loop_line : line.statements[0].lines) {
+      for (auto& loop_line : line.statements[0].lines) {
         AddLineToPCode(loop_line);
       }
       // Remove this loop from stack.
@@ -468,9 +453,8 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
       jump_back.jump_count = ifnot_position - pcodes->size();
       pcodes->push_back(jump_back);
       // Tell the IFNOT where to go when exiting loop.
-      pcodes->at(ifnot_position).jump_count =
-          pcodes->size() - ifnot_position;
-      
+      pcodes->at(ifnot_position).jump_count = pcodes->size() - ifnot_position;
+
       // Now resolve any relevant EXIT jumps.
       for (Exit exit : exits) {
         if (exit.exit_type == "while" &&
@@ -482,23 +466,21 @@ void PCodeTranslator::AddLineToPCode(const Line &line) {
         }
       }
 
-    }
-    break;
+    } break;
     case Line::PRINT: {
       PCode print;
       print.type = PCode::PRINT;
       print.assign_port = line.assign_port;  // Port we are sending text out of.
       print.expr_list = line.expr_list;
       pcodes->push_back(print);
-    }
-    break;
+    } break;
     case Line::SET_CHANNELS: {
       PCode set_channels;
       set_channels.type = PCode::SET_CHANNELS;
-      set_channels.assign_port = line.assign_port;  // Port we are sending text out of.
+      set_channels.assign_port =
+          line.assign_port;  // Port we are sending text out of.
       set_channels.expr1 = line.expr1;
       pcodes->push_back(set_channels);
-    }
-    break;
+    } break;
   }
 }
