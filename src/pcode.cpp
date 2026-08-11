@@ -398,7 +398,7 @@ void PCodeTranslator::AddLineToPCode(const Line& line) {
       loops.pop_back();  // TODO: confirm it is the "for" item we placed?
       if (line.wait_on_next) {
         // Insert smallest possible WAIT.
-        pcodes->push_back(PCode::Wait(expression_factory.Number(0.0f)));
+        pcodes->push_back(PCode::Wait(zero));
       }
       PCode jump_back;
       jump_back.type = PCode::RELATIVE_JUMP;
@@ -444,7 +444,7 @@ void PCodeTranslator::AddLineToPCode(const Line& line) {
       loops.pop_back();  // TODO: confirm it is the "while" item we placed?
 
       // Insert smallest possible WAIT.
-      pcodes->push_back(PCode::Wait(expression_factory.Number(0.0f)));
+      pcodes->push_back(PCode::Wait(zero));
 
       PCode jump_back;
       jump_back.type = PCode::RELATIVE_JUMP;

@@ -318,10 +318,6 @@ struct Block {
     MAIN,  // Block of code that runs every sample that the module is "running".
     WHEN   // Waits for a condition to become true, and then runs.
   };
-  enum Condition {
-    START,  // Run when the program is compiled and starts running.
-    EXPRESSION
-  };
   static Block MainBlock(Statements stat) {
     Block block;
     block.type = Block::MAIN;
@@ -331,7 +327,6 @@ struct Block {
   static Block WhenExpBlock(Expression& condition, Statements stat) {
     Block block;
     block.type = Block::WHEN;
-    block.condition = Block::EXPRESSION;
     block.lines = stat.lines;
     block.run_condition = condition;
     return block;
@@ -342,7 +337,6 @@ struct Block {
   }
 
   Type type;
-  Condition condition;
   std::vector<Line> lines;  // Code.
   Expression run_condition;
 };

@@ -9,9 +9,11 @@
 // PCode objects.
 class PCodeTranslator {
  public:
-  PCodeTranslator(Driver* the_driver) : driver{the_driver} {}
-  // TODO: This should return a vector of Error objects, so that we can
-  // prevent running when there are errors and report them.
+  explicit PCodeTranslator(Driver* the_driver)
+      : pcodes{nullptr}, driver{the_driver} {
+    ExpressionFactory factory;
+    zero = factory.Number(0.0f);
+  }
   bool BlockToCodeBlock(CodeBlock* dest, const Block& source);
   void LinesToPCode(const std::vector<Line>& lines, std::vector<PCode>* pcodes);
   void AddElseifs(std::vector<int>* jump_positions, const Statements& elseifs,
@@ -24,7 +26,7 @@ class PCodeTranslator {
  private:
   void AddLineToPCode(const Line& line);
   // Just useful for making Number expressions.
-  ExpressionFactory expression_factory;
+  Expression zero;
   std::vector<PCode>* pcodes;
   std::vector<Loop> loops;
   std::vector<Exit> exits;
