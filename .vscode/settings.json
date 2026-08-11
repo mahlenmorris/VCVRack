@@ -81,6 +81,7 @@
   "c-cpp-flylint.cppcheck.enable": true,
   "c-cpp-flylint.cppcheck.extraArgs": [
     "--enable=all",
-    "--suppress=missingIncludeSystem"
+    "--suppress=missingIncludeSystem",
+    "--suppress=unusedStructMember"
   ]
 }

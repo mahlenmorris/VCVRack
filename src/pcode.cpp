@@ -87,7 +87,6 @@ void PCode::DoStringArrayAssignment() {
 bool PCodeTranslator::BlockToCodeBlock(CodeBlock* dest, const Block& source) {
   LinesToPCode(source.lines, &(dest->pcodes));
   dest->type = source.type;
-  dest->condition = source.condition;
   return driver->errors.empty();
 }
 

@@ -1,23 +1,20 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
-#include <queue>
 #include <thread>
 #include <unordered_map>
 #include <utility>  // pair
 #include <vector>
 
+#include "StochasticTelegraph.hpp"  // For my common widgets.
 #include "code_block.h"
-#include "parser/environment.h"
-#include "plugin.hpp"
 #include "parser/driver.hh"
+#include "parser/environment.h"
 #include "pcode_trans.h"
+#include "plugin.hpp"
 #include "st_textfield.hpp"
 #include "tipsy_utils.h"
-#include <tipsy/tipsy.h>  // Library for sending text.
 
-#include "StochasticTelegraph.hpp"  // For my common widgets.
-  
 enum Style {
   ALWAYS_STYLE,
   TRIGGER_LOOP_STYLE,
@@ -26,21 +23,13 @@ enum Style {
   NO_STYLE
 };
 
-Style STYLES[] = {
-  ALWAYS_STYLE,
-  TRIGGER_LOOP_STYLE,
-  TRIGGER_NO_LOOP_STYLE,
-  GATE
-};
+Style STYLES[] = {ALWAYS_STYLE, TRIGGER_LOOP_STYLE, TRIGGER_NO_LOOP_STYLE,
+                  GATE};
 
 struct Basically : Module {
   static const int DEFAULT_WIDTH = 18;
 
-  enum ParamId {
-    RUN_PARAM,
-    STYLE_PARAM,
-    PARAMS_LEN
-  };
+  enum ParamId { RUN_PARAM, STYLE_PARAM, PARAMS_LEN };
   enum InputId {
     IN1_INPUT,
     IN2_INPUT,
@@ -64,7 +53,7 @@ struct Basically : Module {
     OUTPUTS_LEN
   };
   enum LightId {
-    RUN_LIGHT,   // Currently running.
+    RUN_LIGHT,  // Currently running.
     LIGHTS_LEN
   };
 
@@ -94,7 +83,7 @@ struct Basically : Module {
     Driver* driver;
     bool starting;
     std::vector<CodeBlock*>* main_blocks;
-    std::vector<std::pair<Expression, CodeBlock*> >* expression_blocks;
+    std::vector<std::pair<Expression, CodeBlock*>>* expression_blocks;
     std::vector<bool>* running_expression_blocks;
     std::unordered_map<int, TriggerInfo*> triggers;
     // Map output index to whether or not we should clamp values for it.
@@ -105,25 +94,27 @@ struct Basically : Module {
 
    public:
     ProductionEnvironment(std::vector<Input>* the_inputs,
-                          std::vector<Output>* the_outputs,
-                          Driver* the_driver,
-                          std::unordered_map<int, bool>* clamp_info) :
-       inputs{the_inputs}, outputs{the_outputs}, driver{the_driver},
-       out_index_to_clamp{clamp_info} {
-         sample_rate = 0.0f;
-       }
+                          std::vector<Output>* the_outputs, Driver* the_driver,
+                          std::unordered_map<int, bool>* clamp_info)
+        : inputs{the_inputs},
+          outputs{the_outputs},
+          driver{the_driver},
+          out_index_to_clamp{clamp_info} {
+      sample_rate = 0.0f;
+    }
 
-     // Must be called every time the program is recompiled.
-    void ResetBlocks(std::vector<CodeBlock*>* the_main_blocks,
-        std::vector<std::pair<Expression, CodeBlock*> >* the_expression_blocks,
+    // Must be called every time the program is recompiled.
+    void ResetBlocks(
+        std::vector<CodeBlock*>* the_main_blocks,
+        std::vector<std::pair<Expression, CodeBlock*>>* the_expression_blocks,
         std::vector<bool>* the_running_expression_blocks) {
-          main_blocks = the_main_blocks;
-          expression_blocks = the_expression_blocks;
-          running_expression_blocks = the_running_expression_blocks;
-     }
+      main_blocks = the_main_blocks;
+      expression_blocks = the_expression_blocks;
+      running_expression_blocks = the_running_expression_blocks;
+    }
 
-     // When program has been recompiled, call this to set up trigger monitoring.
-     void ResetTriggers() {
+    // When program has been recompiled, call this to set up trigger monitoring.
+    void ResetTriggers() {
       // First, clear existing map.
       for (auto t : triggers) {
         delete t.second;
@@ -131,7 +122,7 @@ struct Basically : Module {
       triggers.clear();
       for (int index : driver->trigger_port_indexes) {
         TriggerInfo* trig = new TriggerInfo();
-        trig->index = (InputId) index;
+        trig->index = (InputId)index;
         trig->trigger.reset();
         trig->current_value = false;
         triggers[index] = trig;
@@ -145,8 +136,8 @@ struct Basically : Module {
       for (auto t : triggers) {
         TriggerInfo* value = t.second;
         bool was_low = !(value->trigger.isHigh());
-        value->trigger.process(rescale(
-            inputs->at(t.first).getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+        value->trigger.process(
+            rescale(inputs->at(t.first).getVoltage(), 0.1f, 2.f, 0.f, 1.f));
         value->current_value = was_low && value->trigger.isHigh();
       }
     }
@@ -159,11 +150,9 @@ struct Basically : Module {
     }
 
     // Should be called every sample.
-    void SetStarting(bool start) {
-      starting = start;
-    }
+    void SetStarting(bool start) { starting = start; }
 
-    float GetChannels(const PortPointer &port) override {
+    float GetChannels(const PortPointer& port) override {
       if (port.port_type == PortPointer::INPUT) {
         return inputs->at(port.index).getChannels();
       } else {
@@ -171,7 +160,7 @@ struct Basically : Module {
       }
     }
 
-    void SetChannels(const PortPointer &port, int channels) override {
+    void SetChannels(const PortPointer& port, int channels) override {
       if (port.port_type == PortPointer::INPUT) {
         inputs->at(port.index).setChannels(channels);
       } else {
@@ -179,14 +168,14 @@ struct Basically : Module {
       }
     }
 
-    float GetVoltage(const PortPointer &port) override {
+    float GetVoltage(const PortPointer& port) override {
       if (port.port_type == PortPointer::INPUT) {
         return inputs->at(port.index).getVoltage();
       } else {
         return outputs->at(port.index).getVoltage();
       }
     }
-    float GetVoltage(const PortPointer &port, int channel) override {
+    float GetVoltage(const PortPointer& port, int channel) override {
       // Within the program, channels are 1-16, but within the VCV API,
       // they are 0 - 15.
       if (port.port_type == PortPointer::INPUT) {
@@ -195,7 +184,7 @@ struct Basically : Module {
         return outputs->at(port.index).getVoltage(channel - 1);
       }
     }
-    void SetVoltage(const PortPointer &port, float value) override {
+    void SetVoltage(const PortPointer& port, float value) override {
       if (port.port_type == PortPointer::INPUT) {
         inputs->at(port.index).setVoltage(value);
       } else {
@@ -207,11 +196,13 @@ struct Basically : Module {
         outputs->at(port.index).setVoltage(value);
       }
     }
-    void SetVoltage(const PortPointer &port, int channel, float value) override {
+    void SetVoltage(const PortPointer& port, int channel,
+                    float value) override {
       if (port.port_type == PortPointer::INPUT) {
         inputs->at(port.index).setVoltage(value, channel - 1);
-        inputs->at(port.index).setChannels(
-            std::max(inputs->at(port.index).getChannels(), channel));
+        inputs->at(port.index)
+            .setChannels(
+                std::max(inputs->at(port.index).getChannels(), channel));
       } else {
         // Force output values to -10 <= x <= 10 range.
         // Set in menu.
@@ -219,15 +210,14 @@ struct Basically : Module {
           value = clamp(value, -10.0f, 10.0f);
         }
         outputs->at(port.index).setVoltage(value, channel - 1);
-        outputs->at(port.index).setChannels(
-            std::max(outputs->at(port.index).getChannels(), channel));
+        outputs->at(port.index)
+            .setChannels(
+                std::max(outputs->at(port.index).getChannels(), channel));
       }
     }
 
-    float SampleRate() override {
-      return sample_rate;
-    }
-    float Connected(const PortPointer &port) override {
+    float SampleRate() override { return sample_rate; }
+    float Connected(const PortPointer& port) override {
       if (port.port_type == PortPointer::INPUT) {
         return inputs->at(port.index).isConnected() ? 1.0f : 0.0f;
       } else {
@@ -247,9 +237,7 @@ struct Basically : Module {
         return patch_time;
       }
     }
-    void Clear() override {
-      driver->Clear();
-    }
+    void Clear() override { driver->Clear(); }
     void Reset() override {
       if (main_blocks) {
         for (auto block : *main_blocks) {
@@ -266,11 +254,9 @@ struct Basically : Module {
     }
 
     // True ONLY when the program has just compiled.
-    bool Start() override {
-      return starting;
-    }
+    bool Start() override { return starting; }
 
-    bool Trigger(const PortPointer &port) override {
+    bool Trigger(const PortPointer& port) override {
       auto found = triggers.find(port.index);
       if (found != triggers.end()) {
         return found->second->current_value;
@@ -281,7 +267,7 @@ struct Basically : Module {
       }
     }
 
-    void Send(const PortPointer &port, const std::string &str) override {
+    void Send(const PortPointer& port, const std::string& str) override {
       TextSender* sender;
       auto found = text_encoders.find(port.index);
       if (found == text_encoders.end()) {
@@ -302,7 +288,6 @@ struct Basically : Module {
         }
       }
     }
-
   };
 
   // Class devoted to handling the lengthy (compared to single sample)
@@ -317,15 +302,16 @@ struct Basically : Module {
     bool shutdown;
     bool initiate_compile;
     std::string text;  // Text to compile.
-    bool running;  // TRUE if still compiling, false if completed.
-    bool useful; // TRUE if last completed compile created something for module to use.
+    bool running;      // TRUE if still compiling, false if completed.
+    bool useful;  // TRUE if last completed compile created something for module
+                  // to use.
     // Product of a successful compilation.
     std::vector<CodeBlock*>* main_blocks;
-    std::vector<std::pair<Expression, CodeBlock*> >* expression_blocks;
+    std::vector<std::pair<Expression, CodeBlock*>>* expression_blocks;
     std::vector<bool>* running_expression_blocks;
 
-    explicit CompilationThread(Driver* drv, Environment* env) : driver{drv},
-        environment{env} {
+    explicit CompilationThread(Driver* drv, Environment* env)
+        : driver{drv}, environment{env} {
       running = false;
       useful = false;
       shutdown = false;
@@ -337,7 +323,7 @@ struct Basically : Module {
       initiate_compile = false;
     }
 
-    void SetText(const std::string &new_text) {
+    void SetText(const std::string& new_text) {
       running = true;  // Tells caller not to use previous result.
       text = new_text;
       initiate_compile = true;
@@ -357,11 +343,13 @@ struct Basically : Module {
           if (compiles) {
             PCodeTranslator translator(driver);
             main_blocks = new std::vector<CodeBlock*>();
-            expression_blocks = new std::vector<std::pair<Expression, CodeBlock*> >();
+            expression_blocks =
+                new std::vector<std::pair<Expression, CodeBlock*>>();
             running_expression_blocks = new std::vector<bool>();
             useful = true;
-            // Wait until 'environment' has a non-zero SampleRate() value. At most five
-            // seconds, in case there are unknown reasons why it would stay zero.
+            // Wait until 'environment' has a non-zero SampleRate() value. At
+            // most five seconds, in case there are unknown reasons why it would
+            // stay zero.
             if (environment->SampleRate() < 1.0) {
               for (int waits = 0; waits < 50; ++waits) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -369,17 +357,19 @@ struct Basically : Module {
               }
             }
 
-            for (size_t block_index = 0; block_index < driver->blocks.size(); ++block_index) {
+            for (size_t block_index = 0; block_index < driver->blocks.size();
+                 ++block_index) {
               CodeBlock* new_block = new CodeBlock(environment);
               // Holds new errors in case translation discovers any.
               std::vector<std::string> new_errors;
-              if (translator.BlockToCodeBlock(new_block, driver->blocks.at(block_index))) {
+              if (translator.BlockToCodeBlock(new_block,
+                                              driver->blocks.at(block_index))) {
                 // Different lists depending on type.
                 if (new_block->type == Block::MAIN) {
                   main_blocks->push_back(new_block);
-                } else if (new_block->type == Block::WHEN &&
-                    new_block->condition == Block::EXPRESSION) {
-                  expression_blocks->push_back(std::make_pair(driver->blocks.at(block_index).run_condition, new_block));
+                } else if (new_block->type == Block::WHEN) {
+                  expression_blocks->push_back(std::make_pair(
+                      driver->blocks.at(block_index).run_condition, new_block));
                   running_expression_blocks->push_back(false);
                 }
               } else {
@@ -404,32 +394,20 @@ struct Basically : Module {
     }
   };
 
-
-  std::map<std::string, int> out_map { {"out1", OUT1_OUTPUT},
-                                       {"out2", OUT2_OUTPUT},
-                                       {"out3", OUT3_OUTPUT},
-                                       {"out4", OUT4_OUTPUT},
-                                       {"out5", OUT5_OUTPUT},
-                                       {"out6", OUT6_OUTPUT}
-                                     };
-  std::vector<InPortInfo> in_list { {"in1", IN1_INPUT},
-                                    {"in2", IN2_INPUT},
-                                    {"in3", IN3_INPUT},
-                                    {"in4", IN4_INPUT},
-                                    {"in5", IN5_INPUT},
-                                    {"in6", IN6_INPUT},
-                                    {"in7", IN7_INPUT},
-                                    {"in8", IN8_INPUT},
-                                    {"in9", IN9_INPUT}
-                                  };
+  std::map<std::string, int> out_map{
+      {"out1", OUT1_OUTPUT}, {"out2", OUT2_OUTPUT}, {"out3", OUT3_OUTPUT},
+      {"out4", OUT4_OUTPUT}, {"out5", OUT5_OUTPUT}, {"out6", OUT6_OUTPUT}};
+  std::vector<InPortInfo> in_list{
+      {"in1", IN1_INPUT}, {"in2", IN2_INPUT}, {"in3", IN3_INPUT},
+      {"in4", IN4_INPUT}, {"in5", IN5_INPUT}, {"in6", IN6_INPUT},
+      {"in7", IN7_INPUT}, {"in8", IN8_INPUT}, {"in9", IN9_INPUT}};
 
   Basically() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configButton(RUN_PARAM, "Press to run");
     configSwitch(STYLE_PARAM, 0, 3, 0, "When to run",
                  {"Always run", "Start on trigger, loop",
-                  "Start on trigger, don't loop",
-                  "Run when gate is open"});
+                  "Start on trigger, don't loop", "Run when gate is open"});
     // This has distinct values.
     getParamQuantity(STYLE_PARAM)->snapEnabled = true;
     configInput(IN1_INPUT, "IN1");
@@ -441,7 +419,8 @@ struct Basically : Module {
     configInput(IN7_INPUT, "IN7");
     configInput(IN8_INPUT, "IN8");
     configInput(IN9_INPUT, "IN9");
-    configInput(RUN_INPUT, "Trigger to start or Gate to start/stop (See Style)");
+    configInput(RUN_INPUT,
+                "Trigger to start or Gate to start/stop (See Style)");
     configOutput(OUT1_OUTPUT, "OUT1");
     configOutput(OUT2_OUTPUT, "OUT2");
     configOutput(OUT3_OUTPUT, "OUT3");
@@ -450,9 +429,9 @@ struct Basically : Module {
     configOutput(OUT6_OUTPUT, "OUT6");
     configLight(RUN_LIGHT, "Lit when code is currently running.");
 
-    environment = new ProductionEnvironment(&inputs, &outputs, &drv,
-        &clamp_info);
-    drv.SetEnvironment((Environment*) environment);
+    environment =
+        new ProductionEnvironment(&inputs, &outputs, &drv, &clamp_info);
+    drv.SetEnvironment((Environment*)environment);
     // For now, we just have the one block, but we'll add more soon.
     // Add the INn variables to the variable space, and get the pointer to
     // them so module can set them.
@@ -468,12 +447,12 @@ struct Basically : Module {
       clamp_info[output.second] = true;
     }
     compile_in_progress = false;
-    compiler = new CompilationThread(&drv, (Environment*) environment);
+    compiler = new CompilationThread(&drv, (Environment*)environment);
     compile_thread = new std::thread(&CompilationThread::Compile, compiler);
 
     // Filling in empty values for these until something compiles.
     main_blocks = new std::vector<CodeBlock*>();
-    expression_blocks = new std::vector<std::pair<Expression, CodeBlock*> >();
+    expression_blocks = new std::vector<std::pair<Expression, CodeBlock*>>();
     running_expression_blocks = new std::vector<bool>();
   }
 
@@ -504,7 +483,7 @@ struct Basically : Module {
 
     // OUTn clamping.
     json_t* clampJ = json_object();
-    for (const auto& key_value : clamp_info ) {
+    for (const auto& key_value : clamp_info) {
       // Store only the false values, since those will be less numerous,
       // and any new OUTn's should default to True.
       if (!key_value.second) {
@@ -528,8 +507,9 @@ struct Basically : Module {
                           json_stringn(title_text.c_str(), title_text.size()));
     }
     if (font_choice.length() > 0) {
-      json_object_set_new(rootJ, "font_choice",
-                          json_stringn(font_choice.c_str(), font_choice.size()));
+      json_object_set_new(
+          rootJ, "font_choice",
+          json_stringn(font_choice.c_str(), font_choice.size()));
     }
     return rootJ;
   }
@@ -551,14 +531,13 @@ struct Basically : Module {
       font_choice = json_string_value(font_choiceJ);
     }
     json_t* widthJ = json_object_get(rootJ, "width");
-    if (widthJ)
-      width = json_integer_value(widthJ);
+    if (widthJ) width = json_integer_value(widthJ);
 
     // OUTn clamping.
     json_t* clampJ = json_object_get(rootJ, "clamp");
     if (clampJ) {
-      const char *key;
-      json_t *value;
+      const char* key;
+      json_t* value;
       // Assuming that all values in clamp_info have been set to true.
       json_object_foreach(clampJ, key, value) {
         int index = strtol(key, NULL, 10);
@@ -567,8 +546,7 @@ struct Basically : Module {
     }
 
     json_t* screenJ = json_object_get(rootJ, "screen_colors");
-    if (screenJ)
-      screen_colors = json_integer_value(screenJ);
+    if (screenJ) screen_colors = json_integer_value(screenJ);
     json_t* error_highlightJ = json_object_get(rootJ, "allow_error_highlight");
     if (error_highlightJ) {
       allow_error_highlight = json_integer_value(error_highlightJ) == 1;
@@ -617,7 +595,7 @@ struct Basically : Module {
   }
 
   void process(const ProcessArgs& args) override {
-    Style style = STYLES[(int) params[STYLE_PARAM].getValue()];
+    Style style = STYLES[(int)params[STYLE_PARAM].getValue()];
     // Changing from a style that doesn't care about stopping to one that does
     // can mess things up. So if we see the style change, we reset the
     // run_status on all the blocks.
@@ -629,7 +607,7 @@ struct Basically : Module {
       }
     }
     bool loops = (style != TRIGGER_NO_LOOP_STYLE);
-    // Set some volatile values from ProcessArgs. 
+    // Set some volatile values from ProcessArgs.
     environment->SetFromArgs(args.sampleRate, args.frame * args.sampleTime);
     // Might be set true below, but for vast majority of samples this is false.
     environment->SetStarting(false);
@@ -662,7 +640,7 @@ struct Basically : Module {
           expression_blocks = compiler->expression_blocks;
           running_expression_blocks = compiler->running_expression_blocks;
           environment->ResetBlocks(main_blocks, expression_blocks,
-              running_expression_blocks);
+                                   running_expression_blocks);
           // Recompiled; cannot trust program state. But note we are leaving
           // *variable* state intact.
           ResetToProgramStart();
@@ -698,11 +676,11 @@ struct Basically : Module {
     } else if (style == TRIGGER_LOOP_STYLE || style == TRIGGER_NO_LOOP_STYLE) {
       if (compiles && !running) {
         bool run_was_low = !runTrigger.isHigh();
-        runTrigger.process(rescale(
-            inputs[RUN_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+        runTrigger.process(
+            rescale(inputs[RUN_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
         bool run_button_pressed = params[RUN_PARAM].getValue() > 0.1f;
-        bool asked_to_start_run = (run_button_pressed ||
-                                   (run_was_low && runTrigger.isHigh()));
+        bool asked_to_start_run =
+            (run_button_pressed || (run_was_low && runTrigger.isHigh()));
         if (asked_to_start_run) {
           running = true;
           ResetToProgramStart();
@@ -713,8 +691,8 @@ struct Basically : Module {
         }
       }
     } else {  // style == GATE
-      runTrigger.process(rescale(
-          inputs[RUN_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+      runTrigger.process(
+          rescale(inputs[RUN_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
       if (runTrigger.isHigh()) {
         running = true;
       } else {
@@ -743,7 +721,7 @@ struct Basically : Module {
         if (!running_expression_blocks->at(pos)) {
           // Run expression, see if now true.
           running_expression_blocks->at(pos) =
-            !Expression::is_zero(expression_blocks->at(pos).first.Compute());
+              !Expression::is_zero(expression_blocks->at(pos).first.Compute());
         }
         // If now running, Run() a step.
         if (running_expression_blocks->at(pos)) {
@@ -751,7 +729,8 @@ struct Basically : Module {
           if (run_status == CodeBlock::RAN_RESET) {
             break;
           }
-          running_expression_blocks->at(pos) = run_status == CodeBlock::CONTINUES;
+          running_expression_blocks->at(pos) =
+              run_status == CodeBlock::CONTINUES;
         }
       }
       if (run_status != CodeBlock::RAN_RESET) {
@@ -782,7 +761,7 @@ struct Basically : Module {
       run_light_countdown--;
     }
     lights[RUN_LIGHT].setBrightness(
-      (running || run_light_countdown > 0) ? 1.0f : 0.0f);
+        (running || run_light_countdown > 0) ? 1.0f : 0.0f);
   }
 
   dsp::SchmittTrigger runTrigger;
@@ -803,7 +782,7 @@ struct Basically : Module {
   // All main blocks are always running, so we don't need a distinct list.
   std::vector<CodeBlock*>* main_blocks;
   // All WHEN EXPRESSION blocks. Is a vector to maintain order.
-  std::vector<std::pair<Expression, CodeBlock*> >* expression_blocks;
+  std::vector<std::pair<Expression, CodeBlock*>>* expression_blocks;
   // Which ones are running.
   std::vector<bool>* running_expression_blocks;
   std::unordered_map<int, bool> clamp_info;
@@ -850,9 +829,11 @@ struct TextEditAction : history::ModuleAction {
   int new_width;
 
   TextEditAction(int64_t id, std::string oldText, std::string newText,
-     int old_cursor_pos, int new_cursor_pos) : old_text{oldText},
-         new_text{newText}, old_cursor{old_cursor_pos},
-         new_cursor{new_cursor_pos} {
+                 int old_cursor_pos, int new_cursor_pos)
+      : old_text{oldText},
+        new_text{newText},
+        old_cursor{old_cursor_pos},
+        new_cursor{new_cursor_pos} {
     moduleId = id;
     name = "code edit";
     old_width = new_width = -1;
@@ -861,13 +842,14 @@ struct TextEditAction : history::ModuleAction {
   // This has two unused float parameters to match the signature of the
   // STResizeHandle.
   TextEditAction(int64_t id, int old_width, int new_width,
-     float unused_1=0.0f, float unused_2=0.0f) :
-      old_width{old_width}, new_width{new_width} {
+                 float unused_1 = 0.0f, float unused_2 = 0.0f)
+      : old_width{old_width}, new_width{new_width} {
     moduleId = id;
     name = "module width change";
   }
   void undo() override {
-    Basically *module = dynamic_cast<Basically*>(APP->engine->getModule(moduleId));
+    Basically* module =
+        dynamic_cast<Basically*>(APP->engine->getModule(moduleId));
     if (module) {
       if (old_width < 0) {
         module->text = this->old_text;
@@ -884,7 +866,8 @@ struct TextEditAction : history::ModuleAction {
   }
 
   void redo() override {
-    Basically *module = dynamic_cast<Basically*>(APP->engine->getModule(moduleId));
+    Basically* module =
+        dynamic_cast<Basically*>(APP->engine->getModule(moduleId));
     if (module) {
       if (old_width < 0) {
         module->text = this->new_text;
@@ -904,8 +887,7 @@ struct TextEditAction : history::ModuleAction {
 struct TitleTextField : LightWidget {
   Basically* module;
 
-  TitleTextField() {
-  }
+  TitleTextField() {}
 
   void drawLayer(const DrawArgs& args, int layer) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
@@ -915,26 +897,27 @@ struct TitleTextField : LightWidget {
       // No background color!
 
       if (module) {
-        std::shared_ptr<Font> font = APP->window->loadFont(module->getFontPath());
+        std::shared_ptr<Font> font =
+            APP->window->loadFont(module->getFontPath());
         if (font) {
           std::string text = module->title_text;
-          nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
-                                                             color::BLACK);
+          nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE
+                                                           : color::BLACK);
           // The longer the text, the smaller the font. 20 is our largest size,
           // and it handles 10 chars of this font. 10 is smallest size, it can
           // handle 25 chars.
           int font_size = 24;
           std::vector<std::string> lines;
-          if ((int) text.length() > 8) {
+          if ((int)text.length() > 8) {
             font_size = 15;
             int nearest_to_mid = -1;
-            int text_length = (int) text.length();
+            int text_length = (int)text.length();
             // Look for a space we can break on.
             for (int i = 0; i < text_length; i++) {
               if (text.at(i) == ' ') {
                 if (abs(i - (text_length / 2)) <
-                  abs(nearest_to_mid - (text_length / 2))) {
-                    nearest_to_mid = i;
+                    abs(nearest_to_mid - (text_length / 2))) {
+                  nearest_to_mid = i;
                 }
               }
             }
@@ -954,8 +937,9 @@ struct TitleTextField : LightWidget {
           nvgFontFaceId(args.vg, font->handle);
           nvgTextLetterSpacing(args.vg, -1);
           // Place on the line just off the left edge.
-          for (int i = 0; i < (int) lines.size(); i++) {
-            nvgText(args.vg, bounding_box.x / 2, i * 12, lines[i].c_str(), NULL);
+          for (int i = 0; i < (int)lines.size(); i++) {
+            nvgText(args.vg, bounding_box.x / 2, i * 12, lines[i].c_str(),
+                    NULL);
           }
         }
       }
@@ -966,8 +950,8 @@ struct TitleTextField : LightWidget {
 };
 
 static std::string module_browser_text =
-  "' Write simple code here.\n' For example:\nfor i = 1 to 5 step 0.2\n"
-  "  out1 = i * in2 * 0.4\n  wait 100\nnext";
+    "' Write simple code here.\n' For example:\nfor i = 1 to 5 step 0.2\n"
+    "  out1 = i * in2 * 0.4\n  wait 100\nnext";
 
 // Class for the editor.
 struct BasicallyTextField : STTextField {
@@ -999,7 +983,7 @@ struct BasicallyTextField : STTextField {
     }
     textUpdated();
   }
-  
+
   // bgColor seems to have no effect if I don't do this. Drawing a background
   // and then letting STTextField draw the rest fixes that.
   void draw(const DrawArgs& args) override {
@@ -1017,11 +1001,12 @@ struct BasicallyTextField : STTextField {
       if (module->drv.errors.size() > 0) {
         int line_number = module->drv.errors[0].line - extended.lines_above;
         nvgBeginPath(args.vg);
-        int topFudge = textOffset.y + 5;  // I'm just trying things until they work.
+        int topFudge =
+            textOffset.y + 5;  // I'm just trying things until they work.
         // textOffset is in STTextField.
         nvgRect(args.vg, 0, topFudge + 12 * (line_number - 1), box.size.x, 12);
-        nvgFillColor(args.vg,
-            module->blue_orange_light ? SCHEME_ORANGE : nvgRGB(128, 0, 0));
+        nvgFillColor(args.vg, module->blue_orange_light ? SCHEME_ORANGE
+                                                        : nvgRGB(128, 0, 0));
         nvgFill(args.vg);
       }
     }
@@ -1047,8 +1032,8 @@ struct BasicallyTextField : STTextField {
     } else {
       frame_buffer->show();
     }
-    if (module && (color_scheme != module->screen_colors ||
-                   module->editor_refresh)) {
+    if (module &&
+        (color_scheme != module->screen_colors || module->editor_refresh)) {
       // Note: this doesn't actully care about editor_refresh. But this cleared
       // up a bug about duplicated windows not keeping the same color.
       color_scheme = module->screen_colors;
@@ -1072,7 +1057,7 @@ struct BasicallyTextField : STTextField {
     if (is_selected != was_selected) {
       was_selected = is_selected;
       is_dirty = true;
-    }   
+    }
     // If ANYTHING thinks we should redraw, this makes it happen.
     if (is_dirty) {
       frame_buffer->setDirty();
@@ -1086,9 +1071,9 @@ struct BasicallyTextField : STTextField {
       // this, I might get spurious history events.
       // TODO: do I need this check anymore?
       if (module->text != module->previous_text) {
-        APP->history->push(
-          new TextEditAction(module->id, module->previous_text,
-                             module->text, module->previous_cursor, cursor));
+        APP->history->push(new TextEditAction(module->id, module->previous_text,
+                                              module->text,
+                                              module->previous_cursor, cursor));
         module->previous_text = module->text;
         module->module_refresh = true;
       }
@@ -1103,7 +1088,7 @@ struct ErrorTooltip : ui::Tooltip {
   ErrorWidget* errorWidget;
   std::string error_text;
 
-  ErrorTooltip(const std::string &text) : error_text{text} {}
+  ErrorTooltip(const std::string& text) : error_text{text} {}
 
   void step() override;
 };
@@ -1112,25 +1097,17 @@ struct ErrorWidget : widget::OpaqueWidget {
   Basically* module;
   ErrorTooltip* tooltip;
 
-  ErrorWidget() {
-    tooltip = NULL;
-  }
+  ErrorWidget() { tooltip = NULL; }
 
-  void onEnter(const EnterEvent & e) override {
-    create_tooltip();
-  }
+  void onEnter(const EnterEvent& e) override { create_tooltip(); }
 
-  void onLeave(const LeaveEvent & e) override {
-    destroy_tooltip();
-  }
+  void onLeave(const LeaveEvent& e) override { destroy_tooltip(); }
 
   void create_tooltip() {
-    if (!settings::tooltips)
-      return;
+    if (!settings::tooltips) return;
     if (tooltip)  // Already exists.
       return;
-    if (!module)
-      return;
+    if (!module) return;
     std::string tip_text;
     if (module->compiles) {
       tip_text = "Program compiles!";
@@ -1156,8 +1133,7 @@ struct ErrorWidget : widget::OpaqueWidget {
   }
 
   void destroy_tooltip() {
-    if (!tooltip)
-      return;
+    if (!tooltip) return;
     APP->scene->removeChild(tooltip);
     delete tooltip;
     tooltip = NULL;
@@ -1171,12 +1147,10 @@ struct ErrorWidget : widget::OpaqueWidget {
       bool blue_orange = (module) ? module->blue_orange_light : false;
       // Fill the rectangle with either blue or orange.
       // For color blind users, these are better choices than green/red.
-      NVGcolor main_color = blue_orange ?
-          (good ? SCHEME_BLUE : SCHEME_ORANGE) :
-          (good ? SCHEME_GREEN : color::RED);
+      NVGcolor main_color = blue_orange ? (good ? SCHEME_BLUE : SCHEME_ORANGE)
+                                        : (good ? SCHEME_GREEN : color::RED);
       nvgBeginPath(args.vg);
-      nvgRect(args.vg, 0.5, 0.5,
-              bounding_box.x - 1.0f, bounding_box.y - 1.0f);
+      nvgRect(args.vg, 0.5, 0.5, bounding_box.x - 1.0f, bounding_box.y - 1.0f);
       nvgFillColor(args.vg, main_color);
       nvgFill(args.vg);
       std::string fontPath;
@@ -1187,9 +1161,9 @@ struct ErrorWidget : widget::OpaqueWidget {
       }
       std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
       if (font) {
-        nvgFillColor(args.vg,  blue_orange ?
-           (good ? color::WHITE : color::BLACK) :
-           (good ? color::BLACK : color::WHITE));
+        nvgFillColor(args.vg, blue_orange
+                                  ? (good ? color::WHITE : color::BLACK)
+                                  : (good ? color::BLACK : color::WHITE));
         nvgFontSize(args.vg, 13);
         nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
         nvgFontFaceId(args.vg, font->handle);
@@ -1247,11 +1221,13 @@ struct BasicallyWidget : ModuleWidget {
 
   BasicallyWidget(Basically* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/Basically.svg"),
-                         asset::plugin(pluginInstance, "res/Basically-dark.svg")));
+    setPanel(
+        createPanel(asset::plugin(pluginInstance, "res/Basically.svg"),
+                    asset::plugin(pluginInstance, "res/Basically-dark.svg")));
 
     // Set reasonable initial size of module. Will likely get updated below.
-    box.size = Vec(RACK_GRID_WIDTH * Basically::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
+    box.size =
+        Vec(RACK_GRID_WIDTH * Basically::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
     if (module) {
       // Set box width from loaded Module when available.
       box.size.x = module->width * RACK_GRID_WIDTH;
@@ -1263,8 +1239,7 @@ struct BasicallyWidget : ModuleWidget {
     // The FramebufferWidget that caches the appearence of the text, so we
     // don't have to keep redrawing it (and wasting UI CPU to do it).
     main_text_framebuffer = new FramebufferWidget();
-    codeDisplay = createWidget<BasicallyTextField>(
-      mm2px(Vec(31.149, 5.9)));
+    codeDisplay = createWidget<BasicallyTextField>(mm2px(Vec(31.149, 5.9)));
     codeDisplay->box.size = mm2px(Vec(60.0, 117.0));
     codeDisplay->box.size.x = box.size.x - RACK_GRID_WIDTH * 7.1;
     codeDisplay->setModule(module, main_text_framebuffer);
@@ -1280,10 +1255,10 @@ struct BasicallyWidget : ModuleWidget {
         mm2px(Vec(6.496, 17.698)), module, Basically::RUN_INPUT));
     // Making this a Button and not a Latch means that it pops back up
     // when you let go.
-    addParam(createLightParamCentered<VCVLightButton<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(15.645, 17.698)),
-                                             module, Basically::RUN_PARAM,
-                                             Basically::RUN_LIGHT));
+    addParam(
+        createLightParamCentered<VCVLightButton<MediumSimpleLight<WhiteLight>>>(
+            mm2px(Vec(15.645, 17.698)), module, Basically::RUN_PARAM,
+            Basically::RUN_LIGHT));
 
     Trimpot* style_knob = createParamCentered<Trimpot>(
         mm2px(Vec(6.496, 28.468)), module, Basically::STYLE_PARAM);
@@ -1294,57 +1269,59 @@ struct BasicallyWidget : ModuleWidget {
 
     // Compilation status and error message access.
     // Want the middle of this to be at x=15.645
-    ErrorWidget* display = createWidget<ErrorWidget>(mm2px(
-        Vec(15.645 - 4.0, 33)));
+    ErrorWidget* display =
+        createWidget<ErrorWidget>(mm2px(Vec(15.645 - 4.0, 33)));
     display->box.size = mm2px(Vec(8.0, 4.0));
     display->module = module;
     addChild(display);
 
     // User created title for the "program"?
     // Want the middle of this to be at x=15.645
-    TitleTextField* title = createWidget<TitleTextField>(mm2px(
-        Vec(15.645 - 15.0, 40)));
+    TitleTextField* title =
+        createWidget<TitleTextField>(mm2px(Vec(15.645 - 15.0, 40)));
     title->box.size = mm2px(Vec(30.0, 10.0));
     title->module = module;
     addChild(title);
 
     // Data Inputs
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 57.35)),
-      module, Basically::IN1_INPUT));
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 57.35)),
-      module, Basically::IN2_INPUT));
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 57.35)),
-      module, Basically::IN3_INPUT));
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 71.35)),
-      module, Basically::IN4_INPUT));
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 71.35)),
-      module, Basically::IN5_INPUT));
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 71.35)),
-      module, Basically::IN6_INPUT));
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 83.65)),
-      module, Basically::IN7_INPUT));
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 83.65)),
-      module, Basically::IN8_INPUT));
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 83.65)),
-      module, Basically::IN9_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(6.496, 57.35)), module, Basically::IN1_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(15.645, 57.35)), module, Basically::IN2_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(24.794, 57.35)), module, Basically::IN3_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(6.496, 71.35)), module, Basically::IN4_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(15.645, 71.35)), module, Basically::IN5_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(24.794, 71.35)), module, Basically::IN6_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(6.496, 83.65)), module, Basically::IN7_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(15.645, 83.65)), module, Basically::IN8_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(24.794, 83.65)), module, Basically::IN9_INPUT));
 
     // The Outputs
-    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 101.601)),
-      module, Basically::OUT1_OUTPUT));
-    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 101.601)),
-      module, Basically::OUT2_OUTPUT));
-    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 101.601)),
-      module, Basically::OUT3_OUTPUT));
-    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(6.496, 115.601)),
-      module, Basically::OUT4_OUTPUT));
-    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(15.645, 115.601)),
-      module, Basically::OUT5_OUTPUT));
-    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(24.794, 115.601)),
-      module, Basically::OUT6_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(6.496, 101.601)), module, Basically::OUT1_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(15.645, 101.601)), module, Basically::OUT2_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(24.794, 101.601)), module, Basically::OUT3_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(6.496, 115.601)), module, Basically::OUT4_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(15.645, 115.601)), module, Basically::OUT5_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(24.794, 115.601)), module, Basically::OUT6_OUTPUT));
 
     // Resize bar on right.
-    StochasticTelegraph::STResizeHandle<Basically, TextEditAction>* new_rightHandle =
-      new StochasticTelegraph::STResizeHandle<Basically, TextEditAction>(true, 7, 64);
+    StochasticTelegraph::STResizeHandle<Basically, TextEditAction>*
+        new_rightHandle =
+            new StochasticTelegraph::STResizeHandle<Basically, TextEditAction>(
+                true, 7, 64);
     this->rightHandle = new_rightHandle;
     new_rightHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module
@@ -1360,10 +1337,11 @@ struct BasicallyWidget : ModuleWidget {
     Basically* module = dynamic_cast<Basically*>(this->module);
     if (module) {
       if (box.size.x != module->width * RACK_GRID_WIDTH) {
-        // Module width has changed. Might be first time step() has been called, or undo/redo has happened
-        // But we check for it because when STRIP creates a new instance of this module, it may not
-        // pick up the JSON-saved width until after Rack has placed the other modules, causing gaps or
-        // overlaps. 
+        // Module width has changed. Might be first time step() has been called,
+        // or undo/redo has happened But we check for it because when STRIP
+        // creates a new instance of this module, it may not pick up the
+        // JSON-saved width until after Rack has placed the other modules,
+        // causing gaps or overlaps.
         box.size.x = module->width * RACK_GRID_WIDTH;
         // This forces the other modules to the right place if needed.
         APP->scene->rack->setModulePosForce(this, box.pos);
@@ -1389,190 +1367,196 @@ struct BasicallyWidget : ModuleWidget {
     menu->addChild(new ProgramNameMenuItem(module));
     menu->addChild(new MenuSeparator);
     std::pair<std::string, long long int> colors[] = {
-      {"Green on Black", 0x00ff00000000},
-      {"White on Black", 0xffffff000000},
-      {"Yellow on Black (like Notes)", 0xffd714000000},
-      {"Amber on Black", 0xffc000000000},
-      {"Blue on Black", 0x29b2ef000000},
-      {"Black on White", 0x000000ffffff},
-      {"Blue on White", 0x29b2efffffff}
-    };
-    MenuItem* color_menu = createSubmenuItem("Screen Colors", "",
-     [=](Menu* menu) {
-         for (auto line : colors) {
-           menu->addChild(createCheckMenuItem(line.first, "",
-           [=]() {return line.second == module->screen_colors;},
-           [=]() {module->screen_colors = line.second;
-                  module->RedrawText(); }
-           ));
-         }
-     }
-    );
+        {"Green on Black", 0x00ff00000000},
+        {"White on Black", 0xffffff000000},
+        {"Yellow on Black (like Notes)", 0xffd714000000},
+        {"Amber on Black", 0xffc000000000},
+        {"Blue on Black", 0x29b2ef000000},
+        {"Black on White", 0x000000ffffff},
+        {"Blue on White", 0x29b2efffffff}};
+    MenuItem* color_menu =
+        createSubmenuItem("Screen Colors", "", [=](Menu* menu) {
+          for (auto line : colors) {
+            menu->addChild(createCheckMenuItem(
+                line.first, "",
+                [=]() { return line.second == module->screen_colors; },
+                [=]() {
+                  module->screen_colors = line.second;
+                  module->RedrawText();
+                }));
+          }
+        });
     menu->addChild(color_menu);
 
     std::pair<std::string, std::string> fonts[] = {
-      {"VCV font (like Notes)", "res/fonts/ShareTechMono-Regular.ttf"},
-      {"RobotoMono Bold", "fonts/RobotoMono-Bold.ttf"},
-      {"RobotoMono Light", "fonts/RobotoMono-Light.ttf"},
-      {"RobotoMono Medium", "fonts/RobotoMono-Medium.ttf"},
-      {"RobotoMono Regular", "fonts/RobotoMono-Regular.ttf"},
-      {"RobotoSlab Bold", "fonts/RobotoSlab-Bold.ttf"},
-      {"RobotoSlab Light", "fonts/RobotoSlab-Light.ttf"},
-      {"RobotoSlab Regular", "fonts/RobotoSlab-Regular.ttf"}
-  };
+        {"VCV font (like Notes)", "res/fonts/ShareTechMono-Regular.ttf"},
+        {"RobotoMono Bold", "fonts/RobotoMono-Bold.ttf"},
+        {"RobotoMono Light", "fonts/RobotoMono-Light.ttf"},
+        {"RobotoMono Medium", "fonts/RobotoMono-Medium.ttf"},
+        {"RobotoMono Regular", "fonts/RobotoMono-Regular.ttf"},
+        {"RobotoSlab Bold", "fonts/RobotoSlab-Bold.ttf"},
+        {"RobotoSlab Light", "fonts/RobotoSlab-Light.ttf"},
+        {"RobotoSlab Regular", "fonts/RobotoSlab-Regular.ttf"}};
 
-    MenuItem* font_menu = createSubmenuItem("Font", "",
-      [=](Menu* menu) {
-          for (auto line : fonts) {
-            menu->addChild(createCheckMenuItem(line.first, "",
-                [=]() {return line.second == module->font_choice;},
-                [=]() {module->font_choice = line.second;
-                       codeDisplay->setFontPath();
-                       module->RedrawText(); }
-            ));
-          }
+    MenuItem* font_menu = createSubmenuItem("Font", "", [=](Menu* menu) {
+      for (auto line : fonts) {
+        menu->addChild(createCheckMenuItem(
+            line.first, "",
+            [=]() { return line.second == module->font_choice; },
+            [=]() {
+              module->font_choice = line.second;
+              codeDisplay->setFontPath();
+              module->RedrawText();
+            }));
       }
-    );
+    });
     menu->addChild(font_menu);
 
     // Options
-    menu->addChild(createBoolMenuItem("Highlight error line", "",
-                                      [=]() { return module->allow_error_highlight; },
-                                      [=](bool state) {module->allow_error_highlight = state;
-                                                       module->RedrawText();}));
+    menu->addChild(createBoolMenuItem(
+        "Highlight error line", "",
+        [=]() { return module->allow_error_highlight; },
+        [=](bool state) {
+          module->allow_error_highlight = state;
+          module->RedrawText();
+        }));
     menu->addChild(createBoolPtrMenuItem("Colorblind-friendly status light", "",
-                                          &module->blue_orange_light));
+                                         &module->blue_orange_light));
     menu->addChild(new MenuSeparator);
     // Clamping
-    MenuItem* clamp_menu = createSubmenuItem("Clamp OUTn values to (-10V, 10V)", "",
-      [=](Menu* menu) {
+    MenuItem* clamp_menu = createSubmenuItem(
+        "Clamp OUTn values to (-10V, 10V)", "", [=](Menu* menu) {
           for (auto line : module->out_map) {
             // We use out_map, but want the name capitalized.
             std::string upper(line.first);
-            std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
-            menu->addChild(createBoolMenuItem(upper, "",
-                [=]() {return module->clamp_info[line.second];},
-                [=](bool checked) {module->clamp_info[line.second] = checked;}
-            ));
+            std::transform(upper.begin(), upper.end(), upper.begin(),
+                           ::toupper);
+            menu->addChild(createBoolMenuItem(
+                upper, "", [=]() { return module->clamp_info[line.second]; },
+                [=](bool checked) {
+                  module->clamp_info[line.second] = checked;
+                }));
           }
-      }
-    );
+        });
     menu->addChild(clamp_menu);
 
     // Add syntax insertions.
     menu->addChild(new MenuSeparator);
-    menu->addChild(createMenuLabel(
-      "Language hints (selecting inserts code)"));
+    menu->addChild(createMenuLabel("Language hints (selecting inserts code)"));
     std::pair<std::string, std::string> syntax[] = {
-      {"OUT1 = IN1 + offset[n]", "OUT1 = IN1 + offset[n]\n"},
-      {"OUT1[chan] = IN1[chan] / 2", "OUT1[chan] = IN1[chan] / 2\n"},
-      {"offset[0] = {2, 0.2, foo, 100*4.5}", "offset[0] = {2, 0.2, foo, 100*4.5}\n"},
-      {"WAIT 200", "WAIT 200\n"},
-      {"' I'm a comment!", "' I'm a comment! Only humans read me.\n"},
-      {"IF IN1 == 0 THEN OUT1 = IN2 * IN2 END IF\n",
-       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN2\nEND IF\n"},
-      {"IF IN1 == 0 THEN OUT1 = IN2 * IN2 ELSEIF IN1 < 2 THEN OUT1 = IN2 END IF\n",
-       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN2\nELSEIF IN1 < 2 THEN\n  OUT1 = IN2\nEND IF\n"},
-      {"IF IN1 == 0 THEN OUT1 = IN2 * IN1 ELSE OUT1 = -5 END IF\n",
-       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSE\n  OUT1 = -5\nEND IF\n"},
-      {"IF IN1 == 0 THEN OUT1 = IN2 * IN1 ELSEIF IN1 < 2 THEN OUT1 = IN2 ELSE OUT1 = -5 END IF\n",
-       "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSEIF IN1 < 2 THEN\n  OUT1 = IN2\nELSE\n  OUT1 = -5\nEND IF\n"},
-      {"FOR i = 0 TO 10 foo = IN1 + i NEXT|NEXTHIGHCPU\n",
-       "FOR i = 0 TO 10\n  foo = IN1 + i\nNEXT\n"},
-      {"FOR i = 0 TO 10 STEP 0.2 foo = IN1 + i NEXT\n",
-       "FOR i = 0 TO 10 STEP 0.2\n  foo = IN1 + i\nNEXT\n"},
-      {"WHILE foo > 10  foo = foo / 2 END WHILE\n",
-       "WHILE foo > 10\n  foo = foo / 2\nEND WHILE\n"},
-      {"CONTINUE FOR|WHILE|ALL", "CONTINUE FOR\n"},
-      {"EXIT FOR|WHILE|ALL", "EXIT WHILE\n"},
-      {"CLEAR ALL", "CLEAR ALL\n"},
-      {"RESET", "RESET\n"},
-      {"set_channels(OUT1, 6)", "set_channels(OUT1, 6)\n"},
-      {"ALSO ... END ALSO", "ALSO\n  out1 = mod(out1 + random(0, 0.1))\nEND ALSO"},
-      {"WHEN start() limit = 200 curr = 0 END WHEN",
-       "WHEN start()\n  limit = 200\n  curr = 0\nEND WHEN"}
-    };
-    MenuItem* syntax_menu = createSubmenuItem("Syntax", "",
-      [=](Menu* menu) {
-          for (auto line : syntax) {
-            menu->addChild(createMenuItem(line.first, "",
-              [=]() { codeDisplay->insertText(line.second); }
-            ));
-          }
+        {"OUT1 = IN1 + offset[n]", "OUT1 = IN1 + offset[n]\n"},
+        {"OUT1[chan] = IN1[chan] / 2", "OUT1[chan] = IN1[chan] / 2\n"},
+        {"offset[0] = {2, 0.2, foo, 100*4.5}",
+         "offset[0] = {2, 0.2, foo, 100*4.5}\n"},
+        {"WAIT 200", "WAIT 200\n"},
+        {"' I'm a comment!", "' I'm a comment! Only humans read me.\n"},
+        {"IF IN1 == 0 THEN OUT1 = IN2 * IN2 END IF\n",
+         "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN2\nEND IF\n"},
+        {"IF IN1 == 0 THEN OUT1 = IN2 * IN2 ELSEIF IN1 < 2 THEN OUT1 = IN2 END "
+         "IF\n",
+         "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN2\nELSEIF IN1 < 2 THEN\n  OUT1 = "
+         "IN2\nEND IF\n"},
+        {"IF IN1 == 0 THEN OUT1 = IN2 * IN1 ELSE OUT1 = -5 END IF\n",
+         "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSE\n  OUT1 = -5\nEND IF\n"},
+        {"IF IN1 == 0 THEN OUT1 = IN2 * IN1 ELSEIF IN1 < 2 THEN OUT1 = IN2 "
+         "ELSE OUT1 = -5 END IF\n",
+         "IF IN1 == 0 THEN\n  OUT1 = IN2 * IN1\nELSEIF IN1 < 2 THEN\n  OUT1 = "
+         "IN2\nELSE\n  OUT1 = -5\nEND IF\n"},
+        {"FOR i = 0 TO 10 foo = IN1 + i NEXT|NEXTHIGHCPU\n",
+         "FOR i = 0 TO 10\n  foo = IN1 + i\nNEXT\n"},
+        {"FOR i = 0 TO 10 STEP 0.2 foo = IN1 + i NEXT\n",
+         "FOR i = 0 TO 10 STEP 0.2\n  foo = IN1 + i\nNEXT\n"},
+        {"WHILE foo > 10  foo = foo / 2 END WHILE\n",
+         "WHILE foo > 10\n  foo = foo / 2\nEND WHILE\n"},
+        {"CONTINUE FOR|WHILE|ALL", "CONTINUE FOR\n"},
+        {"EXIT FOR|WHILE|ALL", "EXIT WHILE\n"},
+        {"CLEAR ALL", "CLEAR ALL\n"},
+        {"RESET", "RESET\n"},
+        {"set_channels(OUT1, 6)", "set_channels(OUT1, 6)\n"},
+        {"ALSO ... END ALSO",
+         "ALSO\n  out1 = mod(out1 + random(0, 0.1))\nEND ALSO"},
+        {"WHEN start() limit = 200 curr = 0 END WHEN",
+         "WHEN start()\n  limit = 200\n  curr = 0\nEND WHEN"}};
+    MenuItem* syntax_menu = createSubmenuItem("Syntax", "", [=](Menu* menu) {
+      for (auto line : syntax) {
+        menu->addChild(createMenuItem(
+            line.first, "", [=]() { codeDisplay->insertText(line.second); }));
       }
-    );
+    });
     menu->addChild(syntax_menu);
 
     // Now add math functions.
     // description, inserted text.
     std::pair<std::string, std::string> math_funcs[] = {
-      {"abs(x) - this number without a negative sign", "abs(IN1)"},
-      {"ceiling(x) - integer value at or above x", "ceiling(IN1)"},
-      {"channels(p) - number of channels in polyphonic INx port p", "channels(IN1)"},
-      {"connected(x) - 1 if named port x has a cable attached, 0 if not",
-       "connected(IN1)"},
-      {"floor(x) - integer value at or below x", "floor(IN1)"},
-      {"log2(x) - Base 2 logarithm of x; 0 for x <= 0", "log2(in1)"},
-      {"loge(x) - Natural logarithm of x; 0 for x <= 0", "loge(in2)"},
-      {"log10(x) - Base 10 logarithm of x; 0 for x <= 0", "log10(in3)"},
-      {"max(x, y) - larger of x or y", "max(IN1, -5)"},
-      {"min(x, y) - smaller of x or y", "min(IN1, 5)"},
-      {"mod(x, y) - remainder after dividing x by y", "mod(IN1, 1)"},
-      {"normal(mean, std_dev) - bell curve distribution of random number",
-       "normal(0, 1)"},
-      {"pow(x, y) - x to the power of y", "pow(IN1, 0.5)"},
-      {"random(x, y) - uniformly random number: x <= random(x, y) < y",
-       "random(-1, 1)"},
-      {"sample_rate() - sample rate as set in menu. SOMETIMES also be number of times BASICally is called per second (e.g., 44100)",
-       "sample_rate()"},
-      {"sign(x) - -1, 0, or 1, depending on the sign of x", "sign(IN1)"},
-      {"sin(x) - sine of x, which is in radians", "sin(IN1)"},
-      {"start() - 1 only for the moment when the program is loaded or changed",
-       "WHEN start()"},
-      {"time() - Number of seconds since this BASICally module started running",
-       "IF time() > 60 THEN ' It's been a minute."},
-      {"time_millis() - Number of milliseconds since this BASICally module started running",
-       "IF time_millis() > 1000 THEN ' It's been a second."},
-      {"trigger(p) - 1 only for the moment when the INx port p receives a trigger",
-       "WHEN trigger(IN9)"}
-    };
-    MenuItem* math_menu = createSubmenuItem("Math", "",
-      [=](Menu* menu) {
-          for (auto line : math_funcs) {
-            menu->addChild(createMenuItem(line.first, "",
-              [=]() { codeDisplay->insertText(line.second); }
-            ));
-          }
+        {"abs(x) - this number without a negative sign", "abs(IN1)"},
+        {"ceiling(x) - integer value at or above x", "ceiling(IN1)"},
+        {"channels(p) - number of channels in polyphonic INx port p",
+         "channels(IN1)"},
+        {"connected(x) - 1 if named port x has a cable attached, 0 if not",
+         "connected(IN1)"},
+        {"floor(x) - integer value at or below x", "floor(IN1)"},
+        {"log2(x) - Base 2 logarithm of x; 0 for x <= 0", "log2(in1)"},
+        {"loge(x) - Natural logarithm of x; 0 for x <= 0", "loge(in2)"},
+        {"log10(x) - Base 10 logarithm of x; 0 for x <= 0", "log10(in3)"},
+        {"max(x, y) - larger of x or y", "max(IN1, -5)"},
+        {"min(x, y) - smaller of x or y", "min(IN1, 5)"},
+        {"mod(x, y) - remainder after dividing x by y", "mod(IN1, 1)"},
+        {"normal(mean, std_dev) - bell curve distribution of random number",
+         "normal(0, 1)"},
+        {"pow(x, y) - x to the power of y", "pow(IN1, 0.5)"},
+        {"random(x, y) - uniformly random number: x <= random(x, y) < y",
+         "random(-1, 1)"},
+        {"sample_rate() - sample rate as set in menu. SOMETIMES also be number "
+         "of times BASICally is called per second (e.g., 44100)",
+         "sample_rate()"},
+        {"sign(x) - -1, 0, or 1, depending on the sign of x", "sign(IN1)"},
+        {"sin(x) - sine of x, which is in radians", "sin(IN1)"},
+        {"start() - 1 only for the moment when the program is loaded or "
+         "changed",
+         "WHEN start()"},
+        {"time() - Number of seconds since this BASICally module started "
+         "running",
+         "IF time() > 60 THEN ' It's been a minute."},
+        {"time_millis() - Number of milliseconds since this BASICally module "
+         "started running",
+         "IF time_millis() > 1000 THEN ' It's been a second."},
+        {"trigger(p) - 1 only for the moment when the INx port p receives a "
+         "trigger",
+         "WHEN trigger(IN9)"}};
+    MenuItem* math_menu = createSubmenuItem("Math", "", [=](Menu* menu) {
+      for (auto line : math_funcs) {
+        menu->addChild(createMenuItem(
+            line.first, "", [=]() { codeDisplay->insertText(line.second); }));
       }
-    );
+    });
     menu->addChild(math_menu);
 
     // Now add text functions.
     // description, inserted text.
     std::pair<std::string, std::string> text_funcs[] = {
-      {"var_name$ - variable that hold a character string 'print(OUT6, name$)'",
-       "name$ = \"Bob\""},
-      {"array_name$[] - variable that holds many strings 'print(OUT6, messages$[3])'",
-       "names$[0] = {\"Bob\", \"Jo\", \"Clark\", \"Diane\"}"},
-      {"debug(var_name) - text of the form 'var_name = (current value of var_name)'",
-       "debug(foo)"},
-      {"debug(array_name[], startpos, lastpos) - "
-       "text of the form 'array_name[startpos] = {(current values of array_name)}'",
-       "debug(foo[], 0, 10)"},
-      {"print(OUTn, text, text, ...) - joins all of the text and sends them to OUTn",
-       "print(OUT6, \"hello, world!\")"}
-    };
-    MenuItem* text_menu = createSubmenuItem("Text", "",
-      [=](Menu* menu) {
-          for (auto line : text_funcs) {
-            menu->addChild(createMenuItem(line.first, "",
-              [=]() { codeDisplay->insertText(line.second); }
-            ));
-          }
+        {"var_name$ - variable that hold a character string 'print(OUT6, "
+         "name$)'",
+         "name$ = \"Bob\""},
+        {"array_name$[] - variable that holds many strings 'print(OUT6, "
+         "messages$[3])'",
+         "names$[0] = {\"Bob\", \"Jo\", \"Clark\", \"Diane\"}"},
+        {"debug(var_name) - text of the form 'var_name = (current value of "
+         "var_name)'",
+         "debug(foo)"},
+        {"debug(array_name[], startpos, lastpos) - "
+         "text of the form 'array_name[startpos] = {(current values of "
+         "array_name)}'",
+         "debug(foo[], 0, 10)"},
+        {"print(OUTn, text, text, ...) - joins all of the text and sends them "
+         "to OUTn",
+         "print(OUT6, \"hello, world!\")"}};
+    MenuItem* text_menu = createSubmenuItem("Text", "", [=](Menu* menu) {
+      for (auto line : text_funcs) {
+        menu->addChild(createMenuItem(
+            line.first, "", [=]() { codeDisplay->insertText(line.second); }));
       }
-    );
+    });
     menu->addChild(text_menu);
-
   }
 };
 

@@ -2,15 +2,6 @@ Checking src\Basically.cpp ...
 src\Basically.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
 
 ^
-src\code_block.h:53:12: warning: Member variable 'CodeBlock::state' is not initialized in the constructor. [uninitMemberVar]
-  explicit CodeBlock(Environment* env) : environment{env} {
-           ^
-src\code_block.h:53:12: warning: Member variable 'CodeBlock::type' is not initialized in the constructor. [uninitMemberVar]
-  explicit CodeBlock(Environment* env) : environment{env} {
-           ^
-src\code_block.h:53:12: warning: Member variable 'CodeBlock::condition' is not initialized in the constructor. [uninitMemberVar]
-  explicit CodeBlock(Environment* env) : environment{env} {
-           ^
 parser.hh:222:5: warning: Member variable 'value_type::emplace < Block >' is not initialized in the constructor. [uninitMemberVar]
 
     ^
@@ -47,44 +38,44 @@ src\pcode_trans.h:12:3: warning: Member variable 'PCodeTranslator::expression_fa
 src\pcode_trans.h:12:3: warning: Member variable 'PCodeTranslator::pcodes' is not initialized in the constructor. [uninitMemberVar]
   PCodeTranslator(Driver* the_driver) : driver{the_driver} {}
   ^
-src\Basically.cpp:107:5: warning: Member variable 'ProductionEnvironment::patch_time' is not initialized in the constructor. [uninitMemberVar]
+src\Basically.cpp:96:5: warning: Member variable 'ProductionEnvironment::patch_time' is not initialized in the constructor. [uninitMemberVar]
     ProductionEnvironment(std::vector<Input>* the_inputs,
     ^
-src\Basically.cpp:107:5: warning: Member variable 'ProductionEnvironment::starting' is not initialized in the constructor. [uninitMemberVar]
+src\Basically.cpp:96:5: warning: Member variable 'ProductionEnvironment::starting' is not initialized in the constructor. [uninitMemberVar]
     ProductionEnvironment(std::vector<Input>* the_inputs,
     ^
-src\Basically.cpp:107:5: warning: Member variable 'ProductionEnvironment::main_blocks' is not initialized in the constructor. [uninitMemberVar]
+src\Basically.cpp:96:5: warning: Member variable 'ProductionEnvironment::main_blocks' is not initialized in the constructor. [uninitMemberVar]
     ProductionEnvironment(std::vector<Input>* the_inputs,
     ^
-src\Basically.cpp:107:5: warning: Member variable 'ProductionEnvironment::expression_blocks' is not initialized in the constructor. [uninitMemberVar]
+src\Basically.cpp:96:5: warning: Member variable 'ProductionEnvironment::expression_blocks' is not initialized in the constructor. [uninitMemberVar]
     ProductionEnvironment(std::vector<Input>* the_inputs,
     ^
-src\Basically.cpp:107:5: warning: Member variable 'ProductionEnvironment::running_expression_blocks' is not initialized in the constructor. [uninitMemberVar]
+src\Basically.cpp:96:5: warning: Member variable 'ProductionEnvironment::running_expression_blocks' is not initialized in the constructor. [uninitMemberVar]
     ProductionEnvironment(std::vector<Input>* the_inputs,
     ^
-src\Basically.cpp:327:14: warning: Member variable 'CompilationThread::main_blocks' is not initialized in the constructor. [uninitMemberVar]
-    explicit CompilationThread(Driver* drv, Environment* env) : driver{drv},
+src\Basically.cpp:313:14: warning: Member variable 'CompilationThread::main_blocks' is not initialized in the constructor. [uninitMemberVar]
+    explicit CompilationThread(Driver* drv, Environment* env)
              ^
-src\Basically.cpp:327:14: warning: Member variable 'CompilationThread::expression_blocks' is not initialized in the constructor. [uninitMemberVar]
-    explicit CompilationThread(Driver* drv, Environment* env) : driver{drv},
+src\Basically.cpp:313:14: warning: Member variable 'CompilationThread::expression_blocks' is not initialized in the constructor. [uninitMemberVar]
+    explicit CompilationThread(Driver* drv, Environment* env)
              ^
-src\Basically.cpp:327:14: warning: Member variable 'CompilationThread::running_expression_blocks' is not initialized in the constructor. [uninitMemberVar]
-    explicit CompilationThread(Driver* drv, Environment* env) : driver{drv},
+src\Basically.cpp:313:14: warning: Member variable 'CompilationThread::running_expression_blocks' is not initialized in the constructor. [uninitMemberVar]
+    explicit CompilationThread(Driver* drv, Environment* env)
              ^
-src\Basically.cpp:863:3: warning: Member variable 'TextEditAction::old_cursor' is not initialized in the constructor. [uninitMemberVar]
+src\Basically.cpp:844:3: warning: Member variable 'TextEditAction::old_cursor' is not initialized in the constructor. [uninitMemberVar]
   TextEditAction(int64_t id, int old_width, int new_width,
   ^
-src\Basically.cpp:863:3: warning: Member variable 'TextEditAction::new_cursor' is not initialized in the constructor. [uninitMemberVar]
+src\Basically.cpp:844:3: warning: Member variable 'TextEditAction::new_cursor' is not initialized in the constructor. [uninitMemberVar]
   TextEditAction(int64_t id, int old_width, int new_width,
   ^
-src\Basically.cpp:907:3: warning: Member variable 'TitleTextField::module' is not initialized in the constructor. [uninitMemberVar]
-  TitleTextField() {
+src\Basically.cpp:890:3: warning: Member variable 'TitleTextField::module' is not initialized in the constructor. [uninitMemberVar]
+  TitleTextField() {}
   ^
-src\Basically.cpp:1106:3: warning: Member variable 'ErrorTooltip::errorWidget' is not initialized in the constructor. [uninitMemberVar]
-  ErrorTooltip(const std::string &text) : error_text{text} {}
+src\Basically.cpp:1091:3: warning: Member variable 'ErrorTooltip::errorWidget' is not initialized in the constructor. [uninitMemberVar]
+  ErrorTooltip(const std::string& text) : error_text{text} {}
   ^
-src\Basically.cpp:1115:3: warning: Member variable 'ErrorWidget::module' is not initialized in the constructor. [uninitMemberVar]
-  ErrorWidget() {
+src\Basically.cpp:1100:3: warning: Member variable 'ErrorWidget::module' is not initialized in the constructor. [uninitMemberVar]
+  ErrorWidget() { tooltip = NULL; }
   ^
 src\StochasticTelegraph.hpp:68:3: warning: Member variable 'STResizeHandle < Basically , TextEditAction >::module' is not initialized in the constructor. [uninitMemberVar]
   STResizeHandle(bool is_right, int min_h, int max_h) :
@@ -119,7 +110,7 @@ parser.hh:2586:12: note: Parent function 'by_state::clear'
 parser.hh:1051:12: note: Derived function 'basic_symbol < by_state >::clear'
 
            ^
-src\parser\tree.h:180:3: style: Struct 'ExpressionList' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+src\parser\tree.h:178:3: style: Struct 'ExpressionList' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
   ExpressionList(Expression new_expr) { expressions.push_back(new_expr); }
   ^
 parser.hh:229:5: style: Class 'value_type' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
@@ -134,121 +125,121 @@ parser.hh:2580:7: style: Struct 'by_state' has a constructor with 1 argument tha
 src\pcode_trans.h:12:3: style: Class 'PCodeTranslator' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
   PCodeTranslator(Driver* the_driver) : driver{the_driver} {}
   ^
-src\Basically.cpp:1106:3: style: Struct 'ErrorTooltip' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
-  ErrorTooltip(const std::string &text) : error_text{text} {}
+src\Basically.cpp:1091:3: style: Struct 'ErrorTooltip' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+  ErrorTooltip(const std::string& text) : error_text{text} {}
   ^
-src\Basically.cpp:1227:3: style: Struct 'ProgramNameMenuItem' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+src\Basically.cpp:1201:3: style: Struct 'ProgramNameMenuItem' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
   ProgramNameMenuItem(Basically* basically_module) {
   ^
-src\Basically.cpp:1248:3: style: Struct 'BasicallyWidget' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+src\Basically.cpp:1222:3: style: Struct 'BasicallyWidget' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
   BasicallyWidget(Basically* module) {
   ^
 parser.hh:2637:7: style: Class 'stack < stack_symbol_type , std :: vector < stack_symbol_type > >' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
 
       ^
-src\Basically.cpp:400:13: style: Condition '!shutdown' is always true [knownConditionTrueFalse]
+src\Basically.cpp:390:13: style: Condition '!shutdown' is always true [knownConditionTrueFalse]
         if (!shutdown) {
             ^
-src\Basically.cpp:349:14: note: Assuming that condition '!shutdown' is not redundant
+src\Basically.cpp:335:14: note: Assuming that condition '!shutdown' is not redundant
       while (!shutdown) {
              ^
-src\Basically.cpp:400:13: note: Condition '!shutdown' is always true
+src\Basically.cpp:390:13: note: Condition '!shutdown' is always true
         if (!shutdown) {
             ^
 src\tipsy_utils.h:36:31: style: C-style pointer casting [cstyleCast]
                               (unsigned char *)sending_message.c_str());
                               ^
-src\Basically.cpp:455:24: style: C-style pointer casting [cstyleCast]
-    drv.SetEnvironment((Environment*) environment);
+src\Basically.cpp:434:24: style: C-style pointer casting [cstyleCast]
+    drv.SetEnvironment((Environment*)environment);
                        ^
-src\Basically.cpp:471:44: style: C-style pointer casting [cstyleCast]
-    compiler = new CompilationThread(&drv, (Environment*) environment);
+src\Basically.cpp:450:44: style: C-style pointer casting [cstyleCast]
+    compiler = new CompilationThread(&drv, (Environment*)environment);
                                            ^
-src\Basically.cpp:375:40: style: The scope of the variable 'new_errors' can be reduced. [variableScope]
+src\Basically.cpp:364:40: style: The scope of the variable 'new_errors' can be reduced. [variableScope]
               std::vector<std::string> new_errors;
                                        ^
-src\Basically.cpp:356:16: style: Local variable 'compiles' shadows outer variable [shadowVariable]
+src\Basically.cpp:342:16: style: Local variable 'compiles' shadows outer variable [shadowVariable]
           bool compiles = !driver->parse(stable_text);
                ^
-src\Basically.cpp:794:8: note: Shadowed declaration
+src\Basically.cpp:773:8: note: Shadowed declaration
   bool compiles = false;
        ^
-src\Basically.cpp:356:16: note: Shadow variable
+src\Basically.cpp:342:16: note: Shadow variable
           bool compiles = !driver->parse(stable_text);
                ^
-src\parser\tree.h:180:29: performance: Function parameter 'new_expr' should be passed by const reference. [passedByValue]
+src\parser\tree.h:178:29: performance: Function parameter 'new_expr' should be passed by const reference. [passedByValue]
   ExpressionList(Expression new_expr) { expressions.push_back(new_expr); }
                             ^
-src\parser\tree.h:182:33: performance: Function parameter 'new_expr' should be passed by const reference. [passedByValue]
+src\parser\tree.h:180:33: performance: Function parameter 'new_expr' should be passed by const reference. [passedByValue]
   ExpressionList add(Expression new_expr) {
                                 ^
-src\parser\tree.h:187:68: performance: Function parameter 'exprs' should be passed by const reference. [passedByValue]
+src\parser\tree.h:185:68: performance: Function parameter 'exprs' should be passed by const reference. [passedByValue]
   friend std::ostream& operator<<(std::ostream& os, ExpressionList exprs) {
                                                                    ^
-src\parser\tree.h:298:41: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
+src\parser\tree.h:296:41: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
   static Statements FirstStatement(Line stat) {
                                         ^
-src\parser\tree.h:303:23: performance: Function parameter 'new_line' should be passed by const reference. [passedByValue]
+src\parser\tree.h:301:23: performance: Function parameter 'new_line' should be passed by const reference. [passedByValue]
   Statements add(Line new_line) {
                       ^
-src\parser\tree.h:308:64: performance: Function parameter 'statements' should be passed by const reference. [passedByValue]
+src\parser\tree.h:306:64: performance: Function parameter 'statements' should be passed by const reference. [passedByValue]
   friend std::ostream& operator<<(std::ostream& os, Statements statements) {
                                                                ^
-src\parser\tree.h:327:37: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
+src\parser\tree.h:325:37: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
   static Block MainBlock(Statements stat) {
                                     ^
-src\parser\tree.h:333:63: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
+src\parser\tree.h:331:63: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
   static Block WhenExpBlock(Expression& condition, Statements stat) {
                                                               ^
-src\parser\tree.h:341:59: performance: Function parameter 'block' should be passed by const reference. [passedByValue]
+src\parser\tree.h:339:59: performance: Function parameter 'block' should be passed by const reference. [passedByValue]
   friend std::ostream& operator<<(std::ostream& os, Block block) {
                                                           ^
-src\parser\tree.h:355:25: performance: Function parameter 'main_block' should be passed by const reference. [passedByValue]
+src\parser\tree.h:353:25: performance: Function parameter 'main_block' should be passed by const reference. [passedByValue]
   explicit Blocks(Block main_block) { block_list.push_back(main_block); }
                         ^
-src\parser\tree.h:356:20: performance: Function parameter 'new_block' should be passed by const reference. [passedByValue]
+src\parser\tree.h:354:20: performance: Function parameter 'new_block' should be passed by const reference. [passedByValue]
   Blocks Add(Block new_block) {
                    ^
-src\parser\tree.h:360:60: performance: Function parameter 'blocks' should be passed by const reference. [passedByValue]
+src\parser\tree.h:358:60: performance: Function parameter 'blocks' should be passed by const reference. [passedByValue]
   friend std::ostream& operator<<(std::ostream& os, Blocks blocks) {
                                                            ^
 src\parser\driver.hh:43:49: performance: Function parameter 'message' should be passed by const reference. [passedByValue]
   Error(int line, int column, const std::string message) : line{line},
                                                 ^
-src\Basically.cpp:77:34: performance: Function parameter 'a' should be passed by const reference. [passedByValue]
+src\Basically.cpp:66:34: performance: Function parameter 'a' should be passed by const reference. [passedByValue]
     InPortInfo(const std::string a, InputId b) : name{a}, id{b} {
                                  ^
-src\Basically.cpp:386:34: performance: Range variable 'err' should be declared as const reference. [iterateByValue]
+src\Basically.cpp:376:34: performance: Range variable 'err' should be declared as const reference. [iterateByValue]
                 for (std::string err : new_errors) {
                                  ^
-src\parser\tree.h:333:41: style: Parameter 'condition' can be declared as reference to const [constParameterReference]
+src\parser\tree.h:331:41: style: Parameter 'condition' can be declared as reference to const [constParameterReference]
   static Block WhenExpBlock(Expression& condition, Statements stat) {
                                         ^
-src\Basically.cpp:1360:16: style: Variable 'module' can be declared as pointer to const [constVariablePointer]
+src\Basically.cpp:1337:16: style: Variable 'module' can be declared as pointer to const [constVariablePointer]
     Basically* module = dynamic_cast<Basically*>(this->module);
                ^
-src\Basically.cpp:1391:43: style: Variable 'colors' can be declared as const array [constVariable]
+src\Basically.cpp:1369:43: style: Variable 'colors' can be declared as const array [constVariable]
     std::pair<std::string, long long int> colors[] = {
                                           ^
-src\Basically.cpp:1413:41: style: Variable 'fonts' can be declared as const array [constVariable]
+src\Basically.cpp:1391:41: style: Variable 'fonts' can be declared as const array [constVariable]
     std::pair<std::string, std::string> fonts[] = {
                                         ^
-src\Basically.cpp:1466:41: style: Variable 'syntax' can be declared as const array [constVariable]
+src\Basically.cpp:1446:41: style: Variable 'syntax' can be declared as const array [constVariable]
     std::pair<std::string, std::string> syntax[] = {
                                         ^
-src\Basically.cpp:1508:41: style: Variable 'math_funcs' can be declared as const array [constVariable]
+src\Basically.cpp:1490:41: style: Variable 'math_funcs' can be declared as const array [constVariable]
     std::pair<std::string, std::string> math_funcs[] = {
                                         ^
-src\Basically.cpp:1552:41: style: Variable 'text_funcs' can be declared as const array [constVariable]
+src\Basically.cpp:1536:41: style: Variable 'text_funcs' can be declared as const array [constVariable]
     std::pair<std::string, std::string> text_funcs[] = {
                                         ^
-src\Basically.cpp:386:40: style: Iterating over container 'new_errors' that is always empty. [knownEmptyContainer]
+src\Basically.cpp:376:40: style: Iterating over container 'new_errors' that is always empty. [knownEmptyContainer]
                 for (std::string err : new_errors) {
                                        ^
-src\parser\tree.h:331:12: error: Uninitialized variable: block.condition [uninitvar]
+src\parser\tree.h:329:12: error: Uninitialized variable: block.condition [uninitvar]
     return block;
            ^
-src\parser\tree.h:331:12: error: Uninitialized struct member: block.condition [uninitStructMember]
+src\parser\tree.h:329:12: error: Uninitialized struct member: block.condition [uninitStructMember]
     return block;
            ^
 Checking src\Basically.cpp: YYSTYPE...
@@ -1944,7 +1935,7 @@ src\parser\tree.cc:0:0: information: Limiting analysis of branches. Use --check-
 src\parser\tree.cc:289:19: style: The member function 'Expression::bool_to_float' can be static. [functionStatic]
 float Expression::bool_to_float(bool value) {
                   ^
-src\parser\tree.h:121:9: note: The member function 'Expression::bool_to_float' can be static.
+src\parser\tree.h:119:9: note: The member function 'Expression::bool_to_float' can be static.
   float bool_to_float(bool value);
         ^
 src\parser\tree.cc:289:19: note: The member function 'Expression::bool_to_float' can be static.
@@ -1953,7 +1944,7 @@ float Expression::bool_to_float(bool value) {
 src\parser\tree.cc:365:31: style: The member function 'ExpressionFactory::Not' can be static. [functionStatic]
 Expression ExpressionFactory::Not(const Expression &expr) {
                               ^
-src\parser\tree.h:132:14: note: The member function 'ExpressionFactory::Not' can be static.
+src\parser\tree.h:130:14: note: The member function 'ExpressionFactory::Not' can be static.
   Expression Not(const Expression& expr);
              ^
 src\parser\tree.cc:365:31: note: The member function 'ExpressionFactory::Not' can be static.
@@ -1962,7 +1953,7 @@ Expression ExpressionFactory::Not(const Expression &expr) {
 src\parser\tree.cc:372:31: style: The member function 'ExpressionFactory::Note' can be static. [functionStatic]
 Expression ExpressionFactory::Note(const std::string &note_name) {
                               ^
-src\parser\tree.h:133:14: note: The member function 'ExpressionFactory::Note' can be static.
+src\parser\tree.h:131:14: note: The member function 'ExpressionFactory::Note' can be static.
   Expression Note(const std::string& note_name);
              ^
 src\parser\tree.cc:372:31: note: The member function 'ExpressionFactory::Note' can be static.
@@ -1971,7 +1962,7 @@ Expression ExpressionFactory::Note(const std::string &note_name) {
 src\parser\tree.cc:401:31: style: The member function 'ExpressionFactory::Number' can be static. [functionStatic]
 Expression ExpressionFactory::Number(float the_value) {
                               ^
-src\parser\tree.h:134:14: note: The member function 'ExpressionFactory::Number' can be static.
+src\parser\tree.h:132:14: note: The member function 'ExpressionFactory::Number' can be static.
   Expression Number(float the_value);
              ^
 src\parser\tree.cc:401:31: note: The member function 'ExpressionFactory::Number' can be static.
@@ -1980,7 +1971,7 @@ Expression ExpressionFactory::Number(float the_value) {
 src\parser\tree.cc:408:31: style: The member function 'ExpressionFactory::Quoted' can be static. [functionStatic]
 Expression ExpressionFactory::Quoted(const std::string &the_value) {
                               ^
-src\parser\tree.h:135:14: note: The member function 'ExpressionFactory::Quoted' can be static.
+src\parser\tree.h:133:14: note: The member function 'ExpressionFactory::Quoted' can be static.
   Expression Quoted(const std::string& quoted);
              ^
 src\parser\tree.cc:408:31: note: The member function 'ExpressionFactory::Quoted' can be static.
@@ -1989,7 +1980,7 @@ Expression ExpressionFactory::Quoted(const std::string &the_value) {
 src\parser\tree.cc:433:31: style: The member function 'ExpressionFactory::OneArgFunc' can be static. [functionStatic]
 Expression ExpressionFactory::OneArgFunc(const std::string &func_name,
                               ^
-src\parser\tree.h:137:14: note: The member function 'ExpressionFactory::OneArgFunc' can be static.
+src\parser\tree.h:135:14: note: The member function 'ExpressionFactory::OneArgFunc' can be static.
   Expression OneArgFunc(const std::string& func_name, const Expression& arg1);
              ^
 src\parser\tree.cc:433:31: note: The member function 'ExpressionFactory::OneArgFunc' can be static.
@@ -1998,7 +1989,7 @@ Expression ExpressionFactory::OneArgFunc(const std::string &func_name,
 src\parser\tree.cc:477:31: style: The member function 'ExpressionFactory::TernaryFunc' can be static. [functionStatic]
 Expression ExpressionFactory::TernaryFunc(const Expression &condition, const Expression &if_true,
                               ^
-src\parser\tree.h:142:14: note: The member function 'ExpressionFactory::TernaryFunc' can be static.
+src\parser\tree.h:140:14: note: The member function 'ExpressionFactory::TernaryFunc' can be static.
   Expression TernaryFunc(const Expression& condition, const Expression& if_true,
              ^
 src\parser\tree.cc:477:31: note: The member function 'ExpressionFactory::TernaryFunc' can be static.
@@ -2007,7 +1998,7 @@ Expression ExpressionFactory::TernaryFunc(const Expression &condition, const Exp
 src\parser\tree.cc:487:31: style: The member function 'ExpressionFactory::CreateBinOp' can be static. [functionStatic]
 Expression ExpressionFactory::CreateBinOp(const Expression &lhs,
                               ^
-src\parser\tree.h:144:14: note: The member function 'ExpressionFactory::CreateBinOp' can be static.
+src\parser\tree.h:142:14: note: The member function 'ExpressionFactory::CreateBinOp' can be static.
   Expression CreateBinOp(const Expression& lhs, const std::string& op_string,
              ^
 src\parser\tree.cc:487:31: note: The member function 'ExpressionFactory::CreateBinOp' can be static.
@@ -2016,7 +2007,7 @@ Expression ExpressionFactory::CreateBinOp(const Expression &lhs,
 src\parser\tree.cc:517:31: style: The member function 'ExpressionFactory::StringArrayVariable' can be static. [functionStatic]
 Expression ExpressionFactory::StringArrayVariable(const std::string &array_name,
                               ^
-src\parser\tree.h:148:14: note: The member function 'ExpressionFactory::StringArrayVariable' can be static.
+src\parser\tree.h:146:14: note: The member function 'ExpressionFactory::StringArrayVariable' can be static.
   Expression StringArrayVariable(const std::string& array_name,
              ^
 src\parser\tree.cc:517:31: note: The member function 'ExpressionFactory::StringArrayVariable' can be static.
@@ -2025,7 +2016,7 @@ Expression ExpressionFactory::StringArrayVariable(const std::string &array_name,
 src\parser\tree.cc:557:31: style: The member function 'ExpressionFactory::StringVariable' can be static. [functionStatic]
 Expression ExpressionFactory::StringVariable(const std::string& var_name, Driver* driver) {
                               ^
-src\parser\tree.h:154:14: note: The member function 'ExpressionFactory::StringVariable' can be static.
+src\parser\tree.h:152:14: note: The member function 'ExpressionFactory::StringVariable' can be static.
   Expression StringVariable(const std::string& var_name, Driver* driver);
              ^
 src\parser\tree.cc:557:31: note: The member function 'ExpressionFactory::StringVariable' can be static.
@@ -2034,7 +2025,7 @@ Expression ExpressionFactory::StringVariable(const std::string& var_name, Driver
 src\parser\tree.cc:568:31: style: The member function 'ExpressionFactory::DebugId' can be static. [functionStatic]
 Expression ExpressionFactory::DebugId(const std::string &var_name, Driver* driver) {
                               ^
-src\parser\tree.h:155:14: note: The member function 'ExpressionFactory::DebugId' can be static.
+src\parser\tree.h:153:14: note: The member function 'ExpressionFactory::DebugId' can be static.
   Expression DebugId(const std::string& var_name, Driver* driver);
              ^
 src\parser\tree.cc:568:31: note: The member function 'ExpressionFactory::DebugId' can be static.
@@ -2043,7 +2034,7 @@ Expression ExpressionFactory::DebugId(const std::string &var_name, Driver* drive
 src\parser\tree.cc:578:31: style: The member function 'ExpressionFactory::DebugId' can be static. [functionStatic]
 Expression ExpressionFactory::DebugId(const std::string &var_name,
                               ^
-src\parser\tree.h:156:14: note: The member function 'ExpressionFactory::DebugId' can be static.
+src\parser\tree.h:154:14: note: The member function 'ExpressionFactory::DebugId' can be static.
   Expression DebugId(const std::string& var_name, const Expression& start,
              ^
 src\parser\tree.cc:578:31: note: The member function 'ExpressionFactory::DebugId' can be static.
@@ -2052,7 +2043,7 @@ Expression ExpressionFactory::DebugId(const std::string &var_name,
 src\parser\tree.cc:592:31: style: The member function 'ExpressionFactory::DebugIdString' can be static. [functionStatic]
 Expression ExpressionFactory::DebugIdString(const std::string &var_name, Driver* driver) {
                               ^
-src\parser\tree.h:159:14: note: The member function 'ExpressionFactory::DebugIdString' can be static.
+src\parser\tree.h:157:14: note: The member function 'ExpressionFactory::DebugIdString' can be static.
   Expression DebugIdString(const std::string& var_name, Driver* driver);
              ^
 src\parser\tree.cc:592:31: note: The member function 'ExpressionFactory::DebugIdString' can be static.
@@ -2061,7 +2052,7 @@ Expression ExpressionFactory::DebugIdString(const std::string &var_name, Driver*
 src\parser\tree.cc:602:31: style: The member function 'ExpressionFactory::DebugIdString' can be static. [functionStatic]
 Expression ExpressionFactory::DebugIdString(const std::string &var_name,
                               ^
-src\parser\tree.h:160:14: note: The member function 'ExpressionFactory::DebugIdString' can be static.
+src\parser\tree.h:158:14: note: The member function 'ExpressionFactory::DebugIdString' can be static.
   Expression DebugIdString(const std::string& var_name, const Expression& start,
              ^
 src\parser\tree.cc:602:31: note: The member function 'ExpressionFactory::DebugIdString' can be static.
@@ -2378,49 +2369,49 @@ Checking src\parser\tree.cc: __GNUC__;__ICC...
 Checking src\parser\tree.cc: __GNUC__;lint...
 28/31 files checked 96% done
 Checking src\pcode.cpp ...
-src\pcode.cpp:94:24: style: The member function 'PCodeTranslator::Assignment' can be static. [functionStatic]
+src\pcode.cpp:93:24: style: The member function 'PCodeTranslator::Assignment' can be static. [functionStatic]
 PCode PCodeTranslator::Assignment(float* variable_ptr, const PortPointer& port,
                        ^
 src\pcode_trans.h:19:9: note: The member function 'PCodeTranslator::Assignment' can be static.
   PCode Assignment(float* variable_ptr, const PortPointer& port,
         ^
-src\pcode.cpp:94:24: note: The member function 'PCodeTranslator::Assignment' can be static.
+src\pcode.cpp:93:24: note: The member function 'PCodeTranslator::Assignment' can be static.
 PCode PCodeTranslator::Assignment(float* variable_ptr, const PortPointer& port,
                        ^
-src\pcode.cpp:104:24: style: The member function 'PCodeTranslator::StringAssignment' can be static. [functionStatic]
+src\pcode.cpp:103:24: style: The member function 'PCodeTranslator::StringAssignment' can be static. [functionStatic]
 PCode PCodeTranslator::StringAssignment(std::string* str_variable_ptr,
                        ^
 src\pcode_trans.h:21:9: note: The member function 'PCodeTranslator::StringAssignment' can be static.
   PCode StringAssignment(std::string* str_variable_ptr,
         ^
-src\pcode.cpp:104:24: note: The member function 'PCodeTranslator::StringAssignment' can be static.
+src\pcode.cpp:103:24: note: The member function 'PCodeTranslator::StringAssignment' can be static.
 PCode PCodeTranslator::StringAssignment(std::string* str_variable_ptr,
                        ^
-src\pcode.cpp:218:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
+src\pcode.cpp:217:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
             [loop_type](Loop l) { return loop_type == l.loop_type; });
                              ^
-src\pcode.cpp:254:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
+src\pcode.cpp:253:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
             [loop_type](Loop l) { return loop_type == l.loop_type; });
                              ^
-src\pcode.cpp:121:14: style: Variable 'line' can be declared as reference to const [constVariableReference]
+src\pcode.cpp:120:14: style: Variable 'line' can be declared as reference to const [constVariableReference]
   for (auto& line : lines) {
              ^
-src\pcode.cpp:149:16: style: Variable 'loop_line' can be declared as reference to const [constVariableReference]
+src\pcode.cpp:148:16: style: Variable 'loop_line' can be declared as reference to const [constVariableReference]
     for (auto& loop_line : line.statements[0].lines) {
                ^
-src\pcode.cpp:295:18: style: Variable 'loop_line' can be declared as reference to const [constVariableReference]
+src\pcode.cpp:294:18: style: Variable 'loop_line' can be declared as reference to const [constVariableReference]
       for (auto& loop_line : line.statements[0].lines) {
                  ^
-src\pcode.cpp:343:18: style: Variable 'loop_line' can be declared as reference to const [constVariableReference]
+src\pcode.cpp:342:18: style: Variable 'loop_line' can be declared as reference to const [constVariableReference]
       for (auto& loop_line : line.statements[0].lines) {
                  ^
-src\pcode.cpp:361:18: style: Variable 'loop_line' can be declared as reference to const [constVariableReference]
+src\pcode.cpp:360:18: style: Variable 'loop_line' can be declared as reference to const [constVariableReference]
       for (auto& loop_line : line.statements[1].lines) {
                  ^
-src\pcode.cpp:395:18: style: Variable 'loop_line' can be declared as reference to const [constVariableReference]
+src\pcode.cpp:394:18: style: Variable 'loop_line' can be declared as reference to const [constVariableReference]
       for (auto& loop_line : line.statements[0].lines) {
                  ^
-src\pcode.cpp:441:18: style: Variable 'loop_line' can be declared as reference to const [constVariableReference]
+src\pcode.cpp:440:18: style: Variable 'loop_line' can be declared as reference to const [constVariableReference]
       for (auto& loop_line : line.statements[0].lines) {
                  ^
 Checking src\pcode.cpp: YYSTYPE...
@@ -2623,7 +2614,7 @@ int AudioFile<T>::getIndexOfString (std::vector<uint8_t>& source, std::string st
 src\code_block.cpp:24:17: style: The function 'SetOUTSingleValue' is never used. [unusedFunction]
 void CodeBlock::SetOUTSingleValue(const PortPointer &assign_port,
                 ^
-src\code_block.h:80:8: style: The function 'DebugPrint' is never used. [unusedFunction]
+src\code_block.h:82:8: style: The function 'DebugPrint' is never used. [unusedFunction]
   void DebugPrint() {
        ^
 nofile:0:0: information: Active checkers: 173/975 (use --checkers-report=<filename> to see details) [checkersReport]
