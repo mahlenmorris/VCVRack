@@ -2,42 +2,6 @@ Checking src\Basically.cpp ...
 src\Basically.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
 
 ^
-parser.hh:222:5: warning: Member variable 'value_type::emplace < Block >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:222:5: warning: Member variable 'value_type::emplace < Line >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:222:5: warning: Member variable 'value_type::emplace < float >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:222:5: warning: Member variable 'value_type::emplace < std :: string >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:229:5: warning: Member variable 'value_type::emplace < Block >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:229:5: warning: Member variable 'value_type::emplace < Line >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:229:5: warning: Member variable 'value_type::emplace < float >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:229:5: warning: Member variable 'value_type::emplace < std :: string >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:229:5: warning: Member variable 'value_type::yyalign_me_' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:229:5: warning: Member variable 'value_type::yyraw_' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-src\pcode_trans.h:12:3: warning: Member variable 'PCodeTranslator::expression_factory' is not initialized in the constructor. [uninitMemberVar]
-  PCodeTranslator(Driver* the_driver) : driver{the_driver} {}
-  ^
-src\pcode_trans.h:12:3: warning: Member variable 'PCodeTranslator::pcodes' is not initialized in the constructor. [uninitMemberVar]
-  PCodeTranslator(Driver* the_driver) : driver{the_driver} {}
-  ^
 src\Basically.cpp:96:5: warning: Member variable 'ProductionEnvironment::patch_time' is not initialized in the constructor. [uninitMemberVar]
     ProductionEnvironment(std::vector<Input>* the_inputs,
     ^
@@ -83,47 +47,8 @@ src\StochasticTelegraph.hpp:68:3: warning: Member variable 'STResizeHandle < Bas
 src\NoLockQueue.h:117:20: style: The member function 'SpScLockFreeQueue < std :: string , 50 >::max_size' can be static. [functionStatic]
   constexpr size_t max_size() const noexcept
                    ^
-parser.hh:1051:12: warning: The struct 'basic_symbol < by_kind >' defines member function with name 'clear' also defined in its parent struct 'by_kind'. [duplInheritedMember]
-
-           ^
-parser.hh:3106:20: note: Parent function 'by_kind::clear'
-
-                   ^
-parser.hh:1051:12: note: Derived function 'basic_symbol < by_kind >::clear'
-
-           ^
-parser.hh:1195:24: warning: The struct 'basic_symbol < by_kind >' defines member function with name 'type_get' also defined in its parent struct 'by_kind'. [duplInheritedMember]
-
-                       ^
-parser.hh:3129:20: note: Parent function 'by_kind::type_get'
-
-                   ^
-parser.hh:1195:24: note: Derived function 'basic_symbol < by_kind >::type_get'
-
-                       ^
-parser.hh:1051:12: warning: The struct 'basic_symbol < by_state >' defines member function with name 'clear' also defined in its parent struct 'by_state'. [duplInheritedMember]
-
-           ^
-parser.hh:2586:12: note: Parent function 'by_state::clear'
-
-           ^
-parser.hh:1051:12: note: Derived function 'basic_symbol < by_state >::clear'
-
-           ^
 src\parser\tree.h:178:3: style: Struct 'ExpressionList' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
   ExpressionList(Expression new_expr) { expressions.push_back(new_expr); }
-  ^
-parser.hh:229:5: style: Class 'value_type' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
-
-    ^
-parser.hh:1234:7: style: Struct 'by_kind' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
-
-      ^
-parser.hh:2580:7: style: Struct 'by_state' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
-
-      ^
-src\pcode_trans.h:12:3: style: Class 'PCodeTranslator' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
-  PCodeTranslator(Driver* the_driver) : driver{the_driver} {}
   ^
 src\Basically.cpp:1091:3: style: Struct 'ErrorTooltip' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
   ErrorTooltip(const std::string& text) : error_text{text} {}
@@ -134,9 +59,6 @@ src\Basically.cpp:1201:3: style: Struct 'ProgramNameMenuItem' has a constructor 
 src\Basically.cpp:1222:3: style: Struct 'BasicallyWidget' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
   BasicallyWidget(Basically* module) {
   ^
-parser.hh:2637:7: style: Class 'stack < stack_symbol_type , std :: vector < stack_symbol_type > >' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
-
-      ^
 src\Basically.cpp:390:13: style: Condition '!shutdown' is always true [knownConditionTrueFalse]
         if (!shutdown) {
             ^
@@ -185,22 +107,22 @@ src\parser\tree.h:301:23: performance: Function parameter 'new_line' should be p
 src\parser\tree.h:306:64: performance: Function parameter 'statements' should be passed by const reference. [passedByValue]
   friend std::ostream& operator<<(std::ostream& os, Statements statements) {
                                                                ^
-src\parser\tree.h:325:37: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
+src\parser\tree.h:321:37: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
   static Block MainBlock(Statements stat) {
                                     ^
-src\parser\tree.h:331:63: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
+src\parser\tree.h:327:63: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
   static Block WhenExpBlock(Expression& condition, Statements stat) {
                                                               ^
-src\parser\tree.h:339:59: performance: Function parameter 'block' should be passed by const reference. [passedByValue]
+src\parser\tree.h:334:59: performance: Function parameter 'block' should be passed by const reference. [passedByValue]
   friend std::ostream& operator<<(std::ostream& os, Block block) {
                                                           ^
-src\parser\tree.h:353:25: performance: Function parameter 'main_block' should be passed by const reference. [passedByValue]
+src\parser\tree.h:347:25: performance: Function parameter 'main_block' should be passed by const reference. [passedByValue]
   explicit Blocks(Block main_block) { block_list.push_back(main_block); }
                         ^
-src\parser\tree.h:354:20: performance: Function parameter 'new_block' should be passed by const reference. [passedByValue]
+src\parser\tree.h:348:20: performance: Function parameter 'new_block' should be passed by const reference. [passedByValue]
   Blocks Add(Block new_block) {
                    ^
-src\parser\tree.h:358:60: performance: Function parameter 'blocks' should be passed by const reference. [passedByValue]
+src\parser\tree.h:352:60: performance: Function parameter 'blocks' should be passed by const reference. [passedByValue]
   friend std::ostream& operator<<(std::ostream& os, Blocks blocks) {
                                                            ^
 src\parser\driver.hh:43:49: performance: Function parameter 'message' should be passed by const reference. [passedByValue]
@@ -212,7 +134,7 @@ src\Basically.cpp:66:34: performance: Function parameter 'a' should be passed by
 src\Basically.cpp:376:34: performance: Range variable 'err' should be declared as const reference. [iterateByValue]
                 for (std::string err : new_errors) {
                                  ^
-src\parser\tree.h:331:41: style: Parameter 'condition' can be declared as reference to const [constParameterReference]
+src\parser\tree.h:327:41: style: Parameter 'condition' can be declared as reference to const [constParameterReference]
   static Block WhenExpBlock(Expression& condition, Statements stat) {
                                         ^
 src\Basically.cpp:1337:16: style: Variable 'module' can be declared as pointer to const [constVariablePointer]
@@ -236,12 +158,6 @@ src\Basically.cpp:1536:41: style: Variable 'text_funcs' can be declared as const
 src\Basically.cpp:376:40: style: Iterating over container 'new_errors' that is always empty. [knownEmptyContainer]
                 for (std::string err : new_errors) {
                                        ^
-src\parser\tree.h:329:12: error: Uninitialized variable: block.condition [uninitvar]
-    return block;
-           ^
-src\parser\tree.h:329:12: error: Uninitialized struct member: block.condition [uninitStructMember]
-    return block;
-           ^
 Checking src\Basically.cpp: YYSTYPE...
 Checking src\Basically.cpp: YYSTYPE;__GNUC__...
 Checking src\Basically.cpp: _MSC_VER;__clang__...
@@ -352,9 +268,6 @@ src\buffered.hpp:323:9: warning: %u in format string (no. 1) requires 'unsigned 
 src\buffered.hpp:323:9: warning: %u in format string (no. 2) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
         snprintf(text_buffer, 10, "%u:%02u", value / 60, value % 60);
         ^
-src\Brainwash.cpp:362:31: style: struct member 'BrainwashWidget::adjust_slider' is never used. [unusedStructMember]
-  VCVLightSlider<WhiteLight>* adjust_slider;
-                              ^
 2/31 files checked 6% done
 Checking src\Chances.cpp ...
 src\Chances.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
@@ -567,9 +480,6 @@ src\buffered.hpp:307:3: warning: Member variable 'TimestampField < Embellish >::
 src\Embellish.cpp:409:3: style: Struct 'EmbellishWidget' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
   EmbellishWidget(Embellish* module) {
   ^
-src\Embellish.cpp:407:31: style: struct member 'EmbellishWidget::adjust_slider' is never used. [unusedStructMember]
-  VCVLightSlider<WhiteLight>* adjust_slider;
-                              ^
 7/31 files checked 16% done
 Checking src\Fermata.cpp ...
 src\Fermata.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
@@ -1090,30 +1000,6 @@ src\Venn.cpp:0:0: information: Limiting analysis of branches. Use --check-level=
 src\parser-venn\tree.h:68:3: warning: Member variable 'Circle::present' is not initialized in the constructor. [uninitMemberVar]
   Circle() : x_center{0.0}, y_center{0.0}, radius{0.0} {}
   ^
-parser.hh:223:5: warning: Member variable 'value_type::emplace < Assignment >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:223:5: warning: Member variable 'value_type::emplace < float >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:223:5: warning: Member variable 'value_type::emplace < std :: string >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:230:5: warning: Member variable 'value_type::emplace < Assignment >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:230:5: warning: Member variable 'value_type::emplace < float >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:230:5: warning: Member variable 'value_type::emplace < std :: string >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:230:5: warning: Member variable 'value_type::yyalign_me_' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:230:5: warning: Member variable 'value_type::yyraw_' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
 src\parser-venn\driver.h:80:3: warning: Member variable 'VennVariables::var_x' is not initialized in the constructor. [uninitMemberVar]
   VennVariables() {
   ^
@@ -1150,42 +1036,6 @@ src\Venn.cpp:264:3: warning: Member variable 'Venn::update_text_widgets' is not 
 src\Venn.cpp:821:3: warning: Member variable 'VennCircleUndoRedoAction::new_position' is not initialized in the constructor. [uninitMemberVar]
   VennCircleUndoRedoAction(
   ^
-parser.hh:851:12: warning: The struct 'basic_symbol < by_kind >' defines member function with name 'clear' also defined in its parent struct 'by_kind'. [duplInheritedMember]
-
-           ^
-parser.hh:2267:20: note: Parent function 'by_kind::clear'
-
-                   ^
-parser.hh:851:12: note: Derived function 'basic_symbol < by_kind >::clear'
-
-           ^
-parser.hh:942:24: warning: The struct 'basic_symbol < by_kind >' defines member function with name 'type_get' also defined in its parent struct 'by_kind'. [duplInheritedMember]
-
-                       ^
-parser.hh:2290:20: note: Parent function 'by_kind::type_get'
-
-                   ^
-parser.hh:942:24: note: Derived function 'basic_symbol < by_kind >::type_get'
-
-                       ^
-parser.hh:851:12: warning: The struct 'basic_symbol < by_state >' defines member function with name 'clear' also defined in its parent struct 'by_state'. [duplInheritedMember]
-
-           ^
-parser.hh:1853:12: note: Parent function 'by_state::clear'
-
-           ^
-parser.hh:851:12: note: Derived function 'basic_symbol < by_state >::clear'
-
-           ^
-parser.hh:230:5: style: Class 'value_type' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
-
-    ^
-parser.hh:981:7: style: Struct 'by_kind' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
-
-      ^
-parser.hh:1847:7: style: Struct 'by_state' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
-
-      ^
 src\parser-venn\driver.h:144:3: style: Class 'VennDriver' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
   VennDriver(std::shared_ptr<VennVariables> const& vars);
   ^
@@ -1195,9 +1045,6 @@ src\Venn.cpp:1042:3: style: Struct 'VennErrorTooltip' has a constructor with 1 a
 src\Venn.cpp:1768:3: style: Struct 'VennWidget' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
   VennWidget(Venn* module) : display{nullptr}, name_field{nullptr}, math1_field{nullptr} {
   ^
-parser.hh:1904:7: style: Class 'stack < stack_symbol_type , std :: vector < stack_symbol_type > >' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
-
-      ^
 src\Venn.cpp:749:65: style: The scope of the variable 'math1' can be reduced. [variableScope]
       float x = 0.0f, y = 0.0f, within = 0.0f, distance = 0.0f, math1 = 0.0f;
                                                                 ^
@@ -1287,36 +1134,6 @@ Checking src\parser-venn\driver.cc: __GNUC__;__ICC...
 Checking src\parser-venn\driver.cc: __GNUC__;lint...
 21/31 files checked 63% done
 Checking src\parser-venn\parser.cc ...
-src\parser-venn\parser.cc:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
-
-^
-parser.cc:1657:11: style: The member function 'VENN::Parser::yy_syntax_error_arguments_' can be static. [functionStatic]
-
-          ^
-parser.hh:1746:9: note: The member function 'VENN::Parser::yy_syntax_error_arguments_' can be static.
-
-        ^
-parser.cc:1657:11: note: The member function 'VENN::Parser::yy_syntax_error_arguments_' can be static.
-
-          ^
-parser.cc:529:11: style: The member function 'VENN::Parser::yy_print_' can be static. [functionStatic]
-
-          ^
-parser.hh:1826:10: note: The member function 'VENN::Parser::yy_print_' can be static.
-
-         ^
-parser.cc:529:11: note: The member function 'VENN::Parser::yy_print_' can be static.
-
-          ^
-parser.hh:851:12: warning: The struct 'basic_symbol < by_state >' defines member function with name 'clear' also defined in its parent struct 'by_state'. [duplInheritedMember]
-
-           ^
-parser.cc:182:21: note: Parent function 'by_state::clear'
-
-                    ^
-parser.hh:851:12: note: Derived function 'basic_symbol < by_state >::clear'
-
-           ^
 Checking src\parser-venn\parser.cc: ENABLE_NLS;YYENABLE_NLS...
 Checking src\parser-venn\parser.cc: YYDEBUG...
 Checking src\parser-venn\parser.cc: YYENABLE_NLS...
@@ -1329,198 +1146,9 @@ Checking src\parser-venn\parser.cc: __GNUC__;__ICC...
 Checking src\parser-venn\parser.cc: __GNUC__;lint...
 22/31 files checked 69% done
 Checking src\parser-venn\scanner.cc ...
-src\parser-venn\scanner.cc:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
-
-^
-scanner.cc:2716:5: warning: Assignment of function parameter has no effect outside the function. Did you forget dereferencing it? [uselessAssignmentPtrArg]
-
-    ^
-parser.hh:222:5: warning: Member variable 'value_type::emplace < Assignment >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:229:5: warning: Member variable 'value_type::emplace < Assignment >' is not initialized in the constructor. [uninitMemberVar]
-
-    ^
-parser.hh:1904:7: style: Class 'stack' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
-
-      ^
-scanner.cc:1237:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:1672:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:1738:20: style: C-style pointer casting [cstyleCast]
-
-                   ^
-scanner.cc:1740:17: style: C-style pointer casting [cstyleCast]
-
-                ^
-scanner.cc:1790:41: style: C-style pointer casting [cstyleCast]
-
-                                        ^
-scanner.cc:1791:4: style: C-style pointer casting [cstyleCast]
-
-   ^
-scanner.cc:1818:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:1856:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:1979:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2004:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2040:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2065:6: style: C-style pointer casting [cstyleCast]
-
-     ^
-scanner.cc:2074:17: style: C-style pointer casting [cstyleCast]
-
-                ^
-scanner.cc:2098:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2107:11: style: C-style pointer casting [cstyleCast]
-
-          ^
-scanner.cc:2109:10: style: C-style pointer casting [cstyleCast]
-
-         ^
-scanner.cc:2124:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2164:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2199:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2236:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2263:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2272:26: style: C-style pointer casting [cstyleCast]
-
-                         ^
-scanner.cc:2291:26: style: C-style pointer casting [cstyleCast]
-
-                         ^
-scanner.cc:2322:6: style: C-style pointer casting [cstyleCast]
-
-     ^
-scanner.cc:2375:8: style: C-style pointer casting [cstyleCast]
-
-       ^
-scanner.cc:2404:26: style: C-style pointer casting [cstyleCast]
-
-                         ^
-scanner.cc:2440:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2451:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2464:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2477:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2486:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2495:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2505:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2517:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2529:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2544:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2561:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2567:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2573:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2579:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2604:23: style: C-style pointer casting [cstyleCast]
-
-                      ^
-scanner.cc:2635:23: style: C-style pointer casting [cstyleCast]
-
-                      ^
-scanner.cc:2656:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2692:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2751:26: style: C-style pointer casting [cstyleCast]
-
-                         ^
-scanner.cc:2758:26: style: C-style pointer casting [cstyleCast]
-
-                         ^
-scanner.cc:2773:26: style: C-style pointer casting [cstyleCast]
-
-                         ^
-scanner.cc:2775:8: style: C-style pointer casting [cstyleCast]
-
-       ^
-scanner.cc:1762:3: style: Redundant initialization for 'c'. The initialized value is overwritten before it is read. [redundantInitialization]
-
-  ^
-scanner.cc:1762:3: note: c is initialized
-
-  ^
-scanner.cc:1762:3: note: c is overwritten
-
-  ^
 scanner.ll:264:2: style: Consecutive return, break, continue, goto or throw statements are unnecessary. [duplicateBreak]
 
  ^
-scanner.cc:1674:8: style: Variable 'source' can be declared as pointer to const [constVariablePointer]
-
-       ^
-scanner.cc:2440:23: style: Variable 'yyg' can be declared as pointer to const [constVariablePointer]
-
-                      ^
-scanner.cc:2477:23: style: Variable 'yyg' can be declared as pointer to const [constVariablePointer]
-
-                      ^
-scanner.cc:2486:23: style: Variable 'yyg' can be declared as pointer to const [constVariablePointer]
-
-                      ^
-scanner.cc:2495:23: style: Variable 'yyg' can be declared as pointer to const [constVariablePointer]
-
-                      ^
-scanner.cc:2505:23: style: Variable 'yyg' can be declared as pointer to const [constVariablePointer]
-
-                      ^
-scanner.cc:2573:23: style: Variable 'yyg' can be declared as pointer to const [constVariablePointer]
-
-                      ^
 Checking src\parser-venn\scanner.cc: YYSTYPE...
 Checking src\parser-venn\scanner.cc: YYSTYPE;__GNUC__...
 Checking src\parser-venn\scanner.cc: YY_NEED_STRLEN...
@@ -1532,9 +1160,6 @@ Checking src\parser-venn\scanner.cc: __GNUC__;__ICC...
 Checking src\parser-venn\scanner.cc: __GNUC__;__ICC;__clang__...
 Checking src\parser-venn\scanner.cc: __GNUC__;lint...
 Checking src\parser-venn\scanner.cc: __STDC_VERSION__...
-src\parser-venn\scanner.cc:0:0: information: Too many #ifdef configurations - cppcheck only checks 12 of 49 configurations. Use --force to check all configurations. [toomanyconfigs]
-
-^
 23/31 files checked 75% done
 Checking src\parser-venn\tree.cc ...
 src\parser-venn\tree.cc:236:23: style: The member function 'VennExpression::SafeLogArg' can be static. [functionStatic]
@@ -1688,36 +1313,6 @@ Checking src\parser\driver.cc: __GNUC__;__ICC...
 Checking src\parser\driver.cc: __GNUC__;lint...
 25/31 files checked 77% done
 Checking src\parser\parser.cc ...
-src\parser\parser.cc:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
-
-^
-parser.cc:2621:11: style: The member function 'yy::Parser::yy_syntax_error_arguments_' can be static. [functionStatic]
-
-          ^
-parser.hh:2479:9: note: The member function 'yy::Parser::yy_syntax_error_arguments_' can be static.
-
-        ^
-parser.cc:2621:11: note: The member function 'yy::Parser::yy_syntax_error_arguments_' can be static.
-
-          ^
-parser.cc:738:11: style: The member function 'yy::Parser::yy_print_' can be static. [functionStatic]
-
-          ^
-parser.hh:2559:10: note: The member function 'yy::Parser::yy_print_' can be static.
-
-         ^
-parser.cc:738:11: note: The member function 'yy::Parser::yy_print_' can be static.
-
-          ^
-parser.hh:1051:12: warning: The struct 'basic_symbol < by_state >' defines member function with name 'clear' also defined in its parent struct 'by_state'. [duplInheritedMember]
-
-           ^
-parser.cc:179:21: note: Parent function 'by_state::clear'
-
-                    ^
-parser.hh:1051:12: note: Derived function 'basic_symbol < by_state >::clear'
-
-           ^
 Checking src\parser\parser.cc: ENABLE_NLS;YYENABLE_NLS...
 Checking src\parser\parser.cc: YYDEBUG...
 Checking src\parser\parser.cc: YYENABLE_NLS...
@@ -1730,189 +1325,9 @@ Checking src\parser\parser.cc: __GNUC__;__ICC...
 Checking src\parser\parser.cc: __GNUC__;lint...
 26/31 files checked 87% done
 Checking src\parser\scanner.cc ...
-src\parser\scanner.cc:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
-
-^
-scanner.cc:2846:5: warning: Assignment of function parameter has no effect outside the function. Did you forget dereferencing it? [uselessAssignmentPtrArg]
-
-    ^
-scanner.cc:1222:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:1802:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:1868:20: style: C-style pointer casting [cstyleCast]
-
-                   ^
-scanner.cc:1870:17: style: C-style pointer casting [cstyleCast]
-
-                ^
-scanner.cc:1920:41: style: C-style pointer casting [cstyleCast]
-
-                                        ^
-scanner.cc:1921:4: style: C-style pointer casting [cstyleCast]
-
-   ^
-scanner.cc:1948:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:1986:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2109:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2134:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2170:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2195:6: style: C-style pointer casting [cstyleCast]
-
-     ^
-scanner.cc:2204:17: style: C-style pointer casting [cstyleCast]
-
-                ^
-scanner.cc:2228:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2237:11: style: C-style pointer casting [cstyleCast]
-
-          ^
-scanner.cc:2239:10: style: C-style pointer casting [cstyleCast]
-
-         ^
-scanner.cc:2254:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2294:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2329:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2366:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2393:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2402:26: style: C-style pointer casting [cstyleCast]
-
-                         ^
-scanner.cc:2421:26: style: C-style pointer casting [cstyleCast]
-
-                         ^
-scanner.cc:2452:6: style: C-style pointer casting [cstyleCast]
-
-     ^
-scanner.cc:2505:8: style: C-style pointer casting [cstyleCast]
-
-       ^
-scanner.cc:2534:26: style: C-style pointer casting [cstyleCast]
-
-                         ^
-scanner.cc:2570:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2581:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2594:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2607:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2616:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2625:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2635:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2647:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2659:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2674:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2691:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2697:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2703:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2709:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2734:23: style: C-style pointer casting [cstyleCast]
-
-                      ^
-scanner.cc:2765:23: style: C-style pointer casting [cstyleCast]
-
-                      ^
-scanner.cc:2786:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2822:29: style: C-style pointer casting [cstyleCast]
-
-                            ^
-scanner.cc:2881:26: style: C-style pointer casting [cstyleCast]
-
-                         ^
-scanner.cc:2888:26: style: C-style pointer casting [cstyleCast]
-
-                         ^
-scanner.cc:2903:26: style: C-style pointer casting [cstyleCast]
-
-                         ^
-scanner.cc:2905:8: style: C-style pointer casting [cstyleCast]
-
-       ^
-scanner.cc:1892:3: style: Redundant initialization for 'c'. The initialized value is overwritten before it is read. [redundantInitialization]
-
-  ^
-scanner.cc:1892:3: note: c is initialized
-
-  ^
-scanner.cc:1892:3: note: c is overwritten
-
-  ^
 scanner.ll:408:2: style: Consecutive return, break, continue, goto or throw statements are unnecessary. [duplicateBreak]
 
  ^
-scanner.cc:1804:8: style: Variable 'source' can be declared as pointer to const [constVariablePointer]
-
-       ^
-scanner.cc:2570:23: style: Variable 'yyg' can be declared as pointer to const [constVariablePointer]
-
-                      ^
-scanner.cc:2607:23: style: Variable 'yyg' can be declared as pointer to const [constVariablePointer]
-
-                      ^
-scanner.cc:2616:23: style: Variable 'yyg' can be declared as pointer to const [constVariablePointer]
-
-                      ^
-scanner.cc:2625:23: style: Variable 'yyg' can be declared as pointer to const [constVariablePointer]
-
-                      ^
-scanner.cc:2635:23: style: Variable 'yyg' can be declared as pointer to const [constVariablePointer]
-
-                      ^
-scanner.cc:2703:23: style: Variable 'yyg' can be declared as pointer to const [constVariablePointer]
-
-                      ^
 Checking src\parser\scanner.cc: YYSTYPE...
 Checking src\parser\scanner.cc: YYSTYPE;__GNUC__...
 Checking src\parser\scanner.cc: YY_NEED_STRLEN...
@@ -1924,9 +1339,6 @@ Checking src\parser\scanner.cc: __GNUC__;__ICC...
 Checking src\parser\scanner.cc: __GNUC__;__ICC;__clang__...
 Checking src\parser\scanner.cc: __GNUC__;lint...
 Checking src\parser\scanner.cc: __STDC_VERSION__...
-src\parser\scanner.cc:0:0: information: Too many #ifdef configurations - cppcheck only checks 12 of 14 configurations. Use --force to check all configurations. [toomanyconfigs]
-
-^
 27/31 files checked 94% done
 Checking src\parser\tree.cc ...
 src\parser\tree.cc:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
@@ -2372,7 +1784,7 @@ Checking src\pcode.cpp ...
 src\pcode.cpp:93:24: style: The member function 'PCodeTranslator::Assignment' can be static. [functionStatic]
 PCode PCodeTranslator::Assignment(float* variable_ptr, const PortPointer& port,
                        ^
-src\pcode_trans.h:19:9: note: The member function 'PCodeTranslator::Assignment' can be static.
+src\pcode_trans.h:21:9: note: The member function 'PCodeTranslator::Assignment' can be static.
   PCode Assignment(float* variable_ptr, const PortPointer& port,
         ^
 src\pcode.cpp:93:24: note: The member function 'PCodeTranslator::Assignment' can be static.
@@ -2381,7 +1793,7 @@ PCode PCodeTranslator::Assignment(float* variable_ptr, const PortPointer& port,
 src\pcode.cpp:103:24: style: The member function 'PCodeTranslator::StringAssignment' can be static. [functionStatic]
 PCode PCodeTranslator::StringAssignment(std::string* str_variable_ptr,
                        ^
-src\pcode_trans.h:21:9: note: The member function 'PCodeTranslator::StringAssignment' can be static.
+src\pcode_trans.h:23:9: note: The member function 'PCodeTranslator::StringAssignment' can be static.
   PCode StringAssignment(std::string* str_variable_ptr,
         ^
 src\pcode.cpp:103:24: note: The member function 'PCodeTranslator::StringAssignment' can be static.
@@ -2428,171 +1840,6 @@ src\st_textfield.cpp:48:3: performance: Variable 'fontPath' is assigned in const
   fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
   ^
 31/31 files checked 100% done
-parser.cc:824:11: style: The function 'debug_stream' is never used. [unusedFunction]
-
-          ^
-parser.cc:830:11: style: The function 'set_debug_stream' is never used. [unusedFunction]
-
-          ^
-parser.cc:837:11: style: The function 'debug_level' is never used. [unusedFunction]
-
-          ^
-parser.hh:1316:7: style: The function 'make_MOD' is never used. [unusedFunction]
-
-      ^
-parser.hh:288:5: style: The function 'build' is never used. [unusedFunction]
-
-    ^
-parser.hh:1374:7: style: The function 'make_YYerror' is never used. [unusedFunction]
-
-      ^
-parser.hh:1389:7: style: The function 'make_YYUNDEF' is never used. [unusedFunction]
-
-      ^
-parser.hh:1404:7: style: The function 'make_ABS' is never used. [unusedFunction]
-
-      ^
-parser.hh:1479:7: style: The function 'make_CEILING' is never used. [unusedFunction]
-
-      ^
-parser.hh:1629:7: style: The function 'make_FLOOR' is never used. [unusedFunction]
-
-      ^
-parser.hh:1674:7: style: The function 'make_LOG2' is never used. [unusedFunction]
-
-      ^
-parser.hh:1689:7: style: The function 'make_LOGE' is never used. [unusedFunction]
-
-      ^
-parser.hh:1704:7: style: The function 'make_LOG10' is never used. [unusedFunction]
-
-      ^
-parser.hh:1719:7: style: The function 'make_MAX' is never used. [unusedFunction]
-
-      ^
-parser.hh:1734:7: style: The function 'make_MIN' is never used. [unusedFunction]
-
-      ^
-parser.hh:1809:7: style: The function 'make_POW' is never used. [unusedFunction]
-
-      ^
-parser.hh:1854:7: style: The function 'make_SAMPLE_RATE' is never used. [unusedFunction]
-
-      ^
-parser.hh:1884:7: style: The function 'make_SIGN' is never used. [unusedFunction]
-
-      ^
-parser.hh:1899:7: style: The function 'make_SIN' is never used. [unusedFunction]
-
-      ^
-parser.hh:1914:7: style: The function 'make_START' is never used. [unusedFunction]
-
-      ^
-parser.hh:1959:7: style: The function 'make_TIME' is never used. [unusedFunction]
-
-      ^
-parser.hh:1974:7: style: The function 'make_TIME_MILLIS' is never used. [unusedFunction]
-
-      ^
-parser.hh:2424:7: style: The function 'make_NEG' is never used. [unusedFunction]
-
-      ^
-parser.hh:3129:20: style: The function 'type_get' is never used. [unusedFunction]
-
-                   ^
-scanner.cc:2194:6: style: The function 'vvpush_buffer_state' is never used. [unusedFunction]
-
-     ^
-scanner.cc:2324:6: style: The function 'yypush_buffer_state' is never used. [unusedFunction]
-
-     ^
-scanner.cc:2438:15: style: The function 'vvget_extra' is never used. [unusedFunction]
-
-              ^
-scanner.cc:2449:5: style: The function 'vvget_lineno' is never used. [unusedFunction]
-
-    ^
-scanner.cc:2462:5: style: The function 'vvget_column' is never used. [unusedFunction]
-
-    ^
-scanner.cc:2475:7: style: The function 'vvget_in' is never used. [unusedFunction]
-
-      ^
-scanner.cc:2484:7: style: The function 'vvget_out' is never used. [unusedFunction]
-
-      ^
-scanner.cc:2493:5: style: The function 'vvget_leng' is never used. [unusedFunction]
-
-    ^
-scanner.cc:2503:7: style: The function 'vvget_text' is never used. [unusedFunction]
-
-      ^
-scanner.cc:2527:6: style: The function 'vvset_lineno' is never used. [unusedFunction]
-
-     ^
-scanner.cc:2542:6: style: The function 'vvset_column' is never used. [unusedFunction]
-
-     ^
-scanner.cc:2559:6: style: The function 'vvset_in' is never used. [unusedFunction]
-
-     ^
-scanner.cc:2565:6: style: The function 'vvset_out' is never used. [unusedFunction]
-
-     ^
-scanner.cc:2568:15: style: The function 'yyget_extra' is never used. [unusedFunction]
-
-              ^
-scanner.cc:2571:5: style: The function 'vvget_debug' is never used. [unusedFunction]
-
-    ^
-scanner.cc:2577:6: style: The function 'vvset_debug' is never used. [unusedFunction]
-
-     ^
-scanner.cc:2579:5: style: The function 'yyget_lineno' is never used. [unusedFunction]
-
-    ^
-scanner.cc:2592:5: style: The function 'yyget_column' is never used. [unusedFunction]
-
-    ^
-scanner.cc:2605:7: style: The function 'yyget_in' is never used. [unusedFunction]
-
-      ^
-scanner.cc:2614:7: style: The function 'yyget_out' is never used. [unusedFunction]
-
-      ^
-scanner.cc:2623:5: style: The function 'yyget_leng' is never used. [unusedFunction]
-
-    ^
-scanner.cc:2624:5: style: The function 'vvlex_init_extra' is never used. [unusedFunction]
-
-    ^
-scanner.cc:2633:7: style: The function 'yyget_text' is never used. [unusedFunction]
-
-      ^
-scanner.cc:2657:6: style: The function 'yyset_lineno' is never used. [unusedFunction]
-
-     ^
-scanner.cc:2672:6: style: The function 'yyset_column' is never used. [unusedFunction]
-
-     ^
-scanner.cc:2689:6: style: The function 'yyset_in' is never used. [unusedFunction]
-
-     ^
-scanner.cc:2695:6: style: The function 'yyset_out' is never used. [unusedFunction]
-
-     ^
-scanner.cc:2701:5: style: The function 'yyget_debug' is never used. [unusedFunction]
-
-    ^
-scanner.cc:2707:6: style: The function 'yyset_debug' is never used. [unusedFunction]
-
-     ^
-scanner.cc:2739:12: style: The function 'yy_flex_strlen' is never used. [unusedFunction]
-
-           ^
-scanner.cc:2754:5: style: The function 'yylex_init_extra' is never used. [unusedFunction]
-
-    ^
 src\AudioFile.h:352:20: style: The function 'isMono' is never used. [unusedFunction]
 bool AudioFile<T>::isMono() const
                    ^
