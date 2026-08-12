@@ -80,7 +80,11 @@
   "c-cpp-flylint.cppcheck.executable": "C:/msys64/mingw64/bin/cppcheck.exe",
   "c-cpp-flylint.cppcheck.enable": true,
   "c-cpp-flylint.cppcheck.extraArgs": [
-    "--enable=all",
+    "--std=c++11",
+    "--max-configs=1",
+    "--enable=warning,performance,portability",
+    "--suppress=*:*/dep/*",
+    "--suppress=*:*/tests/*",
     "--suppress=missingIncludeSystem",
     "--suppress=unusedStructMember",
     "--suppress=*:*parser.hh",
