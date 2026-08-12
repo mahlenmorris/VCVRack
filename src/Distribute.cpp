@@ -1,9 +1,9 @@
-// Distribute is a random number generator with tunable distributions, based on
-// Mixt.
-
 #include "controlled_random_distribution.h"
 #include "distribution_graphs.h"
 #include "plugin.hpp"
+
+// Distribute is a random number generator with tunable distributions, based on
+// Mixt.
 
 struct Distribute : Module {
   enum ParamId {
@@ -165,7 +165,7 @@ struct Distribute : Module {
 struct DistributionWidget : Widget {
   Distribute* module;
 
-  DistributionWidget() {}
+  DistributionWidget() : module{nullptr} {}
 
   void drawLayer(const DrawArgs& args, int layer) override {
     if (layer == 1) {
@@ -271,7 +271,10 @@ struct DistributeNumberDisplayWidget : TransparentWidget {
   Distribute::ParamId my_param_id;
   float default_for_browser;
 
-  DistributeNumberDisplayWidget() : module{nullptr} {}
+  DistributeNumberDisplayWidget()
+      : module{nullptr},
+        my_param_id{Distribute::UPPER_LIMIT_PARAM},
+        default_for_browser{0.0f} {}
 
   void drawLayer(const DrawArgs& args, int layer) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
