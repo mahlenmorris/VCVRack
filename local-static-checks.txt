@@ -1,47 +1,8 @@
-src\buffered.hpp:108:3: warning: Member variable 'BufferTask::sample_count' is not initialized in the constructor. [uninitMemberVar]
-  BufferTask(const Type the_type) : type{the_type},
-  ^
-src\buffered.hpp:108:3: warning: Member variable 'BufferTask::seconds' is not initialized in the constructor. [uninitMemberVar]
-  BufferTask(const Type the_type) : type{the_type},
-  ^
-src\buffered.hpp:108:3: warning: Member variable 'BufferTask::smooth_endpoints' is not initialized in the constructor. [uninitMemberVar]
-  BufferTask(const Type the_type) : type{the_type},
-  ^
-src\buffered.hpp:182:3: warning: Member variable 'Buffer::dirty' is not initialized in the constructor. [uninitMemberVar]
-  Buffer() : left_array{nullptr}, right_array{nullptr}, length{0},
-  ^
-src\buffered.hpp:182:3: warning: Member variable 'Buffer::waveform' is not initialized in the constructor. [uninitMemberVar]
-  Buffer() : left_array{nullptr}, right_array{nullptr}, length{0},
-  ^
-src\buffered.hpp:253:3: warning: Member variable 'LineRecord::position' is not initialized in the constructor. [uninitMemberVar]
-  LineRecord() {
-  ^
-src\buffered.hpp:253:3: warning: Member variable 'LineRecord::type' is not initialized in the constructor. [uninitMemberVar]
-  LineRecord() {
-  ^
-src\buffered.hpp:253:3: warning: Member variable 'LineRecord::distance' is not initialized in the constructor. [uninitMemberVar]
-  LineRecord() {
-  ^
-src\Embellish.cpp:87:3: warning: Member variable 'Embellish::display_position' is not initialized in the constructor. [uninitMemberVar]
-  Embellish() {
-  ^
-src\buffered.hpp:307:3: warning: Member variable 'TimestampField::module' is not initialized in the constructor. [uninitMemberVar]
-  TimestampField() {
-  ^
-src\Embellish.cpp:87:3: warning: Member variable 'Embellish::prev_reverse' is not initialized in the constructor. [uninitMemberVar]
-  Embellish() {
-  ^
 src\Brainwash.cpp:190:3: warning: Member variable 'Brainwash::clocks_so_far' is not initialized in the constructor. [uninitMemberVar]
   Brainwash() {
   ^
-src\Embellish.cpp:409:3: warning: Member variable 'EmbellishWidget::adjust_slider' is not initialized in the constructor. [uninitMemberVar]
-  EmbellishWidget(Embellish* module) {
-  ^
 src\Brainwash.cpp:190:3: warning: Member variable 'Brainwash::fractional_samples_so_far' is not initialized in the constructor. [uninitMemberVar]
   Brainwash() {
-  ^
-src\buffered.hpp:307:3: warning: Member variable 'TimestampField < Embellish >::module' is not initialized in the constructor. [uninitMemberVar]
-  TimestampField() {
   ^
 src\Brainwash.cpp:364:3: warning: Member variable 'BrainwashWidget::adjust_slider' is not initialized in the constructor. [uninitMemberVar]
   BrainwashWidget(Brainwash* module) {
@@ -52,44 +13,29 @@ src\NoLockQueue.h:31:3: warning: Member variable 'SpScLockFreeQueue < Smooth * ,
 src\NoLockQueue.h:31:3: warning: Member variable 'SpScLockFreeQueue < BufferTask * , 5 >::m_ringBuffer' is not initialized in the constructor. [uninitMemberVar]
   SpScLockFreeQueue()
   ^
-src\buffered.hpp:255:5: performance: Variable 'color' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
-    color = nvgRGBA(255, 0, 255, 255);
-    ^
-src\buffered.hpp:187:14: warning: Struct 'Buffer' does not have a copy constructor which is recommended since it has dynamic memory/resource management. [noCopyConstructor]
-      delete left_array;
-             ^
-src\buffered.hpp:187:14: warning: Struct 'Buffer' does not have a operator= which is recommended since it has dynamic memory/resource management. [noOperatorEq]
-      delete left_array;
-             ^
 src\Brainwash.cpp:30:14: warning: Struct 'BrainwashThread' does not have a copy constructor which is recommended since it has dynamic memory/resource management. [noCopyConstructor]
       delete static_left;
              ^
 src\Brainwash.cpp:30:14: warning: Struct 'BrainwashThread' does not have a operator= which is recommended since it has dynamic memory/resource management. [noOperatorEq]
       delete static_left;
              ^
-src\buffered.hpp:319:9: warning: %u in format string (no. 1) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
-        snprintf(text_buffer, 10, "%02u.%02u", (value / 100), value % 100);
-        ^
-src\buffered.hpp:319:9: warning: %u in format string (no. 2) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
-        snprintf(text_buffer, 10, "%02u.%02u", (value / 100), value % 100);
-        ^
-src\buffered.hpp:323:9: warning: %u in format string (no. 1) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
-        snprintf(text_buffer, 10, "%u:%02u", value / 60, value % 60);
-        ^
-src\buffered.hpp:323:9: warning: %u in format string (no. 2) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
-        snprintf(text_buffer, 10, "%u:%02u", value / 60, value % 60);
-        ^
 src\Fuse.cpp:316:3: warning: Member variable 'FuseDisplay::module' is not initialized in the constructor. [uninitMemberVar]
   FuseDisplay() {
   ^
 src\Fuse.cpp:317:5: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
     fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
     ^
-src\Ruminate.cpp:108:3: warning: Member variable 'Ruminate::display_position' is not initialized in the constructor. [uninitMemberVar]
-  Ruminate() {
+src\Embellish.cpp:87:3: warning: Member variable 'Embellish::display_position' is not initialized in the constructor. [uninitMemberVar]
+  Embellish() {
   ^
-src\buffered.hpp:307:3: warning: Member variable 'TimestampField < Ruminate >::module' is not initialized in the constructor. [uninitMemberVar]
-  TimestampField() {
+src\Embellish.cpp:87:3: warning: Member variable 'Embellish::prev_reverse' is not initialized in the constructor. [uninitMemberVar]
+  Embellish() {
+  ^
+src\Embellish.cpp:409:3: warning: Member variable 'EmbellishWidget::adjust_slider' is not initialized in the constructor. [uninitMemberVar]
+  EmbellishWidget(Embellish* module) {
+  ^
+src\StochasticTelegraph.hpp:68:3: warning: Member variable 'STResizeHandle::module' is not initialized in the constructor. [uninitMemberVar]
+  STResizeHandle(bool is_right, int min_h, int max_h) :
   ^
 src\Fermata.cpp:18:3: warning: Member variable 'Fermata::box_pos_x' is not initialized in the constructor. [uninitMemberVar]
   Fermata() {
@@ -127,8 +73,8 @@ src\Fermata.cpp:350:3: warning: Member variable 'FermataTextField::color_scheme'
 src\StochasticTelegraph.hpp:68:3: warning: Member variable 'STResizeHandle < Fermata , FermataUndoRedoAction >::module' is not initialized in the constructor. [uninitMemberVar]
   STResizeHandle(bool is_right, int min_h, int max_h) :
   ^
-src\StochasticTelegraph.hpp:68:3: warning: Member variable 'STResizeHandle::module' is not initialized in the constructor. [uninitMemberVar]
-  STResizeHandle(bool is_right, int min_h, int max_h) :
+src\Ruminate.cpp:108:3: warning: Member variable 'Ruminate::display_position' is not initialized in the constructor. [uninitMemberVar]
+  Ruminate() {
   ^
 src\parser\tree.h:178:29: performance: Function parameter 'new_expr' should be passed by const reference. [passedByValue]
   ExpressionList(Expression new_expr) { expressions.push_back(new_expr); }
@@ -203,12 +149,6 @@ src\Depict.cpp:27:3: warning: Member variable 'Depict::max_distance' is not init
   Depict() {
   ^
 src\Depict.cpp:114:3: warning: Member variable 'MemoryDepict::module' is not initialized in the constructor. [uninitMemberVar]
-  MemoryDepict() {}
-  ^
-src\Depict.cpp:114:3: warning: Member variable 'MemoryDepict::module_browser' is not initialized in the constructor. [uninitMemberVar]
-  MemoryDepict() {}
-  ^
-src\Depict.cpp:114:3: warning: Member variable 'MemoryDepict::default_module' is not initialized in the constructor. [uninitMemberVar]
   MemoryDepict() {}
   ^
 src\parser-venn\tree.h:68:3: warning: Member variable 'Circle::present' is not initialized in the constructor. [uninitMemberVar]
@@ -325,9 +265,6 @@ src\Basically.cpp:66:34: performance: Function parameter 'a' should be passed by
 src\Basically.cpp:376:34: performance: Range variable 'err' should be declared as const reference. [iterateByValue]
                 for (std::string err : new_errors) {
                                  ^
-src\st_textfield.cpp:48:3: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
-  fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
-  ^
 src\Drifter.cpp:220:3: warning: Member variable 'Drifter::loaded_start_y' is not initialized in the constructor. [uninitMemberVar]
   Drifter() {
   ^
@@ -343,6 +280,15 @@ src\Drifter.cpp:844:3: warning: Member variable 'DrifterDisplay::moduleWidget' i
 src\Drifter.cpp:845:5: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
     fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
     ^
+src\st_textfield.cpp:48:3: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
+  fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+  ^
+src\pcode.cpp:217:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
+            [loop_type](Loop l) { return loop_type == l.loop_type; });
+                             ^
+src\pcode.cpp:253:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
+            [loop_type](Loop l) { return loop_type == l.loop_type; });
+                             ^
 src\Venn.cpp:264:3: warning: Member variable 'Venn::update_text_widgets' is not initialized in the constructor. [uninitMemberVar]
   Venn() {
   ^
@@ -640,12 +586,6 @@ src\parser\tree.cc:827:10: error: Uninitialized struct member: line.str_array_pt
 src\parser\tree.cc:827:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
   return line;
          ^
-src\pcode.cpp:217:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
-            [loop_type](Loop l) { return loop_type == l.loop_type; });
-                             ^
-src\pcode.cpp:253:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
-            [loop_type](Loop l) { return loop_type == l.loop_type; });
-                             ^
 src\Fixation.cpp:201:3: warning: Member variable 'Fixation::display_position' is not initialized in the constructor. [uninitMemberVar]
   Fixation() {
   ^
@@ -657,9 +597,6 @@ src\Fixation.cpp:201:3: warning: Member variable 'Fixation::length_in_samples' i
   ^
 src\Fixation.cpp:201:3: warning: Member variable 'Fixation::repeat_count' is not initialized in the constructor. [uninitMemberVar]
   Fixation() {
-  ^
-src\buffered.hpp:307:3: warning: Member variable 'TimestampField < Fixation >::module' is not initialized in the constructor. [uninitMemberVar]
-  TimestampField() {
   ^
 src\Memory.cpp:70:3: warning: Member variable 'PrepareTask::seconds' is not initialized in the constructor. [uninitMemberVar]
   PrepareTask(const Type the_type) : type{the_type},
