@@ -5,9 +5,9 @@
 #include <utility>  // pair
 #include <vector>
 
+#include "StochasticTelegraph.hpp"
 #include "plugin.hpp"
 #include "st_textfield.hpp"
-#include "StochasticTelegraph.hpp"
 
 struct Fermata : Module {
   static const int DEFAULT_WIDTH = 18;
@@ -15,8 +15,7 @@ struct Fermata : Module {
   // text appearance, so we keep the FramebufferWidget available.
   FramebufferWidget* main_text_framebuffer = nullptr;
 
-  Fermata() {
-  }
+  Fermata() : main_text_framebuffer{nullptr} {}
 
   void RedrawText() {
     if (main_text_framebuffer != nullptr) {
@@ -31,8 +30,9 @@ struct Fermata : Module {
 
     json_object_set_new(rootJ, "screen_colors", json_integer(screen_colors));
     if (font_choice.length() > 0) {
-      json_object_set_new(rootJ, "font_choice",
-                          json_stringn(font_choice.c_str(), font_choice.size()));
+      json_object_set_new(
+          rootJ, "font_choice",
+          json_stringn(font_choice.c_str(), font_choice.size()));
     }
     json_object_set_new(rootJ, "visible_lines", json_integer(visible_lines));
     if (title_text.length() > 0) {
@@ -50,14 +50,11 @@ struct Fermata : Module {
       editor_refresh = true;
     }
     json_t* widthJ = json_object_get(rootJ, "width");
-    if (widthJ)
-      width = json_integer_value(widthJ);
+    if (widthJ) width = json_integer_value(widthJ);
     json_t* screenJ = json_object_get(rootJ, "screen_colors");
-    if (screenJ)
-        screen_colors = json_integer_value(screenJ);
+    if (screenJ) screen_colors = json_integer_value(screenJ);
     json_t* visible_linesJ = json_object_get(rootJ, "visible_lines");
-    if (visible_linesJ)
-        visible_lines = json_integer_value(visible_linesJ);
+    if (visible_linesJ) visible_lines = json_integer_value(visible_linesJ);
     json_t* font_choiceJ = json_object_get(rootJ, "font_choice");
     if (font_choiceJ) {
       font_choice = json_string_value(font_choiceJ);
@@ -77,8 +74,8 @@ struct Fermata : Module {
     }
   }
 
-  void process(const ProcessArgs& args) override {
- }
+  // Yes, literally all the action of this module is in the Widgets.
+  void process(const ProcessArgs& args) override {}
 
   bool editor_refresh = false;
   ///////
@@ -106,8 +103,8 @@ struct Fermata : Module {
   int cursor_override = -1;
   // The undo/redo sometimes needs to reset the module position.
   // But we don't actully have a good pointer to the FermataWidget.
-  // FermataWidget::step() uses this if update_pos is set.
-  float box_pos_x;
+  // FermataWidget::step() uses these if update_pos is set.
+  float box_pos_x = 0;
   bool update_pos = false;
   // Can be overriden by saved menu choice.
   std::string font_choice = "fonts/RobotoSlab-Regular.ttf";
@@ -117,28 +114,32 @@ struct Fermata : Module {
 struct FermataUndoRedoAction : history::ModuleAction {
   std::string old_text;
   std::string new_text;
-  int old_cursor, new_cursor;
+  int old_cursor = 0, new_cursor = 0;
   int old_width, new_width;
   // Having left-side resize means the 'box' for the module can move.
-  float old_posx, new_posx;
+  float old_posx = 0.0f, new_posx = 0.0f;
 
   FermataUndoRedoAction(int64_t id, std::string oldText, std::string newText,
-     int old_cursor_pos, int new_cursor_pos) : old_text{oldText},
-         new_text{newText}, old_cursor{old_cursor_pos},
-         new_cursor{new_cursor_pos} {
+                        int old_cursor_pos, int new_cursor_pos)
+      : old_text{oldText},
+        new_text{newText},
+        old_cursor{old_cursor_pos},
+        new_cursor{new_cursor_pos} {
     moduleId = id;
     name = "text edit";
     old_width = new_width = -1;
   }
   FermataUndoRedoAction(int64_t id, int old_width, int new_width,
-                        float old_posx, float new_posx) :
-      old_width{old_width}, new_width{new_width}, old_posx{old_posx},
-      new_posx{new_posx} {
+                        float old_posx, float new_posx)
+      : old_width{old_width},
+        new_width{new_width},
+        old_posx{old_posx},
+        new_posx{new_posx} {
     moduleId = id;
     name = "module width change";
   }
   void undo() override {
-    Fermata *module = dynamic_cast<Fermata*>(APP->engine->getModule(moduleId));
+    Fermata* module = dynamic_cast<Fermata*>(APP->engine->getModule(moduleId));
     if (module) {
       if (old_width < 0) {
         module->text = this->old_text;
@@ -155,7 +156,7 @@ struct FermataUndoRedoAction : history::ModuleAction {
   }
 
   void redo() override {
-    Fermata *module = dynamic_cast<Fermata*>(APP->engine->getModule(moduleId));
+    Fermata* module = dynamic_cast<Fermata*>(APP->engine->getModule(moduleId));
     if (module) {
       if (old_width < 0) {
         module->text = this->new_text;
@@ -176,8 +177,7 @@ struct FermataUndoRedoAction : history::ModuleAction {
 struct FermataTitleTextField : LightWidget {
   Fermata* module;
 
-  FermataTitleTextField() {
-  }
+  FermataTitleTextField() : module{nullptr} {}
 
   void drawLayer(const DrawArgs& args, int layer) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
@@ -191,12 +191,12 @@ struct FermataTitleTextField : LightWidget {
         text = module->title_text;
       } else {
         font = APP->window->loadFont(
-          asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
+            asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
         text = "A Longer Note";
       }
       if (font) {
-        nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
-                                                           color::BLACK);
+        nvgFillColor(args.vg,
+                     settings::preferDarkPanels ? color::WHITE : color::BLACK);
         int font_size = 18;
         nvgFontSize(args.vg, font_size);
         nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_LEFT);
@@ -220,7 +220,7 @@ struct FermataTextFieldMenuItem : TextField {
 struct ClosedTitleTextField : LightWidget {
   Fermata* module;
 
-  ClosedTitleTextField() {
+  ClosedTitleTextField() : module{nullptr} {
     box.size = mm2px(Vec(6 * 5.08, 110));
   }
 
@@ -230,7 +230,8 @@ struct ClosedTitleTextField : LightWidget {
       // No background color!
 
       if (module) {
-        std::shared_ptr<Font> font = APP->window->loadFont(module->getFontPath());
+        std::shared_ptr<Font> font =
+            APP->window->loadFont(module->getFontPath());
         if (font) {
           // Width of box needs to respond to width of module.
           int text_holes = module->width - 2;
@@ -260,24 +261,27 @@ struct ClosedTitleTextField : LightWidget {
             int longest = 0;
             while (end != std::string::npos) {
               lines.push_back(text.substr(start, end - start));
-              longest = std::max(longest, (int) (end - start));
+              longest = std::max(longest, (int)(end - start));
               start = end + 1;
               end = text.find(' ', start);
             }
             std::string last = text.substr(start);
             lines.push_back(last);
-            longest = std::max(longest, (int) last.size());
-            int font_size = longest < 8 ? max_font_size : floor(max_font_size * 7 / longest);
-            float spacing = longest < 8 ? max_spacing : max_spacing * 7 / longest;
+            longest = std::max(longest, (int)last.size());
+            int font_size = longest < 8 ? max_font_size
+                                        : floor(max_font_size * 7 / longest);
+            float spacing =
+                longest < 8 ? max_spacing : max_spacing * 7 / longest;
 
-            nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
-                                                               color::BLACK);
+            nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE
+                                                             : color::BLACK);
             nvgFontSize(args.vg, font_size);
             nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
             nvgFontFaceId(args.vg, font->handle);
             // Place on the line just off the left edge.
-            for (int i = 0; i < (int) lines.size(); i++) {
-              nvgText(args.vg, bounding_box.x / 2, i * spacing, lines[i].c_str(), NULL);
+            for (int i = 0; i < (int)lines.size(); i++) {
+              nvgText(args.vg, bounding_box.x / 2, i * spacing,
+                      lines[i].c_str(), NULL);
             }
           } else {
             // Show it sideways!
@@ -289,16 +293,16 @@ struct ClosedTitleTextField : LightWidget {
             // are given in).
             nvgFontSize(args.vg, 15 * text_holes);
             nvgFontFaceId(args.vg, font->handle);
-            nvgTextAlign(args.vg, NVG_ALIGN_LEFT|NVG_ALIGN_BASELINE);
+            nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
             nvgTextLetterSpacing(args.vg, 0);
-            nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
-                                                               color::BLACK);
+            nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE
+                                                             : color::BLACK);
             float desc, lh;
             nvgTextMetrics(args.vg, NULL, &desc, &lh);
             nvgRotate(args.vg, -M_PI / 2.0f);
             // Because of the rotation, we need to express X, Y as -Y, ???
             nvgText(args.vg, 6 - bounding_box.y, bounding_box.x + desc,
-                text.c_str(), NULL);
+                    text.c_str(), NULL);
           }
         }
       }
@@ -327,46 +331,50 @@ struct FermataProgramNameMenuItem : FermataTextFieldMenuItem {
 
 // The text that gets show in the module browser and the library.
 static std::string module_browser_text =
-  "Write your text here! For example:\n"
-  "* Instructions for playing the patch.\n"
-  "* Notes/reminders on how this part of the patch works.\n"
-  "* TODO's, ideas, or a poem you're writing.\n\n"
-  "You can also set the title (below) in the module menu, as well as pick "
-  "a font, font size, and colors. You can resize the module by dragging the "
-  "right edge (over there -->).\n"
-  "If you shrink the module enough, the title becomes a large label on "
-  "the front.";
+    "Write your text here! For example:\n"
+    "* Instructions for playing the patch.\n"
+    "* Notes/reminders on how this part of the patch works.\n"
+    "* TODO's, ideas, or a poem you're writing.\n\n"
+    "You can also set the title (below) in the module menu, as well as pick "
+    "a font, font size, and colors. You can resize the module by dragging the "
+    "left or right edge (<-- here and there -->).\n"
+    "If you shrink the module enough, the title becomes a large label on "
+    "the front.";
 
 // Class for the editor.
 struct FermataTextField : STTextField {
   Fermata* module;
   FramebufferWidget* frame_buffer;
-  bool was_selected;
+  bool was_selected = false;
   int previous_visible_lines = -1;
 
-  long long int color_scheme;
+  long long int color_scheme = 0xffc000000000;
   std::unordered_map<int, std::pair<int, int>> lines_to_font_size_and_offset;
 
-  FermataTextField() {
+  FermataTextField() : module{nullptr}, frame_buffer{nullptr} {
     for (int index = 0; index < LARGER_TEXT_COUNT; index++) {
-      lines_to_font_size_and_offset.insert({LARGER_TEXT_INFO[index][0],
-         std::make_pair(LARGER_TEXT_INFO[index][1], LARGER_TEXT_INFO[index][2])});
+      lines_to_font_size_and_offset.insert(
+          {LARGER_TEXT_INFO[index][0],
+           std::make_pair(LARGER_TEXT_INFO[index][1],
+                          LARGER_TEXT_INFO[index][2])});
     }
   }
 
   void set_visible_lines(int visible_lines) {
     previous_visible_lines = visible_lines;
     std::unordered_map<int, std::pair<int, int>>::const_iterator found =
-       lines_to_font_size_and_offset.find(visible_lines);
+        lines_to_font_size_and_offset.find(visible_lines);
     if (found == lines_to_font_size_and_offset.end()) {
       fontSize = 12;
       textOffset = math::Vec(3, 3);
     } else {
       fontSize = found->second.first;
-      textOffset = math::Vec(3, (float) (found->second.second));
+      textOffset = math::Vec(3, (float)(found->second.second));
     }
     // At fontsize 12, it's 28 rows.
-    extended.Initialize(visible_lines, visible_lines >= 3 ? 1 : 0);  // Window Size depends on font size.
+    extended.Initialize(
+        visible_lines,
+        visible_lines >= 3 ? 1 : 0);  // Window Size depends on font size.
     textUpdated();
   }
 
@@ -392,7 +400,8 @@ struct FermataTextField : STTextField {
     } else {
       // Show something inviting when being shown in the module browser.
       this->text = &module_browser_text;
-      set_visible_lines(20);  // Making this larger, so preview is more appealing.
+      set_visible_lines(
+          20);  // Making this larger, so preview is more appealing.
     }
     textUpdated();
   }
@@ -431,15 +440,16 @@ struct FermataTextField : STTextField {
     } else {
       frame_buffer->show();
     }
-    if (module && (color_scheme != module->screen_colors ||
-                   module->editor_refresh)) {
+    if (module &&
+        (color_scheme != module->screen_colors || module->editor_refresh)) {
       // Note: this doesn't actully care about editor_refresh. But this cleared
       // up a bug about duplicated windows not keeping the same color.
       color_scheme = module->screen_colors;
       color = int_to_color(color_scheme >> 24);
       bgColor = int_to_color(color_scheme & 0xffffff);
     }
-    if (module && (fabs(previous_visible_lines - module->visible_lines) > 0.1)) {
+    if (module &&
+        (fabs(previous_visible_lines - module->visible_lines) > 0.1)) {
       set_visible_lines(module->visible_lines);
       frame_buffer->setDirty();
     }
@@ -458,7 +468,7 @@ struct FermataTextField : STTextField {
     if (is_selected != was_selected) {
       was_selected = is_selected;
       is_dirty = true;
-    }   
+    }
     if (is_dirty) {
       frame_buffer->setDirty();
     }
@@ -471,9 +481,9 @@ struct FermataTextField : STTextField {
       // this, I might get spurious history events.
       // TODO: do I need this check anymore?
       if (module->text != module->previous_text) {
-        APP->history->push(
-          new FermataUndoRedoAction(module->id, module->previous_text,
-                             module->text, module->previous_cursor, cursor));
+        APP->history->push(new FermataUndoRedoAction(
+            module->id, module->previous_text, module->text,
+            module->previous_cursor, cursor));
         module->previous_text = module->text;
       }
       module->previous_cursor = cursor;
@@ -486,7 +496,8 @@ const float NON_SCREEN_WIDTH = 2.0f;
 const float NON_TITLE_WIDTH = 4.6f;
 
 struct FermataWidget : ModuleWidget {
-  StochasticTelegraph::STResizeHandle<Fermata, FermataUndoRedoAction>* rightHandle;
+  StochasticTelegraph::STResizeHandle<Fermata, FermataUndoRedoAction>*
+      rightHandle;
   FermataTextField* textField;
   FermataTitleTextField* title;
   ClosedTitleTextField* closed_title;
@@ -495,8 +506,8 @@ struct FermataWidget : ModuleWidget {
   FermataWidget(Fermata* module) {
     setModule(module);
     setPanel(createPanel<StochasticTelegraph::RestrictedThemedSvgPanel>(
-      asset::plugin(pluginInstance, "res/Fermata.svg"),
-      asset::plugin(pluginInstance, "res/Fermata-dark.svg")));
+        asset::plugin(pluginInstance, "res/Fermata.svg"),
+        asset::plugin(pluginInstance, "res/Fermata-dark.svg")));
 
     // Set reasonable initial size of module. Will likely get updated below.
     box.size = Vec(RACK_GRID_WIDTH * Fermata::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
@@ -525,7 +536,7 @@ struct FermataWidget : ModuleWidget {
     main_text_framebuffer = new FramebufferWidget();
     // The actual widget that shows and edits text.
     textField = createWidget<FermataTextField>(
-      mm2px(Vec(5.08, 5.9)));  // 5.08 == RACK_GRID_WIDTH in mm.
+        mm2px(Vec(5.08, 5.9)));  // 5.08 == RACK_GRID_WIDTH in mm.
     textField->box.size = mm2px(Vec(60.0, 117.0));
     textField->box.size.x = box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH;
     textField->setModule(module, main_text_framebuffer);
@@ -536,8 +547,10 @@ struct FermataWidget : ModuleWidget {
     }
 
     // Resize bar on left.
-    StochasticTelegraph::STResizeHandle<Fermata, FermataUndoRedoAction>* leftHandle = 
-        new StochasticTelegraph::STResizeHandle<Fermata, FermataUndoRedoAction>(false, 3, 300);
+    StochasticTelegraph::STResizeHandle<Fermata,
+                                        FermataUndoRedoAction>* leftHandle =
+        new StochasticTelegraph::STResizeHandle<Fermata, FermataUndoRedoAction>(
+            false, 3, 300);
     leftHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module
     // browser.
@@ -545,7 +558,9 @@ struct FermataWidget : ModuleWidget {
     addChild(leftHandle);
 
     // Resize bar on right.
-    rightHandle = new StochasticTelegraph::STResizeHandle<Fermata, FermataUndoRedoAction>(true, 3, 300);
+    rightHandle =
+        new StochasticTelegraph::STResizeHandle<Fermata, FermataUndoRedoAction>(
+            true, 3, 300);
     rightHandle->module = module;
     // Make sure the handle is correctly placed if drawing for the module
     // browser.
@@ -560,16 +575,18 @@ struct FermataWidget : ModuleWidget {
     Fermata* module = dynamic_cast<Fermata*>(this->module);
     if (module) {
       if (box.size.x != module->width * RACK_GRID_WIDTH) {
-        // Module width has changed. Might be first time step() has been called, or undo/redo has happened
-        // But we check for it because when STRIP creates a new instance of this module, it may not
-        // pick up the JSON-saved width until after Rack has placed the other modules, causing gaps or
-        // overlaps. 
+        // Module width has changed. Might be first time step() has been called,
+        // or undo/redo has happened But we check for it because when STRIP
+        // creates a new instance of this module, it may not pick up the
+        // JSON-saved width until after Rack has placed the other modules,
+        // causing gaps or overlaps.
         box.size.x = module->width * RACK_GRID_WIDTH;
         // This forces the other modules to the right place if needed.
         APP->scene->rack->setModulePosForce(this, box.pos);
       }
 
-      // TODO: Should the logic in step() above that shows/hides the text editor also be here?
+      // TODO: Should the logic in step() above that shows/hides the text editor
+      // also be here?
       if (module->width <= 8) {
         closed_title->show();
         title->hide();
@@ -603,25 +620,25 @@ struct FermataWidget : ModuleWidget {
     menu->addChild(new FermataProgramNameMenuItem(module));
     menu->addChild(new MenuSeparator);
     std::pair<std::string, long long int> colors[] = {
-      {"Green on Black", 0x00ff00000000},
-      {"White on Black", 0xffffff000000},
-      {"Yellow on Black (like Notes)", 0xffd714000000},
-      {"Amber on Black", 0xffc000000000},
-      {"Blue on Black", 0x29b2ef000000},
-      {"Black on White", 0x000000ffffff},
-      {"Blue on White", 0x29b2efffffff}
-    };
-    MenuItem* color_menu = createSubmenuItem("Screen Colors", "",
-     [=](Menu* menu) {
-         for (auto line : colors) {
-           menu->addChild(createCheckMenuItem(line.first, "",
-           [=]() {return line.second == module->screen_colors;},
-           [=]() {module->screen_colors = line.second;
-                  module->RedrawText(); }
-           ));
-         }
-     }
-    );
+        {"Green on Black", 0x00ff00000000},
+        {"White on Black", 0xffffff000000},
+        {"Yellow on Black (like Notes)", 0xffd714000000},
+        {"Amber on Black", 0xffc000000000},
+        {"Blue on Black", 0x29b2ef000000},
+        {"Black on White", 0x000000ffffff},
+        {"Blue on White", 0x29b2efffffff}};
+    MenuItem* color_menu =
+        createSubmenuItem("Screen Colors", "", [=](Menu* menu) {
+          for (auto line : colors) {
+            menu->addChild(createCheckMenuItem(
+                line.first, "",
+                [=]() { return line.second == module->screen_colors; },
+                [=]() {
+                  module->screen_colors = line.second;
+                  module->RedrawText();
+                }));
+          }
+        });
     menu->addChild(color_menu);
 
     // 28 * (12.0 / fontSize) = rows
@@ -629,48 +646,45 @@ struct FermataWidget : ModuleWidget {
     // fontSize / 12 = 28 / rows
     // fontSize = 28*12/rows
 
-    MenuItem* visible_lines_menu = createSubmenuItem("Visible Lines", "",
-      [=](Menu* menu) {
+    MenuItem* visible_lines_menu =
+        createSubmenuItem("Visible Lines", "", [=](Menu* menu) {
           for (int index = 0; index < LARGER_TEXT_COUNT; index++) {
             int lines = LARGER_TEXT_INFO[index][0];
-            menu->addChild(createCheckMenuItem(std::to_string(lines), "",
-                [=]() {return lines == module->visible_lines;},
-                [=]() {module->visible_lines = lines;
-                       textField->set_visible_lines(module->visible_lines);
-                       module->RedrawText();
-                      }
-            ));
+            menu->addChild(createCheckMenuItem(
+                std::to_string(lines), "",
+                [=]() { return lines == module->visible_lines; },
+                [=]() {
+                  module->visible_lines = lines;
+                  textField->set_visible_lines(module->visible_lines);
+                  module->RedrawText();
+                }));
           }
-      }
-    );
+        });
     menu->addChild(visible_lines_menu);
 
-
     std::pair<std::string, std::string> fonts[] = {
-      {"VCV font (like Notes)", "res/fonts/ShareTechMono-Regular.ttf"},
-      {"RobotoMono Bold", "fonts/RobotoMono-Bold.ttf"},
-      {"RobotoMono Light", "fonts/RobotoMono-Light.ttf"},
-      {"RobotoMono Medium", "fonts/RobotoMono-Medium.ttf"},
-      {"RobotoMono Regular", "fonts/RobotoMono-Regular.ttf"},
-      {"RobotoSlab Bold", "fonts/RobotoSlab-Bold.ttf"},
-      {"RobotoSlab Light", "fonts/RobotoSlab-Light.ttf"},
-      {"RobotoSlab Regular", "fonts/RobotoSlab-Regular.ttf"}
-    };
+        {"VCV font (like Notes)", "res/fonts/ShareTechMono-Regular.ttf"},
+        {"RobotoMono Bold", "fonts/RobotoMono-Bold.ttf"},
+        {"RobotoMono Light", "fonts/RobotoMono-Light.ttf"},
+        {"RobotoMono Medium", "fonts/RobotoMono-Medium.ttf"},
+        {"RobotoMono Regular", "fonts/RobotoMono-Regular.ttf"},
+        {"RobotoSlab Bold", "fonts/RobotoSlab-Bold.ttf"},
+        {"RobotoSlab Light", "fonts/RobotoSlab-Light.ttf"},
+        {"RobotoSlab Regular", "fonts/RobotoSlab-Regular.ttf"}};
 
-    MenuItem* font_menu = createSubmenuItem("Font", "",
-      [=](Menu* menu) {
-          for (auto line : fonts) {
-            menu->addChild(createCheckMenuItem(line.first, "",
-                [=]() {return line.second == module->font_choice;},
-                [=]() {module->font_choice = line.second;
-                       textField->setFontPath();
-                       module->RedrawText(); }
-            ));
-          }
+    MenuItem* font_menu = createSubmenuItem("Font", "", [=](Menu* menu) {
+      for (auto line : fonts) {
+        menu->addChild(createCheckMenuItem(
+            line.first, "",
+            [=]() { return line.second == module->font_choice; },
+            [=]() {
+              module->font_choice = line.second;
+              textField->setFontPath();
+              module->RedrawText();
+            }));
       }
-    );
+    });
     menu->addChild(font_menu);
-
   }
 };
 

@@ -15,9 +15,10 @@ struct Depict : Module {
   // Tells the UI where to draw the moving lines representing the player and
   // recorder "heads".
   std::vector<LineRecord> line_records;
-  // I guess technically this would be close to the 'distance of the right-most
+
+  // I guess technically this would be close to the distance of the right-most
   // module, but I don't know if I want to count on that.
-  int max_distance;
+  int max_distance = 0;
 
   // To do some tasks every NN samples. Some UI-related tasks are not as
   // latency-sensitive as the audio thread, and we don't need to do often.
@@ -111,7 +112,7 @@ struct MemoryDepict : Widget {
                                          {5.5, SCHEME_ORANGE, FIXATION, 3},
                                          {0.3, SCHEME_PURPLE, EMBELLISH, 4}};
 
-  MemoryDepict() {}
+  MemoryDepict() : module{nullptr} {}
 
   // Only used when making an image for the module browser or for a Depict
   // with no valid buffer data yet.
