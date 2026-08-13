@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "NoLockQueue.h"  // For Smooth events.
-#include "plugin.hpp"
+#include "plugin.hpp"     // Ignore what cppcheck says about this line.
 
 // To fade volume when near any other recording head.
 // TODO: should be related to sample rate? Set by user?
