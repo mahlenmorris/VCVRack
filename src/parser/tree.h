@@ -175,14 +175,17 @@ struct ExpressionList {
     return list;
   }
 
-  ExpressionList(Expression new_expr) { expressions.push_back(new_expr); }
+  explicit ExpressionList(const Expression& new_expr) {
+    expressions.push_back(new_expr);
+  }
 
-  ExpressionList add(Expression new_expr) {
+  ExpressionList add(const Expression& new_expr) {
     expressions.push_back(new_expr);
     return *this;
   }
   int size() const { return expressions.size(); }
-  friend std::ostream& operator<<(std::ostream& os, ExpressionList exprs) {
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const ExpressionList& exprs) {
     os << "ExpressionList(" << std::to_string(exprs.size()) << " Expressions )";
     return os;
   }
@@ -223,6 +226,14 @@ struct Line {
   ExpressionList expr_list;
   std::vector<Statements> statements;
   bool wait_on_next;  // to distinguish NEXT from NEXTHIGHCPU.
+
+  Line()
+      : type{CLEAR},  // No particular reason.
+        variable_ptr{nullptr},
+        str_variable_ptr{nullptr},
+        array_ptr{nullptr},
+        str_array_ptr{nullptr},
+        wait_on_next{false} {}
 
   static Line ArrayAssignment(const std::string& variable_name,
                               const Expression& index, const Expression& value,
@@ -293,17 +304,18 @@ struct Line {
 };
 
 struct Statements {
-  static Statements FirstStatement(Line stat) {
+  static Statements FirstStatement(const Line& stat) {
     Statements stats;
     stats.lines.push_back(stat);
     return stats;
   }
-  Statements add(Line new_line) {
+  Statements add(const Line& new_line) {
     lines.push_back(new_line);
     return *this;
   }
   int size() const { return lines.size(); }
-  friend std::ostream& operator<<(std::ostream& os, Statements statements) {
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const Statements& statements) {
     os << "Statements(" << std::to_string(statements.size()) << " statements )";
     return os;
   }
@@ -318,20 +330,21 @@ struct Block {
     MAIN,  // Block of code that runs every sample that the module is "running".
     WHEN   // Waits for a condition to become true, and then runs.
   };
-  static Block MainBlock(Statements stat) {
+  static Block MainBlock(const Statements& stat) {
     Block block;
     block.type = Block::MAIN;
     block.lines = stat.lines;
     return block;
   }
-  static Block WhenExpBlock(Expression& condition, Statements stat) {
+  static Block WhenExpBlock(const Expression& condition,
+                            const Statements& stat) {
     Block block;
     block.type = Block::WHEN;
     block.lines = stat.lines;
     block.run_condition = condition;
     return block;
   }
-  friend std::ostream& operator<<(std::ostream& os, Block block) {
+  friend std::ostream& operator<<(std::ostream& os, const Block& block) {
     os << "Block(" << std::to_string(block.lines.size()) << " statements)";
     return os;
   }
@@ -344,12 +357,12 @@ struct Block {
 struct Blocks {
   std::vector<Block> block_list;
   Blocks() {}
-  explicit Blocks(Block main_block) { block_list.push_back(main_block); }
-  Blocks Add(Block new_block) {
+  explicit Blocks(const Block& main_block) { block_list.push_back(main_block); }
+  Blocks Add(const Block& new_block) {
     block_list.push_back(new_block);
     return *this;
   }
-  friend std::ostream& operator<<(std::ostream& os, Blocks blocks) {
+  friend std::ostream& operator<<(std::ostream& os, const Blocks& blocks) {
     os << "Blocks(" << std::to_string(blocks.block_list.size()) << " blocks)";
     return os;
   }

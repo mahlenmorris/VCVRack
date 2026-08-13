@@ -31,42 +31,6 @@ src\Fermata.cpp:350:3: warning: Member variable 'FermataTextField::was_selected'
 src\Fermata.cpp:350:3: warning: Member variable 'FermataTextField::color_scheme' is not initialized in the constructor. [uninitMemberVar]
   FermataTextField() {
   ^
-src\parser\tree.h:178:29: performance: Function parameter 'new_expr' should be passed by const reference. [passedByValue]
-  ExpressionList(Expression new_expr) { expressions.push_back(new_expr); }
-                            ^
-src\parser\tree.h:180:33: performance: Function parameter 'new_expr' should be passed by const reference. [passedByValue]
-  ExpressionList add(Expression new_expr) {
-                                ^
-src\parser\tree.h:185:68: performance: Function parameter 'exprs' should be passed by const reference. [passedByValue]
-  friend std::ostream& operator<<(std::ostream& os, ExpressionList exprs) {
-                                                                   ^
-src\parser\tree.h:296:41: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
-  static Statements FirstStatement(Line stat) {
-                                        ^
-src\parser\tree.h:301:23: performance: Function parameter 'new_line' should be passed by const reference. [passedByValue]
-  Statements add(Line new_line) {
-                      ^
-src\parser\tree.h:306:64: performance: Function parameter 'statements' should be passed by const reference. [passedByValue]
-  friend std::ostream& operator<<(std::ostream& os, Statements statements) {
-                                                               ^
-src\parser\tree.h:321:37: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
-  static Block MainBlock(Statements stat) {
-                                    ^
-src\parser\tree.h:327:63: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
-  static Block WhenExpBlock(Expression& condition, Statements stat) {
-                                                              ^
-src\parser\tree.h:334:59: performance: Function parameter 'block' should be passed by const reference. [passedByValue]
-  friend std::ostream& operator<<(std::ostream& os, Block block) {
-                                                          ^
-src\parser\tree.h:347:25: performance: Function parameter 'main_block' should be passed by const reference. [passedByValue]
-  explicit Blocks(Block main_block) { block_list.push_back(main_block); }
-                        ^
-src\parser\tree.h:348:20: performance: Function parameter 'new_block' should be passed by const reference. [passedByValue]
-  Blocks Add(Block new_block) {
-                   ^
-src\parser\tree.h:352:60: performance: Function parameter 'blocks' should be passed by const reference. [passedByValue]
-  friend std::ostream& operator<<(std::ostream& os, Blocks blocks) {
-                                                           ^
 src\code_block.cpp:63:28: warning: Either the condition 'current_line>=pcodes.size()' is redundant or 'current_line' can have the value greater or equal to pcodes.size(). Expression 'pcodes[current_line]' causes access out of bounds. [containerOutOfBounds]
     PCode* pcode = &(pcodes[current_line]);
                            ^
@@ -103,12 +67,6 @@ src\Depict.cpp:27:3: warning: Member variable 'Depict::max_distance' is not init
 src\Depict.cpp:114:3: warning: Member variable 'MemoryDepict::module' is not initialized in the constructor. [uninitMemberVar]
   MemoryDepict() {}
   ^
-src\Chances.cpp:409:3: warning: Member variable 'ChancesDisplay::module' is not initialized in the constructor. [uninitMemberVar]
-  ChancesDisplay() {
-  ^
-src\Chances.cpp:410:5: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
-    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
-    ^
 src\parser-venn\tree.h:68:3: warning: Member variable 'Circle::present' is not initialized in the constructor. [uninitMemberVar]
   Circle() : x_center{0.0}, y_center{0.0}, radius{0.0} {}
   ^
@@ -151,6 +109,12 @@ src\parser-venn\tree.h:35:12: error: Uninitialized variable: assign.value [unini
 src\parser-venn\tree.h:35:12: error: Uninitialized struct member: assign.value [uninitStructMember]
     return assign;
            ^
+src\Chances.cpp:409:3: warning: Member variable 'ChancesDisplay::module' is not initialized in the constructor. [uninitMemberVar]
+  ChancesDisplay() {
+  ^
+src\Chances.cpp:410:5: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
+    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+    ^
 src\parser\driver.cc:10:9: warning: Member variable 'Driver::factory' is not initialized in the constructor. [uninitMemberVar]
 Driver::Driver()
         ^
@@ -169,21 +133,6 @@ src\parser-venn\tree.cc:108:13: performance: Range variable 'assign' should be d
 src\parser-venn\tree.cc:115:13: performance: Range variable 'assign' should be declared as const reference. [iterateByValue]
   for (auto assign : ex.circles) {
             ^
-src\Drifter.cpp:220:3: warning: Member variable 'Drifter::loaded_start_y' is not initialized in the constructor. [uninitMemberVar]
-  Drifter() {
-  ^
-src\Drifter.cpp:220:3: warning: Member variable 'Drifter::loaded_end_y' is not initialized in the constructor. [uninitMemberVar]
-  Drifter() {
-  ^
-src\Drifter.cpp:844:3: warning: Member variable 'DrifterDisplay::module' is not initialized in the constructor. [uninitMemberVar]
-  DrifterDisplay() {
-  ^
-src\Drifter.cpp:844:3: warning: Member variable 'DrifterDisplay::moduleWidget' is not initialized in the constructor. [uninitMemberVar]
-  DrifterDisplay() {
-  ^
-src\Drifter.cpp:845:5: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
-    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
-    ^
 src\Basically.cpp:96:5: warning: Member variable 'ProductionEnvironment::patch_time' is not initialized in the constructor. [uninitMemberVar]
     ProductionEnvironment(std::vector<Input>* the_inputs,
     ^
@@ -229,6 +178,21 @@ src\Basically.cpp:66:34: performance: Function parameter 'a' should be passed by
 src\Basically.cpp:376:34: performance: Range variable 'err' should be declared as const reference. [iterateByValue]
                 for (std::string err : new_errors) {
                                  ^
+src\Drifter.cpp:220:3: warning: Member variable 'Drifter::loaded_start_y' is not initialized in the constructor. [uninitMemberVar]
+  Drifter() {
+  ^
+src\Drifter.cpp:220:3: warning: Member variable 'Drifter::loaded_end_y' is not initialized in the constructor. [uninitMemberVar]
+  Drifter() {
+  ^
+src\Drifter.cpp:844:3: warning: Member variable 'DrifterDisplay::module' is not initialized in the constructor. [uninitMemberVar]
+  DrifterDisplay() {
+  ^
+src\Drifter.cpp:844:3: warning: Member variable 'DrifterDisplay::moduleWidget' is not initialized in the constructor. [uninitMemberVar]
+  DrifterDisplay() {
+  ^
+src\Drifter.cpp:845:5: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
+    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+    ^
 src\st_textfield.cpp:48:3: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
   fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
   ^
@@ -238,303 +202,15 @@ src\Venn.cpp:264:3: warning: Member variable 'Venn::update_text_widgets' is not 
 src\Venn.cpp:821:3: warning: Member variable 'VennCircleUndoRedoAction::new_position' is not initialized in the constructor. [uninitMemberVar]
   VennCircleUndoRedoAction(
   ^
-src\parser\tree.cc:791:19: performance: Range variable 'exp' should be declared as const reference. [iterateByValue]
-  for (Expression exp : args.expressions) {
-                  ^
-src\parser\tree.cc:830:49: performance: Function parameter 'line' should be passed by const reference. [passedByValue]
+src\parser\tree.cc:868:49: performance: Function parameter 'line' should be passed by const reference. [passedByValue]
 std::ostream& operator<<(std::ostream& os, Line line) {
                                                 ^
-src\parser\tree.cc:631:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:624:25: note: Assuming condition is true
-  if (driver->VarHasPort(lower)) {
-                        ^
-src\parser\tree.cc:631:10: note: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next
-  return line;
-         ^
-src\parser\tree.cc:645:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:659:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:673:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:690:10: error: Uninitialized variables: line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:703:10: error: Uninitialized variables: line.variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:712:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:720:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:728:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:748:10: error: Uninitialized variables: line.str_variable_ptr, line.array_ptr, line.str_array_ptr [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:757:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:768:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:781:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:794:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:791:29: note: Assuming container is not empty
-  for (Expression exp : args.expressions) {
-                            ^
-src\parser\tree.cc:794:10: note: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next
-  return line;
-         ^
-src\parser\tree.cc:805:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:811:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:818:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:827:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
-  return line;
-         ^
-src\parser\tree.cc:631:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:631:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:631:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:631:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:631:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:645:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:645:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:645:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:645:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:659:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:659:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:659:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:659:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:673:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:673:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:673:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:673:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:690:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:690:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:690:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:690:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:703:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:703:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:703:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:703:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:712:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:712:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:712:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:712:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:712:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:748:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:748:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:748:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:757:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:757:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:757:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:757:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:757:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:768:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:768:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:768:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:768:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:768:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:781:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:781:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:781:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:781:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:781:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:794:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:794:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:794:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:794:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:794:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:805:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:805:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:805:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:805:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:805:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:811:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:811:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:811:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:811:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:811:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:818:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:818:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
 src\pcode.cpp:217:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
             [loop_type](Loop l) { return loop_type == l.loop_type; });
                              ^
 src\pcode.cpp:253:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
             [loop_type](Loop l) { return loop_type == l.loop_type; });
                              ^
-src\parser\tree.cc:818:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:818:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:818:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:827:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:827:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:827:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:827:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
-  return line;
-         ^
-src\parser\tree.cc:827:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
-  return line;
-         ^
 src\Fixation.cpp:201:3: warning: Member variable 'Fixation::display_position' is not initialized in the constructor. [uninitMemberVar]
   Fixation() {
   ^
