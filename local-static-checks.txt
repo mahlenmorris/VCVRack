@@ -1,27 +1,3 @@
-src\NoLockQueue.h:31:3: warning: Member variable 'SpScLockFreeQueue < Smooth * , 50 >::m_ringBuffer' is not initialized in the constructor. [uninitMemberVar]
-  SpScLockFreeQueue()
-  ^
-src\NoLockQueue.h:31:3: warning: Member variable 'SpScLockFreeQueue < BufferTask * , 5 >::m_ringBuffer' is not initialized in the constructor. [uninitMemberVar]
-  SpScLockFreeQueue()
-  ^
-src\Fuse.cpp:316:3: warning: Member variable 'FuseDisplay::module' is not initialized in the constructor. [uninitMemberVar]
-  FuseDisplay() {
-  ^
-src\Fuse.cpp:317:5: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
-    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
-    ^
-src\Embellish.cpp:87:3: warning: Member variable 'Embellish::display_position' is not initialized in the constructor. [uninitMemberVar]
-  Embellish() {
-  ^
-src\StochasticTelegraph.hpp:68:3: warning: Member variable 'STResizeHandle::module' is not initialized in the constructor. [uninitMemberVar]
-  STResizeHandle(bool is_right, int min_h, int max_h) :
-  ^
-src\Embellish.cpp:87:3: warning: Member variable 'Embellish::prev_reverse' is not initialized in the constructor. [uninitMemberVar]
-  Embellish() {
-  ^
-src\Embellish.cpp:409:3: warning: Member variable 'EmbellishWidget::adjust_slider' is not initialized in the constructor. [uninitMemberVar]
-  EmbellishWidget(Embellish* module) {
-  ^
 src\Fermata.cpp:18:3: warning: Member variable 'Fermata::box_pos_x' is not initialized in the constructor. [uninitMemberVar]
   Fermata() {
   ^
@@ -54,12 +30,6 @@ src\Fermata.cpp:350:3: warning: Member variable 'FermataTextField::was_selected'
   ^
 src\Fermata.cpp:350:3: warning: Member variable 'FermataTextField::color_scheme' is not initialized in the constructor. [uninitMemberVar]
   FermataTextField() {
-  ^
-src\StochasticTelegraph.hpp:68:3: warning: Member variable 'STResizeHandle < Fermata , FermataUndoRedoAction >::module' is not initialized in the constructor. [uninitMemberVar]
-  STResizeHandle(bool is_right, int min_h, int max_h) :
-  ^
-src\Ruminate.cpp:108:3: warning: Member variable 'Ruminate::display_position' is not initialized in the constructor. [uninitMemberVar]
-  Ruminate() {
   ^
 src\parser\tree.h:178:29: performance: Function parameter 'new_expr' should be passed by const reference. [passedByValue]
   ExpressionList(Expression new_expr) { expressions.push_back(new_expr); }
@@ -127,15 +97,18 @@ src\TTY.cpp:436:3: warning: Member variable 'TTYTextField::was_selected' is not 
 src\TTY.cpp:436:3: warning: Member variable 'TTYTextField::color_scheme' is not initialized in the constructor. [uninitMemberVar]
   TTYTextField() {
   ^
-src\StochasticTelegraph.hpp:68:3: warning: Member variable 'STResizeHandle < TTY , TTYUndoRedoAction >::module' is not initialized in the constructor. [uninitMemberVar]
-  STResizeHandle(bool is_right, int min_h, int max_h) :
-  ^
 src\Depict.cpp:27:3: warning: Member variable 'Depict::max_distance' is not initialized in the constructor. [uninitMemberVar]
   Depict() {
   ^
 src\Depict.cpp:114:3: warning: Member variable 'MemoryDepict::module' is not initialized in the constructor. [uninitMemberVar]
   MemoryDepict() {}
   ^
+src\Chances.cpp:409:3: warning: Member variable 'ChancesDisplay::module' is not initialized in the constructor. [uninitMemberVar]
+  ChancesDisplay() {
+  ^
+src\Chances.cpp:410:5: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
+    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+    ^
 src\parser-venn\tree.h:68:3: warning: Member variable 'Circle::present' is not initialized in the constructor. [uninitMemberVar]
   Circle() : x_center{0.0}, y_center{0.0}, radius{0.0} {}
   ^
@@ -169,12 +142,6 @@ src\parser-venn\driver.h:80:3: warning: Member variable 'VennVariables::var_topy
 src\parser-venn\driver.h:80:3: warning: Member variable 'VennVariables::var_bottomy' is not initialized in the constructor. [uninitMemberVar]
   VennVariables() {
   ^
-src\Chances.cpp:409:3: warning: Member variable 'ChancesDisplay::module' is not initialized in the constructor. [uninitMemberVar]
-  ChancesDisplay() {
-  ^
-src\Chances.cpp:410:5: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
-    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
-    ^
 src\parser-venn\driver.h:43:49: performance: Function parameter 'message' should be passed by const reference. [passedByValue]
   Error(int line, int column, const std::string message) : line{line},
                                                 ^
@@ -184,6 +151,12 @@ src\parser-venn\tree.h:35:12: error: Uninitialized variable: assign.value [unini
 src\parser-venn\tree.h:35:12: error: Uninitialized struct member: assign.value [uninitStructMember]
     return assign;
            ^
+src\parser\driver.cc:10:9: warning: Member variable 'Driver::factory' is not initialized in the constructor. [uninitMemberVar]
+Driver::Driver()
+        ^
+src\parser\driver.hh:43:49: performance: Function parameter 'message' should be passed by const reference. [passedByValue]
+  Error(int line, int column, const std::string message) : line{line},
+                                                ^
 src\parser-venn\tree.cc:68:19: performance: Range variable 'assign' should be declared as const reference. [iterateByValue]
   for (Assignment assign : fields.assignments) {
                   ^
@@ -196,12 +169,21 @@ src\parser-venn\tree.cc:108:13: performance: Range variable 'assign' should be d
 src\parser-venn\tree.cc:115:13: performance: Range variable 'assign' should be declared as const reference. [iterateByValue]
   for (auto assign : ex.circles) {
             ^
-src\parser\driver.cc:10:9: warning: Member variable 'Driver::factory' is not initialized in the constructor. [uninitMemberVar]
-Driver::Driver()
-        ^
-src\parser\driver.hh:43:49: performance: Function parameter 'message' should be passed by const reference. [passedByValue]
-  Error(int line, int column, const std::string message) : line{line},
-                                                ^
+src\Drifter.cpp:220:3: warning: Member variable 'Drifter::loaded_start_y' is not initialized in the constructor. [uninitMemberVar]
+  Drifter() {
+  ^
+src\Drifter.cpp:220:3: warning: Member variable 'Drifter::loaded_end_y' is not initialized in the constructor. [uninitMemberVar]
+  Drifter() {
+  ^
+src\Drifter.cpp:844:3: warning: Member variable 'DrifterDisplay::module' is not initialized in the constructor. [uninitMemberVar]
+  DrifterDisplay() {
+  ^
+src\Drifter.cpp:844:3: warning: Member variable 'DrifterDisplay::moduleWidget' is not initialized in the constructor. [uninitMemberVar]
+  DrifterDisplay() {
+  ^
+src\Drifter.cpp:845:5: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
+    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+    ^
 src\Basically.cpp:96:5: warning: Member variable 'ProductionEnvironment::patch_time' is not initialized in the constructor. [uninitMemberVar]
     ProductionEnvironment(std::vector<Input>* the_inputs,
     ^
@@ -241,38 +223,20 @@ src\Basically.cpp:1091:3: warning: Member variable 'ErrorTooltip::errorWidget' i
 src\Basically.cpp:1100:3: warning: Member variable 'ErrorWidget::module' is not initialized in the constructor. [uninitMemberVar]
   ErrorWidget() { tooltip = NULL; }
   ^
-src\StochasticTelegraph.hpp:68:3: warning: Member variable 'STResizeHandle < Basically , TextEditAction >::module' is not initialized in the constructor. [uninitMemberVar]
-  STResizeHandle(bool is_right, int min_h, int max_h) :
-  ^
-src\Drifter.cpp:220:3: warning: Member variable 'Drifter::loaded_start_y' is not initialized in the constructor. [uninitMemberVar]
-  Drifter() {
-  ^
-src\Drifter.cpp:220:3: warning: Member variable 'Drifter::loaded_end_y' is not initialized in the constructor. [uninitMemberVar]
-  Drifter() {
-  ^
-src\Drifter.cpp:844:3: warning: Member variable 'DrifterDisplay::module' is not initialized in the constructor. [uninitMemberVar]
-  DrifterDisplay() {
-  ^
-src\Drifter.cpp:844:3: warning: Member variable 'DrifterDisplay::moduleWidget' is not initialized in the constructor. [uninitMemberVar]
-  DrifterDisplay() {
-  ^
-src\Drifter.cpp:845:5: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
-    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
-    ^
 src\Basically.cpp:66:34: performance: Function parameter 'a' should be passed by const reference. [passedByValue]
     InPortInfo(const std::string a, InputId b) : name{a}, id{b} {
                                  ^
 src\Basically.cpp:376:34: performance: Range variable 'err' should be declared as const reference. [iterateByValue]
                 for (std::string err : new_errors) {
                                  ^
-src\pcode.cpp:217:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
-            [loop_type](Loop l) { return loop_type == l.loop_type; });
-                             ^
-src\pcode.cpp:253:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
-            [loop_type](Loop l) { return loop_type == l.loop_type; });
-                             ^
 src\st_textfield.cpp:48:3: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
   fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+  ^
+src\Venn.cpp:264:3: warning: Member variable 'Venn::update_text_widgets' is not initialized in the constructor. [uninitMemberVar]
+  Venn() {
+  ^
+src\Venn.cpp:821:3: warning: Member variable 'VennCircleUndoRedoAction::new_position' is not initialized in the constructor. [uninitMemberVar]
+  VennCircleUndoRedoAction(
   ^
 src\parser\tree.cc:791:19: performance: Range variable 'exp' should be declared as const reference. [iterateByValue]
   for (Expression exp : args.expressions) {
@@ -379,15 +343,9 @@ src\parser\tree.cc:659:10: error: Uninitialized struct member: line.variable_ptr
 src\parser\tree.cc:659:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
   return line;
          ^
-src\Venn.cpp:264:3: warning: Member variable 'Venn::update_text_widgets' is not initialized in the constructor. [uninitMemberVar]
-  Venn() {
-  ^
 src\parser\tree.cc:659:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
   return line;
          ^
-src\Venn.cpp:821:3: warning: Member variable 'VennCircleUndoRedoAction::new_position' is not initialized in the constructor. [uninitMemberVar]
-  VennCircleUndoRedoAction(
-  ^
 src\parser\tree.cc:659:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
   return line;
          ^
@@ -547,6 +505,12 @@ src\parser\tree.cc:818:10: error: Uninitialized struct member: line.variable_ptr
 src\parser\tree.cc:818:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
   return line;
          ^
+src\pcode.cpp:217:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
+            [loop_type](Loop l) { return loop_type == l.loop_type; });
+                             ^
+src\pcode.cpp:253:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
+            [loop_type](Loop l) { return loop_type == l.loop_type; });
+                             ^
 src\parser\tree.cc:818:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
   return line;
          ^
@@ -600,15 +564,6 @@ src\Memory.cpp:1481:3: warning: Member variable 'MenuItemPickSaveFile::module' i
   ^
 src\Memory.cpp:1515:3: warning: Member variable 'LengthField::module' is not initialized in the constructor. [uninitMemberVar]
   LengthField() {
-  ^
-src\NoLockQueue.h:31:3: warning: Member variable 'SpScLockFreeQueue < PrepareTask * , 5 >::m_ringBuffer' is not initialized in the constructor. [uninitMemberVar]
-  SpScLockFreeQueue()
-  ^
-src\NoLockQueue.h:31:3: warning: Member variable 'SpScLockFreeQueue < PrepareTask * , 10 >::m_ringBuffer' is not initialized in the constructor. [uninitMemberVar]
-  SpScLockFreeQueue()
-  ^
-src\NoLockQueue.h:31:3: warning: Member variable 'SpScLockFreeQueue < BufferTask * , 10 >::m_ringBuffer' is not initialized in the constructor. [uninitMemberVar]
-  SpScLockFreeQueue()
   ^
 src\Memory.cpp:1526:9: warning: %u in format string (no. 1) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
         snprintf(text_buffer, 10, "%02u.%02u", (value / 100), value % 100);
