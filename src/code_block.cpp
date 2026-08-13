@@ -60,6 +60,15 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
   bool running = true;
 
   while (running && !waiting) {
+    if (current_line >= pcodes.size()) {
+      current_line = 0;
+      waiting = true;  // Implicit WAIT at end of program.
+      if (!loops) {
+        running = false;
+      }
+      continue;
+    }
+
     PCode* pcode = &(pcodes[current_line]);
 
     // Only used when I'm debugging.
@@ -225,13 +234,6 @@ CodeBlock::RunStatus CodeBlock::Run(bool loops) {
     // pcode->state is only set in a select few situations, like the assignment
     // before a FORLOOP.
     state = pcode->state;
-    if (current_line >= pcodes.size()) {
-      current_line = 0;
-      waiting = true;  // Implicit WAIT at end of program.
-      if (!loops) {
-        running = false;
-      }
-    }
   }
   run_status = running ? CONTINUES : STOPPED;
   return run_status;

@@ -43,9 +43,8 @@ struct STTextFieldSelectAllItem : ui::MenuItem {
   }
 };
 
-STTextField::STTextField() {
+STTextField::STTextField() : fontPath{asset::system("res/fonts/ShareTechMono-Regular.ttf")} {
   allow_text_entry = true;
-  fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
   fontSize = 12.0f;
   textOffset = math::Vec(3, 3);
   color = nvgRGB(0xff, 0xd7, 0x14);

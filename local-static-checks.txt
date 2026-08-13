@@ -1,138 +1,18 @@
-src\code_block.cpp:63:28: warning: Either the condition 'current_line>=pcodes.size()' is redundant or 'current_line' can have the value greater or equal to pcodes.size(). Expression 'pcodes[current_line]' causes access out of bounds. [containerOutOfBounds]
-    PCode* pcode = &(pcodes[current_line]);
-                           ^
-src\code_block.cpp:228:22: note: Assuming that condition 'current_line>=pcodes.size()' is not redundant
-    if (current_line >= pcodes.size()) {
-                     ^
-src\code_block.cpp:67:18: note: Assuming condition is false
-    switch (pcode->type) {
-                 ^
-src\code_block.cpp:63:28: note: Access out of bounds
-    PCode* pcode = &(pcodes[current_line]);
-                           ^
-src\parser-venn\tree.h:68:3: warning: Member variable 'Circle::present' is not initialized in the constructor. [uninitMemberVar]
-  Circle() : x_center{0.0}, y_center{0.0}, radius{0.0} {}
-  ^
-src\parser-venn\driver.h:80:3: warning: Member variable 'VennVariables::var_x' is not initialized in the constructor. [uninitMemberVar]
-  VennVariables() {
-  ^
-src\parser-venn\driver.h:80:3: warning: Member variable 'VennVariables::var_y' is not initialized in the constructor. [uninitMemberVar]
-  VennVariables() {
-  ^
-src\parser-venn\driver.h:80:3: warning: Member variable 'VennVariables::var_distance' is not initialized in the constructor. [uninitMemberVar]
-  VennVariables() {
-  ^
-src\parser-venn\driver.h:80:3: warning: Member variable 'VennVariables::var_within' is not initialized in the constructor. [uninitMemberVar]
-  VennVariables() {
-  ^
-src\parser-venn\driver.h:80:3: warning: Member variable 'VennVariables::var_pointx' is not initialized in the constructor. [uninitMemberVar]
-  VennVariables() {
-  ^
-src\parser-venn\driver.h:80:3: warning: Member variable 'VennVariables::var_pointy' is not initialized in the constructor. [uninitMemberVar]
-  VennVariables() {
-  ^
-src\parser-venn\driver.h:80:3: warning: Member variable 'VennVariables::var_leftx' is not initialized in the constructor. [uninitMemberVar]
-  VennVariables() {
-  ^
-src\parser-venn\driver.h:80:3: warning: Member variable 'VennVariables::var_rightx' is not initialized in the constructor. [uninitMemberVar]
-  VennVariables() {
-  ^
-src\parser-venn\driver.h:80:3: warning: Member variable 'VennVariables::var_topy' is not initialized in the constructor. [uninitMemberVar]
-  VennVariables() {
-  ^
-src\parser-venn\driver.h:80:3: warning: Member variable 'VennVariables::var_bottomy' is not initialized in the constructor. [uninitMemberVar]
-  VennVariables() {
-  ^
-src\parser-venn\driver.h:43:49: performance: Function parameter 'message' should be passed by const reference. [passedByValue]
-  Error(int line, int column, const std::string message) : line{line},
-                                                ^
-src\parser-venn\tree.h:35:12: error: Uninitialized variable: assign.value [uninitvar]
-    return assign;
-           ^
-src\parser-venn\tree.h:35:12: error: Uninitialized struct member: assign.value [uninitStructMember]
-    return assign;
-           ^
 src\parser\driver.cc:10:9: warning: Member variable 'Driver::factory' is not initialized in the constructor. [uninitMemberVar]
 Driver::Driver()
         ^
-src\parser-venn\tree.cc:68:19: performance: Range variable 'assign' should be declared as const reference. [iterateByValue]
-  for (Assignment assign : fields.assignments) {
-                  ^
-src\parser-venn\tree.cc:96:13: performance: Range variable 'assign' should be declared as const reference. [iterateByValue]
-  for (auto assign : ex.assignments) {
-            ^
-src\parser-venn\tree.cc:108:13: performance: Range variable 'assign' should be declared as const reference. [iterateByValue]
-  for (auto assign : ex.circles) {
-            ^
-src\parser-venn\tree.cc:115:13: performance: Range variable 'assign' should be declared as const reference. [iterateByValue]
-  for (auto assign : ex.circles) {
-            ^
-src\parser\driver.hh:43:49: performance: Function parameter 'message' should be passed by const reference. [passedByValue]
-  Error(int line, int column, const std::string message) : line{line},
+src\st_textfield.cpp:49:3: performance: Variable 'textOffset' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
+  textOffset = math::Vec(3, 3);
+  ^
+src\parser\tree.cc:868:49: performance: Function parameter 'line' should be passed by const reference. [passedByValue]
+std::ostream& operator<<(std::ostream& os, Line line) {
                                                 ^
-src\Basically.cpp:96:5: warning: Member variable 'ProductionEnvironment::patch_time' is not initialized in the constructor. [uninitMemberVar]
-    ProductionEnvironment(std::vector<Input>* the_inputs,
-    ^
-src\Basically.cpp:96:5: warning: Member variable 'ProductionEnvironment::starting' is not initialized in the constructor. [uninitMemberVar]
-    ProductionEnvironment(std::vector<Input>* the_inputs,
-    ^
-src\Basically.cpp:96:5: warning: Member variable 'ProductionEnvironment::main_blocks' is not initialized in the constructor. [uninitMemberVar]
-    ProductionEnvironment(std::vector<Input>* the_inputs,
-    ^
-src\Basically.cpp:96:5: warning: Member variable 'ProductionEnvironment::expression_blocks' is not initialized in the constructor. [uninitMemberVar]
-    ProductionEnvironment(std::vector<Input>* the_inputs,
-    ^
-src\Basically.cpp:96:5: warning: Member variable 'ProductionEnvironment::running_expression_blocks' is not initialized in the constructor. [uninitMemberVar]
-    ProductionEnvironment(std::vector<Input>* the_inputs,
-    ^
-src\Basically.cpp:313:14: warning: Member variable 'CompilationThread::main_blocks' is not initialized in the constructor. [uninitMemberVar]
-    explicit CompilationThread(Driver* drv, Environment* env)
-             ^
-src\Basically.cpp:313:14: warning: Member variable 'CompilationThread::expression_blocks' is not initialized in the constructor. [uninitMemberVar]
-    explicit CompilationThread(Driver* drv, Environment* env)
-             ^
-src\Basically.cpp:313:14: warning: Member variable 'CompilationThread::running_expression_blocks' is not initialized in the constructor. [uninitMemberVar]
-    explicit CompilationThread(Driver* drv, Environment* env)
-             ^
-src\Basically.cpp:844:3: warning: Member variable 'TextEditAction::old_cursor' is not initialized in the constructor. [uninitMemberVar]
-  TextEditAction(int64_t id, int old_width, int new_width,
-  ^
-src\Basically.cpp:844:3: warning: Member variable 'TextEditAction::new_cursor' is not initialized in the constructor. [uninitMemberVar]
-  TextEditAction(int64_t id, int old_width, int new_width,
-  ^
-src\Basically.cpp:890:3: warning: Member variable 'TitleTextField::module' is not initialized in the constructor. [uninitMemberVar]
-  TitleTextField() {}
-  ^
-src\Basically.cpp:1091:3: warning: Member variable 'ErrorTooltip::errorWidget' is not initialized in the constructor. [uninitMemberVar]
-  ErrorTooltip(const std::string& text) : error_text{text} {}
-  ^
-src\Basically.cpp:1100:3: warning: Member variable 'ErrorWidget::module' is not initialized in the constructor. [uninitMemberVar]
-  ErrorWidget() { tooltip = NULL; }
-  ^
-src\Basically.cpp:66:34: performance: Function parameter 'a' should be passed by const reference. [passedByValue]
-    InPortInfo(const std::string a, InputId b) : name{a}, id{b} {
-                                 ^
-src\Basically.cpp:376:34: performance: Range variable 'err' should be declared as const reference. [iterateByValue]
-                for (std::string err : new_errors) {
-                                 ^
-src\st_textfield.cpp:48:3: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
-  fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
-  ^
 src\pcode.cpp:217:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
             [loop_type](Loop l) { return loop_type == l.loop_type; });
                              ^
 src\pcode.cpp:253:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
             [loop_type](Loop l) { return loop_type == l.loop_type; });
                              ^
-src\parser\tree.cc:868:49: performance: Function parameter 'line' should be passed by const reference. [passedByValue]
-std::ostream& operator<<(std::ostream& os, Line line) {
-                                                ^
-src\Venn.cpp:264:3: warning: Member variable 'Venn::update_text_widgets' is not initialized in the constructor. [uninitMemberVar]
-  Venn() {
-  ^
-src\Venn.cpp:821:3: warning: Member variable 'VennCircleUndoRedoAction::new_position' is not initialized in the constructor. [uninitMemberVar]
-  VennCircleUndoRedoAction(
-  ^
 src\Fixation.cpp:201:3: warning: Member variable 'Fixation::display_position' is not initialized in the constructor. [uninitMemberVar]
   Fixation() {
   ^

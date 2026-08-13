@@ -63,7 +63,7 @@ struct Basically : Module {
     InputId id;
     float* value_ptr;
 
-    InPortInfo(const std::string a, InputId b) : name{a}, id{b} {
+    InPortInfo(const std::string& a, InputId b) : name{a}, id{b} {
       value_ptr = nullptr;
     }
   };
@@ -99,8 +99,13 @@ struct Basically : Module {
         : inputs{the_inputs},
           outputs{the_outputs},
           driver{the_driver},
+          starting{false},
+          main_blocks{nullptr},
+          expression_blocks{nullptr},
+          running_expression_blocks{nullptr},
           out_index_to_clamp{clamp_info} {
       sample_rate = 0.0f;
+      patch_time = 0.0f;
     }
 
     // Must be called every time the program is recompiled.
@@ -316,6 +321,9 @@ struct Basically : Module {
       useful = false;
       shutdown = false;
       initiate_compile = false;
+      main_blocks = nullptr;
+      expression_blocks = nullptr;
+      running_expression_blocks = nullptr;
     }
 
     void Halt() {
@@ -373,7 +381,7 @@ struct Basically : Module {
                   running_expression_blocks->push_back(false);
                 }
               } else {
-                for (std::string err : new_errors) {
+                for (const std::string& err : new_errors) {
                   driver->AddError(err);
                 }
                 useful = false;
@@ -843,7 +851,7 @@ struct TextEditAction : history::ModuleAction {
   // STResizeHandle.
   TextEditAction(int64_t id, int old_width, int new_width,
                  float unused_1 = 0.0f, float unused_2 = 0.0f)
-      : old_width{old_width}, new_width{new_width} {
+      : old_cursor{-1}, new_cursor{-1}, old_width{old_width}, new_width{new_width} {
     moduleId = id;
     name = "module width change";
   }
@@ -887,7 +895,7 @@ struct TextEditAction : history::ModuleAction {
 struct TitleTextField : LightWidget {
   Basically* module;
 
-  TitleTextField() {}
+  TitleTextField() : module{nullptr} {}
 
   void drawLayer(const DrawArgs& args, int layer) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
@@ -1088,7 +1096,7 @@ struct ErrorTooltip : ui::Tooltip {
   ErrorWidget* errorWidget;
   std::string error_text;
 
-  ErrorTooltip(const std::string& text) : error_text{text} {}
+  ErrorTooltip(const std::string& text) : errorWidget{nullptr}, error_text{text} {}
 
   void step() override;
 };
@@ -1097,7 +1105,7 @@ struct ErrorWidget : widget::OpaqueWidget {
   Basically* module;
   ErrorTooltip* tooltip;
 
-  ErrorWidget() { tooltip = NULL; }
+  ErrorWidget() : module{nullptr} { tooltip = NULL; }
 
   void onEnter(const EnterEvent& e) override { create_tooltip(); }
 
