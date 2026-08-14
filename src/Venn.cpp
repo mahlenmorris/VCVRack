@@ -1,153 +1,94 @@
-#include "plugin.hpp"
+#include <chrono>
+#include <thread>
 
 #include "parser-venn/driver.h"
+#include "plugin.hpp"
 #include "st_textfield.hpp"
 
-#include <chrono>   
-#include <thread>
 
 constexpr int VENN_COLOR_COUNT = 7;
 NVGcolor venn_colors[VENN_COLOR_COUNT] = {
-  SCHEME_RED,
-  SCHEME_BLUE,
-  SCHEME_ORANGE,
-  SCHEME_PURPLE,
-  SCHEME_GREEN,
-  SCHEME_CYAN,
-  SCHEME_WHITE
-};
+    SCHEME_RED,   SCHEME_BLUE, SCHEME_ORANGE, SCHEME_PURPLE,
+    SCHEME_GREEN, SCHEME_CYAN, SCHEME_WHITE};
 
 constexpr int VENN_COLOR_NAMES = 8;  // Number of names per color.
 constexpr const char* VENN_COLOR_ARRAY[VENN_COLOR_COUNT][VENN_COLOR_NAMES] = {
-  { "Scarlet", "Crimson", "Ruby", "Cherry", "Rose", "Vermilion", "Maroon", "Firetruck" }, 
-  { "Azure", "Navy", "Indigo", "Ocean", "Sky", "Blueberry", "Sapphire", "Bluebird" },
-  { "Tangerine", "Cinnamon", "Pumpkin", "Carrot", "Tiger", "Juice", "Fire", "Warm" },
-  { "Lavender", "Violet", "Lilac", "Amethyst", "Eggplant", "Grape", "Plum", "Royal" },
-  { "Jade", "Olive", "Lime", "Grass", "Tree", "Leaf", "Frog", "Lime" },
-  { "Aqua", "Calm", "Peace", "Serenity", "Clarity", "Turquoise", "Teal", "Seafoam" },
-  { "Ivory", "Cream", "Clean", "Simple", "Snow", "Cloud", "Milk", "Pearl" }
-};
+    {"Scarlet", "Crimson", "Ruby", "Cherry", "Rose", "Vermilion", "Maroon",
+     "Firetruck"},
+    {"Azure", "Navy", "Indigo", "Ocean", "Sky", "Blueberry", "Sapphire",
+     "Bluebird"},
+    {"Tangerine", "Cinnamon", "Pumpkin", "Carrot", "Tiger", "Juice", "Fire",
+     "Warm"},
+    {"Lavender", "Violet", "Lilac", "Amethyst", "Eggplant", "Grape", "Plum",
+     "Royal"},
+    {"Jade", "Olive", "Lime", "Grass", "Tree", "Leaf", "Frog", "Lime"},
+    {"Aqua", "Calm", "Peace", "Serenity", "Clarity", "Turquoise", "Teal",
+     "Seafoam"},
+    {"Ivory", "Cream", "Clean", "Simple", "Snow", "Cloud", "Milk", "Pearl"}};
 
 constexpr int PART_LEN = 18;
 constexpr const char* PARTS[PART_LEN] = {
-  "Bass",
-  "Drum",
-  "Lead",
-  "Melody",
-  "Bloop",
-  "Noise",
-  "Piano",
-  "Tympani",
-  "Flute",
-  "Grit",
-  "Air",
-  "Choir",
-  "Theremin",
-  "Gamelan",
-  "Kalimba",
-  "Bagpipe",
-  "Erhu",
-  "Kora"
-};
+    "Bass",     "Drum",    "Lead",    "Melody",  "Bloop", "Noise",
+    "Piano",    "Tympani", "Flute",   "Grit",    "Air",   "Choir",
+    "Theremin", "Gamelan", "Kalimba", "Bagpipe", "Erhu",  "Kora"};
 
 constexpr int EFFECT_LEN = 26;
 static const char* EFFECTS[EFFECT_LEN] = {
-  "Reverb",
-  "Delay",
-  "Chorus",
-  "Flange",
-  "Filter",
-  "Mix",
-  "Distortion",
-  "Punch",
-  "Smoother",
-  "Phaser",
-  "Limiter",
-  "Pan",
-  "Pitch",
-  "Gate",
-  "Scale",
-  "Key",
-  "Grit",
-  "Space",
-  "Throb",
-  "Echo",
-  "Attack",
-  "Polarity",
-  "Pressure",
-  "Timbre",
-  "Tempo",
-  "Dissonance"
-};
+    "Reverb",     "Delay",     "Chorus",   "Flange",   "Filter",   "Mix",
+    "Distortion", "Punch",     "Smoother", "Phaser",   "Limiter",  "Pan",
+    "Pitch",      "Gate",      "Scale",    "Key",      "Grit",     "Space",
+    "Throb",      "Echo",      "Attack",   "Polarity", "Pressure", "Timbre",
+    "Tempo",      "Dissonance"};
 
 constexpr int VARIABLES_LEN = 6;
-static const char* VARIABLES[VARIABLES_LEN] = {
-  "pointx",
-  "pointy",
-  "distance",
-  "within",
-  "x",
-  "y"
-};
+static const char* VARIABLES[VARIABLES_LEN] = {"pointx", "pointy", "distance",
+                                               "within", "x",      "y"};
 
 constexpr int SINGLE_ARG_LEN = 6;
-static const char* SINGLE_FUNCS[SINGLE_ARG_LEN] = {
-  "abs",
-  "ceiling",
-  "floor",
-  "log2",
-  "sign",
-  "sin"
-};
+static const char* SINGLE_FUNCS[SINGLE_ARG_LEN] = {"abs",  "ceiling", "floor",
+                                                   "log2", "sign",    "sin"};
 
 constexpr int BOOL_OP_LEN = 6;
-static const char* BOOL_OPS[BOOL_OP_LEN] = {
-  "==",
-  ">=",
-  "<=",
-  "<",
-  ">",
-  "!="
-};
+static const char* BOOL_OPS[BOOL_OP_LEN] = {"==", ">=", "<=", "<", ">", "!="};
 
 std::string notes("abcdefg");
 std::string simple_operators("+-*/");
 
 struct Venn : Module {
   enum ParamId {
-		EXP_LIN_LOG_PARAM,
-		X_POSITION_ATTN_PARAM,
-		Y_POSITION_ATTN_PARAM,
-		INV_WITHIN_PARAM,
-		INV_X_PARAM,
-		INV_Y_PARAM,
-		OFST_X_PARAM,
-		OFST_Y_PARAM,
+    EXP_LIN_LOG_PARAM,
+    X_POSITION_ATTN_PARAM,
+    Y_POSITION_ATTN_PARAM,
+    INV_WITHIN_PARAM,
+    INV_X_PARAM,
+    INV_Y_PARAM,
+    OFST_X_PARAM,
+    OFST_Y_PARAM,
     PARAMS_LEN
   };
   enum InputId {
     X_POSITION_INPUT,
     Y_POSITION_INPUT,
-		X_POSITION_WIGGLE_INPUT,
-		Y_POSITION_WIGGLE_INPUT,
+    X_POSITION_WIGGLE_INPUT,
+    Y_POSITION_WIGGLE_INPUT,
     INPUTS_LEN
   };
   enum OutputId {
     DISTANCE_OUTPUT,
     WITHIN_GATE_OUTPUT,
-		X_DISTANCE_OUTPUT,
-		Y_DISTANCE_OUTPUT,
- 		X_POSITION_OUTPUT,
-		Y_POSITION_OUTPUT,
+    X_DISTANCE_OUTPUT,
+    Y_DISTANCE_OUTPUT,
+    X_POSITION_OUTPUT,
+    Y_POSITION_OUTPUT,
     MATH1_OUTPUT,
     OUTPUTS_LEN
   };
   enum LightId {
-  	INV_WITHIN_LIGHT,
-		INV_X_LIGHT,
-		INV_Y_LIGHT,
-		OFST_X_LIGHT,
-		OFST_Y_LIGHT,
+    INV_WITHIN_LIGHT,
+    INV_X_LIGHT,
+    INV_Y_LIGHT,
+    OFST_X_LIGHT,
+    OFST_Y_LIGHT,
     LIGHTS_LEN
   };
 
@@ -160,7 +101,8 @@ struct Venn : Module {
     bool initiate_compile;
     std::string text;  // Text to compile.
     bool running;  // TRUE if still compiling, false if completed.
-    bool useful; // TRUE if last completed compile created something for module to use.
+    bool useful; // TRUE if last completed compile created something for module
+  to use.
     // Product of a successful compilation.
     VennExpression result_exp;
 
@@ -241,12 +183,12 @@ struct Venn : Module {
   bool keystrokes_accepted;
   // Menu item that decides whether to show the readable keyboard hints
   // or just the icon indicating that keyboard input is accepted.
-  // TODO: This should probably apply to all instances of Venn at once, but reading XTStyle,
-  // it's more work than I want to do for V1.
+  // TODO: This should probably apply to all instances of Venn at once, but
+  // reading XTStyle, it's more work than I want to do for V1.
   bool show_keyboard;
   // Flag to VennWidget::step() to update any text fields.
   // Indicates that something other than the UI has just changed circles.
-  bool update_text_widgets;
+  bool update_text_widgets = false;
   // Menu item to only compute MATH1 items when WITHIN a circle.
   // Obviates the need to surround everything with "within ? value : 0".
   bool only_compute_math1_within;
@@ -263,29 +205,52 @@ struct Venn : Module {
 
   Venn() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		configParam(EXP_LIN_LOG_PARAM, -1.f, 1.f, 0.f, "Controls the speed that DISTANCE increases. At -1, it grows early, 0 is linear, 1 grows slowly.");
-		configParam(X_POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.0f, "Attenuverter for 2nd input to X position of Point");
-		configParam(Y_POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.0f, "Attenuverter for 2nd input to Y position of Point");
+    configParam(EXP_LIN_LOG_PARAM, -1.f, 1.f, 0.f,
+                "Controls the speed that DISTANCE increases. At -1, it grows "
+                "early, 0 is linear, 1 grows slowly.");
+    configParam(X_POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.0f,
+                "Attenuverter for 2nd input to X position of Point");
+    configParam(Y_POSITION_ATTN_PARAM, -1.0f, 1.0f, 0.0f,
+                "Attenuverter for 2nd input to Y position of Point");
 
-    configInput(X_POSITION_INPUT, "X position of Point - attenuated value of other input will be added");
-    configInput(Y_POSITION_INPUT, "Y position of Point - attenuated value of other input will be added");
-		configInput(X_POSITION_WIGGLE_INPUT, "Multiplied by attenuverter to alter the X position of Point");
-		configInput(Y_POSITION_WIGGLE_INPUT, "Multiplied by attenuverter to alter the Y position of Point");
+    configInput(
+        X_POSITION_INPUT,
+        "X position of Point - attenuated value of other input will be added");
+    configInput(
+        Y_POSITION_INPUT,
+        "Y position of Point - attenuated value of other input will be added");
+    configInput(X_POSITION_WIGGLE_INPUT,
+                "Multiplied by attenuverter to alter the X position of Point");
+    configInput(Y_POSITION_WIGGLE_INPUT,
+                "Multiplied by attenuverter to alter the Y position of Point");
 
     configOutput(DISTANCE_OUTPUT, "0V at edge, 10V at center, polyphonic");
-    configOutput(WITHIN_GATE_OUTPUT, "0V outside circle, 10V within, polyphonic");
-		configOutput(X_POSITION_OUTPUT, "The current X coordinate of the point (-5V-5V or 0-10). Useful for recording point gestures and performances.");
-		configOutput(Y_POSITION_OUTPUT, "The current Y coordinate of the point (-5V-5V or 0-10). Useful for recording point gestures and performances.");
-		configOutput(X_DISTANCE_OUTPUT, "Within a circle, varies linearly from left to right, polyphonic");
-		configOutput(Y_DISTANCE_OUTPUT, "Within a circle, varies linearly from bottom to top, polyphonic");
-		configOutput(MATH1_OUTPUT, "Outputs values based on per-circle formulas, polyphonic");
+    configOutput(WITHIN_GATE_OUTPUT,
+                 "0V outside circle, 10V within, polyphonic");
+    configOutput(X_POSITION_OUTPUT,
+                 "The current X coordinate of the point (-5V-5V or 0-10). "
+                 "Useful for recording point gestures and performances.");
+    configOutput(Y_POSITION_OUTPUT,
+                 "The current Y coordinate of the point (-5V-5V or 0-10). "
+                 "Useful for recording point gestures and performances.");
+    configOutput(
+        X_DISTANCE_OUTPUT,
+        "Within a circle, varies linearly from left to right, polyphonic");
+    configOutput(
+        Y_DISTANCE_OUTPUT,
+        "Within a circle, varies linearly from bottom to top, polyphonic");
+    configOutput(MATH1_OUTPUT,
+                 "Outputs values based on per-circle formulas, polyphonic");
 
     configSwitch(INV_X_PARAM, 0, 1, 0, "Invert",
-                 {"Increases as point moves to the right", "Increases as point moves to the left"});
-    configSwitch(INV_Y_PARAM, 0, 1, 0, "Invert",
-                 {"Increases as point moves up", "Increases as point moves down"});
+                 {"Increases as point moves to the right",
+                  "Increases as point moves to the left"});
+    configSwitch(
+        INV_Y_PARAM, 0, 1, 0, "Invert",
+        {"Increases as point moves up", "Increases as point moves down"});
     configSwitch(INV_WITHIN_PARAM, 0, 1, 0, "Invert",
-                 {"Increasing (outside = 0V, inside = 10V)", "Decreasing (outside = 10V, inside = 0V)"});
+                 {"Increasing (outside = 0V, inside = 10V)",
+                  "Decreasing (outside = 10V, inside = 0V)"});
     configSwitch(OFST_X_PARAM, 0, 1, 0, "Offset",
                  {"Bipolar (-5V - +5V)", "Unipolar (0V - 10V)"});
     configSwitch(OFST_Y_PARAM, 0, 1, 0, "Offset",
@@ -297,7 +262,7 @@ struct Venn : Module {
 
     for (int i = 0; i < 16; ++i) {
       circles[i].present = false;  // Start empty; every circle is not present.
-    }    
+    }
 
     circles_loaded = true;
     point.x = 0;
@@ -313,14 +278,15 @@ struct Venn : Module {
     // For compiling typed-in expressions.
     variables = std::make_shared<VennVariables>();
   }
-  
-  ~Venn() { }
 
-  // Turns a set of shapes into a text string that we can parse later to recreate the shapes.
+  ~Venn() {}
+
+  // Turns a set of shapes into a text string that we can parse later to
+  // recreate the shapes.
   std::string to_string(Circle the_circles[16]) {
     std::string result;
-    // Don't need to store deleted circles with a larger index than the largest intact one.
-    // So I'll just take this opportunity to erase any at the end.
+    // Don't need to store deleted circles with a larger index than the largest
+    // intact one. So I'll just take this opportunity to erase any at the end.
     int last_index = -1;
     for (int curr = 16 - 1; curr >= 0; curr--) {
       if (the_circles[curr].present) {
@@ -338,10 +304,11 @@ struct Venn : Module {
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     std::string diagram = to_string(circles);
-    json_object_set_new(rootJ, "diagram", json_stringn(diagram.c_str(), diagram.size()));
+    json_object_set_new(rootJ, "diagram",
+                        json_stringn(diagram.c_str(), diagram.size()));
 
-    // We include "human_point" and "current_circle", so that it's exactly how user left it.
-    // Like maybe the user has dialed in the exact right spot...
+    // We include "human_point" and "current_circle", so that it's exactly how
+    // user left it. Like maybe the user has dialed in the exact right spot...
     json_t* saved_point = json_array();
     json_array_append_new(saved_point, json_real(human_point.x));
     json_array_append_new(saved_point, json_real(human_point.y));
@@ -349,13 +316,14 @@ struct Venn : Module {
     json_decref(saved_point);
     json_object_set_new(rootJ, "current", json_integer(current_circle));
 
-    json_object_set_new(rootJ, "show_keyboard", json_integer(show_keyboard ? 1 : 0));
+    json_object_set_new(rootJ, "show_keyboard",
+                        json_integer(show_keyboard ? 1 : 0));
     json_object_set_new(rootJ, "only_compute_math1_within",
-        json_integer(only_compute_math1_within ? 1 :0));
+                        json_integer(only_compute_math1_within ? 1 : 0));
     json_object_set_new(rootJ, "offset_point_x",
-        json_integer(offset_point_x ? 1 :0));
+                        json_integer(offset_point_x ? 1 : 0));
     json_object_set_new(rootJ, "offset_point_y",
-        json_integer(offset_point_y ? 1 :0));
+                        json_integer(offset_point_y ? 1 : 0));
     return rootJ;
   }
 
@@ -380,8 +348,8 @@ struct Venn : Module {
         WARN("Compile Failure:\n%s", diagram.c_str());
       }
       ClearAllCircles();
-      live_circle_count = std::min(16, (int) driver.diagram.circles.size()) + 1;
-      for (int i = 0; i < (int) live_circle_count - 1; ++i) {
+      live_circle_count = std::min(16, (int)driver.diagram.circles.size()) + 1;
+      for (int i = 0; i < (int)live_circle_count - 1; ++i) {
         circles[i] = driver.diagram.circles.at(i);
       }
       json_t* currentJ = json_object_get(rootJ, "current");
@@ -391,9 +359,9 @@ struct Venn : Module {
         current_circle = driver.diagram.circles.size() > 0 ? 0 : -1;
       }
 
-      // So we've copied all the circles in place, but we haven't created the Expressions
-      // yet. Now we can do that.
-      for (int i = 0; i < (int) live_circle_count - 1; ++i) {
+      // So we've copied all the circles in place, but we haven't created the
+      // Expressions yet. Now we can do that.
+      for (int i = 0; i < (int)live_circle_count - 1; ++i) {
         // WARN("math1 = '%s'", circles[i].math1.c_str());
         if (!circles[i].math1.empty()) {
           if (driver.parse(circles[i].math1) == 0) {  // Compiles!
@@ -412,19 +380,21 @@ struct Venn : Module {
     circles_loaded = true;
     update_text_widgets = true;
 
-    json_t* keyboardJ = json_object_get(rootJ,  "show_keyboard");
+    json_t* keyboardJ = json_object_get(rootJ, "show_keyboard");
     if (keyboardJ) {
       show_keyboard = json_integer_value(keyboardJ) > 0;
     }
-    json_t* only_compute_math1_withinJ = json_object_get(rootJ,  "only_compute_math1_within");
+    json_t* only_compute_math1_withinJ =
+        json_object_get(rootJ, "only_compute_math1_within");
     if (only_compute_math1_withinJ) {
-      only_compute_math1_within = json_integer_value(only_compute_math1_withinJ) > 0;
+      only_compute_math1_within =
+          json_integer_value(only_compute_math1_withinJ) > 0;
     }
-    json_t* offset_point_xJ = json_object_get(rootJ,  "offset_point_x");
+    json_t* offset_point_xJ = json_object_get(rootJ, "offset_point_x");
     if (offset_point_xJ) {
       offset_point_x = json_integer_value(offset_point_xJ) > 0;
     }
-    json_t* offset_point_yJ = json_object_get(rootJ,  "offset_point_y");
+    json_t* offset_point_yJ = json_object_get(rootJ, "offset_point_y");
     if (offset_point_yJ) {
       offset_point_y = json_integer_value(offset_point_yJ) > 0;
     }
@@ -450,9 +420,7 @@ struct Venn : Module {
     update_text_widgets = true;
   }
 
-  float MyNormal() {
-    return (random::uniform() + random::uniform()) / 2.0f; 
-  }
+  float MyNormal() { return (random::uniform() + random::uniform()) / 2.0f; }
 
   enum RandomMathGen {
     CONSTANT,
@@ -461,20 +429,20 @@ struct Venn : Module {
     BIN_OP,  // Should never be between two CONSTANTs
     BOOL_OP,
     BOOL,
-    TERNERY,  // bool ? exp : exp
+    TERNERY,          // bool ? exp : exp
     SINGLE_ARG_FUNC,  // No need to demo two arg functions
-    LIMIT,    // Good to demo.
-    SCALE,    // Good to demo
+    LIMIT,            // Good to demo.
+    SCALE,            // Good to demo
     EXPRESSION
   };
 
-  // Given a sorted list of points on (0, 1) and a matching list of RandomMathGen values,
-  // pick a random number in (0, 1) and return the corresponding RandomMathGen.
-  // The last element of dist[] must be 1.0, which marks the end of the array.
-  // e.g. :
-  // RandomPick({0.3, 0.5, 0.85, 1.0}, {CONSTANT, NOTE, VARIABLE, SINGLE_ARG_FUNC})
-  // gives a 30% chance of CONSTANT, a 20% of NOTE, a 35% chance of VARIABLE,
-  // and a 15% chance of SINGLE_ARG_FUNC.
+  // Given a sorted list of points on (0, 1) and a matching list of
+  // RandomMathGen values, pick a random number in (0, 1) and return the
+  // corresponding RandomMathGen. The last element of dist[] must be 1.0, which
+  // marks the end of the array. e.g. : RandomPick({0.3, 0.5, 0.85, 1.0},
+  // {CONSTANT, NOTE, VARIABLE, SINGLE_ARG_FUNC}) gives a 30% chance of
+  // CONSTANT, a 20% of NOTE, a 35% chance of VARIABLE, and a 15% chance of
+  // SINGLE_ARG_FUNC.
   RandomMathGen RandomPick(float dist[], RandomMathGen choices[]) {
     float choice = random::uniform();
     int pick = 0;
@@ -496,26 +464,27 @@ struct Venn : Module {
         return result;
       }
       case NOTE: {
-        std::string note(notes.substr((int) (random::uniform() * 7), 1));
-        note.append(std::to_string((int) (random::uniform() * 4 + 2)));
+        std::string note(notes.substr((int)(random::uniform() * 7), 1));
+        note.append(std::to_string((int)(random::uniform() * 4 + 2)));
         return note;
       }
-      case VARIABLE: return VARIABLES[(int) (random::uniform() * VARIABLES_LEN)];
+      case VARIABLE:
+        return VARIABLES[(int)(random::uniform() * VARIABLES_LEN)];
       case BIN_OP: {
         std::string result(RandomMath(VARIABLE));
         result.append(" ");
-        result.append(simple_operators.substr((int) (random::uniform() * 4), 1));
+        result.append(simple_operators.substr((int)(random::uniform() * 4), 1));
         result.append(" ");
         result.append(RandomMath(CONSTANT));
-        return result;      
+        return result;
       }
       case BOOL_OP: {
         std::string result(RandomMath(VARIABLE));
         result.append(" ");
-        result.append(BOOL_OPS[(int) (random::uniform() * BOOL_OP_LEN)]);
+        result.append(BOOL_OPS[(int)(random::uniform() * BOOL_OP_LEN)]);
         result.append(" ");
         result.append(RandomMath(CONSTANT));
-        return result;      
+        return result;
       }
       case BOOL: {
         if (random::uniform() < 0.5) {
@@ -528,14 +497,16 @@ struct Venn : Module {
         std::string result(RandomMath(BOOL));
         result.append(" ? ");
         static float probs[] = {0.1, 0.2, 0.5, 0.9, 1.0};
-        static RandomMathGen action[] = {NOTE, VARIABLE, BIN_OP, SINGLE_ARG_FUNC, CONSTANT};
+        static RandomMathGen action[] = {NOTE, VARIABLE, BIN_OP,
+                                         SINGLE_ARG_FUNC, CONSTANT};
         result.append(RandomMath(RandomPick(probs, action)));
         result.append(" : ");
         result.append(RandomMath(RandomPick(probs, action)));
         return result;
       }
       case SINGLE_ARG_FUNC: {
-        std::string result(SINGLE_FUNCS[(int) (random::uniform() * SINGLE_ARG_LEN)]);
+        std::string result(
+            SINGLE_FUNCS[(int)(random::uniform() * SINGLE_ARG_LEN)]);
         result.append("(");
         result.append(RandomMath(BIN_OP));
         result.append(")");
@@ -571,7 +542,8 @@ struct Venn : Module {
       }
       case EXPRESSION: {
         static float probs[] = {0.1, 0.2, 0.3, 0.4, 0.7, 0.95, 1.0};
-        static RandomMathGen result[] = {NOTE, TERNERY, LIMIT, SCALE, BIN_OP, SINGLE_ARG_FUNC, CONSTANT};
+        static RandomMathGen result[] = {
+            NOTE, TERNERY, LIMIT, SCALE, BIN_OP, SINGLE_ARG_FUNC, CONSTANT};
         return RandomMath(RandomPick(probs, result));
       }
       default:
@@ -583,49 +555,52 @@ struct Venn : Module {
     Module::onRandomize(e);
 
     // When User hits Randomize, let's make some circles.
-    int count = clamp((int) (MyNormal() * 10.0 + 3), 3, 13);
+    int count = clamp((int)(MyNormal() * 10.0 + 3), 3, 13);
     circles_loaded = false;
     current_circle = -1;
     solo = false;
     ClearAllCircles();
 
-    std::shared_ptr<VennDriver> driver = std::make_shared<VennDriver>(variables);
+    std::shared_ptr<VennDriver> driver =
+        std::make_shared<VennDriver>(variables);
 
     for (int i = 0; i < count; ++i) {
-        Circle circle;
-        circle.x_center = random::uniform() * 9.6 - 4.8;  
-        circle.y_center = random::uniform() * 9.9 - 4.8;
-        circle.radius = MyNormal() * 3 + .1;
-        circle.present = true;
-        // Random names are delightful.
-        // I'll allow them to range in length from 1 to 3 words, just to see how they look.
-        // Thanks to @disquiet for suggesting I add evocative color names.
-        std::string the_name;
-        if (random::uniform() > 0.5) {
-          the_name.append(VENN_COLOR_ARRAY[i % VENN_COLOR_COUNT][(int) std::floor(random::uniform() * VENN_COLOR_NAMES)]);
-          the_name.append(" ");
-        }
-        the_name.append(PARTS[(int) std::floor(random::uniform() * PART_LEN)]);
-        if (random::uniform() > 0.5) {
-          the_name.append(" ");
-          the_name.append(EFFECTS[(int) (random::uniform() * sizeof(EFFECT_LEN))]);
-        }
-        circle.name = the_name;
+      Circle circle;
+      circle.x_center = random::uniform() * 9.6 - 4.8;
+      circle.y_center = random::uniform() * 9.9 - 4.8;
+      circle.radius = MyNormal() * 3 + .1;
+      circle.present = true;
+      // Random names are delightful.
+      // I'll allow them to range in length from 1 to 3 words, just to see how
+      // they look. Thanks to @disquiet for suggesting I add evocative color
+      // names.
+      std::string the_name;
+      if (random::uniform() > 0.5) {
+        the_name.append(VENN_COLOR_ARRAY[i % VENN_COLOR_COUNT][(int)std::floor(
+            random::uniform() * VENN_COLOR_NAMES)]);
+        the_name.append(" ");
+      }
+      the_name.append(PARTS[(int)std::floor(random::uniform() * PART_LEN)]);
+      if (random::uniform() > 0.5) {
+        the_name.append(" ");
+        the_name.append(EFFECTS[(int)(random::uniform() * sizeof(EFFECT_LEN))]);
+      }
+      circle.name = the_name;
 
-        // Random MATH1 (demos what they can be, I hope).
-        std::string random_math(RandomMath(EXPRESSION));
-        if (driver->parse(random_math) == 0) {
-          circle.math1 = random_math;
-          math1_expressions[i] = driver->exp;
-        }
-        circles[i] = circle;
+      // Random MATH1 (demos what they can be, I hope).
+      std::string random_math(RandomMath(EXPRESSION));
+      if (driver->parse(random_math) == 0) {
+        circle.math1 = random_math;
+        math1_expressions[i] = driver->exp;
+      }
+      circles[i] = circle;
     }
     current_circle = 0;
     human_point.x = random::uniform() * 9.6 - 4.8;
     human_point.y = random::uniform() * 9.6 - 4.8;
     circles_loaded = true;
     update_text_widgets = true;
-  }	
+  }
 
   void processBypass(const ProcessArgs& args) override {
     if (!circles_loaded) {
@@ -640,20 +615,20 @@ struct Venn : Module {
     outputs[Y_DISTANCE_OUTPUT].setChannels(live_circle_count);
 
     for (size_t i = 0; i < live_circle_count; ++i) {
-        outputs[DISTANCE_OUTPUT].setVoltage(0.0f, i);
-        outputs[WITHIN_GATE_OUTPUT].setVoltage(0.0f, i);
-        outputs[X_DISTANCE_OUTPUT].setVoltage(0.0f, i);
-        outputs[Y_DISTANCE_OUTPUT].setVoltage(0.0f, i);
+      outputs[DISTANCE_OUTPUT].setVoltage(0.0f, i);
+      outputs[WITHIN_GATE_OUTPUT].setVoltage(0.0f, i);
+      outputs[X_DISTANCE_OUTPUT].setVoltage(0.0f, i);
+      outputs[Y_DISTANCE_OUTPUT].setVoltage(0.0f, i);
     }
   }
 
   void update_circle_count(const ProcessArgs& args) {
     if (--check_live_circles <= 0) {
       // One sixtieth of a second.
-      check_live_circles = (int) (args.sampleRate / 60);
+      check_live_circles = (int)(args.sampleRate / 60);
       // We occasionally check how many circles are marked present.
-      // This allows us to set the channel count correctly, and reduce the overhead of
-      // circles that don't exist.
+      // This allows us to set the channel count correctly, and reduce the
+      // overhead of circles that don't exist.
       live_circle_count = 0;
       for (size_t channel = 0; channel < 16; channel++) {
         if (circles[channel].present) {
@@ -674,7 +649,8 @@ struct Venn : Module {
     if (inputs[X_POSITION_INPUT].isConnected()) {
       new_point.x = inputs[X_POSITION_INPUT].getVoltage();
     } else {
-      // We do these separately, so human can control one axis but not the other, if desired.
+      // We do these separately, so human can control one axis but not the
+      // other, if desired.
       new_point.x = human_point.x + (offset_point_x ? 5.0f : 0.0f);
     }
     if (inputs[Y_POSITION_INPUT].isConnected()) {
@@ -685,11 +661,11 @@ struct Venn : Module {
 
     if (params[X_POSITION_ATTN_PARAM].getValue() != 0.0f) {
       new_point.x += params[X_POSITION_ATTN_PARAM].getValue() *
-        inputs[X_POSITION_WIGGLE_INPUT].getVoltage();
+                     inputs[X_POSITION_WIGGLE_INPUT].getVoltage();
     }
     if (params[Y_POSITION_ATTN_PARAM].getValue() != 0.0f) {
       new_point.y += params[Y_POSITION_ATTN_PARAM].getValue() *
-        inputs[Y_POSITION_WIGGLE_INPUT].getVoltage();
+                     inputs[Y_POSITION_WIGGLE_INPUT].getVoltage();
     }
 
     // Keep within walls.
@@ -703,11 +679,14 @@ struct Venn : Module {
     point.y = fmax(-5, fmin(5, new_point.y));
 
     // We have now determined the postion of "point".
-    outputs[X_POSITION_OUTPUT].setVoltage(point.x + (offset_point_x ? 5.0f : 0.0f));
-    outputs[Y_POSITION_OUTPUT].setVoltage(point.y + (offset_point_y ? 5.0f : 0.0f));
+    outputs[X_POSITION_OUTPUT].setVoltage(point.x +
+                                          (offset_point_x ? 5.0f : 0.0f));
+    outputs[Y_POSITION_OUTPUT].setVoltage(point.y +
+                                          (offset_point_y ? 5.0f : 0.0f));
 
     // Determine what values to output.
-    // TODO: many optimizations, including doing nothing when neither point nor circles has changed.
+    // TODO: many optimizations, including doing nothing when neither point nor
+    // circles has changed.
     // TODO: Can SIMD library help me?
 
     outputs[DISTANCE_OUTPUT].setChannels(live_circle_count);
@@ -736,12 +715,18 @@ struct Venn : Module {
     bool invert_y = params[INV_Y_PARAM].getValue();
     if (outputs[MATH1_OUTPUT].isConnected()) {
       // These can only matter if we are computing MATH1 outputs.
-      *variables->GetVarFromEnum(VennVariables::VAR_POINTX) = point.x + (offset_point_x ? 5.0f : 0.0f);
-      *variables->GetVarFromEnum(VennVariables::VAR_POINTY) = point.y + (offset_point_y ? 5.0f : 0.0f);
-      *variables->GetVarFromEnum(VennVariables::VAR_LEFTX) =  -5 * (invert_x ? -1 : 1) + (offset_x ? 5.0 : 0.0);
-      *variables->GetVarFromEnum(VennVariables::VAR_RIGHTX) = 5 * (invert_x ? -1 : 1) + (offset_x ? 5.0 : 0.0);
-      *variables->GetVarFromEnum(VennVariables::VAR_TOPY) = 5 * (invert_y ? -1 : 1) + (offset_y ? 5.0 : 0.0);
-      *variables->GetVarFromEnum(VennVariables::VAR_BOTTOMY) = -5 * (invert_y ? -1 : 1) + (offset_y ? 5.0 : 0.0);
+      *variables->GetVarFromEnum(VennVariables::VAR_POINTX) =
+          point.x + (offset_point_x ? 5.0f : 0.0f);
+      *variables->GetVarFromEnum(VennVariables::VAR_POINTY) =
+          point.y + (offset_point_y ? 5.0f : 0.0f);
+      *variables->GetVarFromEnum(VennVariables::VAR_LEFTX) =
+          -5 * (invert_x ? -1 : 1) + (offset_x ? 5.0 : 0.0);
+      *variables->GetVarFromEnum(VennVariables::VAR_RIGHTX) =
+          5 * (invert_x ? -1 : 1) + (offset_x ? 5.0 : 0.0);
+      *variables->GetVarFromEnum(VennVariables::VAR_TOPY) =
+          5 * (invert_y ? -1 : 1) + (offset_y ? 5.0 : 0.0);
+      *variables->GetVarFromEnum(VennVariables::VAR_BOTTOMY) =
+          -5 * (invert_y ? -1 : 1) + (offset_y ? 5.0 : 0.0);
     }
     // Iterate through the circles.
     for (size_t channel = 0; channel < live_circle_count; channel++) {
@@ -750,15 +735,16 @@ struct Venn : Module {
       bool within_state = false;
 
       // If solo-ing, make sure that only solo channel gets computed.
-      if (circle.present && (!solo || (int) channel == current_circle)) {
-        // All of the outputs care if we are in the circle or not, so we always compute it,
-        // regardless of there is a cable connected or not.
+      if (circle.present && (!solo || (int)channel == current_circle)) {
+        // All of the outputs care if we are in the circle or not, so we always
+        // compute it, regardless of there is a cable connected or not.
         float x_distance = point.x - circle.x_center;
         float y_distance = point.y - circle.y_center;
 
-        // Despite my intution, sqrt() is probably cheap enough now to not try and replace it
-        // with an approximation.
-        float distance_actual = sqrt(x_distance * x_distance + y_distance * y_distance);
+        // Despite my intution, sqrt() is probably cheap enough now to not try
+        // and replace it with an approximation.
+        float distance_actual =
+            sqrt(x_distance * x_distance + y_distance * y_distance);
         if (distance_actual > circle.radius) {
           within = invert_gate ? 10.0f : 0.0f;
         } else {
@@ -771,10 +757,12 @@ struct Venn : Module {
           if (scaling != 1.0) {
             value = pow(value, scaling);
           }
-          distance = value * 10;            
+          distance = value * 10;
 
-          x = x_distance / circle.radius * 5.0 * (invert_x ? -1.0 : 1.0) + (offset_x ? 5.0 : 0.0);
-          y = y_distance / circle.radius * 5.0 * (invert_y ? -1.0 : 1.0) + (offset_y ? 5.0 : 0.0);
+          x = x_distance / circle.radius * 5.0 * (invert_x ? -1.0 : 1.0) +
+              (offset_x ? 5.0 : 0.0);
+          y = y_distance / circle.radius * 5.0 * (invert_y ? -1.0 : 1.0) +
+              (offset_y ? 5.0 : 0.0);
         }
       }
       outputs[DISTANCE_OUTPUT].setVoltage(distance, channel);
@@ -783,7 +771,7 @@ struct Venn : Module {
       outputs[Y_DISTANCE_OUTPUT].setVoltage(y, channel);
       if (outputs[MATH1_OUTPUT].isConnected()) {
         // If solo-ing, make sure that only solo channel gets computed.
-        if (circle.present && (!solo || (int) channel == current_circle)) {
+        if (circle.present && (!solo || (int)channel == current_circle)) {
           if (within_state || !only_compute_math1_within) {
             *variables->GetVarFromEnum(VennVariables::VAR_DISTANCE) = distance;
             *variables->GetVarFromEnum(VennVariables::VAR_WITHIN) = within;
@@ -807,28 +795,29 @@ struct Venn : Module {
 
 // Adds support for undo/redo for changes to a single Circle.
 struct VennCircleUndoRedoAction : history::ModuleAction {
-  enum CircleEditType {
-    CHANGE,
-    ADDITION,
-    DELETION
-  };
+  enum CircleEditType { CHANGE, ADDITION, DELETION };
   CircleEditType edit;
   Circle old_circle;
   Circle new_circle;
-  int old_position;  // Index into circles this was at. CHANGE doesn't alter the index.
+  int old_position;  // Index into circles this was at. CHANGE doesn't alter the
+                     // index.
   int new_position;  // Index after a non-CHANGE action.
 
-  VennCircleUndoRedoAction(
-      int64_t id, const Circle& oldCircle, const Circle& newCircle,
-      int old_index) : old_circle{oldCircle}, new_circle{newCircle}, old_position{old_index} {
+  VennCircleUndoRedoAction(int64_t id, const Circle& oldCircle,
+                           const Circle& newCircle, int old_index)
+      : old_circle{oldCircle},
+        new_circle{newCircle},
+        old_position{old_index},
+        new_position{0} {
     moduleId = id;
-    name = "circle edit";  // TODO: split this into circle enlarge/circle shrink/circle move?
+    name = "circle edit";  // TODO: split this into circle enlarge/circle
+                           // shrink/circle move?
     edit = CHANGE;
   }
 
   VennCircleUndoRedoAction(int64_t id, const Circle& circle, int old_index,
-                           int new_index, bool addition) : 
-                           old_position{old_index}, new_position{new_index} {
+                           int new_index, bool addition)
+      : old_position{old_index}, new_position{new_index} {
     moduleId = id;
     if (addition) {
       name = "circle addition";
@@ -842,27 +831,24 @@ struct VennCircleUndoRedoAction : history::ModuleAction {
   }
 
   void undo() override {
-    Venn *module = dynamic_cast<Venn*>(APP->engine->getModule(moduleId));
+    Venn* module = dynamic_cast<Venn*>(APP->engine->getModule(moduleId));
     if (module) {
       module->circles_loaded = false;
       switch (edit) {
         case DELETION: {
           module->circles[old_position] = old_circle;
           module->current_circle = old_position;
-        }
-        break;
+        } break;
         case CHANGE: {
           module->circles[old_position] = old_circle;
-        }
-        break;
+        } break;
         case ADDITION: {
           module->circles[new_position].present = false;
           module->current_circle = old_position;
-        }
-        break;
+        } break;
       }
-      // Need to tell state-holding widgets to update. But since the module doesn't
-      // hold pointers to the widgets, we can only set a flag.
+      // Need to tell state-holding widgets to update. But since the module
+      // doesn't hold pointers to the widgets, we can only set a flag.
       module->update_text_widgets = true;
 
       module->circles_loaded = true;
@@ -870,27 +856,24 @@ struct VennCircleUndoRedoAction : history::ModuleAction {
   }
 
   void redo() override {
-    Venn *module = dynamic_cast<Venn*>(APP->engine->getModule(moduleId));
+    Venn* module = dynamic_cast<Venn*>(APP->engine->getModule(moduleId));
     if (module) {
       module->circles_loaded = false;
       switch (edit) {
         case DELETION: {
           module->circles[old_position].present = false;
           module->current_circle = new_position;
-        }
-        break;
+        } break;
         case CHANGE: {
           module->circles[old_position] = new_circle;
-        }
-        break;
+        } break;
         case ADDITION: {
           module->circles[new_position] = new_circle;
           module->current_circle = new_position;
-        }
-        break;
+        } break;
       }
-      // Need to tell state-holding widgets to update. But since the module doesn't
-      // hold pointers to the widgets, we can only set a flag.
+      // Need to tell state-holding widgets to update. But since the module
+      // doesn't hold pointers to the widgets, we can only set a flag.
       module->update_text_widgets = true;
 
       module->circles_loaded = true;
@@ -913,25 +896,26 @@ struct WidgetUpdater {
 Principles for the UI:
 * There are these states for the editor:
   Not Engaged
-  Keystrokes will not affect the editor, and no circle is currently selected (?).
-  This is the case when other modules have focus.
+  Keystrokes will not affect the editor, and no circle is currently selected
+(?). This is the case when other modules have focus.
 
   Circle editing
-  Keystrokes will affect the position/number of circles. This is implemented by each of
-  the widgets that can allow this to send keystrokes (onSelectKey() calls) to one
-  single function, possibly one in Venn module?
+  Keystrokes will affect the position/number of circles. This is implemented by
+each of the widgets that can allow this to send keystrokes (onSelectKey() calls)
+to one single function, possibly one in Venn module?
 
   Editing current circle
-  Keystrokes are being used by the focus widget, and are not sent to the circle editor.
+  Keystrokes are being used by the focus widget, and are not sent to the circle
+editor.
 
 * It should be visually clear to the user which state you are in.
   Currently this is signified by the reveal of the keyboard hint,
   but there should be at least one other way, since i think the keyboard hint
-  should be optional (as it adds visual noise to the editor). And it's really not
-  sufficient with three states.
-* The main Widget will need to cycle through all of the subwidgets to see if they
-  have focus. My previous idea of having each widget check in step() won't work,
-  because no Widget changes to Not Engaged.
+  should be optional (as it adds visual noise to the editor). And it's really
+not sufficient with three states.
+* The main Widget will need to cycle through all of the subwidgets to see if
+they have focus. My previous idea of having each widget check in step() won't
+work, because no Widget changes to Not Engaged.
 
 */
 
@@ -947,16 +931,15 @@ struct VennNameTextField : STTextField {
     color = SCHEME_WHITE;
     bgColor = SCHEME_BLACK;
     textOffset = math::Vec(0, -2);  // Put closer to corner than default.
-    extended.Initialize(3, 1);  // Much shorter window.
+    extended.Initialize(3, 1);      // Much shorter window.
   }
 
-  void setModule(Venn* the_module) {
-    module = the_module;
-  }
+  void setModule(Venn* the_module) { module = the_module; }
 
   // bgColor seems to have no effect if I don't do this. Drawing a background
   // and then letting STTextField draw the rest fixes that.
-  // TODO: Make STTextField actually use bgColor. Or draw background color on templates.
+  // TODO: Make STTextField actually use bgColor. Or draw background color on
+  // templates.
   void draw(const DrawArgs& args) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 
@@ -972,61 +955,61 @@ struct VennNameTextField : STTextField {
     nvgResetScissor(args.vg);
   }
 
-    // There are a few keys that we want to accept here, rather than in the STTextField.
-    void onSelectKey(const SelectKeyEvent& e) override {
-      if (!module->circles_loaded) {
-        // Don't edit circles if we're in the middle of loading them!
-        return;
-      }
-      bool my_key = false;  // Set if key was intended for this layer of key press interpretation.
-      if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) { 
-        // TAB -> next
-        if (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == 0) {
-          if (module->live_circle_count > 0) {
-            for (int curr = module->current_circle + 1; curr != module->current_circle; curr++) {
-              if (curr >= 16) {
-                curr = 0;
-              }
-              if (module->circles[curr].present) {
-                module->current_circle = curr;
-                widget_updater->UpdateWidgets();
-                break;
-              }
+  // There are a few keys that we want to accept here, rather than in the
+  // STTextField.
+  void onSelectKey(const SelectKeyEvent& e) override {
+    if (!module->circles_loaded) {
+      // Don't edit circles if we're in the middle of loading them!
+      return;
+    }
+    bool my_key = false;  // Set if key was intended for this layer of key press
+                          // interpretation.
+    if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) {
+      // TAB -> next
+      if (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == 0) {
+        if (module->live_circle_count > 0) {
+          for (int curr = module->current_circle + 1;
+               curr != module->current_circle; curr++) {
+            if (curr >= 16) {
+              curr = 0;
+            }
+            if (module->circles[curr].present) {
+              module->current_circle = curr;
+              widget_updater->UpdateWidgets();
+              break;
             }
           }
-          my_key = true;
-          e.consume(this);
         }
-        // SHIFT-TAB -> prev
-        if (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT) {
-          if (module->live_circle_count > 0) {
-            for (int curr = module->current_circle - 1; curr != module->current_circle; curr--) {
-              if (curr < 0) {
-                curr = 16 - 1;
-              }
-              if (module->circles[curr].present) {
-                module->current_circle = curr;
-                widget_updater->UpdateWidgets();
-                break;
-              }
+        my_key = true;
+        e.consume(this);
+      }
+      // SHIFT-TAB -> prev
+      if (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT) {
+        if (module->live_circle_count > 0) {
+          for (int curr = module->current_circle - 1;
+               curr != module->current_circle; curr--) {
+            if (curr < 0) {
+              curr = 16 - 1;
+            }
+            if (module->circles[curr].present) {
+              module->current_circle = curr;
+              widget_updater->UpdateWidgets();
+              break;
             }
           }
-          my_key = true;
-          e.consume(this);
         }
+        my_key = true;
+        e.consume(this);
       }
-      if (!my_key) {
-        STTextField::onSelectKey(e);
-      }
-    }  
-
-  void CircleUpdated(const std::string& name) {
-    text->assign(name);
+    }
+    if (!my_key) {
+      STTextField::onSelectKey(e);
+    }
   }
 
-  std::string getText() {
-    return *text;
-  }
+  void CircleUpdated(const std::string& name) { text->assign(name); }
+
+  std::string getText() { return *text; }
 
   void setText(const std::string& new_text) {
     text->assign(new_text);
@@ -1039,7 +1022,8 @@ struct VennErrorTooltip : ui::Tooltip {
   VennErrorWidget* errorWidget;
   std::string error_text;
 
-  VennErrorTooltip(const std::string &text) : errorWidget{nullptr}, error_text{text} {}
+  VennErrorTooltip(const std::string& text)
+      : errorWidget{nullptr}, error_text{text} {}
 
   void step() override;
 };
@@ -1048,29 +1032,21 @@ struct VennErrorWidget : widget::OpaqueWidget {
   std::shared_ptr<VennDriver> driver;
   VennErrorTooltip* tooltip;
 
-  VennErrorWidget() {
-    tooltip = nullptr;
-  }
+  VennErrorWidget() { tooltip = nullptr; }
 
   void setDriver(std::shared_ptr<VennDriver> the_driver) {
     driver = the_driver;
   }
 
-  void onEnter(const EnterEvent & e) override {
-    create_tooltip();
-  }
+  void onEnter(const EnterEvent& e) override { create_tooltip(); }
 
-  void onLeave(const LeaveEvent & e) override {
-    destroy_tooltip();
-  }
+  void onLeave(const LeaveEvent& e) override { destroy_tooltip(); }
 
   void create_tooltip() {
-    if (!settings::tooltips)
-      return;
+    if (!settings::tooltips) return;
     if (tooltip)  // Already exists.
       return;
-    if (!driver)
-      return;
+    if (!driver) return;
     std::string tip_text;
     if (driver->errors.size() == 0) {
       tip_text = "Program compiles!";
@@ -1090,8 +1066,7 @@ struct VennErrorWidget : widget::OpaqueWidget {
   }
 
   void destroy_tooltip() {
-    if (!tooltip)
-      return;
+    if (!tooltip) return;
     APP->scene->removeChild(tooltip);
     delete tooltip;
     tooltip = NULL;
@@ -1104,19 +1079,16 @@ struct VennErrorWidget : widget::OpaqueWidget {
       bool good = (driver) ? driver->errors.size() == 0 : true;
       // Fill the rectangle with either blue or orange.
       // For color blind users, these are better choices than green/red.
-      NVGcolor main_color =
-          (good ? SCHEME_GREEN : color::RED);
+      NVGcolor main_color = (good ? SCHEME_GREEN : color::RED);
       nvgBeginPath(args.vg);
-      nvgRect(args.vg, 0.5, 0.5,
-              bounding_box.x - 1.0f, bounding_box.y - 1.0f);
+      nvgRect(args.vg, 0.5, 0.5, bounding_box.x - 1.0f, bounding_box.y - 1.0f);
       nvgFillColor(args.vg, main_color);
       nvgFill(args.vg);
       std::string fontPath;
       fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
       std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
       if (font) {
-        nvgFillColor(args.vg,
-           (good ? color::BLACK : color::WHITE));
+        nvgFillColor(args.vg, (good ? color::BLACK : color::WHITE));
         nvgFontSize(args.vg, 13);
         nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
         nvgFontFaceId(args.vg, font->handle);
@@ -1147,7 +1119,8 @@ struct VennMath1TextField : STTextField {
   std::shared_ptr<VennDriver> driver;
   WidgetUpdater* widget_updater;
 
-  VennMath1TextField() : module{nullptr}, driver{nullptr}, widget_updater{nullptr} {
+  VennMath1TextField()
+      : module{nullptr}, driver{nullptr}, widget_updater{nullptr} {
     this->text = &math1_text;
     fontPath = asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf");
     fontSize = 12.0f;
@@ -1167,18 +1140,21 @@ struct VennMath1TextField : STTextField {
     }
   }
 
-  // There are a few keys that we want to accept here, rather than in the STTextField.
+  // There are a few keys that we want to accept here, rather than in the
+  // STTextField.
   void onSelectKey(const SelectKeyEvent& e) override {
     if (!module->circles_loaded) {
       // Don't edit circles if we're in the middle of loading them!
       return;
     }
-    bool my_key = false;  // Set if key was intended for this layer of key press interpretation.
-    if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) { 
+    bool my_key = false;  // Set if key was intended for this layer of key press
+                          // interpretation.
+    if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) {
       // TAB -> next
       if (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == 0) {
         if (module->live_circle_count > 0) {
-          for (int curr = module->current_circle + 1; curr != module->current_circle; curr++) {
+          for (int curr = module->current_circle + 1;
+               curr != module->current_circle; curr++) {
             if (curr >= 16) {
               curr = 0;
             }
@@ -1195,7 +1171,8 @@ struct VennMath1TextField : STTextField {
       // SHIFT-TAB-> prev
       if (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT) {
         if (module->live_circle_count > 0) {
-          for (int curr = module->current_circle - 1; curr != module->current_circle; curr--) {
+          for (int curr = module->current_circle - 1;
+               curr != module->current_circle; curr--) {
             if (curr < 0) {
               curr = 16 - 1;
             }
@@ -1217,7 +1194,8 @@ struct VennMath1TextField : STTextField {
 
   // bgColor seems to have no effect if I don't do this. Drawing a background
   // and then letting STTextField draw the rest fixes that.
-  // TODO: Make STTextField actually use bgColor. Or draw background color on templates.
+  // TODO: Make STTextField actually use bgColor. Or draw background color on
+  // templates.
   void draw(const DrawArgs& args) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 
@@ -1233,13 +1211,9 @@ struct VennMath1TextField : STTextField {
     nvgResetScissor(args.vg);
   }
 
-  void CircleUpdated(const std::string& name) {
-    math1_text.assign(name);
-  }
+  void CircleUpdated(const std::string& name) { math1_text.assign(name); }
 
-  std::string getText() {
-    return *text;
-  }
+  std::string getText() { return *text; }
 
   void setText(const std::string& new_text) {
     bool equal = text->compare(new_text) == 0;
@@ -1252,20 +1226,20 @@ struct VennMath1TextField : STTextField {
 
     // TODO: probably need to call updatedText in STTextField?
   }
-  
+
   // User has updated the text.
   // NOTA BENE: This is a risky idea, but I'm going to try doing the compile
   // inside the UI thread here.
-  // TODO: as a test to see how bad an idea this is, I could pause for a bit here instead.
-  // Just do some pointless effort for a while.
+  // TODO: as a test to see how bad an idea this is, I could pause for a bit
+  // here instead. Just do some pointless effort for a while.
   void onChange(const ChangeEvent& e) override {
     if (module) {
       // Sometimes the text isn't actually different? If I don't check
       // this, I might get spurious history events.
-      // TODO: do I need to actually check that the string has really changed anymore?
+      // TODO: do I need to actually check that the string has really changed
+      // anymore?
 
-
-      //auto start = std::chrono::high_resolution_clock::now();
+      // auto start = std::chrono::high_resolution_clock::now();
 
       if (math1_text.empty()) {
         if (!(driver->errors.empty())) {
@@ -1279,13 +1253,8 @@ struct VennMath1TextField : STTextField {
           // Success.
           module->math1_expressions[module->current_circle] = driver->exp;
         } else {
-
-
-
           // TODO: DO NOT SUBMIT!
           // WARN("Failed to compile '%s'", math1_text.c_str());
-
-
         }
       }
       // auto elapsed = std::chrono::high_resolution_clock::now() - start;
@@ -1293,7 +1262,6 @@ struct VennMath1TextField : STTextField {
       //     std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count());
     }
   }
-
 };
 
 void WidgetUpdater::UpdateWidgets() {
@@ -1312,7 +1280,7 @@ void WidgetUpdater::UpdateWidgets() {
     name_widget->CircleUpdated("");
     math1_widget->CircleUpdated("");
   }
-}    
+}
 
 struct CircleDisplay : OpaqueWidget {
   Venn* module;
@@ -1334,8 +1302,8 @@ struct CircleDisplay : OpaqueWidget {
       e.consume(this);
     }
 
-    /*   
-    // Hmm, might care about right button presses later?   
+    /*
+    // Hmm, might care about right button presses later?
     if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT) {
       createContextMenu();
       e.consume(this);
@@ -1348,36 +1316,36 @@ struct CircleDisplay : OpaqueWidget {
     OpaqueWidget::onDragHover(e);
 
     if (e.origin == this) {
-        // Must change position in widget to voltage.
-        Rect r = box.zeroPos();
-        Vec bounding_box = r.getBottomRight();
-        module->human_point.x = e.pos.x / bounding_box.x * 10.0 - 5;
-        module->human_point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0 - 5;
-        e.consume(this);
+      // Must change position in widget to voltage.
+      Rect r = box.zeroPos();
+      Vec bounding_box = r.getBottomRight();
+      module->human_point.x = e.pos.x / bounding_box.x * 10.0 - 5;
+      module->human_point.y = (1 - (e.pos.y / bounding_box.y)) * 10.0 - 5;
+      e.consume(this);
     }
   }
 
   void RememberChange(const Circle& old_circle) {
-    APP->history->push(
-      new VennCircleUndoRedoAction(module->id, old_circle,
-                                   module->circles[module->current_circle],
-                                   module->current_circle));
+    APP->history->push(new VennCircleUndoRedoAction(
+        module->id, old_circle, module->circles[module->current_circle],
+        module->current_circle));
   }
 
-  void onHover(const HoverEvent&	e) override {
+  void onHover(const HoverEvent& e) override {
     if (module && module->keystrokes_accepted) {
-      // In case the user presses "f" to create a new circle, we note the current position.
+      // In case the user presses "f" to create a new circle, we note the
+      // current position.
       last_hover_pos = e.pos;
       // I think we don't want to consume this event.
       OpaqueWidget::onHover(e);
     }
-  }	
+  }
 
   void onSelectKey(const SelectKeyEvent& e) override {
     if (!module->circles_loaded) {
       // Don't edit circles if we're in the middle of loading them!
       return;
-    } 
+    }
     // Undo/redo can make current_circle invalid. Rationalize it.
     // TODO: impose max/min size and position.
     if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) {
@@ -1431,10 +1399,12 @@ struct CircleDisplay : OpaqueWidget {
       }
       // Selecting which Circle.
       // Z or SHIFT-TAB - previous
-      if ((e.keyName == "z" && (e.mods & RACK_MOD_CTRL) == 0) || 
-          (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT)) {
+      if ((e.keyName == "z" && (e.mods & RACK_MOD_CTRL) == 0) ||
+          (e.key == GLFW_KEY_TAB &&
+           (e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT)) {
         if (module->live_circle_count > 0) {
-          for (int curr = module->current_circle - 1; curr != module->current_circle; curr--) {
+          for (int curr = module->current_circle - 1;
+               curr != module->current_circle; curr--) {
             if (curr < 0) {
               curr = 16 - 1;
             }
@@ -1451,7 +1421,8 @@ struct CircleDisplay : OpaqueWidget {
       if ((e.keyName == "c" && (e.mods & RACK_MOD_CTRL) == 0) ||
           (e.key == GLFW_KEY_TAB && (e.mods & RACK_MOD_MASK) == 0)) {
         if (module->live_circle_count > 0) {
-          for (int curr = module->current_circle + 1; curr != module->current_circle; curr++) {
+          for (int curr = module->current_circle + 1;
+               curr != module->current_circle; curr++) {
             if (curr >= 16) {
               curr = 0;
             }
@@ -1476,10 +1447,10 @@ struct CircleDisplay : OpaqueWidget {
         float x = last_hover_pos.x / bounding_box.x * 10.0 - 5;
         float y = (1 - (last_hover_pos.y / bounding_box.y)) * 10.0 - 5;
         if (fabs(x) < 5.0 && fabs(y) < 5.0) {
-          circle.x_center = x;  
+          circle.x_center = x;
           circle.y_center = y;
         } else {
-          circle.x_center = random::uniform() * 2 - 1;  
+          circle.x_center = random::uniform() * 2 - 1;
           circle.y_center = random::uniform() * 2 - 1;
         }
 
@@ -1499,23 +1470,25 @@ struct CircleDisplay : OpaqueWidget {
           }
         }
         if (added) {
-          APP->history->push(
-            new VennCircleUndoRedoAction(module->id, module->circles[module->current_circle],
-                                         old_index, module->current_circle, true));
+          APP->history->push(new VennCircleUndoRedoAction(
+              module->id, module->circles[module->current_circle], old_index,
+              module->current_circle, true));
         }
         e.consume(this);
       }
 
       // x - delete current one.
       if (e.keyName == "x" && (e.mods & RACK_MOD_CTRL) == 0) {
-        if (module->current_circle >= 0) {  // i.e., there is a circle to delete.
+        if (module->current_circle >=
+            0) {  // i.e., there is a circle to delete.
           // Copy circle *before* "present" is set to false!
           Circle old_circle(module->circles[module->current_circle]);
           int old_index = module->current_circle;
           module->circles[module->current_circle].present = false;
           // Move focus to next circle, if any.
           bool found_next = false;
-          for (int curr = module->current_circle + 1; curr != module->current_circle; curr++) {
+          for (int curr = module->current_circle + 1;
+               curr != module->current_circle; curr++) {
             if (curr >= 16) {
               curr = 0;
             }
@@ -1527,12 +1500,13 @@ struct CircleDisplay : OpaqueWidget {
             }
           }
           if (!found_next) {
-            module->current_circle = -1;  // Indicate there is no currently selected circle.
+            module->current_circle =
+                -1;  // Indicate there is no currently selected circle.
             widget_updater->UpdateWidgets();
           }
           APP->history->push(
-            new VennCircleUndoRedoAction(module->id, old_circle,
-                                         old_index, module->current_circle, false));
+              new VennCircleUndoRedoAction(module->id, old_circle, old_index,
+                                           module->current_circle, false));
         }
         e.consume(this);
       }
@@ -1544,25 +1518,25 @@ struct CircleDisplay : OpaqueWidget {
           module->solo = !(module->solo);
         }
         e.consume(this);
-      }      
+      }
     }
   }
 
-  double nvg_x(float volt_x, double size) { 
-    return (volt_x + 5) * size / 10.0;
-  }
+  double nvg_x(float volt_x, double size) { return (volt_x + 5) * size / 10.0; }
 
-  double nvg_y(float volt_y, double size) { 
+  double nvg_y(float volt_y, double size) {
     // Need to invert Y, since I want to put y == -5 on the bottom.
     return size - ((volt_y + 5) * size / 10.0);
   }
 
   void default_circles(Circle circs[16]) {
     float x[6] = {0.062705, -2.653372, 2.517570, 3.260226, -2.121736, 0.974539};
-    float y[6] = {-0.411569, 2.684878, 4.339533, -0.208806, -2.508809, -4.108777};
-    float radius[6] = {1.742869, 4.004038, 2.987639, 2.559288, 2.169408, 3.424444};
-    const char * names[6] = {"Delay", "Melody Speed", "Melody Crunch", "Reverb Space",
-                             "Noise Pad", "Float\nSparkle"};
+    float y[6] = {-0.411569, 2.684878,  4.339533,
+                  -0.208806, -2.508809, -4.108777};
+    float radius[6] = {1.742869, 4.004038, 2.987639,
+                       2.559288, 2.169408, 3.424444};
+    const char* names[6] = {"Delay",        "Melody Speed", "Melody Crunch",
+                            "Reverb Space", "Noise Pad",    "Float\nSparkle"};
     for (int i = 0; i < 6; ++i) {
       Circle circle;
       circle.x_center = x[i];
@@ -1571,7 +1545,6 @@ struct CircleDisplay : OpaqueWidget {
       circle.present = true;
       circle.name = names[i];
       circs[i] = circle;
-
     }
   }
 
@@ -1579,17 +1552,19 @@ struct CircleDisplay : OpaqueWidget {
   // layer, which looks wrong. So I use draw instead.
   void draw(const DrawArgs& args) override {
     Circle dummy[16];
-    Circle *circles;
+    Circle* circles;
     int circle_count;
     int current_circle;
-    bool solo; 
+    bool solo;
     Vec point;
     bool currently_editing;
     bool currently_keyboard;
     bool show_full_keyboard;
     if (module) {
-      // If we have a module, but the circles are being updated, best not to draw anything.
-      // TODO: reconsider this decision, since we no longer have the issue of out-of-range indexies.
+      // If we have a module, but the circles are being updated, best not to
+      // draw anything.
+      // TODO: reconsider this decision, since we no longer have the issue of
+      // out-of-range indexies.
       if (!module->circles_loaded) {
         return;
       } else {
@@ -1618,12 +1593,13 @@ struct CircleDisplay : OpaqueWidget {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
     Rect r = box.zeroPos();
     Vec bounding_box = r.getBottomRight();
-    // Assuming that we are always on a square-pixeled surface, with X and Y the same distances.
+    // Assuming that we are always on a square-pixeled surface, with X and Y the
+    // same distances.
     double pixels_per_volt = bounding_box.x / 10.0;
 
     // Background first.
-    // The background (with keyboard hints) is in the SVG template. We just hide it when
-    // keyboard input isn't accepted.
+    // The background (with keyboard hints) is in the SVG template. We just hide
+    // it when keyboard input isn't accepted.
     if (!currently_keyboard || !show_full_keyboard) {
       nvgBeginPath(args.vg);
       nvgRect(args.vg, 0.0, 0.0, bounding_box.x, bounding_box.y);
@@ -1633,39 +1609,42 @@ struct CircleDisplay : OpaqueWidget {
 
     // The circles.
     std::shared_ptr<Font> font = APP->window->loadFont(
-      asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
+        asset::plugin(pluginInstance, "fonts/RobotoSlab-Regular.ttf"));
 
     for (int index = 0; index < circle_count; index++) {
       const Circle& circle = circles[index];
       if (circle.present) {
         // Draw the circle itself.
         nvgBeginPath(args.vg);
-        nvgCircle(args.vg, nvg_x(circle.x_center, bounding_box.x), nvg_y(circle.y_center, bounding_box.x),
-                pixels_per_volt * circle.radius);
+        nvgCircle(args.vg, nvg_x(circle.x_center, bounding_box.x),
+                  nvg_y(circle.y_center, bounding_box.x),
+                  pixels_per_volt * circle.radius);
         NVGcolor circle_color = venn_colors[index % VENN_COLOR_COUNT];
         if (solo && current_circle != index) {
           // Dim the muted circles.
           circle_color = nvgTransRGBAf(circle_color, 0.3);
         }
         nvgStrokeColor(args.vg, circle_color);
-        nvgStrokeWidth(args.vg, index == current_circle && currently_editing ? 2.0 : 1.0);
+        nvgStrokeWidth(
+            args.vg, index == current_circle && currently_editing ? 2.0 : 1.0);
         nvgStroke(args.vg);
-        
+
         // Now draw the text in the center.
         nvgFillColor(args.vg, venn_colors[index % VENN_COLOR_COUNT]);
-        nvgFontSize(args.vg, index == current_circle && currently_editing ? 15 : 13);
+        nvgFontSize(args.vg,
+                    index == current_circle && currently_editing ? 15 : 13);
         nvgFontFaceId(args.vg, font->handle);
         // Place in the center.
         std::string center_number = std::to_string(index + 1);
         nvgTextAlign(args.vg, NVG_ALIGN_MIDDLE | NVG_ALIGN_CENTER);
         nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
-                        nvg_y(circle.y_center, bounding_box.x),
-                        center_number.c_str(), NULL);
+                nvg_y(circle.y_center, bounding_box.x), center_number.c_str(),
+                NULL);
         // If we can find some text to put in it, we can add a name.
         std::string name(circle.name);
         if (name.empty()) {
           name = circle.math1;
-        } 
+        }
         if (!name.empty()) {
           nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
           // Break name into lines by newlines.
@@ -1684,9 +1663,10 @@ struct CircleDisplay : OpaqueWidget {
           }
           std::string last = name.substr(start);
           lines.push_back(last);
-          for (int i = 0; i < (int) lines.size(); i++) {
+          for (int i = 0; i < (int)lines.size(); i++) {
             nvgText(args.vg, nvg_x(circle.x_center, bounding_box.x),
-                    nvg_y(circle.y_center, bounding_box.x) + 5.0 + i * 10.0, lines[i].c_str(), NULL);
+                    nvg_y(circle.y_center, bounding_box.x) + 5.0 + i * 10.0,
+                    lines[i].c_str(), NULL);
           }
         }
       }
@@ -1694,22 +1674,22 @@ struct CircleDisplay : OpaqueWidget {
 
     // Draw the Point.
     nvgBeginPath(args.vg);
-    nvgCircle(args.vg, nvg_x(point.x, bounding_box.x), nvg_y(point.y, bounding_box.x),
-            pixels_per_volt * 0.15);
+    nvgCircle(args.vg, nvg_x(point.x, bounding_box.x),
+              nvg_y(point.y, bounding_box.x), pixels_per_volt * 0.15);
     nvgStrokeColor(args.vg, SCHEME_WHITE);
     nvgStrokeWidth(args.vg, 1.0);
     nvgStroke(args.vg);
 
     OpaqueWidget::draw(args);
     nvgResetScissor(args.vg);
-	}
+  }
 };
 
 // Just the tiny window showing which circle is currently selected, if any.
 struct VennNumberDisplayWidget : TransparentWidget {
   Venn* module;
 
-  VennNumberDisplayWidget() : module{nullptr}  {}
+  VennNumberDisplayWidget() : module{nullptr} {}
 
   void drawLayer(const DrawArgs& args, int layer) override {
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
@@ -1725,8 +1705,8 @@ struct VennNumberDisplayWidget : TransparentWidget {
             std::string text(std::to_string(module->current_circle + 1));
             Rect r = box.zeroPos();
             Vec bounding_box = r.getBottomRight();
-            nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE :
-                                                               color::BLACK);
+            nvgFillColor(args.vg, settings::preferDarkPanels ? color::WHITE
+                                                             : color::BLACK);
             nvgFontSize(args.vg, 28);
             nvgTextAlign(args.vg, NVG_ALIGN_TOP | NVG_ALIGN_CENTER);
             nvgFontFaceId(args.vg, font->handle);
@@ -1748,7 +1728,8 @@ struct VennKeyboardIcon : SvgWidget {
 
   VennKeyboardIcon() : module{nullptr} {
     box.size = mm2px(Vec(8.0, 6.0));
-    setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/Venn-key-icon.svg")));
+    setSvg(APP->window->loadSvg(
+        asset::plugin(pluginInstance, "res/Venn-key-icon.svg")));
   }
 
   void draw(const DrawArgs& args) override {
@@ -1765,46 +1746,73 @@ struct VennWidget : ModuleWidget {
   VennMath1TextField* math1_field;
   WidgetUpdater widget_updater;
 
-  VennWidget(Venn* module) : display{nullptr}, name_field{nullptr}, math1_field{nullptr} {
+  VennWidget(Venn* module)
+      : display{nullptr}, name_field{nullptr}, math1_field{nullptr} {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Venn.svg"),
                          asset::plugin(pluginInstance, "res/Venn-dark.svg")));
 
-		addParam(createParamCentered<RoundSmallBlackKnob>(mm2px(Vec(166.582, 11.906)), module, Venn::EXP_LIN_LOG_PARAM));
-		addParam(createParamCentered<Trimpot>(mm2px(Vec(9.446, 25.0)), module, Venn::X_POSITION_ATTN_PARAM));
-		addParam(createParamCentered<Trimpot>(mm2px(Vec(21.034, 25.0)), module, Venn::Y_POSITION_ATTN_PARAM));
+    addParam(createParamCentered<RoundSmallBlackKnob>(
+        mm2px(Vec(166.582, 11.906)), module, Venn::EXP_LIN_LOG_PARAM));
+    addParam(createParamCentered<Trimpot>(mm2px(Vec(9.446, 25.0)), module,
+                                          Venn::X_POSITION_ATTN_PARAM));
+    addParam(createParamCentered<Trimpot>(mm2px(Vec(21.034, 25.0)), module,
+                                          Venn::Y_POSITION_ATTN_PARAM));
 
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(9.446, 16.0)), module, Venn::X_POSITION_INPUT));
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(21.034, 16.0)), module, Venn::Y_POSITION_INPUT));
-		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(9.446, 34.0)), module, Venn::X_POSITION_WIGGLE_INPUT));
-		addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(21.034, 34.0)), module, Venn::Y_POSITION_WIGGLE_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(9.446, 16.0)), module, Venn::X_POSITION_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(21.034, 16.0)), module, Venn::Y_POSITION_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(9.446, 34.0)), module, Venn::X_POSITION_WIGGLE_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(21.034, 34.0)), module, Venn::Y_POSITION_WIGGLE_INPUT));
 
-		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(9.446, 45.0)), module, Venn::X_POSITION_OUTPUT));
-		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(21.034, 45.0)), module, Venn::Y_POSITION_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(9.446, 45.0)), module, Venn::X_POSITION_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(21.034, 45.0)), module, Venn::Y_POSITION_OUTPUT));
 
-    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(178.17, 11.906)), module, Venn::DISTANCE_OUTPUT));
-    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(178.17, 30.162)), module, Venn::WITHIN_GATE_OUTPUT));
-		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(166.582, 47.286)), module, Venn::X_DISTANCE_OUTPUT));
-		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(178.17, 47.286)), module, Venn::Y_DISTANCE_OUTPUT));
-		addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(178.17, 92.963)), module, Venn::MATH1_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(178.17, 11.906)), module, Venn::DISTANCE_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(178.17, 30.162)), module, Venn::WITHIN_GATE_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(166.582, 47.286)), module, Venn::X_DISTANCE_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(178.17, 47.286)), module, Venn::Y_DISTANCE_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(178.17, 92.963)), module, Venn::MATH1_OUTPUT));
 
-    addParam(createLightParamCentered<VCVLightLatch<
-          MediumSimpleLight<WhiteLight>>>(mm2px(Vec(166.582, 28.78)), module, Venn::INV_WITHIN_PARAM, Venn::INV_WITHIN_LIGHT));
-    addParam(createLightParamCentered<VCVLightLatch<
-          MediumSimpleLight<WhiteLight>>>(mm2px(Vec(166.582, 64.673)), module, Venn::INV_X_PARAM, Venn::INV_X_LIGHT));
-    addParam(createLightParamCentered<VCVLightLatch<
-          MediumSimpleLight<WhiteLight>>>(mm2px(Vec(178.17, 64.673)), module, Venn::INV_Y_PARAM, Venn::INV_Y_LIGHT));
-    addParam(createLightParamCentered<VCVLightLatch<
-          MediumSimpleLight<WhiteLight>>>(mm2px(Vec(166.582, 77.655)), module, Venn::OFST_X_PARAM, Venn::OFST_X_LIGHT));
-    addParam(createLightParamCentered<VCVLightLatch<
-          MediumSimpleLight<WhiteLight>>>(mm2px(Vec(178.17, 77.655)), module, Venn::OFST_Y_PARAM, Venn::OFST_Y_LIGHT));
+    addParam(
+        createLightParamCentered<VCVLightLatch<MediumSimpleLight<WhiteLight>>>(
+            mm2px(Vec(166.582, 28.78)), module, Venn::INV_WITHIN_PARAM,
+            Venn::INV_WITHIN_LIGHT));
+    addParam(
+        createLightParamCentered<VCVLightLatch<MediumSimpleLight<WhiteLight>>>(
+            mm2px(Vec(166.582, 64.673)), module, Venn::INV_X_PARAM,
+            Venn::INV_X_LIGHT));
+    addParam(
+        createLightParamCentered<VCVLightLatch<MediumSimpleLight<WhiteLight>>>(
+            mm2px(Vec(178.17, 64.673)), module, Venn::INV_Y_PARAM,
+            Venn::INV_Y_LIGHT));
+    addParam(
+        createLightParamCentered<VCVLightLatch<MediumSimpleLight<WhiteLight>>>(
+            mm2px(Vec(166.582, 77.655)), module, Venn::OFST_X_PARAM,
+            Venn::OFST_X_LIGHT));
+    addParam(
+        createLightParamCentered<VCVLightLatch<MediumSimpleLight<WhiteLight>>>(
+            mm2px(Vec(178.17, 77.655)), module, Venn::OFST_Y_PARAM,
+            Venn::OFST_Y_LIGHT));
 
     widget_updater.module = module;
-    
+
     // Information about the currently selected circle.
     // Lining up vertically with the black box around the X/Y outputs.
-    VennNumberDisplayWidget* number = createWidget<VennNumberDisplayWidget>(mm2px(Vec(10.0, 58.6)));
-    // Decided by seeing how big "16" is in Inkscape, although not in the right font, so...wrongish.
+    VennNumberDisplayWidget* number =
+        createWidget<VennNumberDisplayWidget>(mm2px(Vec(10.0, 58.6)));
+    // Decided by seeing how big "16" is in Inkscape, although not in the right
+    // font, so...wrongish.
     number->box.size = mm2px(Vec(11.0, 8.0));
     number->module = module;
     addChild(number);
@@ -1816,8 +1824,8 @@ struct VennWidget : ModuleWidget {
     widget_updater.name_widget = name_field;
 
     // Compilation status and error message access.
-    VennErrorWidget* math1_error_display = createWidget<VennErrorWidget>(mm2px(
-        Vec(20.4, 81.0)));
+    VennErrorWidget* math1_error_display =
+        createWidget<VennErrorWidget>(mm2px(Vec(20.4, 81.0)));
     math1_error_display->box.size = mm2px(Vec(8.0, 4.0));
     addChild(math1_error_display);
 
@@ -1833,14 +1841,14 @@ struct VennWidget : ModuleWidget {
     math1_field->widget_updater = &widget_updater;
 
     // The Circles.
-    display = createWidget<CircleDisplay>(
-      mm2px(Vec(31.0, 1.435)));
+    display = createWidget<CircleDisplay>(mm2px(Vec(31.0, 1.435)));
     display->box.size = mm2px(Vec(125.0, 125.0));
     display->module = module;
     display->widget_updater = &widget_updater;
     addChild(display);
 
-    VennKeyboardIcon* icon = createWidget<VennKeyboardIcon>(mm2px(Vec(1.0, 1.0)));
+    VennKeyboardIcon* icon =
+        createWidget<VennKeyboardIcon>(mm2px(Vec(1.0, 1.0)));
     icon->module = module;
     display->addChild(icon);  // Ensures it's drawn on top of CircleDisplay.
   }
@@ -1858,7 +1866,7 @@ struct VennWidget : ModuleWidget {
           math1_field->setText(module->circles[module->current_circle].math1);
         }
       }
-      
+
       // Determine state of editing.
       Widget* selected = APP->event->selectedWidget;
       if (selected == this || selected == display) {
@@ -1866,31 +1874,35 @@ struct VennWidget : ModuleWidget {
         module->keystrokes_accepted = true;
       } else if (selected == name_field) {
         module->editing = true;
-        module->keystrokes_accepted = false;  // Text input field needs the keystrokes.
+        module->keystrokes_accepted =
+            false;  // Text input field needs the keystrokes.
 
         // Update name, if changed.
         if (module->current_circle >= 0) {
-          if (module->circles[module->current_circle].name.compare(name_field->getText()) != 0) {
+          if (module->circles[module->current_circle].name.compare(
+                  name_field->getText()) != 0) {
             Circle old_circle = module->circles[module->current_circle];
-            module->circles[module->current_circle].name = name_field->getText();
-            APP->history->push(
-                new VennCircleUndoRedoAction(module->id, old_circle,
-                                             module->circles[module->current_circle],
-                                             module->current_circle));
+            module->circles[module->current_circle].name =
+                name_field->getText();
+            APP->history->push(new VennCircleUndoRedoAction(
+                module->id, old_circle, module->circles[module->current_circle],
+                module->current_circle));
           }
         }
       } else if (selected == math1_field) {
         module->editing = true;
-        module->keystrokes_accepted = false;  // Text input field needs the keystrokes.
+        module->keystrokes_accepted =
+            false;  // Text input field needs the keystrokes.
         // Update math1, if changed.
         if (module->current_circle >= 0) {
-          if (module->circles[module->current_circle].math1.compare(math1_field->getText()) != 0) {
+          if (module->circles[module->current_circle].math1.compare(
+                  math1_field->getText()) != 0) {
             Circle old_circle = module->circles[module->current_circle];
-            module->circles[module->current_circle].math1 = math1_field->getText();
-            APP->history->push(
-                new VennCircleUndoRedoAction(module->id, old_circle,
-                                             module->circles[module->current_circle],
-                                             module->current_circle));
+            module->circles[module->current_circle].math1 =
+                math1_field->getText();
+            APP->history->push(new VennCircleUndoRedoAction(
+                module->id, old_circle, module->circles[module->current_circle],
+                module->current_circle));
           }
         }
       } else {
@@ -1898,9 +1910,10 @@ struct VennWidget : ModuleWidget {
         module->keystrokes_accepted = false;
       }
     }
-  } 
+  }
 
-  // This allows circle editing even when the display widget itself is not selected.
+  // This allows circle editing even when the display widget itself is not
+  // selected.
   void onSelectKey(const SelectKeyEvent& e) override {
     if (display) {
       display->onSelectKey(e);
@@ -1911,52 +1924,52 @@ struct VennWidget : ModuleWidget {
     Venn* module = dynamic_cast<Venn*>(this->module);
     menu->addChild(createBoolPtrMenuItem("Show Keyboard Commands", "",
                                          &(module->show_keyboard)));
-    menu->addChild(createBoolPtrMenuItem("Only Compute MATH1 for a circle when inside it", "",
-                                         &(module->only_compute_math1_within)));
-    menu->addChild(createBoolPtrMenuItem("Point position X ranges from 0-10 instead of -5 - 5", "",
-                                         &(module->offset_point_x)));
-    menu->addChild(createBoolPtrMenuItem("Point position Y ranges from 0-10 instead of -5 - 5", "",
-                                         &(module->offset_point_y)));
+    menu->addChild(
+        createBoolPtrMenuItem("Only Compute MATH1 for a circle when inside it",
+                              "", &(module->only_compute_math1_within)));
+    menu->addChild(createBoolPtrMenuItem(
+        "Point position X ranges from 0-10 instead of -5 - 5", "",
+        &(module->offset_point_x)));
+    menu->addChild(createBoolPtrMenuItem(
+        "Point position Y ranges from 0-10 instead of -5 - 5", "",
+        &(module->offset_point_y)));
     menu->addChild(new MenuSeparator);
-        // Now add math functions.
+    // Now add math functions.
     // description, inserted text.
     std::string math_funcs[] = {
-      "Math operators: +, -, *, /",
-      "b ? t : f - returns t if b is 'true' or non-zero, f otherwise",
-      "Bool operators: ==, !=, >, >=, <, <=, and, or, not",
-      "Notes: c#3, B1, Gb2",
-      "Overall: pointx, pointy, leftx, rightx, topy, bottomy",
-      "Per circle: distance, within, x, y",
-      "limit(a, b, c) - returns 'a' but between b and c",
-      "scale(a, b, c, d, e) - scales a in b-c range to d-e range",
-      "abs(k) - this number without a negative sign",
-      "ceiling(k) - integer value at or above k",
-      "floor(k) - integer value at or below k",
-      "log2(k) - Base 2 logarithm of k; 0 for k <= 0",
-      "loge(k) - Natural logarithm of k; 0 for k <= 0",
-      "log10(k) - Base 10 logarithm of k; 0 for k <= 0",
-      "max(k, m) - larger of k or m",
-      "min(k, m) - smaller of k or m",
-      "mod(k, m) - remainder after dividing k by m",
-      "pow(k, m) - k to the power of m",
-      "sign(k) - -1, 0, or 1, depending on the sign of k",
-      "sin(k) - sine of k, which is in radians",
+        "Math operators: +, -, *, /",
+        "b ? t : f - returns t if b is 'true' or non-zero, f otherwise",
+        "Bool operators: ==, !=, >, >=, <, <=, and, or, not",
+        "Notes: c#3, B1, Gb2",
+        "Overall: pointx, pointy, leftx, rightx, topy, bottomy",
+        "Per circle: distance, within, x, y",
+        "limit(a, b, c) - returns 'a' but between b and c",
+        "scale(a, b, c, d, e) - scales a in b-c range to d-e range",
+        "abs(k) - this number without a negative sign",
+        "ceiling(k) - integer value at or above k",
+        "floor(k) - integer value at or below k",
+        "log2(k) - Base 2 logarithm of k; 0 for k <= 0",
+        "loge(k) - Natural logarithm of k; 0 for k <= 0",
+        "log10(k) - Base 10 logarithm of k; 0 for k <= 0",
+        "max(k, m) - larger of k or m",
+        "min(k, m) - smaller of k or m",
+        "mod(k, m) - remainder after dividing k by m",
+        "pow(k, m) - k to the power of m",
+        "sign(k) - -1, 0, or 1, depending on the sign of k",
+        "sin(k) - sine of k, which is in radians",
     };
-    MenuItem* math_menu = createSubmenuItem("MATH Cheat Sheet", "",
-      [=](Menu* menu) {
+    MenuItem* math_menu =
+        createSubmenuItem("MATH Cheat Sheet", "", [=](Menu* menu) {
           for (auto line : math_funcs) {
-            menu->addChild(createMenuItem(line, "",
-              [=]() { }
-            ));
+            menu->addChild(createMenuItem(line, "", [=]() {}));
           }
-      }
-    );
+        });
     menu->addChild(math_menu);
 
     menu->addChild(new MenuSeparator);
-    menu->addChild(createMenuLabel("Inspired by Leafcutter John's 'Forester' instrument."));
+    menu->addChild(createMenuLabel(
+        "Inspired by Leafcutter John's 'Forester' instrument."));
   }
 };
-
 
 Model* modelVenn = createModel<Venn, VennWidget>("Venn");

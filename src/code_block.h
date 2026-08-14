@@ -6,24 +6,24 @@
 #include <vector>
 
 #include "parser/environment.h"  // Reading and writing module data.
-#include "pcode.h"
 #include "parser/tree.h"
+#include "pcode.h"
 
 // The execution of WAIT statements needs to be as efficient as I can make them.
 // This data structure just collects all data about the ongoing WAIT, if any.
 struct WaitInfo {
-  int countdown_to_recompute;
+  int countdown_to_recompute = 0;
   // Are we currently in a WAIT?
-  bool in_wait;
+  bool in_wait = false;
   // The expression that computes the wait time could change while the wait is
   // occuring.
-  bool is_volatile;
+  bool is_volatile = false;
   // The number of process() calls seen in this WAIT. Goes up by one every time
   // procees is called during the wait.
-  int ticks_so_far;
+  int ticks_so_far = 0;
   // The number of ticks needed to complete the wait. If is_volatile, then
   // this needs to be recomputed when INn gets changed.
-  int ticks_limit;
+  int ticks_limit = 0;
 };
 
 struct CodeBlock {
@@ -45,7 +45,6 @@ struct CodeBlock {
   float samples_per_millisecond;
   Environment* environment;
   Block::Type type;
-  Block::Condition condition;
   // Some (not all) STYLE settings mean that we should track the
   // running/not running status on a per-block level.
   RunStatus run_status;
@@ -55,6 +54,8 @@ struct CodeBlock {
     current_line = 0;
     samples_per_millisecond = env->SampleRate() / 1000.0f;
     run_status = CONTINUES;
+    state = PCode::NONE;
+    type = Block::MAIN;
   }
 
   // There are times when the module itself needs to get or set a variable's
@@ -63,18 +64,19 @@ struct CodeBlock {
   // we have these methods for doing those operations.
   // TODO: make a class that bundles the float* and the PortPointer
   // and these methods?
-  void SetVariableValue(float* variable_ptr,
-     const PortPointer &assign_port, float value);
+  void SetVariableValue(float* variable_ptr, const PortPointer& assign_port,
+                        float value);
 
   // Just for setting values in an OUTn[]. "SingleValue" because this
   // doesn't handle assigning multiple values to a range of an array.
-  void SetOUTSingleValue(const PortPointer &assign_port, int channel, float value);
-  float GetVariableValue(float* variable_ptr, const PortPointer &port);
+  void SetOUTSingleValue(const PortPointer& assign_port, int channel,
+                         float value);
+  float GetVariableValue(float* variable_ptr, const PortPointer& port);
 
   // Only called when the global "running" status of the program is true.
   // Returns STOPPED if the block believes we should stop running.
-  // TODO: how to handle EXIT ALL? Does this stop *all* blocks? Just this one? Need a new gesture
-  // to just stop one block? EXIT BLOCK?
+  // TODO: how to handle EXIT ALL? Does this stop *all* blocks? Just this one?
+  // Need a new gesture to just stop one block? EXIT BLOCK?
   CodeBlock::RunStatus Run(bool loops);
 
   void DebugPrint() {
@@ -85,4 +87,4 @@ struct CodeBlock {
   }
 };
 
-#endif // CODE_BLOCK_H
+#endif  // CODE_BLOCK_H

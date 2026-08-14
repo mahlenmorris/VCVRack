@@ -406,9 +406,9 @@ struct ChancesDisplay : Widget {
   int frame_count = 0;
 #endif
 
-  ChancesDisplay() {
-    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
-  }
+  ChancesDisplay()
+      : module{nullptr},
+        fontPath{asset::system("res/fonts/ShareTechMono-Regular.ttf")} {}
 
   // TODO: We'll want a Framebuffer for this at some point?
   // As of July 29, 2026, the unbuffered drawLayer is consuming less than

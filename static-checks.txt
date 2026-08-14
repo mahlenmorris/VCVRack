@@ -1,0 +1,845 @@
+src/parser/tree.h:93:3: warning: Member variable 'Expression::type' is not initialized in the constructor. [uninitMemberVar]
+  Expression() : variable_ptr{nullptr}, str_variable_ptr{nullptr}, array_ptr{nullptr},
+  ^
+src/parser/tree.h:93:3: warning: Member variable 'Expression::operation' is not initialized in the constructor. [uninitMemberVar]
+  Expression() : variable_ptr{nullptr}, str_variable_ptr{nullptr}, array_ptr{nullptr},
+  ^
+src/parser/tree.h:93:3: warning: Member variable 'Expression::float_value' is not initialized in the constructor. [uninitMemberVar]
+  Expression() : variable_ptr{nullptr}, str_variable_ptr{nullptr}, array_ptr{nullptr},
+  ^
+src/pcode.h:66:3: warning: Member variable 'PCode::type' is not initialized in the constructor. [uninitMemberVar]
+  PCode() {
+  ^
+src/pcode.h:66:3: warning: Member variable 'PCode::variable_ptr' is not initialized in the constructor. [uninitMemberVar]
+  PCode() {
+  ^
+src/pcode.h:66:3: warning: Member variable 'PCode::str_variable_ptr' is not initialized in the constructor. [uninitMemberVar]
+  PCode() {
+  ^
+src/pcode.h:66:3: warning: Member variable 'PCode::array_ptr' is not initialized in the constructor. [uninitMemberVar]
+  PCode() {
+  ^
+src/pcode.h:66:3: warning: Member variable 'PCode::str_array_ptr' is not initialized in the constructor. [uninitMemberVar]
+  PCode() {
+  ^
+src/pcode.h:66:3: warning: Member variable 'PCode::step' is not initialized in the constructor. [uninitMemberVar]
+  PCode() {
+  ^
+src/pcode.h:66:3: warning: Member variable 'PCode::limit' is not initialized in the constructor. [uninitMemberVar]
+  PCode() {
+  ^
+src/pcode.h:95:3: warning: Member variable 'Exit::exit_line_number' is not initialized in the constructor. [uninitMemberVar]
+  Exit(const std::string type, int loop_pos) : exit_type{type},
+  ^
+src/code_block.h:53:12: warning: Member variable 'CodeBlock::state' is not initialized in the constructor. [uninitMemberVar]
+  explicit CodeBlock(Environment* env) : environment{env} {
+           ^
+src/code_block.h:53:12: warning: Member variable 'CodeBlock::type' is not initialized in the constructor. [uninitMemberVar]
+  explicit CodeBlock(Environment* env) : environment{env} {
+           ^
+src/code_block.h:53:12: warning: Member variable 'CodeBlock::condition' is not initialized in the constructor. [uninitMemberVar]
+  explicit CodeBlock(Environment* env) : environment{env} {
+           ^
+src/pcode_trans.h:12:3: warning: Member variable 'PCodeTranslator::expression_factory' is not initialized in the constructor. [uninitMemberVar]
+  PCodeTranslator(Driver *the_driver) : driver{the_driver} { }
+  ^
+src/pcode_trans.h:12:3: warning: Member variable 'PCodeTranslator::pcodes' is not initialized in the constructor. [uninitMemberVar]
+  PCodeTranslator(Driver *the_driver) : driver{the_driver} { }
+  ^
+src/Basically.cpp:107:5: warning: Member variable 'ProductionEnvironment::patch_time' is not initialized in the constructor. [uninitMemberVar]
+    ProductionEnvironment(std::vector<Input>* the_inputs,
+    ^
+src/Basically.cpp:107:5: warning: Member variable 'ProductionEnvironment::starting' is not initialized in the constructor. [uninitMemberVar]
+    ProductionEnvironment(std::vector<Input>* the_inputs,
+    ^
+src/Basically.cpp:107:5: warning: Member variable 'ProductionEnvironment::main_blocks' is not initialized in the constructor. [uninitMemberVar]
+    ProductionEnvironment(std::vector<Input>* the_inputs,
+    ^
+src/Basically.cpp:107:5: warning: Member variable 'ProductionEnvironment::expression_blocks' is not initialized in the constructor. [uninitMemberVar]
+    ProductionEnvironment(std::vector<Input>* the_inputs,
+    ^
+src/Basically.cpp:107:5: warning: Member variable 'ProductionEnvironment::running_expression_blocks' is not initialized in the constructor. [uninitMemberVar]
+    ProductionEnvironment(std::vector<Input>* the_inputs,
+    ^
+src/Basically.cpp:327:14: warning: Member variable 'CompilationThread::main_blocks' is not initialized in the constructor. [uninitMemberVar]
+    explicit CompilationThread(Driver* drv, Environment* env) : driver{drv},
+             ^
+src/Basically.cpp:327:14: warning: Member variable 'CompilationThread::expression_blocks' is not initialized in the constructor. [uninitMemberVar]
+    explicit CompilationThread(Driver* drv, Environment* env) : driver{drv},
+             ^
+src/Basically.cpp:327:14: warning: Member variable 'CompilationThread::running_expression_blocks' is not initialized in the constructor. [uninitMemberVar]
+    explicit CompilationThread(Driver* drv, Environment* env) : driver{drv},
+             ^
+src/Basically.cpp:863:3: warning: Member variable 'TextEditAction::old_cursor' is not initialized in the constructor. [uninitMemberVar]
+  TextEditAction(int64_t id, int old_width, int new_width,
+  ^
+src/Basically.cpp:863:3: warning: Member variable 'TextEditAction::new_cursor' is not initialized in the constructor. [uninitMemberVar]
+  TextEditAction(int64_t id, int old_width, int new_width,
+  ^
+src/Basically.cpp:907:3: warning: Member variable 'TitleTextField::module' is not initialized in the constructor. [uninitMemberVar]
+  TitleTextField() {
+  ^
+src/Basically.cpp:1106:3: warning: Member variable 'ErrorTooltip::errorWidget' is not initialized in the constructor. [uninitMemberVar]
+  ErrorTooltip(const std::string &text) : error_text{text} {}
+  ^
+src/Basically.cpp:1115:3: warning: Member variable 'ErrorWidget::module' is not initialized in the constructor. [uninitMemberVar]
+  ErrorWidget() {
+  ^
+src/StochasticTelegraph.hpp:68:3: warning: Member variable 'STResizeHandle < Basically , TextEditAction >::module' is not initialized in the constructor. [uninitMemberVar]
+  STResizeHandle(bool is_right, int min_h, int max_h) :
+  ^
+parser.hh:1051:12: warning: The struct 'basic_symbol < by_kind >' defines member function with name 'clear' also defined in its parent struct 'by_kind'. [duplInheritedMember]
+
+           ^
+
+                   ^
+
+           ^
+parser.hh:1195:24: warning: The struct 'basic_symbol < by_kind >' defines member function with name 'type_get' also defined in its parent struct 'by_kind'. [duplInheritedMember]
+
+                       ^
+
+                   ^
+
+                       ^
+parser.hh:1051:12: warning: The struct 'basic_symbol < by_state >' defines member function with name 'clear' also defined in its parent struct 'by_state'. [duplInheritedMember]
+
+           ^
+
+           ^
+
+           ^
+src/parser/tree.h:188:68: performance: Function parameter 'exprs' should be passed by const reference. [passedByValue]
+  friend std::ostream& operator<<(std::ostream& os, ExpressionList exprs) {
+                                                                   ^
+src/parser/tree.h:312:64: performance: Function parameter 'statements' should be passed by const reference. [passedByValue]
+  friend std::ostream& operator<<(std::ostream& os, Statements statements) {
+                                                               ^
+src/parser/tree.h:331:37: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
+  static Block MainBlock(Statements stat) {
+                                    ^
+src/parser/tree.h:337:63: performance: Function parameter 'stat' should be passed by const reference. [passedByValue]
+  static Block WhenExpBlock(Expression &condition, Statements stat) {
+                                                              ^
+src/parser/tree.h:345:59: performance: Function parameter 'block' should be passed by const reference. [passedByValue]
+  friend std::ostream& operator<<(std::ostream& os, Block block) {
+                                                          ^
+src/parser/tree.h:366:60: performance: Function parameter 'blocks' should be passed by const reference. [passedByValue]
+  friend std::ostream& operator<<(std::ostream& os, Blocks blocks) {
+                                                           ^
+src/pcode.h:83:26: performance: Function parameter 'type' should be passed by const reference. [passedByValue]
+  Loop(const std::string type, int line) : loop_type{type}, line_number{line} {}
+                         ^
+src/pcode.h:95:26: performance: Function parameter 'type' should be passed by const reference. [passedByValue]
+  Exit(const std::string type, int loop_pos) : exit_type{type},
+                         ^
+src/parser/driver.hh:43:49: performance: Function parameter 'message' should be passed by const reference. [passedByValue]
+  Error(int line, int column, const std::string message) : line{line},
+                                                ^
+src/pcode_trans.h:19:38: performance: Function parameter 'str1' should be passed by const reference. [passedByValue]
+  PCode Assignment(const std::string str1, float* variable_ptr,
+                                     ^
+src/pcode_trans.h:21:44: performance: Function parameter 'str1' should be passed by const reference. [passedByValue]
+  PCode StringAssignment(const std::string str1,
+                                           ^
+src/Basically.cpp:77:34: performance: Function parameter 'a' should be passed by const reference. [passedByValue]
+    InaInfo(const std::string a, InputId b) : name{a}, id{b} {
+                                 ^
+src/Basically.cpp:386:34: performance: Range variable 'err' should be declared as const reference. [iterateByValue]
+                for (std::string err : new_errors) {
+                                 ^
+src/parser/tree.h:335:12: error: Uninitialized variable: block.condition [uninitvar]
+    return block;
+           ^
+src/parser/tree.h:335:12: error: Uninitialized struct member: block.condition [uninitStructMember]
+    return block;
+           ^
+src/buffered.hpp:108:3: warning: Member variable 'BufferTask::sample_count' is not initialized in the constructor. [uninitMemberVar]
+  BufferTask(const Type the_type) : type{the_type},
+  ^
+src/buffered.hpp:108:3: warning: Member variable 'BufferTask::seconds' is not initialized in the constructor. [uninitMemberVar]
+  BufferTask(const Type the_type) : type{the_type},
+  ^
+src/buffered.hpp:108:3: warning: Member variable 'BufferTask::smooth_endpoints' is not initialized in the constructor. [uninitMemberVar]
+  BufferTask(const Type the_type) : type{the_type},
+  ^
+src/buffered.hpp:182:3: warning: Member variable 'Buffer::dirty' is not initialized in the constructor. [uninitMemberVar]
+  Buffer() : left_array{nullptr}, right_array{nullptr}, length{0},
+  ^
+src/buffered.hpp:182:3: warning: Member variable 'Buffer::waveform' is not initialized in the constructor. [uninitMemberVar]
+  Buffer() : left_array{nullptr}, right_array{nullptr}, length{0},
+  ^
+src/buffered.hpp:253:3: warning: Member variable 'LineRecord::position' is not initialized in the constructor. [uninitMemberVar]
+  LineRecord() {
+  ^
+src/buffered.hpp:253:3: warning: Member variable 'LineRecord::type' is not initialized in the constructor. [uninitMemberVar]
+  LineRecord() {
+  ^
+src/buffered.hpp:253:3: warning: Member variable 'LineRecord::distance' is not initialized in the constructor. [uninitMemberVar]
+  LineRecord() {
+  ^
+src/buffered.hpp:307:3: warning: Member variable 'TimestampField::module' is not initialized in the constructor. [uninitMemberVar]
+  TimestampField() {
+  ^
+src/Brainwash.cpp:190:3: warning: Member variable 'Brainwash::clocks_so_far' is not initialized in the constructor. [uninitMemberVar]
+  Brainwash() {
+  ^
+src/Brainwash.cpp:190:3: warning: Member variable 'Brainwash::fractional_samples_so_far' is not initialized in the constructor. [uninitMemberVar]
+  Brainwash() {
+  ^
+src/Brainwash.cpp:364:3: warning: Member variable 'BrainwashWidget::adjust_slider' is not initialized in the constructor. [uninitMemberVar]
+  BrainwashWidget(Brainwash* module) {
+  ^
+src/NoLockQueue.h:31:3: warning: Member variable 'SpScLockFreeQueue < Smooth * , 50 >::m_ringBuffer' is not initialized in the constructor. [uninitMemberVar]
+  SpScLockFreeQueue()
+  ^
+src/NoLockQueue.h:31:3: warning: Member variable 'SpScLockFreeQueue < BufferTask * , 5 >::m_ringBuffer' is not initialized in the constructor. [uninitMemberVar]
+  SpScLockFreeQueue()
+  ^
+src/buffered.hpp:255:5: performance: Variable 'color' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
+    color = nvgRGBA(255, 0, 255, 255);
+    ^
+src/buffered.hpp:319:9: warning: %u in format string (no. 1) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+        snprintf(text_buffer, 10, "%02u.%02u", (value / 100), value % 100);
+        ^
+src/buffered.hpp:319:9: warning: %u in format string (no. 2) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+        snprintf(text_buffer, 10, "%02u.%02u", (value / 100), value % 100);
+        ^
+src/buffered.hpp:323:9: warning: %u in format string (no. 1) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+        snprintf(text_buffer, 10, "%u:%02u", value / 60, value % 60);
+        ^
+src/buffered.hpp:323:9: warning: %u in format string (no. 2) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+        snprintf(text_buffer, 10, "%u:%02u", value / 60, value % 60);
+        ^
+src/Distribute.cpp:168:3: warning: Member variable 'DistributionWidget::module' is not initialized in the constructor. [uninitMemberVar]
+  DistributionWidget() {}
+  ^
+src/Distribute.cpp:274:3: warning: Member variable 'DistributeNumberDisplayWidget::my_param_id' is not initialized in the constructor. [uninitMemberVar]
+  DistributeNumberDisplayWidget() : module{nullptr} {}
+  ^
+src/Distribute.cpp:274:3: warning: Member variable 'DistributeNumberDisplayWidget::default_for_browser' is not initialized in the constructor. [uninitMemberVar]
+  DistributeNumberDisplayWidget() : module{nullptr} {}
+  ^
+src/Fermata.cpp:18:3: warning: Member variable 'Fermata::box_pos_x' is not initialized in the constructor. [uninitMemberVar]
+  Fermata() {
+  ^
+src/Fermata.cpp:125:3: warning: Member variable 'FermataUndoRedoAction::old_posx' is not initialized in the constructor. [uninitMemberVar]
+  FermataUndoRedoAction(int64_t id, std::string oldText, std::string newText,
+  ^
+src/Fermata.cpp:125:3: warning: Member variable 'FermataUndoRedoAction::new_posx' is not initialized in the constructor. [uninitMemberVar]
+  FermataUndoRedoAction(int64_t id, std::string oldText, std::string newText,
+  ^
+src/Fermata.cpp:133:3: warning: Member variable 'FermataUndoRedoAction::old_cursor' is not initialized in the constructor. [uninitMemberVar]
+  FermataUndoRedoAction(int64_t id, int old_width, int new_width,
+  ^
+src/Fermata.cpp:133:3: warning: Member variable 'FermataUndoRedoAction::new_cursor' is not initialized in the constructor. [uninitMemberVar]
+  FermataUndoRedoAction(int64_t id, int old_width, int new_width,
+  ^
+src/Fermata.cpp:179:3: warning: Member variable 'FermataTitleTextField::module' is not initialized in the constructor. [uninitMemberVar]
+  FermataTitleTextField() {
+  ^
+src/Fermata.cpp:223:3: warning: Member variable 'ClosedTitleTextField::module' is not initialized in the constructor. [uninitMemberVar]
+  ClosedTitleTextField() {
+  ^
+src/Fermata.cpp:350:3: warning: Member variable 'FermataTextField::module' is not initialized in the constructor. [uninitMemberVar]
+  FermataTextField() {
+  ^
+src/Fermata.cpp:350:3: warning: Member variable 'FermataTextField::frame_buffer' is not initialized in the constructor. [uninitMemberVar]
+  FermataTextField() {
+  ^
+src/Fermata.cpp:350:3: warning: Member variable 'FermataTextField::was_selected' is not initialized in the constructor. [uninitMemberVar]
+  FermataTextField() {
+  ^
+src/Fermata.cpp:350:3: warning: Member variable 'FermataTextField::color_scheme' is not initialized in the constructor. [uninitMemberVar]
+  FermataTextField() {
+  ^
+src/StochasticTelegraph.hpp:68:3: warning: Member variable 'STResizeHandle < Fermata , FermataUndoRedoAction >::module' is not initialized in the constructor. [uninitMemberVar]
+  STResizeHandle(bool is_right, int min_h, int max_h) :
+  ^
+src/Embellish.cpp:87:3: warning: Member variable 'Embellish::display_position' is not initialized in the constructor. [uninitMemberVar]
+  Embellish() {
+  ^
+src/Embellish.cpp:87:3: warning: Member variable 'Embellish::prev_reverse' is not initialized in the constructor. [uninitMemberVar]
+  Embellish() {
+  ^
+src/Embellish.cpp:409:3: warning: Member variable 'EmbellishWidget::adjust_slider' is not initialized in the constructor. [uninitMemberVar]
+  EmbellishWidget(Embellish* module) {
+  ^
+src/buffered.hpp:307:3: warning: Member variable 'TimestampField < Embellish >::module' is not initialized in the constructor. [uninitMemberVar]
+  TimestampField() {
+  ^
+src/Fuse.cpp:316:3: warning: Member variable 'FuseDisplay::module' is not initialized in the constructor. [uninitMemberVar]
+  FuseDisplay() {
+  ^
+src/Fuse.cpp:317:5: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
+    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+    ^
+src/StochasticTelegraph.hpp:68:3: warning: Member variable 'STResizeHandle::module' is not initialized in the constructor. [uninitMemberVar]
+  STResizeHandle(bool is_right, int min_h, int max_h) :
+  ^
+src/Ruminate.cpp:108:3: warning: Member variable 'Ruminate::display_position' is not initialized in the constructor. [uninitMemberVar]
+  Ruminate() {
+  ^
+src/buffered.hpp:307:3: warning: Member variable 'TimestampField < Ruminate >::module' is not initialized in the constructor. [uninitMemberVar]
+  TimestampField() {
+  ^
+src/TTY.cpp:31:3: warning: Member variable 'TextInput::id' is not initialized in the constructor. [uninitMemberVar]
+  TextInput() {
+  ^
+src/TTY.cpp:73:3: warning: Member variable 'TTY::clear_command_received' is not initialized in the constructor. [uninitMemberVar]
+  TTY() {
+  ^
+src/TTY.cpp:436:3: warning: Member variable 'TTYTextField::module' is not initialized in the constructor. [uninitMemberVar]
+  TTYTextField() {
+  ^
+src/TTY.cpp:436:3: warning: Member variable 'TTYTextField::frame_buffer' is not initialized in the constructor. [uninitMemberVar]
+  TTYTextField() {
+  ^
+src/TTY.cpp:436:3: warning: Member variable 'TTYTextField::was_selected' is not initialized in the constructor. [uninitMemberVar]
+  TTYTextField() {
+  ^
+src/TTY.cpp:436:3: warning: Member variable 'TTYTextField::color_scheme' is not initialized in the constructor. [uninitMemberVar]
+  TTYTextField() {
+  ^
+src/StochasticTelegraph.hpp:68:3: warning: Member variable 'STResizeHandle < TTY , TTYUndoRedoAction >::module' is not initialized in the constructor. [uninitMemberVar]
+  STResizeHandle(bool is_right, int min_h, int max_h) :
+  ^
+src/code_block.cpp:63:28: warning: Either the condition 'current_line>=pcodes.size()' is redundant or 'current_line' can have the value greater or equal to pcodes.size(). Expression 'pcodes[current_line]' cause access out of bounds. [containerOutOfBounds]
+    PCode* pcode = &(pcodes[current_line]);
+                           ^
+    if (current_line >= pcodes.size()) {
+                     ^
+    switch (pcode->type) {
+                 ^
+    PCode* pcode = &(pcodes[current_line]);
+                           ^
+src/Depict.cpp:364:16: error: Deallocation of an auto-variable (.) results in undefined behaviour. [autovarInvalidDeallocation]
+        delete waveform;
+               ^
+          waveform = &(buffer->waveform);
+                     ^
+        delete waveform;
+               ^
+src/Depict.cpp:37:3: warning: Member variable 'Depict::max_distance' is not initialized in the constructor. [uninitMemberVar]
+  Depict() {
+  ^
+src/Depict.cpp:120:3: warning: Member variable 'MemoryDepict::module' is not initialized in the constructor. [uninitMemberVar]
+  MemoryDepict() {}
+  ^
+src/parser-venn/tree.h:68:3: warning: Member variable 'Circle::present' is not initialized in the constructor. [uninitMemberVar]
+  Circle() : x_center{0.0}, y_center{0.0}, radius{0.0} {}
+  ^
+src/parser-venn/driver.h:80:3: warning: Member variable 'VennVariables::var_x' is not initialized in the constructor. [uninitMemberVar]
+  VennVariables() {
+  ^
+src/parser-venn/driver.h:80:3: warning: Member variable 'VennVariables::var_y' is not initialized in the constructor. [uninitMemberVar]
+  VennVariables() {
+  ^
+src/parser-venn/driver.h:80:3: warning: Member variable 'VennVariables::var_distance' is not initialized in the constructor. [uninitMemberVar]
+  VennVariables() {
+  ^
+src/parser-venn/driver.h:80:3: warning: Member variable 'VennVariables::var_within' is not initialized in the constructor. [uninitMemberVar]
+  VennVariables() {
+  ^
+src/parser-venn/driver.h:80:3: warning: Member variable 'VennVariables::var_pointx' is not initialized in the constructor. [uninitMemberVar]
+  VennVariables() {
+  ^
+src/parser-venn/driver.h:80:3: warning: Member variable 'VennVariables::var_pointy' is not initialized in the constructor. [uninitMemberVar]
+  VennVariables() {
+  ^
+src/parser-venn/driver.h:80:3: warning: Member variable 'VennVariables::var_leftx' is not initialized in the constructor. [uninitMemberVar]
+  VennVariables() {
+  ^
+src/parser-venn/driver.h:80:3: warning: Member variable 'VennVariables::var_rightx' is not initialized in the constructor. [uninitMemberVar]
+  VennVariables() {
+  ^
+src/parser-venn/driver.h:80:3: warning: Member variable 'VennVariables::var_topy' is not initialized in the constructor. [uninitMemberVar]
+  VennVariables() {
+  ^
+src/parser-venn/driver.h:80:3: warning: Member variable 'VennVariables::var_bottomy' is not initialized in the constructor. [uninitMemberVar]
+  VennVariables() {
+  ^
+parser.hh:851:12: warning: The struct 'basic_symbol < by_kind >' defines member function with name 'clear' also defined in its parent struct 'by_kind'. [duplInheritedMember]
+
+           ^
+
+                   ^
+
+           ^
+parser.hh:942:24: warning: The struct 'basic_symbol < by_kind >' defines member function with name 'type_get' also defined in its parent struct 'by_kind'. [duplInheritedMember]
+
+                       ^
+
+                   ^
+
+                       ^
+parser.hh:851:12: warning: The struct 'basic_symbol < by_state >' defines member function with name 'clear' also defined in its parent struct 'by_state'. [duplInheritedMember]
+
+           ^
+
+           ^
+
+           ^
+src/Drifter.cpp:220:3: warning: Member variable 'Drifter::loaded_start_y' is not initialized in the constructor. [uninitMemberVar]
+  Drifter() {
+  ^
+src/Drifter.cpp:220:3: warning: Member variable 'Drifter::loaded_end_y' is not initialized in the constructor. [uninitMemberVar]
+  Drifter() {
+  ^
+src/Drifter.cpp:844:3: warning: Member variable 'DrifterDisplay::module' is not initialized in the constructor. [uninitMemberVar]
+  DrifterDisplay() {
+  ^
+src/Drifter.cpp:844:3: warning: Member variable 'DrifterDisplay::moduleWidget' is not initialized in the constructor. [uninitMemberVar]
+  DrifterDisplay() {
+  ^
+src/Drifter.cpp:845:5: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
+    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+    ^
+src/parser-venn/driver.h:43:49: performance: Function parameter 'message' should be passed by const reference. [passedByValue]
+  Error(int line, int column, const std::string message) : line{line},
+                                                ^
+src/parser-venn/tree.h:35:12: error: Uninitialized variable: assign.value [uninitvar]
+    return assign;
+           ^
+src/parser-venn/tree.h:35:12: error: Uninitialized struct member: assign.value [uninitStructMember]
+    return assign;
+           ^
+scanner.cc:2716:5: warning: Assignment of function parameter has no effect outside the function. Did you forget dereferencing it? [uselessAssignmentPtrArg]
+
+    ^
+src/parser-venn/tree.cc:68:19: performance: Range variable 'assign' should be declared as const reference. [iterateByValue]
+  for (Assignment assign : fields.assignments) {
+                  ^
+src/parser-venn/tree.cc:96:13: performance: Range variable 'assign' should be declared as const reference. [iterateByValue]
+  for (auto assign : ex.assignments) {
+            ^
+src/parser-venn/tree.cc:108:13: performance: Range variable 'assign' should be declared as const reference. [iterateByValue]
+  for (auto assign : ex.circles) {
+            ^
+src/parser-venn/tree.cc:115:13: performance: Range variable 'assign' should be declared as const reference. [iterateByValue]
+  for (auto assign : ex.circles) {
+            ^
+src/Venn.cpp:264:3: warning: Member variable 'Venn::update_text_widgets' is not initialized in the constructor. [uninitMemberVar]
+  Venn() {
+  ^
+src/Venn.cpp:821:3: warning: Member variable 'VennCircleUndoRedoAction::new_position' is not initialized in the constructor. [uninitMemberVar]
+  VennCircleUndoRedoAction(
+  ^
+parser.hh:851:12: warning: The struct 'basic_symbol < by_state >' defines member function with name 'clear' also defined in its parent struct 'by_state'. [duplInheritedMember]
+
+           ^
+
+                    ^
+
+           ^
+src/parser/driver.cc:10:9: warning: Member variable 'Driver::factory' is not initialized in the constructor. [uninitMemberVar]
+Driver::Driver()
+        ^
+scanner.cc:2846:5: warning: Assignment of function parameter has no effect outside the function. Did you forget dereferencing it? [uselessAssignmentPtrArg]
+
+    ^
+src/pcode.cpp:93:53: performance: Function parameter 'str1' should be passed by const reference. [passedByValue]
+PCode PCodeTranslator::Assignment(const std::string str1, float* variable_ptr,
+                                                    ^
+src/pcode.cpp:105:59: performance: Function parameter 'str1' should be passed by const reference. [passedByValue]
+PCode PCodeTranslator::StringAssignment(const std::string str1,
+                                                          ^
+src/pcode.cpp:226:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
+            [loop_type](Loop l) { return loop_type == l.loop_type; });
+                             ^
+src/pcode.cpp:262:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
+            [loop_type](Loop l) { return loop_type == l.loop_type; });
+                             ^
+src/parser/tree.cc:791:19: performance: Range variable 'exp' should be declared as const reference. [iterateByValue]
+  for (Expression exp : args.expressions) {
+                  ^
+src/parser/tree.cc:830:49: performance: Function parameter 'line' should be passed by const reference. [passedByValue]
+std::ostream& operator<<(std::ostream& os, Line line) {
+                                                ^
+src/parser/tree.cc:631:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+  if (driver->VarHasPort(lower)) {
+                        ^
+  return line;
+         ^
+src/parser/tree.cc:645:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:659:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:673:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:690:10: error: Uninitialized variables: line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:703:10: error: Uninitialized variables: line.variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:712:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:720:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:728:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:748:10: error: Uninitialized variables: line.str_variable_ptr, line.array_ptr, line.str_array_ptr [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:757:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:768:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:781:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:794:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+  for (Expression exp : args.expressions) {
+                            ^
+  return line;
+         ^
+src/parser/tree.cc:805:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:811:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:818:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:827:10: error: Uninitialized variables: line.variable_ptr, line.str_variable_ptr, line.array_ptr, line.str_array_ptr, line.wait_on_next [uninitvar]
+  return line;
+         ^
+src/parser/tree.cc:631:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:631:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:631:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:631:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:631:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:645:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:645:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:645:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:645:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:659:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:659:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:659:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:659:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:673:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:673:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:673:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:673:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:690:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:690:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:690:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:690:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:703:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:703:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:703:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:703:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:712:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:712:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:712:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:712:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:712:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:748:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:748:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:748:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:757:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:757:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:757:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:757:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:757:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:768:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:768:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:768:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:768:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:768:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:781:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:781:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:781:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:781:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:781:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:794:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:794:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:794:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:794:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:794:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:805:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:805:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:805:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:805:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:805:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:811:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:811:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:811:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:811:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:811:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:818:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:818:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:818:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:818:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:818:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:827:10: error: Uninitialized struct member: line.variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:827:10: error: Uninitialized struct member: line.str_variable_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:827:10: error: Uninitialized struct member: line.array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:827:10: error: Uninitialized struct member: line.str_array_ptr [uninitStructMember]
+  return line;
+         ^
+src/parser/tree.cc:827:10: error: Uninitialized struct member: line.wait_on_next [uninitStructMember]
+  return line;
+         ^
+src/st_textfield.cpp:48:3: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
+  fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+  ^
+parser.hh:1051:12: warning: The struct 'basic_symbol < by_state >' defines member function with name 'clear' also defined in its parent struct 'by_state'. [duplInheritedMember]
+
+           ^
+
+                    ^
+
+           ^
+src/Chances.cpp:409:3: warning: Member variable 'ChancesDisplay::module' is not initialized in the constructor. [uninitMemberVar]
+  ChancesDisplay() {
+  ^
+src/Chances.cpp:410:5: performance: Variable 'fontPath' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
+    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
+    ^
+src/Fixation.cpp:201:3: warning: Member variable 'Fixation::display_position' is not initialized in the constructor. [uninitMemberVar]
+  Fixation() {
+  ^
+src/Fixation.cpp:201:3: warning: Member variable 'Fixation::position_for_restart' is not initialized in the constructor. [uninitMemberVar]
+  Fixation() {
+  ^
+src/Fixation.cpp:201:3: warning: Member variable 'Fixation::length_in_samples' is not initialized in the constructor. [uninitMemberVar]
+  Fixation() {
+  ^
+src/Fixation.cpp:201:3: warning: Member variable 'Fixation::repeat_count' is not initialized in the constructor. [uninitMemberVar]
+  Fixation() {
+  ^
+src/buffered.hpp:307:3: warning: Member variable 'TimestampField < Fixation >::module' is not initialized in the constructor. [uninitMemberVar]
+  TimestampField() {
+  ^
+src/Memory.cpp:70:3: warning: Member variable 'PrepareTask::seconds' is not initialized in the constructor. [uninitMemberVar]
+  PrepareTask(const Type the_type) : type{the_type},
+  ^
+src/Memory.cpp:70:3: warning: Member variable 'PrepareTask::result_sample_count' is not initialized in the constructor. [uninitMemberVar]
+  PrepareTask(const Type the_type) : type{the_type},
+  ^
+src/Memory.cpp:70:3: warning: Member variable 'PrepareTask::mru_type' is not initialized in the constructor. [uninitMemberVar]
+  PrepareTask(const Type the_type) : type{the_type},
+  ^
+src/Memory.cpp:456:3: warning: Member variable 'PrepareThread::sample_rate' is not initialized in the constructor. [uninitMemberVar]
+  PrepareThread(ModuleToPrepareQueue* module_file_queue,
+  ^
+src/Memory.cpp:1481:3: warning: Member variable 'MenuItemPickSaveFile::module' is not initialized in the constructor. [uninitMemberVar]
+  MenuItemPickSaveFile(const std::string& type) : file_type{type} {}
+  ^
+src/Memory.cpp:1515:3: warning: Member variable 'LengthField::module' is not initialized in the constructor. [uninitMemberVar]
+  LengthField() {
+  ^
+src/NoLockQueue.h:31:3: warning: Member variable 'SpScLockFreeQueue < PrepareTask * , 5 >::m_ringBuffer' is not initialized in the constructor. [uninitMemberVar]
+  SpScLockFreeQueue()
+  ^
+src/NoLockQueue.h:31:3: warning: Member variable 'SpScLockFreeQueue < PrepareTask * , 10 >::m_ringBuffer' is not initialized in the constructor. [uninitMemberVar]
+  SpScLockFreeQueue()
+  ^
+src/NoLockQueue.h:31:3: warning: Member variable 'SpScLockFreeQueue < BufferTask * , 10 >::m_ringBuffer' is not initialized in the constructor. [uninitMemberVar]
+  SpScLockFreeQueue()
+  ^
+  void SetPanels() override {
+       ^
+    SetPanels();
+    ^
+  void SetPanels() override {
+       ^
+src/Memory.cpp:1526:9: warning: %u in format string (no. 1) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+        snprintf(text_buffer, 10, "%02u.%02u", (value / 100), value % 100);
+        ^
+src/Memory.cpp:1526:9: warning: %u in format string (no. 2) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+        snprintf(text_buffer, 10, "%02u.%02u", (value / 100), value % 100);
+        ^
+src/Memory.cpp:1529:9: warning: %u in format string (no. 1) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+        snprintf(text_buffer, 10, "%u:%02u", value / 60, value % 60);
+        ^
+src/Memory.cpp:1529:9: warning: %u in format string (no. 2) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+        snprintf(text_buffer, 10, "%u:%02u", value / 60, value % 60);
+        ^
+src/AudioFile.h:330:38: performance: Function parameter 'filePath' should be passed by const reference. [passedByValue]
+AudioFile<T>::AudioFile (std::string filePath)
+                                     ^
+src/AudioFile.h:938:38: performance: Function parameter 'filePath' should be passed by const reference. [passedByValue]
+bool AudioFile<T>::save (std::string filePath, AudioFileFormat format)
+                                     ^
+src/AudioFile.h:953:48: performance: Function parameter 'filePath' should be passed by const reference. [passedByValue]
+bool AudioFile<T>::saveToWaveFile (std::string filePath)
+                                               ^
+src/AudioFile.h:1117:47: performance: Function parameter 'filePath' should be passed by const reference. [passedByValue]
+bool AudioFile<T>::saveToCSVFile (std::string filePath) {
+                                              ^
+src/AudioFile.h:1139:48: performance: Function parameter 'filePath' should be passed by const reference. [passedByValue]
+bool AudioFile<T>::saveToAiffFile (std::string filePath)
+                                               ^
+src/AudioFile.h:1386:79: performance: Function parameter 'stringToSearchFor' should be passed by const reference. [passedByValue]
+int AudioFile<T>::getIndexOfString (std::vector<uint8_t>& source, std::string stringToSearchFor)
+                                                                              ^
+src/AudioFile.h:1480:45: performance: Function parameter 'errorMessage' should be passed by const reference. [passedByValue]
+void AudioFile<T>::reportError (std::string errorMessage)
+                                            ^
+src/Memory.cpp:1043:32: warning: Expression 'parsed_int' can have a negative value. That is converted to an unsigned value and used in an unsigned calculation. [signConversionCond]
+                  parsed_int = parsed_int % loadable_files.size();
+                               ^
+                } else if (parsed_long > INT_MAX || parsed_long < INT_MIN) {
+                                                                ^
+                  int parsed_int = static_cast<int>(parsed_long); // Cast to int if successful
+                                 ^
+                  parsed_int = parsed_int % loadable_files.size();
+                               ^

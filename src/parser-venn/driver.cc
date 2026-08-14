@@ -5,19 +5,16 @@ Derived from the Driver for calc++, a Bison example program.
 */
 
 #include "driver.h"
+
 #include "parser.hh"
 
 VennDriver::VennDriver(std::shared_ptr<VennVariables> const& vars)
-  : variables(vars), trace_parsing(false), trace_scanning(false)
-{
-}
+    : variables(vars), trace_parsing(false), trace_scanning(false) {}
 
-VennDriver::~VennDriver() {
-}
+VennDriver::~VennDriver() {}
 
 // Returns zero on success.
-int VennDriver::parse(const std::string &text)
-{
+int VennDriver::parse(const std::string& text) {
   location.initialize();
   // Remove any errors from previous parse attempt.
   errors.clear();

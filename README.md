@@ -1112,7 +1112,8 @@ Note that OUT will not always have this many channels:
 If this module is bypassed, then OUT will equal 0.0.
 
 ### Related Modules
-Many modules tagged with "Random" will also produce random values. See also my [Distribute](#distribute) module.
+Many modules tagged with "Random" will also produce random values. See also my [Distribute](#distribute) module for a different take on random numbers.
+If you'd like to use Chances to create sequences (like a Turing machine), using Count Modula's [16](https://library.vcvrack.com/CountModula/ShiftRegister16) and [32](https://library.vcvrack.com/CountModula/ShiftRegister32) value Shift Registers could likely get you there.
 
 ![Line Break image](images/Separator.png)
 
@@ -1175,7 +1176,8 @@ Note that OUT will not always have this many channels:
 If this module is bypassed, then OUT will equal 0.0.
 
 ### Related Modules
-Many modules tagged with "Random" will also produce random values. See also my [Chances](#chances) module.
+Many modules tagged with "Random" will also produce random values. See also my [Chances](#chances) module for a different take on random numbers.
+If you'd like to use Chances to create sequences (like a Turing machine), using Count Modula's [16](https://library.vcvrack.com/CountModula/ShiftRegister16) and [32](https://library.vcvrack.com/CountModula/ShiftRegister32) value Shift Registers could likely get you there.
 
 ![Line Break image](images/Separator.png)
 

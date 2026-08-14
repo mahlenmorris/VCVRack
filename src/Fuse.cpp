@@ -17,48 +17,37 @@ struct Fuse : Module {
     UNTRIGGER_INPUT,
     INPUTS_LEN
   };
-  enum OutputId {
-    BLOWN_OUTPUT,
-    MAIN_OUTPUT,
-    OUTPUTS_LEN
-  };
-  enum LightId {
-    RESET_LIGHT,
-    TRIGGER_LIGHT,
-    UNTRIGGER_LIGHT,
-    LIGHTS_LEN
-  };
+  enum OutputId { BLOWN_OUTPUT, MAIN_OUTPUT, OUTPUTS_LEN };
+  enum LightId { RESET_LIGHT, TRIGGER_LIGHT, UNTRIGGER_LIGHT, LIGHTS_LEN };
 
   Fuse() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 
-    configSwitch(STYLE_PARAM, 0, 3, 0,
-                 "Value of OUT as count -> LIMIT",
-                 {"BLOW CLOSED (IN -> 0.0)",
-                  "BLOW OPEN (0.0 -> IN)",
+    configSwitch(STYLE_PARAM, 0, 3, 0, "Value of OUT as count -> LIMIT",
+                 {"BLOW CLOSED (IN -> 0.0)", "BLOW OPEN (0.0 -> IN)",
                   "NARROW (IN * (1 - count/LIMIT) -> 0.0)",
-                  "WIDEN (IN * (count/LIMIT) -> IN)"
-                 }
-                );
+                  "WIDEN (IN * (count/LIMIT) -> IN)"});
     // Knob should snap to distinct values.
     getParamQuantity(STYLE_PARAM)->snapEnabled = true;
 
     configParam(COUNT_PARAM, 1, 1000, 10,
-        "Number of TRIGGER events until fuse blows");
+                "Number of TRIGGER events until fuse blows");
     // This is really an integer.
     getParamQuantity(COUNT_PARAM)->snapEnabled = true;
 
     configInput(RESET_INPUT, "Count is reset to zero when a trigger enters");
     configButton(RESET_PARAM, "Press to reset count of triggers to zero");
 
-    configInput(TRIGGER_INPUT, "Adds one to the count each time a trigger enters");
+    configInput(TRIGGER_INPUT,
+                "Adds one to the count each time a trigger enters");
     configButton(TRIGGER_PARAM, "Press to add one to the count");
 
-    configInput(UNTRIGGER_INPUT, "Subtracts one from the count each time a trigger enters");
+    configInput(UNTRIGGER_INPUT,
+                "Subtracts one from the count each time a trigger enters");
     configButton(UNTRIGGER_PARAM, "Press to subtract one from the count");
 
     configParam(SLEW_PARAM, 0.0f, 5.0f, 0.0f,
-        "Rise/fall time for amplitude changes", " seconds");
+                "Rise/fall time for amplitude changes", " seconds");
     configOutput(BLOWN_OUTPUT, "Outputs a trigger when count hits LIMIT");
 
     configInput(MAIN_INPUT, "In");
@@ -95,13 +84,11 @@ struct Fuse : Module {
     }
   }
 
-  int getStyle() {
-    return params[STYLE_PARAM].getValue();
-  }
+  int getStyle() { return params[STYLE_PARAM].getValue(); }
 
   float get_new_envelope(float current_value, float desired_value,
                          float sample_rate) {
-    if (current_value  < 0.0f) {
+    if (current_value < 0.0f) {
       // Uninitialized!
       return desired_value;
     }
@@ -114,7 +101,7 @@ struct Fuse : Module {
     }
     // Compute how much we're allowed to change per sample over the 0-1
     // range this operates in.
-    float max_move =  1.0f / (slew * sample_rate);
+    float max_move = 1.0f / (slew * sample_rate);
     if (desired_value > current_value) {
       return std::min(current_value + max_move, desired_value);
     } else {
@@ -137,8 +124,8 @@ struct Fuse : Module {
 
     // Test the RESET button and input.
     bool reset_was_low = !reset_trigger.isHigh();
-    reset_trigger.process(rescale(
-        inputs[RESET_INPUT].getVoltage(), 0.1f, 2.0f, 0.0f, 1.0f));
+    reset_trigger.process(
+        rescale(inputs[RESET_INPUT].getVoltage(), 0.1f, 2.0f, 0.0f, 1.0f));
     if (reset_was_low && reset_trigger.isHigh()) {
       // Flash the reset light for a tenth of second.
       // Compute how many samples to show the light.
@@ -148,15 +135,15 @@ struct Fuse : Module {
     // presses the button; we just light up the button while it's
     // being pressed.
     bool reset = (params[RESET_PARAM].getValue() > 0.1f) ||
-      (reset_was_low && reset_trigger.isHigh());
+                 (reset_was_low && reset_trigger.isHigh());
     if (reset) {
       count = 0;
     }
 
     // Test the TRIGGER button and input.
     bool trigger_was_low = !counter_trigger.isHigh();
-    counter_trigger.process(rescale(inputs[TRIGGER_INPUT].getVoltage(),
-                                   0.1f, 2.0f, 0.0f, 1.0f));
+    counter_trigger.process(
+        rescale(inputs[TRIGGER_INPUT].getVoltage(), 0.1f, 2.0f, 0.0f, 1.0f));
     bool trigger_from_input = trigger_was_low && counter_trigger.isHigh();
 
     // We only want one trigger from a button press.
@@ -172,8 +159,8 @@ struct Fuse : Module {
 
     // Now test the UNTRIGGER button and input.
     bool untrigger_was_low = !countdown_trigger.isHigh();
-    countdown_trigger.process(rescale(inputs[UNTRIGGER_INPUT].getVoltage(),
-                                   0.1f, 2.0f, 0.0f, 1.0f));
+    countdown_trigger.process(
+        rescale(inputs[UNTRIGGER_INPUT].getVoltage(), 0.1f, 2.0f, 0.0f, 1.0f));
     bool untrigger_from_input = untrigger_was_low && countdown_trigger.isHigh();
 
     // We only want one trigger to register from a button press.
@@ -251,9 +238,8 @@ struct Fuse : Module {
         }
       }
     }
-    current_envelope_value =
-      get_new_envelope(current_envelope_value, desired_envelope_value,
-                       args.sampleRate);
+    current_envelope_value = get_new_envelope(
+        current_envelope_value, desired_envelope_value, args.sampleRate);
     if (current_envelope_value > 0.0f) {
       // Only read IN if we need to.
       float in_voltage = default_in_voltage;
@@ -271,11 +257,11 @@ struct Fuse : Module {
 
     // Button Lights.
     lights[RESET_LIGHT].setBrightness(
-      reset || reset_light_countdown > 0 ? 1.0f: 0.0f);
-    lights[TRIGGER_LIGHT].setBrightness(
-      trigger_light_countdown > 0 ? 1.0f: 0.0f);
-    lights[UNTRIGGER_LIGHT].setBrightness(
-      untrigger_light_countdown > 0 ? 1.0f: 0.0f);
+        reset || reset_light_countdown > 0 ? 1.0f : 0.0f);
+    lights[TRIGGER_LIGHT].setBrightness(trigger_light_countdown > 0 ? 1.0f
+                                                                    : 0.0f);
+    lights[UNTRIGGER_LIGHT].setBrightness(untrigger_light_countdown > 0 ? 1.0f
+                                                                        : 0.0f);
   }
 
   // Set by context menu.
@@ -313,11 +299,11 @@ struct FuseDisplay : Widget {
   std::string fontPath;
   int ticks_to_keep_text_visible = 0;
 
-  FuseDisplay() {
-    fontPath = asset::system("res/fonts/ShareTechMono-Regular.ttf");
-  }
+  FuseDisplay()
+      : module{nullptr},
+        fontPath{asset::system("res/fonts/ShareTechMono-Regular.ttf")} {}
 
-  void onHover(const HoverEvent & e) override {
+  void onHover(const HoverEvent& e) override {
     ticks_to_keep_text_visible = 5;  // Arbitrary, but seems to be enough.
   }
 
@@ -355,8 +341,8 @@ struct FuseDisplay : Widget {
         // To not touch the edges, we squinch in 0.5 units on all sides.
         switch (style) {
           case 0:
-            nvgRect(args.vg, 0.5, 0.5,
-                    bounding_box.x * completion - 1.0f, bounding_box.y - 1.0f);
+            nvgRect(args.vg, 0.5, 0.5, bounding_box.x * completion - 1.0f,
+                    bounding_box.y - 1.0f);
             if (completion < 0.7f) {
               main_color = SCHEME_GREEN;
             } else if (completion < 1.0f) {
@@ -366,8 +352,8 @@ struct FuseDisplay : Widget {
             }
             break;
           case 1:
-            nvgRect(args.vg, 0.5, 0.5,
-                    bounding_box.x * completion - 1.0f, bounding_box.y - 1.0f);
+            nvgRect(args.vg, 0.5, 0.5, bounding_box.x * completion - 1.0f,
+                    bounding_box.y - 1.0f);
             if (completion < 0.7f) {
               main_color = SCHEME_RED;
             } else if (completion < 1.0f) {
@@ -381,18 +367,16 @@ struct FuseDisplay : Widget {
             nvgLineTo(args.vg, bounding_box.x - 0.5f, bounding_box.y / 2.0f);
             nvgLineTo(args.vg, 0.5, bounding_box.y - 0.5);
             nvgClosePath(args.vg);
-            main_color = color::plus(
-              color::mult(SCHEME_RED, completion),
-              color::mult(SCHEME_GREEN, 1 - completion));
+            main_color = color::plus(color::mult(SCHEME_RED, completion),
+                                     color::mult(SCHEME_GREEN, 1 - completion));
             break;
           case 3:
             nvgMoveTo(args.vg, 0.5, bounding_box.y / 2.0f);
             nvgLineTo(args.vg, bounding_box.x - 0.5f, 0.5);
             nvgLineTo(args.vg, bounding_box.x - 0.5f, bounding_box.y - 0.5);
             nvgClosePath(args.vg);
-            main_color = color::plus(
-              color::mult(SCHEME_GREEN, completion),
-              color::mult(SCHEME_RED, 1 - completion));
+            main_color = color::plus(color::mult(SCHEME_GREEN, completion),
+                                     color::mult(SCHEME_RED, 1 - completion));
             break;
         }
         nvgFillColor(args.vg, main_color);
@@ -406,33 +390,30 @@ struct FuseDisplay : Widget {
           case 0:
           case 1:
             // In the case of style 0 or 1, that's a rectangle.
-            nvgRect(args.vg, cut_x, 0.5,
-                             bounding_box.x * (1.0 - completion),
-                             bounding_box.y - 1.0f);
+            nvgRect(args.vg, cut_x, 0.5, bounding_box.x * (1.0 - completion),
+                    bounding_box.y - 1.0f);
             break;
-          case 2:
-            {
-              Vec upper_left(0.5, 0.5),
-                  right(bounding_box.x - 0.5f, bounding_box.y / 2.0f),
-                  lower_left(0.5, bounding_box.y - 0.5);
-              nvgMoveTo(args.vg, right.x, right.y);  // Start at the tip.
-              nvgLineTo(args.vg, cut_x, find_y(upper_left, right, cut_x));
-              nvgLineTo(args.vg, cut_x, find_y(lower_left, right, cut_x));
-              nvgClosePath(args.vg);
-              break;
-            }
-          case 3:
-            {
-              Vec left(0.5, bounding_box.y / 2.0f),
-                  upper_right(bounding_box.x - 0.5f, 0.5),
-                  lower_right(bounding_box.x - 0.5f, bounding_box.y - 0.5);
-              nvgMoveTo(args.vg, upper_right.x, upper_right.y);
-              nvgLineTo(args.vg, lower_right.x, lower_right.y);
-              nvgLineTo(args.vg, cut_x, find_y(left, lower_right, cut_x));
-              nvgLineTo(args.vg, cut_x, find_y(left, upper_right, cut_x));
-              nvgClosePath(args.vg);
-              break;
-            }
+          case 2: {
+            Vec upper_left(0.5, 0.5),
+                right(bounding_box.x - 0.5f, bounding_box.y / 2.0f),
+                lower_left(0.5, bounding_box.y - 0.5);
+            nvgMoveTo(args.vg, right.x, right.y);  // Start at the tip.
+            nvgLineTo(args.vg, cut_x, find_y(upper_left, right, cut_x));
+            nvgLineTo(args.vg, cut_x, find_y(lower_left, right, cut_x));
+            nvgClosePath(args.vg);
+            break;
+          }
+          case 3: {
+            Vec left(0.5, bounding_box.y / 2.0f),
+                upper_right(bounding_box.x - 0.5f, 0.5),
+                lower_right(bounding_box.x - 0.5f, bounding_box.y - 0.5);
+            nvgMoveTo(args.vg, upper_right.x, upper_right.y);
+            nvgLineTo(args.vg, lower_right.x, lower_right.y);
+            nvgLineTo(args.vg, cut_x, find_y(left, lower_right, cut_x));
+            nvgLineTo(args.vg, cut_x, find_y(left, upper_right, cut_x));
+            nvgClosePath(args.vg);
+            break;
+          }
         }
         nvgFillColor(args.vg, color::mult(color::WHITE, 0.5f));
         nvgFill(args.vg);
@@ -446,18 +427,19 @@ struct FuseDisplay : Widget {
         std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
         if (font) {
           // WHITE is really hard to read on YELLOW.
-          nvgFillColor(args.vg,
-              color::isEqual(main_color, SCHEME_YELLOW) ? color::BLACK
-                                                        : color::WHITE);
+          nvgFillColor(args.vg, color::isEqual(main_color, SCHEME_YELLOW)
+                                    ? color::BLACK
+                                    : color::WHITE);
           nvgFontSize(args.vg, 13);
           nvgFontFaceId(args.vg, font->handle);
           nvgTextLetterSpacing(args.vg, -2);
 
           // Place on the line just off the left edge.
-          nvgText(args.vg, 1, bounding_box.y / 2.0 + 4, count_text.c_str(), NULL);
+          nvgText(args.vg, 1, bounding_box.y / 2.0 + 4, count_text.c_str(),
+                  NULL);
 
-          std::string text = std::to_string(static_cast<int>(
-            floor(completion * 100))) + "%";
+          std::string text =
+              std::to_string(static_cast<int>(floor(completion * 100))) + "%";
           // Place on the line just off the left edge.
           float backspace = text.length() * 4.5f + 2;
           nvgText(args.vg, bounding_box.x - backspace, bounding_box.y / 2.0 + 4,
@@ -476,8 +458,7 @@ struct FuseWidget : ModuleWidget {
                          asset::plugin(pluginInstance, "res/Fuse-dark.svg")));
 
     // Screen at the top.
-    FuseDisplay* display = createWidget<FuseDisplay>(
-      mm2px(Vec(1.240, 17.5)));
+    FuseDisplay* display = createWidget<FuseDisplay>(mm2px(Vec(1.240, 17.5)));
     display->box.size = mm2px(Vec(28.0, 4.0));
     display->module = module;
     addChild(display);
@@ -490,38 +471,38 @@ struct FuseWidget : ModuleWidget {
     addParam(style_knob);
 
     // Count.
-    addParam(createParamCentered<RoundBlackKnob>(
-        mm2px(Vec(20.971, 32.0)), module, Fuse::COUNT_PARAM));
+    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(20.971, 32.0)),
+                                                 module, Fuse::COUNT_PARAM));
 
     // Trigger
     addInput(createInputCentered<ThemedPJ301MPort>(
         mm2px(Vec(8.024, 48.0)), module, Fuse::TRIGGER_INPUT));
     // Making this a Button and not a Latch means that it pops back up
     // when you let go.
-    addParam(createLightParamCentered<VCVLightButton<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 48.0)),
-                                             module, Fuse::TRIGGER_PARAM,
-                                             Fuse::TRIGGER_LIGHT));
+    addParam(
+        createLightParamCentered<VCVLightButton<MediumSimpleLight<WhiteLight>>>(
+            mm2px(Vec(20.971, 48.0)), module, Fuse::TRIGGER_PARAM,
+            Fuse::TRIGGER_LIGHT));
 
     // Untrigger
     addInput(createInputCentered<ThemedPJ301MPort>(
         mm2px(Vec(8.024, 64.0)), module, Fuse::UNTRIGGER_INPUT));
     // Making this a Button and not a Latch means that it pops back up
     // when you let go.
-    addParam(createLightParamCentered<VCVLightButton<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 64.0)),
-                                             module, Fuse::UNTRIGGER_PARAM,
-                                             Fuse::UNTRIGGER_LIGHT));
+    addParam(
+        createLightParamCentered<VCVLightButton<MediumSimpleLight<WhiteLight>>>(
+            mm2px(Vec(20.971, 64.0)), module, Fuse::UNTRIGGER_PARAM,
+            Fuse::UNTRIGGER_LIGHT));
 
     // Reset
-    addInput(createInputCentered<ThemedPJ301MPort>(
-        mm2px(Vec(8.024, 80.0)), module, Fuse::RESET_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.024, 80.0)),
+                                                   module, Fuse::RESET_INPUT));
     // Making this a Button and not a Latch means that it pops back up
     // when you let go.
-    addParam(createLightParamCentered<VCVLightButton<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(20.971, 80.0)),
-                                             module, Fuse::RESET_PARAM,
-                                             Fuse::RESET_LIGHT));
+    addParam(
+        createLightParamCentered<VCVLightButton<MediumSimpleLight<WhiteLight>>>(
+            mm2px(Vec(20.971, 80.0)), module, Fuse::RESET_PARAM,
+            Fuse::RESET_LIGHT));
 
     // Slew. Not always needed, so making it smaller.
     addParam(createParamCentered<RoundSmallBlackKnob>(
@@ -530,8 +511,8 @@ struct FuseWidget : ModuleWidget {
     addOutput(createOutputCentered<ThemedPJ301MPort>(
         mm2px(Vec(20.971, 96.0)), module, Fuse::BLOWN_OUTPUT));
 
-    addInput(createInputCentered<ThemedPJ301MPort>(
-        mm2px(Vec(8.024, 112.0)), module, Fuse::MAIN_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(8.024, 112.0)),
+                                                   module, Fuse::MAIN_INPUT));
 
     addOutput(createOutputCentered<ThemedPJ301MPort>(
         mm2px(Vec(20.971, 112.0)), module, Fuse::MAIN_OUTPUT));
@@ -543,10 +524,10 @@ struct FuseWidget : ModuleWidget {
     menu->addChild(createMenuLabel("Unplugged value of IN"));
     float defaults[] = {-10.0f, -5.0f, -1.0f, 1.0f, 5.0f, 10.0f};
     for (const float default_in : defaults) {
-      menu->addChild(createCheckMenuItem(string::f("%gV", default_in), "",
-          [=]() {return default_in == module->default_in_voltage;},
-          [=]() {module->default_in_voltage = default_in;}
-      ));
+      menu->addChild(createCheckMenuItem(
+          string::f("%gV", default_in), "",
+          [=]() { return default_in == module->default_in_voltage; },
+          [=]() { module->default_in_voltage = default_in; }));
     }
   }
 };
