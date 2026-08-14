@@ -4,15 +4,12 @@ Driver::Driver()
 src\st_textfield.cpp:49:3: performance: Variable 'textOffset' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
   textOffset = math::Vec(3, 3);
   ^
-src\parser\tree.cc:868:49: performance: Function parameter 'line' should be passed by const reference. [passedByValue]
-std::ostream& operator<<(std::ostream& os, Line line) {
-                                                ^
-src\pcode.cpp:217:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
-            [loop_type](Loop l) { return loop_type == l.loop_type; });
-                             ^
 src\pcode.cpp:253:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
             [loop_type](Loop l) { return loop_type == l.loop_type; });
                              ^
+src\parser\tree.cc:868:49: performance: Function parameter 'line' should be passed by const reference. [passedByValue]
+std::ostream& operator<<(std::ostream& os, Line line) {
+                                                ^
 src\Fixation.cpp:201:3: warning: Member variable 'Fixation::display_position' is not initialized in the constructor. [uninitMemberVar]
   Fixation() {
   ^
@@ -25,34 +22,25 @@ src\Fixation.cpp:201:3: warning: Member variable 'Fixation::length_in_samples' i
 src\Fixation.cpp:201:3: warning: Member variable 'Fixation::repeat_count' is not initialized in the constructor. [uninitMemberVar]
   Fixation() {
   ^
-src\Memory.cpp:70:3: warning: Member variable 'PrepareTask::seconds' is not initialized in the constructor. [uninitMemberVar]
-  PrepareTask(const Type the_type) : type{the_type},
+src\Memory.cpp:64:3: warning: Member variable 'PrepareTask::seconds' is not initialized in the constructor. [uninitMemberVar]
+  PrepareTask(const Type the_type)
   ^
-src\Memory.cpp:70:3: warning: Member variable 'PrepareTask::result_sample_count' is not initialized in the constructor. [uninitMemberVar]
-  PrepareTask(const Type the_type) : type{the_type},
+src\Memory.cpp:64:3: warning: Member variable 'PrepareTask::result_sample_count' is not initialized in the constructor. [uninitMemberVar]
+  PrepareTask(const Type the_type)
   ^
-src\Memory.cpp:70:3: warning: Member variable 'PrepareTask::mru_type' is not initialized in the constructor. [uninitMemberVar]
-  PrepareTask(const Type the_type) : type{the_type},
+src\Memory.cpp:64:3: warning: Member variable 'PrepareTask::mru_type' is not initialized in the constructor. [uninitMemberVar]
+  PrepareTask(const Type the_type)
   ^
-src\Memory.cpp:456:3: warning: Member variable 'PrepareThread::sample_rate' is not initialized in the constructor. [uninitMemberVar]
-  PrepareThread(ModuleToPrepareQueue* module_file_queue,
-  ^
-src\Memory.cpp:1481:3: warning: Member variable 'MenuItemPickSaveFile::module' is not initialized in the constructor. [uninitMemberVar]
-  MenuItemPickSaveFile(const std::string& type) : file_type{type} {}
-  ^
-src\Memory.cpp:1515:3: warning: Member variable 'LengthField::module' is not initialized in the constructor. [uninitMemberVar]
-  LengthField() {
-  ^
-src\Memory.cpp:1526:9: warning: %u in format string (no. 1) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+src\Memory.cpp:1585:9: warning: %u in format string (no. 1) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
         snprintf(text_buffer, 10, "%02u.%02u", (value / 100), value % 100);
         ^
-src\Memory.cpp:1526:9: warning: %u in format string (no. 2) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+src\Memory.cpp:1585:9: warning: %u in format string (no. 2) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
         snprintf(text_buffer, 10, "%02u.%02u", (value / 100), value % 100);
         ^
-src\Memory.cpp:1529:9: warning: %u in format string (no. 1) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+src\Memory.cpp:1588:9: warning: %u in format string (no. 1) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
         snprintf(text_buffer, 10, "%u:%02u", value / 60, value % 60);
         ^
-src\Memory.cpp:1529:9: warning: %u in format string (no. 2) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+src\Memory.cpp:1588:9: warning: %u in format string (no. 2) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
         snprintf(text_buffer, 10, "%u:%02u", value / 60, value % 60);
         ^
 src\AudioFile.h:330:38: performance: Function parameter 'filePath' should be passed by const reference. [passedByValue]
@@ -79,15 +67,15 @@ int AudioFile<T>::getIndexOfString (std::vector<uint8_t>& source, std::string st
 src\AudioFile.h:1480:45: performance: Function parameter 'errorMessage' should be passed by const reference. [passedByValue]
 void AudioFile<T>::reportError (std::string errorMessage)
                                             ^
-src\Memory.cpp:1043:32: warning: Expression 'parsed_int' can have a negative value. That is converted to an unsigned value and used in an unsigned calculation. [signConversionCond]
+src\Memory.cpp:1095:32: warning: Expression 'parsed_int' can have a negative value. That is converted to an unsigned value and used in an unsigned calculation. [signConversionCond]
                   parsed_int = parsed_int % loadable_files.size();
                                ^
-src\Memory.cpp:1032:65: note: Assuming that condition 'parsed_long<(-2147483647-1)' is not redundant
+src\Memory.cpp:1082:65: note: Assuming that condition 'parsed_long<(-2147483647-1)' is not redundant
                 } else if (parsed_long > INT_MAX || parsed_long < INT_MIN) {
                                                                 ^
-src\Memory.cpp:1039:34: note: parsed_int is assigned 'static_cast<int>(parsed_long)' here.
-                  int parsed_int = static_cast<int>(parsed_long); // Cast to int if successful
+src\Memory.cpp:1090:34: note: parsed_int is assigned 'static_cast<int>(parsed_long)' here.
+                  int parsed_int = static_cast<int>(
                                  ^
-src\Memory.cpp:1043:32: note: Negative value is converted to an unsigned value
+src\Memory.cpp:1095:32: note: Negative value is converted to an unsigned value
                   parsed_int = parsed_int % loadable_files.size();
                                ^

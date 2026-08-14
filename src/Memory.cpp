@@ -1,60 +1,54 @@
+#include <cstdlib>  // for strtol
 #include <ctime>
 #include <filesystem>
 #include <iomanip>
 #include <thread>
-#include <cstdlib> // for strtol
 
 // VCV.
-#include "plugin.hpp"
 #include "osdialog.h"
+#include "plugin.hpp"
 
 // Mine.
+#include "StochasticTelegraph.hpp"  // For MRU lists.
 #include "buffered.hpp"
 #include "smoother.h"
 #include "tipsy_utils.h"
-#include "StochasticTelegraph.hpp"  // For MRU lists.
 
 // WAV/AIFF library.
 #include "AudioFile.h"
 
 // We auto-scale the view of the waveform in Depict, but snap to these values
 // to make it less confusing.
-static const float WIDTHS[] = {
-  0.01, 0.02, 0.05,
-  0.1, 0.2, 0.5,
-  1, 2, 5,
-  10, 20, 50};
+static const float WIDTHS[] = {0.01, 0.02, 0.05, 0.1, 0.2, 0.5,
+                               1,    2,    5,    10,  20,  50};
 // The string versions of the WIDTHS above.
-static const char* TEXTS[] = {
-  "0.01V", "0.02V", "0.05V",
-  "0.1V", "0.2V", "0.5V",
-  "1V", "2V", "5V",
-  "10V", "20V", "50V"
-};
+static const char* TEXTS[] = {"0.01V", "0.02V", "0.05V", "0.1V", "0.2V", "0.5V",
+                              "1V",    "2V",    "5V",    "10V",  "20V",  "50V"};
 
 static constexpr size_t recvBufferSize{1024 * 64};
 
 ///////////////////////////////////////////////////////////////
 //
-// There are many threads in a Memory object which need to assign tasks to each other.
-// They are:
+// There are many threads in a Memory object which need to assign tasks to each
+// other. They are:
 // * The module itself (i.e., process()).
 // * The UI Widget (events coming from the user).
 // * The Prepare thread, which does long tasks like preparing audio files.
-// * The BufferUpdate thread, for tasks that require changing the buffer. 
+// * The BufferUpdate thread, for tasks that require changing the buffer.
 
 // These are the structs for doing that. Each struct corresponds to a single
 // NoLockQueue, with a single writer and reader.
 // All queues are owned by the module.
 
-// PrepareTask's and BufferTask's (in buffered.h) get passed from thread to thread.
+// PrepareTask's and BufferTask's (in buffered.h) get passed from thread to
+// thread.
 struct PrepareTask {
   enum Type {
     LOAD_DIRECTORY_SET,  // str1 is the directory name.
-    LOAD_FILE,           // str1 is the selected file name, str2 is the directory name.
+    LOAD_FILE,  // str1 is the selected file name, str2 is the directory name.
     // WIPE and RESET are really only different in how the length is set.
-    MAKE_BLANK,          // seconds is length in seconds
-    SAVE_FILE            // str1 is the full path and name.
+    MAKE_BLANK,  // seconds is length in seconds
+    SAVE_FILE    // str1 is the full path and name.
   };
   Type type;
   double seconds;
@@ -67,12 +61,15 @@ struct PrepareTask {
   bool update_mru;
   FileOperationReporting* status;  // Owned by module.
 
-  PrepareTask(const Type the_type) : type{the_type},
-      new_left_array{nullptr}, new_right_array{nullptr},
-      loadable_files{nullptr}, update_mru{false}, status{nullptr} {}
+  PrepareTask(const Type the_type)
+      : type{the_type},
+        new_left_array{nullptr},
+        new_right_array{nullptr},
+        loadable_files{nullptr},
+        update_mru{false},
+        status{nullptr} {}
 
-  ~PrepareTask() {
-  }
+  ~PrepareTask() {}
 
   static PrepareTask* LoadFileTask(FileOperationReporting* reporting,
                                    const std::string& name,
@@ -84,9 +81,11 @@ struct PrepareTask {
     return task;
   }
 
-  static PrepareTask* LoadDirectoryTask(const std::string& directory,
-                                        StochasticTelegraph::MRUType mru_type = StochasticTelegraph::MEMORY_DIRECTORY,
-                                        bool update_mru = false) {
+  static PrepareTask* LoadDirectoryTask(
+      const std::string& directory,
+      StochasticTelegraph::MRUType mru_type =
+          StochasticTelegraph::MEMORY_DIRECTORY,
+      bool update_mru = false) {
     PrepareTask* task = new PrepareTask(LOAD_DIRECTORY_SET);
     task->str1 = directory;
     task->mru_type = mru_type;
@@ -149,18 +148,21 @@ struct BufferChangeThread {
   // Indicator to UI that File I/O is happening.
   bool busy = false;
 
-  BufferChangeThread(BufferHandle* the_handle, PrepareToBufferQueue* prepare_buffer_queue,
+  BufferChangeThread(BufferHandle* the_handle,
+                     PrepareToBufferQueue* prepare_buffer_queue,
                      ModuleToBufferQueue* module_buffer_queue,
                      BufferToModuleQueue* buffer_module_queue,
-                     std::vector<FileOperationReporting*>* reporters) :
-      handle{the_handle}, prepare_buffer_queue{prepare_buffer_queue},
-      module_buffer_queue{module_buffer_queue},
-      buffer_module_queue{buffer_module_queue}, reporters{reporters},
-      process_call_rate{0.0f}, memory_sample_rate{0.0f}, shutdown{false} {}
+                     std::vector<FileOperationReporting*>* reporters)
+      : handle{the_handle},
+        prepare_buffer_queue{prepare_buffer_queue},
+        module_buffer_queue{module_buffer_queue},
+        buffer_module_queue{buffer_module_queue},
+        reporters{reporters},
+        process_call_rate{0.0f},
+        memory_sample_rate{0.0f},
+        shutdown{false} {}
 
-  void Halt() {
-    shutdown = true;
-  }
+  void Halt() { shutdown = true; }
 
   void SetRates(float vcv_sample_rate, float memory_rate) {
     process_call_rate = vcv_sample_rate;
@@ -169,7 +171,7 @@ struct BufferChangeThread {
 
   // Updates the "waveforms" that Depict shows.
   void RefreshWaveform(std::shared_ptr<Buffer> buffer) {
-    float sector_size = (double) buffer->true_length / WAVEFORM_SIZE;
+    float sector_size = (double)buffer->true_length / WAVEFORM_SIZE;
     float peak_amplitude_left = 0.0f, peak_amplitude_right = 0.0f;
     bool full_scan = buffer->full_scan;
 
@@ -182,19 +184,20 @@ struct BufferChangeThread {
       if (full_scan || buffer->dirty[p]) {
         if (!buffer->cv_rate && sector_size >= 1.0) {
           float left_amplitude = 0.0, right_amplitude = 0.0;
-          for (int i = (int) trunc(p * sector_size);
-                !shutdown && i < std::min((int) trunc((p + 1) * sector_size), buffer->true_length);
-                i++) {
-            left_amplitude = std::max(left_amplitude,
-                                      std::fabs(buffer->left_array[i]));
-            right_amplitude = std::max(right_amplitude,
-                                        std::fabs(buffer->right_array[i]));
+          for (int i = (int)trunc(p * sector_size);
+               !shutdown && i < std::min((int)trunc((p + 1) * sector_size),
+                                         buffer->true_length);
+               i++) {
+            left_amplitude =
+                std::max(left_amplitude, std::fabs(buffer->left_array[i]));
+            right_amplitude =
+                std::max(right_amplitude, std::fabs(buffer->right_array[i]));
           }
           buffer->waveform.points[p][0] = left_amplitude;
           buffer->waveform.points[p][1] = right_amplitude;
         } else {
           FloatPair pair;
-          buffer->Get(&pair, ((double) p) * buffer->length / WAVEFORM_SIZE);
+          buffer->Get(&pair, ((double)p) * buffer->length / WAVEFORM_SIZE);
           if (buffer->cv_rate) {
             buffer->waveform.points[p][0] = pair.left;
             buffer->waveform.points[p][1] = pair.right;
@@ -209,21 +212,24 @@ struct BufferChangeThread {
         // which, since writes are sequential, is quite likely.
         buffer->dirty[p] = false;
       }
-      peak_amplitude_left = std::max(peak_amplitude_left, std::fabs(buffer->waveform.points[p][0]));
-      peak_amplitude_right = std::max(peak_amplitude_right, std::fabs(buffer->waveform.points[p][1]));
+      peak_amplitude_left = std::max(peak_amplitude_left,
+                                     std::fabs(buffer->waveform.points[p][0]));
+      peak_amplitude_right = std::max(peak_amplitude_right,
+                                      std::fabs(buffer->waveform.points[p][1]));
     }
     if (buffer->cv_rate) {
       AssignNormalizationFactor(peak_amplitude_left, true, buffer);
       AssignNormalizationFactor(peak_amplitude_right, false, buffer);
     } else {
-      AssignNormalizationFactor(std::max(peak_amplitude_left, peak_amplitude_right), true, buffer);
+      AssignNormalizationFactor(
+          std::max(peak_amplitude_left, peak_amplitude_right), true, buffer);
     }
   }
 
   // Turn a peak discovered value into the text and numeric magnification
   // factors for Depict to use.
-  void AssignNormalizationFactor(float peak_value, bool left, std::shared_ptr<Buffer> &buffer)
-  {
+  void AssignNormalizationFactor(float peak_value, bool left,
+                                 std::shared_ptr<Buffer>& buffer) {
     float window_size;
     for (int i = 0; i < 12; i++) {
       float f = WIDTHS[i];
@@ -283,10 +289,12 @@ struct BufferChangeThread {
       // We typically don't want to let there be a click between
       // the end and the beginning of the buffer in an *audio* file.
       // So if I suspect there will be one, add a Smooth to get rid of it.
-      if (abs(buffer->left_array[0] - buffer->left_array[buffer->true_length - 1]) > 0.1 ||
-          abs(buffer->right_array[0] - buffer->right_array[buffer->true_length - 1]) > 0.1) {
+      if (abs(buffer->left_array[0] -
+              buffer->left_array[buffer->true_length - 1]) > 0.1 ||
+          abs(buffer->right_array[0] -
+              buffer->right_array[buffer->true_length - 1]) > 0.1) {
         Smooth* new_smooth = new Smooth(0, true);
-          buffer->smooths.additions.push(new_smooth);
+        buffer->smooths.additions.push(new_smooth);
       }
     }
 
@@ -303,8 +311,10 @@ struct BufferChangeThread {
           while (buffer->smooths.additions.pop(item)) {
             // Check that creation_time is long enough ago that we're
             // confident that the new section is written.
-            if (item->creation_time < 0 || (system::getTime() - item->creation_time > 0.001)) {
-              smooth(buffer->left_array, buffer->right_array, item->position, 25, buffer->true_length);
+            if (item->creation_time < 0 ||
+                (system::getTime() - item->creation_time > 0.001)) {
+              smooth(buffer->left_array, buffer->right_array, item->position,
+                     25, buffer->true_length);
               delete item;
             } else {
               buffer->smooths.additions.push(item);
@@ -318,23 +328,26 @@ struct BufferChangeThread {
           while (module_buffer_queue->tasks.pop(task) && !shutdown) {
             switch (task->type) {
               case BufferTask::REPLACE_AUDIO: {
-                WARN("There should not be a REPLACE_AUDIO task on the module_buffer_queue!");
+                WARN(
+                    "There should not be a REPLACE_AUDIO task on the "
+                    "module_buffer_queue!");
                 delete task;
-              }
-              break;
+              } break;
               case BufferTask::SAVE_FILE: {
-                task->status->log_messages.lines.push(
-                  "Starting to save '" + task->str1 + "'.");
+                task->status->log_messages.lines.push("Starting to save '" +
+                                                      task->str1 + "'.");
                 busy = true;
                 AudioFile<float> audio_file;
                 // Let's us collect the logs of any errors.
                 audio_file.setLogQueue(&(task->status->log_messages));
-                // This will tell AudioFile not use the internal buffer. Much faster to
-                // not have to build a new buffer and copy to it, and less RAM-intensive.
+                // This will tell AudioFile not use the internal buffer. Much
+                // faster to not have to build a new buffer and copy to it, and
+                // less RAM-intensive.
                 audio_file.setMemoryBuffer(buffer);
 
                 // Do a fair bit of setup, so it can save properly.
-                // Set both the number of channels and number of samples per channel
+                // Set both the number of channels and number of samples per
+                // channel
                 audio_file.setAudioBufferSize(2, buffer->true_length);
 
                 // Set the number of samples per channel
@@ -347,36 +360,36 @@ struct BufferChangeThread {
 
                 // SLOW: this call can take many seconds.
                 bool worked = false;
-                if (rack::string::endsWith(rack::string::lowercase(task->str1), ".csv")) {
+                if (rack::string::endsWith(rack::string::lowercase(task->str1),
+                                           ".csv")) {
                   worked = audio_file.save(task->str1, AudioFileFormat::CSV);
                 } else {
                   // Wave file (implicit).
                   worked = audio_file.save(task->str1);
                 }
-                
+
                 busy = false;
                 if (worked) {
-                  task->status->log_messages.lines.push(
-                    "Completed save of '" + task->str1 + "'.");
+                  task->status->log_messages.lines.push("Completed save of '" +
+                                                        task->str1 + "'.");
                 } else {
-                  task->status->log_messages.lines.push(
-                    "Unable to save '" + task->str1 + "'.");
-                }               
+                  task->status->log_messages.lines.push("Unable to save '" +
+                                                        task->str1 + "'.");
+                }
                 task->status->completed = SAVE_COMPLETED;
                 delete task;
 
-                // We may have added a file to the Load directory, so we tell the module
-                // to rescan the load directory just in case.
-                // No need to update MRU for a rescan.
+                // We may have added a file to the Load directory, so we tell
+                // the module to rescan the load directory just in case. No need
+                // to update MRU for a rescan.
                 PrepareTask* rescan_task = PrepareTask::LoadDirectoryTask("");
                 if (!buffer_module_queue->tasks.push(rescan_task)) {
                   delete rescan_task;
                 }
-              }
-              break;
+              } break;
             }
           }
-        } 
+        }
 
         if (prepare_buffer_queue->tasks.size() > 0) {
           BufferTask* task;
@@ -384,45 +397,46 @@ struct BufferChangeThread {
             switch (task->type) {
               case BufferTask::REPLACE_AUDIO: {
                 ReplaceAudio(buffer, task);
-              }
-              break;
+              } break;
               case BufferTask::SAVE_FILE: {
-                WARN("There should not be a SAVE_FILE task on the prepare_buffer_queue!");
+                WARN(
+                    "There should not be a SAVE_FILE task on the "
+                    "prepare_buffer_queue!");
                 delete task;
-              }
-              break;
+              } break;
             }
           }
-        } 
+        }
 
         if (buffer->replacements.queue.size() > 0) {
           BufferTask* task;
           while (buffer->replacements.queue.pop(task) && !shutdown) {
             switch (task->type) {
               case BufferTask::REPLACE_AUDIO: {
-                //WARN("Sending REPLACE_AUDIO task from replacements queue...");
-                //WARN("receiver says replace_task->sample_count = %d", task->sample_count);
-                // Now that we are within Memory, we can add a LOG 
+                // WARN("Sending REPLACE_AUDIO task from replacements
+                // queue..."); WARN("receiver says replace_task->sample_count =
+                // %d", task->sample_count);
+                //  Now that we are within Memory, we can add a LOG
                 FileOperationReporting* reporter = new FileOperationReporting();
                 task->status = reporter;
-                // Sooo, technically this adds a second writer to this structure that is only thread safe with one writer.
+                // Sooo, technically this adds a second writer to this structure
+                // that is only thread safe with one writer.
                 reporters->push_back(reporter);
                 reporter->log_messages.lines.push(
-                  "Brainwash replaced Memory with a new recording that is " +
-                  std::to_string(task->seconds) + " seconds long."
-                );
+                    "Brainwash replaced Memory with a new recording that is " +
+                    std::to_string(task->seconds) + " seconds long.");
                 ReplaceAudio(buffer, task);
                 reporter->completed = LOAD_COMPLETED;
-              }
-              break;
+              } break;
               case BufferTask::SAVE_FILE: {
-                WARN("There should not be a SAVE_FILE task on the 'replacements' queue!");
+                WARN(
+                    "There should not be a SAVE_FILE task on the "
+                    "'replacements' queue!");
                 delete task;
-              }
-              break;
+              } break;
             }
           }
-        } 
+        }
 
         // Keep this after any wipe or major change we do to the buffer.
         if (buffer->freshen_waveform) {
@@ -445,10 +459,10 @@ struct BufferChangeThread {
 // All mistakes are mine.
 struct PrepareThread {
   bool shutdown;
-  ModuleToPrepareQueue* module_file_queue;
-  PrepareToBufferQueue* prepare_buffer_queue;
+  ModuleToPrepareQueue* module_file_queue = nullptr;
+  PrepareToBufferQueue* prepare_buffer_queue = nullptr;
 
-  float sample_rate;
+  float sample_rate = 1.0;
 
   // Indicator to UI that File I/O is happening.
   bool busy;
@@ -461,17 +475,15 @@ struct PrepareThread {
     busy = false;
   }
 
-  void Halt() {
-    shutdown = true;
-  }
+  void Halt() { shutdown = true; }
 
-  void SetRate(float rate) {
-    sample_rate = rate;
-  }
+  void SetRate(float rate) { sample_rate = rate; }
 
-  void DoDirectoryRead(const std::string& load_folder, std::vector<std::string>* loadable_files,
+  void DoDirectoryRead(const std::string& load_folder,
+                       std::vector<std::string>* loadable_files,
                        StochasticTelegraph::MRUType mru_type, bool update_mru) {
-    // To make it more obvious that we are reading contents in, we eliminate the current contents.
+    // To make it more obvious that we are reading contents in, we eliminate the
+    // current contents.
     if (!loadable_files->empty()) {
       loadable_files->clear();
     }
@@ -484,7 +496,7 @@ struct PrepareThread {
     sort(dirList.begin(), dirList.end());
 
     bool found_files = false;
-    for (auto path : dirList)  {
+    for (auto path : dirList) {
       if ((rack::string::lowercase(system::getExtension(path)) == "wav") ||
           (rack::string::lowercase(system::getExtension(path)) == ".wav") ||
           (rack::string::lowercase(system::getExtension(path)) == "csv") ||
@@ -499,61 +511,70 @@ struct PrepareThread {
     // * Have a valid pointer to the MRU list.
     // * The load_folder must be non-empty.
     if (update_mru && found_files) {
-      StochasticTelegraph::PluginConfig::getInstance().putMRUEntry(
-        load_folder, mru_type);
+      StochasticTelegraph::PluginConfig::getInstance().putMRUEntry(load_folder,
+                                                                   mru_type);
     }
 
     busy = false;
   }
 
   void ConvertFileToSamples(PrepareTask* task,
-      const AudioFile<float>& audio_file, bool has_no_sample_rate) {
+                            const AudioFile<float>& audio_file,
+                            bool has_no_sample_rate) {
     assert(task->type == PrepareTask::LOAD_FILE);
     // One goal is to minimize the amount of downtime for the buffer,
     // since the AudioFile -> Buffer process is time consuming for large files.
     // So the conversion happens before we swap in the memory.
-    int samples = has_no_sample_rate ? audio_file.getNumSamplesPerChannel() :
-        std::round(audio_file.getLengthInSeconds() * sample_rate);
+    int samples =
+        has_no_sample_rate
+            ? audio_file.getNumSamplesPerChannel()
+            : std::round(audio_file.getLengthInSeconds() * sample_rate);
     int file_samples = audio_file.getNumSamplesPerChannel();
     float* new_left_array = new float[samples];
     float* new_right_array = new float[samples];
 
     // Now fill from the audio_file. Transforms we need to apply are:
     // * Sample rate may be different from the file and VCV.
-    // * We typically range from -10.0 to 10.0, AudioFile ranges from -1.0 to 1.0.
-    // * File might have been in mono. The norm seems to be to put a mono signal 
+    // * We typically range from -10.0 to 10.0, AudioFile ranges from -1.0
+    // to 1.0.
+    // * File might have been in mono. The norm seems to be to put a mono signal
     //   on both channels.
     bool file_is_mono = audio_file.getNumChannels() == 1;
-    // TODO: put in an optimization if sample rates are the same. Less math to do.
-    double sample_rate_ratio = has_no_sample_rate ? 1.0 :
-        1.0 * audio_file.getSampleRate() / sample_rate;
+    // TODO: put in an optimization if sample rates are the same. Less math to
+    // do.
+    double sample_rate_ratio =
+        has_no_sample_rate ? 1.0
+                           : 1.0 * audio_file.getSampleRate() / sample_rate;
     // This can take a while; definitely let a Halt() call interrupt it.
     for (int i = 0; !shutdown && i < samples; ++i) {
       // Use the linear interpolation that I also use in Buffer::Get().
       double position = i * sample_rate_ratio;
-      // std::min is just to make sure FP math doesn't push us past the end of the buffer.
-      int playback_start = std::min((int) trunc(position), file_samples - 1);
+      // std::min is just to make sure FP math doesn't push us past the end of
+      // the buffer.
+      int playback_start = std::min((int)trunc(position), file_samples - 1);
       int playback_end = trunc(playback_start + 1);
       if (playback_end >= file_samples) {
         playback_end = 0;
       }
 
       float start_fraction = position - playback_start;
-      new_left_array[i] = 10.0 *
-       (audio_file.samples[0][playback_start] * (1.0 - start_fraction) +
-        audio_file.samples[0][playback_end] * (start_fraction));
+      new_left_array[i] =
+          10.0 *
+          (audio_file.samples[0][playback_start] * (1.0 - start_fraction) +
+           audio_file.samples[0][playback_end] * (start_fraction));
       if (file_is_mono) {
         new_right_array[i] = new_left_array[i];
       } else {
-        new_right_array[i] = 10.0 * 
-         (audio_file.samples[1][playback_start] * (1.0 - start_fraction) +
-          audio_file.samples[1][playback_end] * (start_fraction));
+        new_right_array[i] =
+            10.0 *
+            (audio_file.samples[1][playback_start] * (1.0 - start_fraction) +
+             audio_file.samples[1][playback_end] * (start_fraction));
       }
     }
     task->new_left_array = new_left_array;
     task->new_right_array = new_right_array;
     task->result_sample_count = samples;
-  }  
+  }
 
   void Work() {
     while (!shutdown) {
@@ -562,37 +583,45 @@ struct PrepareThread {
         while (module_file_queue->tasks.pop(task) && !shutdown) {
           switch (task->type) {
             case PrepareTask::LOAD_FILE: {
-              task->status->log_messages.lines.push(
-                "Starting to read '" + task->str1 + "'.");
+              task->status->log_messages.lines.push("Starting to read '" +
+                                                    task->str1 + "'.");
               busy = true;
               AudioFile<float> audio_file;
               // Let's us collect the logs of any errors.
               audio_file.setLogQueue(&(task->status->log_messages));
               // SLOW: this call can take many seconds.
-              bool worked = audio_file.load(system::join(task->str2, task->str1));
+              bool worked =
+                  audio_file.load(system::join(task->str2, task->str1));
               busy = false;
-              // WARN("Completed load of %s", task->str1.c_str());             
-              // WARN("samples = %d, seconds = %f", audio_file.getNumSamplesPerChannel(), audio_file.getLengthInSeconds());
-              // WARN("sample rate = %d", audio_file.getSampleRate());
-              // WARN("bit depth = %d", audio_file.getBitDepth());
+              // WARN("Completed load of %s", task->str1.c_str());
+              // WARN("samples = %d, seconds = %f",
+              // audio_file.getNumSamplesPerChannel(),
+              // audio_file.getLengthInSeconds()); WARN("sample rate = %d",
+              // audio_file.getSampleRate()); WARN("bit depth = %d",
+              // audio_file.getBitDepth());
 
               // If worked, need to fill buffer.
               if (worked) {
-                task->status->log_messages.lines.push(
-                  "Completed read of '" + task->str1 + "'.");
-                if (rack::string::endsWith(rack::string::lowercase(task->str1), ".csv")) {
+                task->status->log_messages.lines.push("Completed read of '" +
+                                                      task->str1 + "'.");
+                if (rack::string::endsWith(rack::string::lowercase(task->str1),
+                                           ".csv")) {
                   task->status->log_messages.lines.push(
-                    "It is " + std::to_string(audio_file.getNumSamplesPerChannel() / sample_rate) +
-                    " seconds long.");
+                      "It is " +
+                      std::to_string(audio_file.getNumSamplesPerChannel() /
+                                     sample_rate) +
+                      " seconds long.");
                 } else {
                   task->status->log_messages.lines.push(
-                    "It is " + std::to_string(audio_file.getLengthInSeconds()) +
-                    " seconds long.");
+                      "It is " +
+                      std::to_string(audio_file.getLengthInSeconds()) +
+                      " seconds long.");
                 }
-                
+
                 // This part can also be slow, since it walks over every sample.
                 busy = true;
-                bool is_csv = rack::string::endsWith(rack::string::lowercase(task->str1), ".csv");
+                bool is_csv = rack::string::endsWith(
+                    rack::string::lowercase(task->str1), ".csv");
                 ConvertFileToSamples(task, audio_file, is_csv);
                 busy = false;
                 double seconds = audio_file.getLengthInSeconds();
@@ -600,29 +629,28 @@ struct PrepareThread {
 
                 // Send task to BufferChangeThread.
                 BufferTask* replace_task = BufferTask::ReplaceTask(
-                  task->new_left_array, task->new_right_array, task->status,
-                  task->result_sample_count, seconds, !is_csv);  
+                    task->new_left_array, task->new_right_array, task->status,
+                    task->result_sample_count, seconds, !is_csv);
                 if (!prepare_buffer_queue->tasks.push(replace_task)) {
                   delete task->new_left_array;
                   delete task->new_right_array;
                   delete replace_task;  // Queue is full, shed load.
                 }
               } else {
-                task->status->log_messages.lines.push(
-                  "Failed to read '" + task->str1 + "'.");
+                task->status->log_messages.lines.push("Failed to read '" +
+                                                      task->str1 + "'.");
                 task->status->completed = LOAD_COMPLETED;
               }
               delete task;
-            }
-            break;
+            } break;
 
             case PrepareTask::LOAD_DIRECTORY_SET: {
               busy = true;
-              DoDirectoryRead(task->str1, task->loadable_files, task->mru_type, task->update_mru);
+              DoDirectoryRead(task->str1, task->loadable_files, task->mru_type,
+                              task->update_mru);
               busy = false;
               delete task;
-            }
-            break;
+            } break;
 
             case PrepareTask::MAKE_BLANK: {
               assert(sample_rate > 1.0);
@@ -636,27 +664,29 @@ struct PrepareThread {
               }
 
               // Send task to BufferChangeThread.
-              // No reason to smooth an already blank file, so smooth_ends is false.
+              // No reason to smooth an already blank file, so smooth_ends is
+              // false.
               BufferTask* replace_task = BufferTask::ReplaceTask(
-                new_left_array, new_right_array, nullptr, sample_count, task->seconds, false);  
+                  new_left_array, new_right_array, nullptr, sample_count,
+                  task->seconds, false);
               if (!prepare_buffer_queue->tasks.push(replace_task)) {
                 delete replace_task;  // Queue is full, shed load.
               }
               delete task;
-            }
-            break;
+            } break;
             case PrepareTask::SAVE_FILE: {
-              WARN("There should not be a SAVE_FILE task on the module_file_queue!");
+              WARN(
+                  "There should not be a SAVE_FILE task on the "
+                  "module_file_queue!");
               delete task;
-            }
-            break;
+            } break;
           }
         }
-      } 
+      }
 
       // It seems like I need a tiny sleep here to allow join() to work
-      // on this thread. I make this sleep longer than for BufferChangeThread, since file system
-      // activity is so slow that we can ease up on the CPU.
+      // on this thread. I make this sleep longer than for BufferChangeThread,
+      // since file system activity is so slow that we can ease up on the CPU.
       if (!shutdown) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
@@ -698,8 +728,9 @@ struct Memory : BufferedModule {
   // Threads and workers for doing long tasks.
   BufferChangeThread* buffer_change_worker;
   std::thread* buffer_change_thread;
-  // For tasks that don't directly change the Buffer, but might send changes to the
-  // buffer_change_thread. Especially important for changes that take long periods of time.
+  // For tasks that don't directly change the Buffer, but might send changes to
+  // the buffer_change_thread. Especially important for changes that take long
+  // periods of time.
   PrepareThread* prepare_worker;
   std::thread* prepare_thread;
 
@@ -714,21 +745,21 @@ struct Memory : BufferedModule {
   dsp::SchmittTrigger wipe_trigger;
   bool wipe_button_pressed = false;
 
-   // Keeps lights on buttons lit long enough to see.
+  // Keeps lights on buttons lit long enough to see.
   int wipe_light_countdown = 0;
   int reset_light_countdown = 0;
 
   // Make sure we only reset once when RESET button is pressed.
   bool reset_button_pressed = false;
-  
+
   // For Loading and Saving contents.
   osdialog_filters* wav_filter;
   osdialog_filters* csv_filter;
   osdialog_filters* wav_csv_filter;
-  std::string load_folder_name;  // For menu to display.
+  std::string load_folder_name;             // For menu to display.
   std::vector<std::string> loadable_files;  // List found in menu.
-  std::string loaded_file;  // Checked item in menu.
-  std::string save_folder_name;  // For menu to display.
+  std::string loaded_file;                  // Checked item in menu.
+  std::string save_folder_name;             // For menu to display.
   // Menu option to load "loaded_file" on patch start.
   bool load_latest_file_on_start;
   // Trigger to actually initiate that startup_load.
@@ -748,44 +779,55 @@ struct Memory : BufferedModule {
   // Mechanism for sending text out.
   TextSender log_message_sender;
 
-  // We sweep the connected modules every NN samples. Some UI-related tasks are 
-  // not as latency-sensitive as the audio thread, and we don't need to do often.
+  // We sweep the connected modules every NN samples. Some UI-related tasks are
+  // not as latency-sensitive as the audio thread, and we don't need to do
+  // often.
   int assign_color_countdown = 0;
 
-  // Memory and MemoryCV differ only slightly, and most of the difference is how Buffer behaves.
-  // This flag tells the code which to behave like.
-  // Set it to false initially, so random initialization doesn't cause Memory to behave like MemoryCV.
+  // Memory and MemoryCV differ only slightly, and most of the difference is how
+  // Buffer behaves. This flag tells the code which to behave like. Set it to
+  // false initially, so random initialization doesn't cause Memory to behave
+  // like MemoryCV.
   bool cv_rate = false;
-
 
   Memory() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configButton(WIPE_BUTTON_PARAM, "Press to wipe contents to 0.0V");
     configInput(WIPE_TRIGGER_INPUT, "A trigger here wipes contents to 0.0V");
-    configParam(SECONDS_PARAM, 1, 1000, 15,
+    configParam(
+        SECONDS_PARAM, 1, 1000, 15,
         "Length of Memory in seconds; takes effect on next RESET press");
     // This is really an integer.
     getParamQuantity(SECONDS_PARAM)->snapEnabled = true;
-    configOutput(LENGTH_OUTPUT, "Length of recording in seconds; updates on load and reset");
-    configButton(RESET_BUTTON_PARAM, "Press to reset length and wipe contents to 0.0V");
+    configOutput(LENGTH_OUTPUT,
+                 "Length of recording in seconds; updates on load and reset");
+    configButton(RESET_BUTTON_PARAM,
+                 "Press to reset length and wipe contents to 0.0V");
     configInput(TIPSY_LOAD_INPUT, "Tipsy text input to load named file");
-    configOutput(LOAD_TRIGGER_OUTPUT, "Sends a trigger when file load has completed");
-    configInput(TIPSY_SAVE_INPUT, "Tipsy text input to save contents to named file");
-    configOutput(SAVE_TRIGGER_OUTPUT, "Sends a trigger when file save has completed");
-    configOutput(TIPSY_LOGGING_OUTPUT, "Logging of File events; connect to a TTY TEXT input");
+    configOutput(LOAD_TRIGGER_OUTPUT,
+                 "Sends a trigger when file load has completed");
+    configInput(TIPSY_SAVE_INPUT,
+                "Tipsy text input to save contents to named file");
+    configOutput(SAVE_TRIGGER_OUTPUT,
+                 "Sends a trigger when file save has completed");
+    configOutput(TIPSY_LOGGING_OUTPUT,
+                 "Logging of File events; connect to a TTY TEXT input");
 
-    buffer_change_worker = new BufferChangeThread(getHandle(), &prepare_buffer_queue,
-                                                  &module_buffer_queue, &buffer_module_queue,
-                                                  &reporters);
-    buffer_change_thread = new std::thread(&BufferChangeThread::Work, buffer_change_worker);
-    prepare_worker = new PrepareThread(&module_prepare_queue, &prepare_buffer_queue);
+    buffer_change_worker = new BufferChangeThread(
+        getHandle(), &prepare_buffer_queue, &module_buffer_queue,
+        &buffer_module_queue, &reporters);
+    buffer_change_thread =
+        new std::thread(&BufferChangeThread::Work, buffer_change_worker);
+    prepare_worker =
+        new PrepareThread(&module_prepare_queue, &prepare_buffer_queue);
     prepare_thread = new std::thread(&PrepareThread::Work, prepare_worker);
 
     load_decoder.provideDataBuffer(load_recv_buffer, recvBufferSize);
     save_decoder.provideDataBuffer(save_recv_buffer, recvBufferSize);
     wav_filter = osdialog_filters_parse("WAV:wav");
     csv_filter = osdialog_filters_parse("CSV (Comma Separated Value):csv");
-    wav_csv_filter = osdialog_filters_parse("WAV:wav;CSV (Comma Separated Value):csv");
+    wav_csv_filter =
+        osdialog_filters_parse("WAV:wav;CSV (Comma Separated Value):csv");
 
     assert(wav_filter != nullptr);
     assert(csv_filter != nullptr);
@@ -823,15 +865,18 @@ struct Memory : BufferedModule {
   json_t* dataToJson() override {
     json_t* rootJ = json_object();
     if (!load_folder_name.empty()) {
-      json_object_set_new(rootJ, "load_folder", json_string(load_folder_name.c_str()));
+      json_object_set_new(rootJ, "load_folder",
+                          json_string(load_folder_name.c_str()));
     }
     if (!save_folder_name.empty()) {
-      json_object_set_new(rootJ, "save_folder", json_string(save_folder_name.c_str()));
+      json_object_set_new(rootJ, "save_folder",
+                          json_string(save_folder_name.c_str()));
     }
     json_object_set_new(rootJ, "load_latest_on_start",
                         json_integer(load_latest_file_on_start ? 1 : 0));
     if (!loaded_file.empty()) {
-      json_object_set_new(rootJ, "loaded_file", json_string(loaded_file.c_str()));
+      json_object_set_new(rootJ, "loaded_file",
+                          json_string(loaded_file.c_str()));
     }
     return rootJ;
   }
@@ -865,15 +910,9 @@ struct Memory : BufferedModule {
   }
 
   static constexpr int COLOR_COUNT = 7;
-  NVGcolor colors[COLOR_COUNT] = {
-    SCHEME_RED,
-    SCHEME_BLUE,
-    SCHEME_ORANGE,
-    SCHEME_PURPLE,
-    SCHEME_GREEN,
-    SCHEME_CYAN,
-    SCHEME_WHITE
-  };
+  NVGcolor colors[COLOR_COUNT] = {SCHEME_RED,    SCHEME_BLUE,  SCHEME_ORANGE,
+                                  SCHEME_PURPLE, SCHEME_GREEN, SCHEME_CYAN,
+                                  SCHEME_WHITE};
 
   // Both process() and processBypass() call this.
   void HandleLights(const ProcessArgs& args) {
@@ -886,7 +925,7 @@ struct Memory : BufferedModule {
     // several modules down can affect these results.
     if (--assign_color_countdown <= 0) {
       // One sixtieth of a second.
-      assign_color_countdown = (int) (args.sampleRate / 60);
+      assign_color_countdown = (int)(args.sampleRate / 60);
 
       std::shared_ptr<Buffer> buffer = getHandle()->buffer;
       if (buffer) {  // Checks for null.
@@ -899,28 +938,30 @@ struct Memory : BufferedModule {
             // Assign a Color.
             distance++;
             color_index = (color_index + 1) % COLOR_COUNT;
-            PositionedModule* pos_module = dynamic_cast<PositionedModule*>(next_module);
+            PositionedModule* pos_module =
+                dynamic_cast<PositionedModule*>(next_module);
             pos_module->line_record.color = colors[color_index];
             pos_module->line_record.distance = distance;
             if (next_module->model == modelEmbellish) {
               // Make sure it's on the list of record heads.
               bool found = false;
-              for (int i = 0; i < (int) buffer->record_heads.size(); ++i) {
+              for (int i = 0; i < (int)buffer->record_heads.size(); ++i) {
                 if (buffer->record_heads[i].module_id == next_module->getId()) {
                   found = true;
                   break;
                 }
               }
               if (!found) {
-                buffer->record_heads.push_back(RecordHeadTrace(next_module->getId(),
-                                                    pos_module->line_record.position));
+                buffer->record_heads.push_back(RecordHeadTrace(
+                    next_module->getId(), pos_module->line_record.position));
               }
             }
           }
           // If we are still in our module list, move to the right.
           auto m = next_module->model;
           if (m == modelDepict) {
-            // If there is a Depict, then make sure the waveform is being updated.
+            // If there is a Depict, then make sure the waveform is being
+            // updated.
             found_depict = true;
           }
           if (IsNonMemoryEnsembleModel(m)) {  // This will be a list soon...
@@ -940,10 +981,11 @@ struct Memory : BufferedModule {
     }
   }
 
-  // Yes, it's little weird to bypass a Memory, but, eh, if you want it to stop loading
-  // new files based on Tipsy input...sure, people might do it.
+  // Yes, it's little weird to bypass a Memory, but, eh, if you want it to stop
+  // loading new files based on Tipsy input...sure, people might do it.
   void processBypass(const ProcessArgs& args) override {
-    HandleLights(args);  // It really looks like a bug if the lights don't get assigned right.
+    HandleLights(args);  // It really looks like a bug if the lights don't get
+                         // assigned right.
   }
 
   void process(const ProcessArgs& args) override {
@@ -951,15 +993,18 @@ struct Memory : BufferedModule {
     // We can't fill the buffer until process() is called, since we don't know
     // what the sample rate is.
     if (!buffer_initialized) {
-      // We don't pay any attention to the buttons, etc, until the buffer is initialized.
+      // We don't pay any attention to the buttons, etc, until the buffer is
+      // initialized.
       if (!init_in_progress) {
         // Confirm that we can read the sample rate before starting a fill.
         // Sometimes during startup, sampleRate is still zero.
         float sample_rate = args.sampleRate;
         if (sample_rate > 1.0) {
-          buffer_change_worker->SetRates(sample_rate, cv_rate ? CV_SAMPLE_RATE : sample_rate);
+          buffer_change_worker->SetRates(
+              sample_rate, cv_rate ? CV_SAMPLE_RATE : sample_rate);
           prepare_worker->SetRate(cv_rate ? CV_SAMPLE_RATE : sample_rate);
-          PrepareTask* task = PrepareTask::MakeBlank(params[SECONDS_PARAM].getValue());
+          PrepareTask* task =
+              PrepareTask::MakeBlank(params[SECONDS_PARAM].getValue());
           if (!module_prepare_queue.tasks.push(task)) {
             delete task;
           }
@@ -970,31 +1015,34 @@ struct Memory : BufferedModule {
         if (buffer && buffer->IsValid()) {
           // Filling + wiping done.
           init_in_progress = false;
-          buffer_initialized = true;  // Now we will never look at this section again.
+          buffer_initialized =
+              true;  // Now we will never look at this section again.
         }
       }
     } else {
       // This is the post-initialization part of process().
-      // We may be asked to load a file on startup. We wait until the buffer is initialized before
-      // attempting this, however, since the operation might fail, and I'd rather have *some* buffer than none.
-      // Now that loaded_file can be a complete path, we don't check load_folder_name.
+      // We may be asked to load a file on startup. We wait until the buffer is
+      // initialized before attempting this, however, since the operation might
+      // fail, and I'd rather have *some* buffer than none. Now that loaded_file
+      // can be a complete path, we don't check load_folder_name.
       if (initiate_startup_load && !loaded_file.empty()) {
         initiate_startup_load = false;
         FileOperationReporting* reporter = new FileOperationReporting();
         reporters.push_back(reporter);
-        PrepareTask* task = PrepareTask::LoadFileTask(
-          reporter, loaded_file, load_folder_name);
+        PrepareTask* task =
+            PrepareTask::LoadFileTask(reporter, loaded_file, load_folder_name);
         if (!widget_module_queue.tasks.push(task)) {
           std::string message = "ERROR: Queue is full, cannot load '" +
-            loaded_file + "' from '" + load_folder_name + "'.";
+                                loaded_file + "' from '" + load_folder_name +
+                                "'.";
           reporter->log_messages.lines.push(message);
           reporter->completed = LOAD_COMPLETED;
           delete task;
         }
       }
 
-      // Some lights are lit by triggers or button presses; these enable them to be
-      // lit long enough to be seen by humans.
+      // Some lights are lit by triggers or button presses; these enable them to
+      // be lit long enough to be seen by humans.
       if (wipe_light_countdown > 0) {
         wipe_light_countdown--;
       }
@@ -1004,54 +1052,60 @@ struct Memory : BufferedModule {
 
       // Process text coming in via Tipsy ports.
       if (inputs[TIPSY_LOAD_INPUT].isConnected()) {
-        auto decoder_status = load_decoder.readFloat(
-            inputs[TIPSY_LOAD_INPUT].getVoltage());
+        auto decoder_status =
+            load_decoder.readFloat(inputs[TIPSY_LOAD_INPUT].getVoltage());
         if (!load_decoder.isError(decoder_status) &&
             decoder_status == tipsy::DecoderResult::BODY_READY &&
             std::strcmp(load_decoder.getMimeType(), "text/plain") == 0) {
-          std::string next(std::string((const char *) load_recv_buffer));
+          std::string next(std::string((const char*)load_recv_buffer));
           if (next.size() > 0) {
             if (next[0] == '#' && loadable_files.size() > 0) {
-              // Do special things when of the form #NNNN 
-              size_t start_pos = next.find_first_of("0123456789"); // Find the first digit
+              // Do special things when of the form #NNNN
+              size_t start_pos =
+                  next.find_first_of("0123456789");  // Find the first digit
               if (start_pos == std::string::npos && loadable_files.size() > 0) {
                 // Handle the case where no digits are found.
-                std::string message = "ERROR: no number found in '" + next + "', expecting " +
-                  "a string like '#3'.";
+                std::string message = "ERROR: no number found in '" + next +
+                                      "', expecting " + "a string like '#3'.";
                 log_message_sender.AddToQueue(message);
               } else {
                 char* endptr;
-                long parsed_long = strtol(next.c_str() + start_pos, &endptr, 10);
+                long parsed_long =
+                    strtol(next.c_str() + start_pos, &endptr, 10);
 
                 // Check for conversion errors
                 if (endptr == next.c_str() + start_pos || *endptr != '\0') {
                   // Handle the case where the conversion failed
-                  std::string message = "ERROR: couldn't understand '" + next + "', expecting " +
-                    "a string like '#3'.";
+                  std::string message = "ERROR: couldn't understand '" + next +
+                                        "', expecting " + "a string like '#3'.";
                   log_message_sender.AddToQueue(message);
                 } else if (parsed_long > INT_MAX || parsed_long < INT_MIN) {
                   // TODO: is this condition even possible?
                   // Handle overflow if the parsed value is outside int range
-                  std::string message = "ERROR: the number found in '" + next + "' is too large, " +
-                    "expecting a string like '#3'.";
+                  std::string message = "ERROR: the number found in '" + next +
+                                        "' is too large, " +
+                                        "expecting a string like '#3'.";
                   log_message_sender.AddToQueue(message);
                 } else {
-                  int parsed_int = static_cast<int>(parsed_long); // Cast to int if successful
+                  int parsed_int = static_cast<int>(
+                      parsed_long);  // Cast to int if successful
                   // Now pick the relevant file in the directory.
                   // First make sure in the range.
                   // Yes, we're zero-indexed for reading this list.
                   parsed_int = parsed_int % loadable_files.size();
 
-                  // OK, so this isn't the precisely correct queue, but we check it just below,
-                  // so more clean to do this.
-                  FileOperationReporting* reporter = new FileOperationReporting();
+                  // OK, so this isn't the precisely correct queue, but we check
+                  // it just below, so more clean to do this.
+                  FileOperationReporting* reporter =
+                      new FileOperationReporting();
                   reporters.push_back(reporter);
                   PrepareTask* task = PrepareTask::LoadFileTask(
-                    reporter, loadable_files[parsed_int], load_folder_name);
+                      reporter, loadable_files[parsed_int], load_folder_name);
                   if (!widget_module_queue.tasks.push(task)) {
-                    std::string message = "ERROR: Queue is full, cannot load '" +
-                      loadable_files[parsed_int] + "' (which you asked for with '" +
-                      next + "'.";
+                    std::string message =
+                        "ERROR: Queue is full, cannot load '" +
+                        loadable_files[parsed_int] +
+                        "' (which you asked for with '" + next + "'.";
                     reporter->log_messages.lines.push(message);
                     reporter->completed = LOAD_COMPLETED;
                     delete task;
@@ -1060,15 +1114,15 @@ struct Memory : BufferedModule {
               }
             } else {
               // Not a number, just a name.
-              // No, this isn't the precisely correct queue, but we check it just below,
-              // so simpler to do this.
+              // No, this isn't the precisely correct queue, but we check it
+              // just below, so simpler to do this.
               FileOperationReporting* reporter = new FileOperationReporting();
               reporters.push_back(reporter);
-              PrepareTask* task = PrepareTask::LoadFileTask(
-                reporter, next, load_folder_name);
+              PrepareTask* task =
+                  PrepareTask::LoadFileTask(reporter, next, load_folder_name);
               if (!widget_module_queue.tasks.push(task)) {
-                std::string message = "ERROR: Queue is full, cannot load '" +
-                  next + "'.";
+                std::string message =
+                    "ERROR: Queue is full, cannot load '" + next + "'.";
                 reporter->log_messages.lines.push(message);
                 reporter->completed = LOAD_COMPLETED;
                 delete task;
@@ -1081,21 +1135,21 @@ struct Memory : BufferedModule {
       // TODO: should there be a text gesture that saves using the default name?
       // Not certain that I see that being useful.
       if (inputs[TIPSY_SAVE_INPUT].isConnected()) {
-        auto decoder_status = save_decoder.readFloat(
-            inputs[TIPSY_SAVE_INPUT].getVoltage());
+        auto decoder_status =
+            save_decoder.readFloat(inputs[TIPSY_SAVE_INPUT].getVoltage());
         if (!save_decoder.isError(decoder_status) &&
             decoder_status == tipsy::DecoderResult::BODY_READY &&
             std::strcmp(save_decoder.getMimeType(), "text/plain") == 0) {
-          std::string next(std::string((const char *) save_recv_buffer));
+          std::string next(std::string((const char*)save_recv_buffer));
           if (next.size() > 0) {
             FileOperationReporting* reporter = new FileOperationReporting();
             reporters.push_back(reporter);
 
             BufferTask* task = BufferTask::SaveFileTask(
-              reporter, system::join(save_folder_name, next));
+                reporter, system::join(save_folder_name, next));
             if (!module_buffer_queue.tasks.push(task)) {
-              std::string message = "ERROR: Queue is full, cannot save '" +
-                next + "'.";
+              std::string message =
+                  "ERROR: Queue is full, cannot save '" + next + "'.";
               reporter->log_messages.lines.push(message);
               reporter->completed = SAVE_COMPLETED;
               delete task;
@@ -1110,24 +1164,28 @@ struct Memory : BufferedModule {
         while (buffer_module_queue.tasks.pop(task)) {
           switch (task->type) {
             case PrepareTask::LOAD_FILE: {
-              WARN("There should not be a LOAD_FILE task on the buffer_module_queue!");
+              WARN(
+                  "There should not be a LOAD_FILE task on the "
+                  "buffer_module_queue!");
               delete task;
-            }
-            break;
+            } break;
 
             case PrepareTask::SAVE_FILE: {
-              WARN("There should not be a SAVE_FILE task on the buffer_module_queue!");
+              WARN(
+                  "There should not be a SAVE_FILE task on the "
+                  "buffer_module_queue!");
               delete task;
-            }
-            break;
+            } break;
 
-            // These are sent when Buffer has saved a file that perhaps should be visible.
+            // These are sent when Buffer has saved a file that perhaps should
+            // be visible.
             case PrepareTask::LOAD_DIRECTORY_SET: {
               if (!load_folder_name.empty()) {
                 task->str1 = load_folder_name;
                 task->loadable_files = &loadable_files;
                 // This action shouldn't actually change the MRU list.
-                // Simply reading the directory contents doesn't count as a "recent use".
+                // Simply reading the directory contents doesn't count as a
+                // "recent use".
                 task->update_mru = false;
                 if (!module_prepare_queue.tasks.push(task)) {
                   delete task;
@@ -1135,19 +1193,20 @@ struct Memory : BufferedModule {
               } else {
                 delete task;
               }
-            }
-            break;
+            } break;
 
             case PrepareTask::MAKE_BLANK: {
-              WARN("There should not be a MAKE_BLANK task on the buffer_module_queue!");
+              WARN(
+                  "There should not be a MAKE_BLANK task on the "
+                  "buffer_module_queue!");
               delete task;
-            }
-            break;
+            } break;
           }
         }
-      } 
+      }
 
-      // Deal with tasks from the Widget (aka, the menu) and from the Tipsy inputs.
+      // Deal with tasks from the Widget (aka, the menu) and from the Tipsy
+      // inputs.
       if (widget_module_queue.tasks.size() > 0) {
         PrepareTask* task;
         while (widget_module_queue.tasks.pop(task)) {
@@ -1159,13 +1218,13 @@ struct Memory : BufferedModule {
                 reporters.push_back(reporter);
                 task->status = reporter;
               }
-              // TODO: it'd be nice if we could actually interrupt a file load with a new load,
-              // as the Tipsy automation means we could receive load requests far faster than we
-              // can process them. Best to not get stuck waiting for a really slow network file
-              // to load.
+              // TODO: it'd be nice if we could actually interrupt a file load
+              // with a new load, as the Tipsy automation means we could receive
+              // load requests far faster than we can process them. Best to not
+              // get stuck waiting for a really slow network file to load.
               if (!module_prepare_queue.tasks.push(task)) {
-                std::string message = "ERROR: Queue is full, cannot load '" +
-                  task->str1 + "'.";
+                std::string message =
+                    "ERROR: Queue is full, cannot load '" + task->str1 + "'.";
                 task->status->log_messages.lines.push(message);
                 task->status->completed = LOAD_COMPLETED;
                 delete task;
@@ -1174,29 +1233,29 @@ struct Memory : BufferedModule {
                 // TODO: fix this.
                 loaded_file = task->str1;
               }
-            }
-            break;
+            } break;
 
             case PrepareTask::SAVE_FILE: {
               // Reformat this task to send it to the BufferChangeThread.
-              // Because we want to ensure that the buffer does NOT get exchanged while we are saving it.
+              // Because we want to ensure that the buffer does NOT get
+              // exchanged while we are saving it.
               FileOperationReporting* reporter = task->status;
               // If this came from menu, it needs a reporter.
               if (reporter == nullptr) {
                 reporter = new FileOperationReporting();
                 reporters.push_back(reporter);
               }
-              BufferTask* save_task = BufferTask::SaveFileTask(reporter, task->str1);
+              BufferTask* save_task =
+                  BufferTask::SaveFileTask(reporter, task->str1);
               delete task;
               if (!module_buffer_queue.tasks.push(save_task)) {
                 std::string message = "ERROR: Queue is full, cannot save '" +
-                  save_task->str1 + "'.";
+                                      save_task->str1 + "'.";
                 save_task->status->log_messages.lines.push(message);
                 save_task->status->completed = SAVE_COMPLETED;
                 delete save_task;
               }
-            }
-            break;
+            } break;
 
             case PrepareTask::LOAD_DIRECTORY_SET: {
               load_folder_name = task->str1;
@@ -1204,40 +1263,38 @@ struct Memory : BufferedModule {
               if (!module_prepare_queue.tasks.push(task)) {
                 delete task;
               }
-            }
-            break;
+            } break;
 
             case PrepareTask::MAKE_BLANK: {
-              WARN("There should not be a MAKE_BLANK task on the widget_module_queue!");
+              WARN(
+                  "There should not be a MAKE_BLANK task on the "
+                  "widget_module_queue!");
               delete task;
-            }
-            break;
+            } break;
           }
         }
-      } 
+      }
 
       HandleLights(args);
 
-      // We may be being asked to wipe and/or reset. Both of these take more than one
-      // process() call to complete.
-      // If asked to do neither, we do neither, although we may be waiting for
-      // a previous action to complete.
-      // A wipe doesn't (currently) require us to watch the state progress, and it
-      // doesn't prevent using the Buffer. So we don't particularly attend to it.
-      // If only a reset is requested, then we start a reset. This can take while,
-      // so we make sure not to allow another reset to interrupt it or another wipe
-      // to occur while in progress.
-      // If a reset AND a wipe are requested at the same process() call, only the reset
-      // call is acted on.
+      // We may be being asked to wipe and/or reset. Both of these take more
+      // than one process() call to complete. If asked to do neither, we do
+      // neither, although we may be waiting for a previous action to complete.
+      // A wipe doesn't (currently) require us to watch the state progress, and
+      // it doesn't prevent using the Buffer. So we don't particularly attend to
+      // it. If only a reset is requested, then we start a reset. This can take
+      // while, so we make sure not to allow another reset to interrupt it or
+      // another wipe to occur while in progress. If a reset AND a wipe are
+      // requested at the same process() call, only the reset call is acted on.
 
       // Have we been asked to wipe?
       bool wipe_was_low = !wipe_trigger.isHigh();
-      wipe_trigger.process(rescale(
-          inputs[WIPE_TRIGGER_INPUT].getVoltage(), 0.1f, 2.0f, 0.0f, 1.0f));
+      wipe_trigger.process(rescale(inputs[WIPE_TRIGGER_INPUT].getVoltage(),
+                                   0.1f, 2.0f, 0.0f, 1.0f));
 
       bool wipe_clicked = false;
       if ((params[WIPE_BUTTON_PARAM].getValue() > 0.1f)) {
-        if (!wipe_button_pressed) { 
+        if (!wipe_button_pressed) {
           wipe_button_pressed = true;
           wipe_clicked = true;
         }
@@ -1253,7 +1310,7 @@ struct Memory : BufferedModule {
 
       bool reset = false;
       if ((params[RESET_BUTTON_PARAM].getValue() > 0.1f)) {
-        if (!reset_button_pressed) { 
+        if (!reset_button_pressed) {
           reset_button_pressed = true;
           reset = true;
           reset_light_countdown = std::floor(args.sampleRate / 10.0f);
@@ -1264,7 +1321,8 @@ struct Memory : BufferedModule {
 
       // RESET takes precedence over a WIPE.
       if (reset && args.sampleRate > 1.0) {
-        PrepareTask* task = PrepareTask::MakeBlank(params[SECONDS_PARAM].getValue());
+        PrepareTask* task =
+            PrepareTask::MakeBlank(params[SECONDS_PARAM].getValue());
         if (!module_prepare_queue.tasks.push(task)) {
           delete task;
         }
@@ -1281,7 +1339,7 @@ struct Memory : BufferedModule {
       }
 
       // Attend to any reporters, if need be.
-      for (int i = 0; i < (int) reporters.size(); ++i) {
+      for (int i = 0; i < (int)reporters.size(); ++i) {
         FileOperationReporting* reporter = reporters[i];
         // Add all lines in the report to the log here.
         if (reporter->log_messages.lines.size() > 0) {
@@ -1304,9 +1362,9 @@ struct Memory : BufferedModule {
 
       // Set the values for the output triggers.
       outputs[LOAD_TRIGGER_OUTPUT].setVoltage(
-        load_generator.process(args.sampleTime) ? 10.0f : 0.0f);
+          load_generator.process(args.sampleTime) ? 10.0f : 0.0f);
       outputs[SAVE_TRIGGER_OUTPUT].setVoltage(
-        save_generator.process(args.sampleTime) ? 10.0f : 0.0f);
+          save_generator.process(args.sampleTime) ? 10.0f : 0.0f);
 
       if (outputs[LENGTH_OUTPUT].isConnected()) {
         std::shared_ptr<Buffer> buffer = getHandle()->buffer;
@@ -1316,32 +1374,35 @@ struct Memory : BufferedModule {
           outputs[LENGTH_OUTPUT].setVoltage(0.0f);
         }
       }
-      
+
       // Output next value for the log.
       log_message_sender.ProcessEncoder(TIPSY_LOGGING_OUTPUT, &outputs);
 
       // Set lights.
       lights[WIPE_BUTTON_LIGHT].setBrightness(
-        wipe || wipe_light_countdown > 0 ? 1.0f : 0.0f);
-      lights[RESET_BUTTON_LIGHT].setBrightness(reset_light_countdown ? 1.0f : 0.0f);
+          wipe || wipe_light_countdown > 0 ? 1.0f : 0.0f);
+      lights[RESET_BUTTON_LIGHT].setBrightness(reset_light_countdown ? 1.0f
+                                                                     : 0.0f);
       lights[FILE_IO_LIGHT].setBrightness(
-        (prepare_worker && prepare_worker->busy) ||
-        (buffer_change_worker && buffer_change_worker->busy) ? 1.0f : 0.0f);
+          (prepare_worker && prepare_worker->busy) ||
+                  (buffer_change_worker && buffer_change_worker->busy)
+              ? 1.0f
+              : 0.0f);
     }
   }
 
   std::string selectLoadFolder() {
     std::string path_string = "";
-    char *path = osdialog_file(
-      OSDIALOG_OPEN_DIR,
-      load_folder_name.empty() ?
-        (save_folder_name.empty() ? NULL : save_folder_name.c_str()) :
-        load_folder_name.c_str(),
-      NULL, NULL);
+    char* path = osdialog_file(
+        OSDIALOG_OPEN_DIR,
+        load_folder_name.empty()
+            ? (save_folder_name.empty() ? NULL : save_folder_name.c_str())
+            : load_folder_name.c_str(),
+        NULL, NULL);
 
     if (path != NULL) {
-        path_string.assign(path);
-        std::free(path);  // Required by osdialog_file().
+      path_string.assign(path);
+      std::free(path);  // Required by osdialog_file().
     }
 
     return (path_string);
@@ -1349,16 +1410,16 @@ struct Memory : BufferedModule {
 
   std::string selectLoadFile() {
     std::string path_string = "";
-    char *path = osdialog_file(
-      OSDIALOG_OPEN,
-      load_folder_name.empty() ?
-        (save_folder_name.empty() ? NULL : save_folder_name.c_str()) :
-        load_folder_name.c_str(),
-      NULL, wav_csv_filter);
+    char* path = osdialog_file(
+        OSDIALOG_OPEN,
+        load_folder_name.empty()
+            ? (save_folder_name.empty() ? NULL : save_folder_name.c_str())
+            : load_folder_name.c_str(),
+        NULL, wav_csv_filter);
 
     if (path != NULL) {
-        path_string.assign(path);
-        std::free(path);  // Required by osdialog_file().
+      path_string.assign(path);
+      std::free(path);  // Required by osdialog_file().
     }
 
     return (path_string);
@@ -1366,16 +1427,16 @@ struct Memory : BufferedModule {
 
   std::string selectSaveFolder() {
     std::string path_string = "";
-    char *path = osdialog_file(
-      OSDIALOG_OPEN_DIR,
-      save_folder_name.empty() ?
-        (load_folder_name.empty() ? NULL : load_folder_name.c_str()) :
-        save_folder_name.c_str(),
-      NULL, NULL);
+    char* path = osdialog_file(
+        OSDIALOG_OPEN_DIR,
+        save_folder_name.empty()
+            ? (load_folder_name.empty() ? NULL : load_folder_name.c_str())
+            : save_folder_name.c_str(),
+        NULL, NULL);
 
     if (path != NULL) {
-        path_string.assign(path);
-        std::free(path);  // Required by osdialog_file().
+      path_string.assign(path);
+      std::free(path);  // Required by osdialog_file().
     }
 
     return (path_string);
@@ -1383,13 +1444,14 @@ struct Memory : BufferedModule {
 
   std::string selectSaveFile(const std::string& file_type) {
     std::string path_string = "";
-     // I like things that default file names to a time stamp. 
+    // I like things that default file names to a time stamp.
     char date_buffer[80];
 
     // Convert unix time to local time structure.
     time_t unixTime = static_cast<time_t>(system::getUnixTime());
     struct tm* localTime = localtime(&unixTime);
-    strftime(date_buffer, sizeof(date_buffer), "Memory %Y-%m-%d %H-%M-%S.", localTime);
+    strftime(date_buffer, sizeof(date_buffer), "Memory %Y-%m-%d %H-%M-%S.",
+             localTime);
     strcat(date_buffer, file_type.c_str());
 
     osdialog_filters* filter_pattern;
@@ -1400,34 +1462,34 @@ struct Memory : BufferedModule {
     }
 
     // Default to save folder. If not set, default to load_folder.
-    char *path = osdialog_file(
-      OSDIALOG_SAVE,
-      save_folder_name.empty() ?
-        (load_folder_name.empty() ? NULL : load_folder_name.c_str()) :
-        save_folder_name.c_str(),
-      date_buffer, filter_pattern);
+    char* path = osdialog_file(
+        OSDIALOG_SAVE,
+        save_folder_name.empty()
+            ? (load_folder_name.empty() ? NULL : load_folder_name.c_str())
+            : save_folder_name.c_str(),
+        date_buffer, filter_pattern);
 
     if (path != NULL) {
-        path_string.assign(path);
-        std::free(path);  // Required by osdialog_file().
+      path_string.assign(path);
+      std::free(path);  // Required by osdialog_file().
     }
     return (path_string);
   }
 };
 
 struct MenuItemPickLoadFolder : MenuItem {
-  Memory *module;
+  Memory* module = nullptr;
 
-  void onAction(const event::Action &e) override {
+  void onAction(const event::Action& e) override {
     std::string filename = module->selectLoadFolder();
     if (filename != "") {
-      // We set this even if it's the same path as before. This gives the user a gesture to update
-      // the list.
-      PrepareTask* task = PrepareTask::LoadDirectoryTask(filename,
-        module->cv_rate ?
-          StochasticTelegraph::MRUType::MEMORYCV_DIRECTORY :
-          StochasticTelegraph::MRUType::MEMORY_DIRECTORY,
-        true);
+      // We set this even if it's the same path as before. This gives the user a
+      // gesture to update the list.
+      PrepareTask* task = PrepareTask::LoadDirectoryTask(
+          filename,
+          module->cv_rate ? StochasticTelegraph::MRUType::MEMORYCV_DIRECTORY
+                          : StochasticTelegraph::MRUType::MEMORY_DIRECTORY,
+          true);
       if (!module->widget_module_queue.tasks.push(task)) {
         delete task;
       }
@@ -1436,19 +1498,20 @@ struct MenuItemPickLoadFolder : MenuItem {
 };
 
 struct MenuItemPickLoadFile : MenuItem {
-  Memory *module;
+  Memory* module = nullptr;
 
-  void onAction(const event::Action &e) override {
+  void onAction(const event::Action& e) override {
     std::string filename_and_path = module->selectLoadFile();
     if (filename_and_path != "") {
-      PrepareTask* task = PrepareTask::LoadFileTask(nullptr,
-        filename_and_path, "");
+      PrepareTask* task =
+          PrepareTask::LoadFileTask(nullptr, filename_and_path, "");
       if (!module->widget_module_queue.tasks.push(task)) {
         delete task;
       }
       // TODO: add this to frequently loaded file MRU list.
       /*
-      // We set this even if it's the same path as before. This gives the user a gesture to update
+      // We set this even if it's the same path as before. This gives the user a
+      gesture to update
       // the list.
       PrepareTask* task = PrepareTask::LoadDirectoryTask(filename,
         module->cv_rate ?
@@ -1464,9 +1527,9 @@ struct MenuItemPickLoadFile : MenuItem {
 };
 
 struct MenuItemPickSaveFolder : MenuItem {
-  Memory *module;
+  Memory* module = nullptr;
 
-  void onAction(const event::Action &e) override {
+  void onAction(const event::Action& e) override {
     std::string filename = module->selectSaveFolder();
     if (filename != "") {
       module->save_folder_name = filename;
@@ -1475,16 +1538,16 @@ struct MenuItemPickSaveFolder : MenuItem {
 };
 
 struct MenuItemPickSaveFile : MenuItem {
-  Memory *module;
+  Memory* module = nullptr;
   std::string file_type;
 
   MenuItemPickSaveFile(const std::string& type) : file_type{type} {}
 
-  void onAction(const event::Action &e) override {
+  void onAction(const event::Action& e) override {
     std::string file_path = module->selectSaveFile(file_type);
     if (file_path != "") {
-      // We set this even if it's the same path as before. This gives the user a gesture to update
-      // the list.
+      // We set this even if it's the same path as before. This gives the user a
+      // gesture to update the list.
       PrepareTask* task = PrepareTask::SaveFileTask(file_path);
       if (!module->widget_module_queue.tasks.push(task)) {
         delete task;
@@ -1496,11 +1559,9 @@ struct MenuItemPickSaveFile : MenuItem {
 // Based on TimestampField, but shows the length of the recording instead
 // of the current position.
 struct LengthField : OpaqueWidget {
-  Memory* module;
-  
-  void setModule(Memory* mod) {
-    module = mod;
-  }
+  Memory* module = nullptr;
+
+  void setModule(Memory* mod) { module = mod; }
 
   double getSeconds() {
     if (module) {
@@ -1512,9 +1573,7 @@ struct LengthField : OpaqueWidget {
     return 2.1;  // Just something to show by default.
   }
 
-  LengthField() {
-    box.size = mm2px(Vec(10.0, 4.0));
-  }
+  LengthField() { box.size = mm2px(Vec(10.0, 4.0)); }
 
   void drawLayer(const DrawArgs& args, int layer) override {
     if (layer == 1) {
@@ -1565,44 +1624,44 @@ struct MemoryWidget : ModuleWidget {
     this->SetPanels();  // this-> forces the call to the overidden method.
 
     // WIPE button and trigger.
-    addParam(createLightParamCentered<VCVLightButton<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(14.886, 14.817)),
-                                             module, Memory::WIPE_BUTTON_PARAM,
-                                             Memory::WIPE_BUTTON_LIGHT));
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(5.378, 14.817)), module,
-                                             Memory::WIPE_TRIGGER_INPUT));
+    addParam(
+        createLightParamCentered<VCVLightButton<MediumSimpleLight<WhiteLight>>>(
+            mm2px(Vec(14.886, 14.817)), module, Memory::WIPE_BUTTON_PARAM,
+            Memory::WIPE_BUTTON_LIGHT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(5.378, 14.817)), module, Memory::WIPE_TRIGGER_INPUT));
 
-    addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(5.44, 32.837)),
-             module, Memory::SECONDS_PARAM));
-    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(14.88, 32.837)),
-             module, Memory::LENGTH_OUTPUT));
+    addParam(createParamCentered<RoundBlackKnob>(
+        mm2px(Vec(5.44, 32.837)), module, Memory::SECONDS_PARAM));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(14.88, 32.837)), module, Memory::LENGTH_OUTPUT));
     // A timestamp is 10 wide.
-    LengthField* now_timestamp = createWidget<LengthField>(mm2px(
-        Vec(14.88 - (10.0 / 2.0), 32.837 - 8.1)));
+    LengthField* now_timestamp = createWidget<LengthField>(
+        mm2px(Vec(14.88 - (10.0 / 2.0), 32.837 - 8.1)));
     now_timestamp->setModule(module);
     addChild(now_timestamp);
 
     // RESET button.
-    addParam(createLightParamCentered<VCVLightButton<
-             MediumSimpleLight<WhiteLight>>>(mm2px(Vec(10.16, 46.959)),
-                                             module, Memory::RESET_BUTTON_PARAM,
-                                             Memory::RESET_BUTTON_LIGHT));
+    addParam(
+        createLightParamCentered<VCVLightButton<MediumSimpleLight<WhiteLight>>>(
+            mm2px(Vec(10.16, 46.959)), module, Memory::RESET_BUTTON_PARAM,
+            Memory::RESET_BUTTON_LIGHT));
 
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(5.378, 79.325)),
-             module, Memory::TIPSY_LOAD_INPUT));
-    addInput(createInputCentered<ThemedPJ301MPort>(mm2px(Vec(5.378, 95.795)),
-             module, Memory::TIPSY_SAVE_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(5.378, 79.325)), module, Memory::TIPSY_LOAD_INPUT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(5.378, 95.795)), module, Memory::TIPSY_SAVE_INPUT));
 
-    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(14.886, 79.325)),
-             module, Memory::LOAD_TRIGGER_OUTPUT));
-    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(14.886, 95.795)),
-             module, Memory::SAVE_TRIGGER_OUTPUT));
-    addOutput(createOutputCentered<ThemedPJ301MPort>(mm2px(Vec(12.806, 112.537)),
-             module, Memory::TIPSY_LOGGING_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(14.886, 79.325)), module, Memory::LOAD_TRIGGER_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(14.886, 95.795)), module, Memory::SAVE_TRIGGER_OUTPUT));
+    addOutput(createOutputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(12.806, 112.537)), module, Memory::TIPSY_LOGGING_OUTPUT));
 
     // FILE I/O light.
-     addChild(createLightCentered<SmallLight<WhiteLight>>(mm2px(Vec(17.039, 121.986)),
-             module, Memory::FILE_IO_LIGHT));
+    addChild(createLightCentered<SmallLight<WhiteLight>>(
+        mm2px(Vec(17.039, 121.986)), module, Memory::FILE_IO_LIGHT));
   }
 
   virtual void SetPanels() {
@@ -1618,7 +1677,7 @@ struct MemoryWidget : ModuleWidget {
   }
 
   // To allow users to drop files directly onto the module.
-  virtual void onPathDrop(const PathDropEvent &	e) override {
+  virtual void onPathDrop(const PathDropEvent& e) override {
     if (!module) {
       return;
     }
@@ -1645,22 +1704,23 @@ struct MemoryWidget : ModuleWidget {
       return path;
     }
 
-    // Split by the OS's path separator. Show the first three and last three components.
-    //char path_separator = std::filesystem::path::preferred_separator;
-    #if defined ARCH_WIN
+// Split by the OS's path separator. Show the first three and last three
+// components.
+// char path_separator = std::filesystem::path::preferred_separator;
+#if defined ARCH_WIN
     char path_separator = '\\';
-    #else
+#else
     char path_separator = '/';
-    #endif
+#endif
 
     std::vector<std::string> components;
     std::string current_component;
     for (char c : path) {
-    #if defined ARCH_WIN
+#if defined ARCH_WIN
       if (c == '\\' || c == '/') {
-    #else
+#else
       if (c == path_separator) {
-    #endif
+#endif
         if (!current_component.empty()) {
           components.push_back(current_component);
           current_component.clear();
@@ -1693,110 +1753,119 @@ struct MemoryWidget : ModuleWidget {
     Memory* module = dynamic_cast<Memory*>(this->module);
     assert(module);
 
-    // Simple choices for user at the top. Items below these are about picking from lists.
+    // Simple choices for user at the top. Items below these are about picking
+    // from lists.
     menu->addChild(new MenuSeparator);
-    menu->addChild(createBoolPtrMenuItem("Autoload most recent file when this module starts", "",
-                                         &(module->load_latest_file_on_start)));
+    menu->addChild(createBoolPtrMenuItem(
+        "Autoload most recent file when this module starts", "",
+        &(module->load_latest_file_on_start)));
 
     // Option to (re)load the most recent file immediately.
-    menu->addChild(createMenuItem("Reload most recent file now", "",
-      [=]() {
-        PrepareTask* task = PrepareTask::LoadFileTask(nullptr,
-          module->loaded_file, module->load_folder_name);
-        if (!module->widget_module_queue.tasks.push(task)) {
-          delete task;
-        }
+    menu->addChild(createMenuItem("Reload most recent file now", "", [=]() {
+      PrepareTask* task = PrepareTask::LoadFileTask(
+          nullptr, module->loaded_file, module->load_folder_name);
+      if (!module->widget_module_queue.tasks.push(task)) {
+        delete task;
       }
-    ));
-    
+    }));
+
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel("*** Loading Directory ***"));
-    menu->addChild(createMenuLabel("Current: " + 
-      (module->load_folder_name.empty() ? "<none>" : betterDirectoryPath(module->load_folder_name))));
+    menu->addChild(createMenuLabel(
+        "Current: " + (module->load_folder_name.empty()
+                           ? "<none>"
+                           : betterDirectoryPath(module->load_folder_name))));
 
     // Display menu of recently used directories.
-    StochasticTelegraph::MRUType mru_type = module->cv_rate ?
-      StochasticTelegraph::MRUType::MEMORYCV_DIRECTORY :
-      StochasticTelegraph::MRUType::MEMORY_DIRECTORY;
-    std::vector<std::string>* mru_load_directories = 
-      StochasticTelegraph::PluginConfig::getInstance().getMRUList(mru_type);
+    StochasticTelegraph::MRUType mru_type =
+        module->cv_rate ? StochasticTelegraph::MRUType::MEMORYCV_DIRECTORY
+                        : StochasticTelegraph::MRUType::MEMORY_DIRECTORY;
+    std::vector<std::string>* mru_load_directories =
+        StochasticTelegraph::PluginConfig::getInstance().getMRUList(mru_type);
     if (mru_load_directories != nullptr && mru_load_directories->size() > 0) {
-
-
-      //std::vector<std::string> mru_copy;
+      // std::vector<std::string> mru_copy;
       std::vector<std::string> mru_copy = *mru_load_directories;
 
-
-/* For now, I'm going to try this. I'm curious if the crashes re-emerge.
-      try {
-        mru_copy = *mru_load_directories;
-      } catch (const std::exception& e) {
-        WARN("Standard exception occurred while copying MRU list for display: %s", e.what());
-        // If copying fails due to concurrent modification or other issues, skip the MRU menu.  
-      } catch (...) {
-        // Print anything we can about the exception.
-        WARN("Exception occurred while copying MRU list for display. Skipping MRU menu.");
-        // If copying fails due to concurrent modification or other issues, skip the MRU menu.
-        // TODO: consider using a mutex in the MRU list management to prevent this.
-        // TODO: log a warning message. I'd like to understand this better.
-      }
-*/
+      /* For now, I'm going to try this. I'm curious if the crashes re-emerge.
+            try {
+              mru_copy = *mru_load_directories;
+            } catch (const std::exception& e) {
+              WARN("Standard exception occurred while copying MRU list for
+         display: %s", e.what());
+              // If copying fails due to concurrent modification or other
+         issues, skip the MRU menu. } catch (...) {
+              // Print anything we can about the exception.
+              WARN("Exception occurred while copying MRU list for display.
+         Skipping MRU menu.");
+              // If copying fails due to concurrent modification or other
+         issues, skip the MRU menu.
+              // TODO: consider using a mutex in the MRU list management to
+         prevent this.
+              // TODO: log a warning message. I'd like to understand this
+         better.
+            }
+      */
       if (!mru_copy.empty()) {
-        MenuItem* folder_mru_menu = createSubmenuItem("Most Recently Used Directories", "",
-          [=](Menu* menu) {
+        MenuItem* folder_mru_menu = createSubmenuItem(
+            "Most Recently Used Directories", "", [=](Menu* menu) {
               for (const std::string& name : mru_copy) {
-                menu->addChild(createCheckMenuItem(betterDirectoryPath(name), "",
-                  [=]() {return name.compare(module->load_folder_name) == 0;},
-                  [=]() {
-                    PrepareTask* task = PrepareTask::LoadDirectoryTask(name, mru_type, true);
-                    if (!module->widget_module_queue.tasks.push(task)) {
-                      delete task;
-                    } 
-                  }
-                ));
+                menu->addChild(createCheckMenuItem(
+                    betterDirectoryPath(name), "",
+                    [=]() {
+                      return name.compare(module->load_folder_name) == 0;
+                    },
+                    [=]() {
+                      PrepareTask* task =
+                          PrepareTask::LoadDirectoryTask(name, mru_type, true);
+                      if (!module->widget_module_queue.tasks.push(task)) {
+                        delete task;
+                      }
+                    }));
               }
-          }
-        );
+            });
         menu->addChild(folder_mru_menu);
       }
     }
 
     MenuItemPickLoadFolder* menu_item_load_folder = new MenuItemPickLoadFolder;
-    menu_item_load_folder->text = "Pick via Directory Selector...";  
+    menu_item_load_folder->text = "Pick via Directory Selector...";
     menu_item_load_folder->module = module;
     menu->addChild(menu_item_load_folder);
 
     menu->addChild(new MenuSeparator);
     menu->addChild(createMenuLabel("*** Load File ***"));
-    menu->addChild(createMenuLabel("Current: " + 
-      (module->loaded_file.empty() ? "<none>" : betterDirectoryPath(module->loaded_file))));
+    menu->addChild(createMenuLabel(
+        "Current: " + (module->loaded_file.empty()
+                           ? "<none>"
+                           : betterDirectoryPath(module->loaded_file))));
 
     if (module->loadable_files.empty()) {
-      menu->addChild(createMenuLabel("No .wav or .csv files seen in Loading directory"));
+      menu->addChild(
+          createMenuLabel("No .wav or .csv files seen in Loading directory"));
     } else {
-      // Copy the list to avoid race conditions with the prepare thread modifying it.
+      // Copy the list to avoid race conditions with the prepare thread
+      // modifying it.
       std::vector<std::string> files_copy = module->loadable_files;
-      MenuItem* loadable_file_menu = createSubmenuItem("Pick file from Loading directory", "",
-        [=](Menu* menu) {
+      MenuItem* loadable_file_menu = createSubmenuItem(
+          "Pick file from Loading directory", "", [=](Menu* menu) {
             for (const std::string& name : files_copy) {
-              menu->addChild(createCheckMenuItem(name, "",
-                [=]() {return name.compare(module->loaded_file) == 0;},
-                [=]() {
-                  PrepareTask* task = PrepareTask::LoadFileTask(nullptr,
-                    name, module->load_folder_name);
-                  if (!module->widget_module_queue.tasks.push(task)) {
-                    delete task;
-                  }
-                }
-              ));
+              menu->addChild(createCheckMenuItem(
+                  name, "",
+                  [=]() { return name.compare(module->loaded_file) == 0; },
+                  [=]() {
+                    PrepareTask* task = PrepareTask::LoadFileTask(
+                        nullptr, name, module->load_folder_name);
+                    if (!module->widget_module_queue.tasks.push(task)) {
+                      delete task;
+                    }
+                  }));
             }
-        }
-      );
+          });
       menu->addChild(loadable_file_menu);
     }
 
     MenuItemPickLoadFile* menu_item_load_file = new MenuItemPickLoadFile;
-    menu_item_load_file->text = "Pick file via dialog...";  
+    menu_item_load_file->text = "Pick file via dialog...";
     menu_item_load_file->module = module;
     menu->addChild(menu_item_load_file);
 
@@ -1805,33 +1874,33 @@ struct MemoryWidget : ModuleWidget {
 
     MenuItemPickSaveFolder* menu_item_save_folder = new MenuItemPickSaveFolder;
     if (module->save_folder_name.empty()) {
-      menu_item_save_folder->text = "Pick via Directory Selector...";  
+      menu_item_save_folder->text = "Pick via Directory Selector...";
     } else {
       menu_item_save_folder->text = module->save_folder_name;
     }
     menu_item_save_folder->module = module;
     menu->addChild(menu_item_save_folder);
 
-    MenuItemPickSaveFile* menu_item_save_file_wav = new MenuItemPickSaveFile("wav");
-    menu_item_save_file_wav->text = "Save to WAV File...";  
+    MenuItemPickSaveFile* menu_item_save_file_wav =
+        new MenuItemPickSaveFile("wav");
+    menu_item_save_file_wav->text = "Save to WAV File...";
     menu_item_save_file_wav->module = module;
     menu->addChild(menu_item_save_file_wav);
 
-    MenuItemPickSaveFile* menu_item_save_file_csv = new MenuItemPickSaveFile("csv");
-    menu_item_save_file_csv->text = "Save to CSV File...";  
+    MenuItemPickSaveFile* menu_item_save_file_csv =
+        new MenuItemPickSaveFile("csv");
+    menu_item_save_file_csv->text = "Save to CSV File...";
     menu_item_save_file_csv->module = module;
     menu->addChild(menu_item_save_file_csv);
 
     // Be a little clearer how to make this module do anything.
     menu->addChild(new MenuSeparator);
-    menu->addChild(createMenuLabel(
-      "Put any of these modules directly to my right:"));
-    menu->addChild(createMenuLabel(
-      "Brainwash, Depict, Embellish, Fixation,"));
-    menu->addChild(createMenuLabel(
-      "and Ruminate. See my User Manual for details"));
-    menu->addChild(createMenuLabel(
-      "and usage videos."));
+    menu->addChild(
+        createMenuLabel("Put any of these modules directly to my right:"));
+    menu->addChild(createMenuLabel("Brainwash, Depict, Embellish, Fixation,"));
+    menu->addChild(
+        createMenuLabel("and Ruminate. See my User Manual for details"));
+    menu->addChild(createMenuLabel("and usage videos."));
   }
 };
 
@@ -1848,17 +1917,17 @@ struct MemoryCV : Memory {
 };
 
 struct MemoryCVWidget : MemoryWidget {
-  MemoryCVWidget(MemoryCV* module) : MemoryWidget((Memory*) module) {
+  MemoryCVWidget(MemoryCV* module) : MemoryWidget((Memory*)module) {
     SetPanels();
   }
 
   void SetPanels() override {
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/MemoryCV.svg"),
-                         asset::plugin(pluginInstance, "res/MemoryCV-dark.svg")));
+    setPanel(
+        createPanel(asset::plugin(pluginInstance, "res/MemoryCV.svg"),
+                    asset::plugin(pluginInstance, "res/MemoryCV-dark.svg")));
   }
 };
 
 Model* modelMemory = createModel<Memory, MemoryWidget>("Memory");
 
 Model* modelMemoryCV = createModel<MemoryCV, MemoryCVWidget>("MemoryCV");
-

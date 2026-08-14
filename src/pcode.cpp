@@ -214,7 +214,7 @@ void PCodeTranslator::AddLineToPCode(const Line& line) {
         std::string loop_type = line.str1;
         auto result = std::find_if(
             loops.rbegin(), loops.rend(),
-            [loop_type](Loop l) { return loop_type == l.loop_type; });
+            [loop_type](const Loop& l) { return loop_type == l.loop_type; });
         if (result != loops.rend()) {  // Found it, which is to be expected.
           int jump_to = result->line_number;
           PCode jump_back;
