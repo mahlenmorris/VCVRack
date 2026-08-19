@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.28
-#### (Date unknown)
+#### August 18, 2026
 * Another "random" module? It's like I'm trying to **earn** the "Stochastic" in my name! Meet [Chances](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#chances), which lets you specify precise values to select and their relative frequency. It's like picking values from a highly stacked deck of cards.
 * * There's four different STYLE's of picking values, including one that makes Chances an unusual kind of Quantizer.
 * * The module also allows for a SPREAD of results at a distance from the precise values you pick.
