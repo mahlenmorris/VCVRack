@@ -1,0 +1,81 @@
+src\parser\driver.cc:10:9: warning: Member variable 'Driver::factory' is not initialized in the constructor. [uninitMemberVar]
+Driver::Driver()
+        ^
+src\st_textfield.cpp:49:3: performance: Variable 'textOffset' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
+  textOffset = math::Vec(3, 3);
+  ^
+src\pcode.cpp:253:30: performance: Function parameter 'l' should be passed by const reference. [passedByValue]
+            [loop_type](Loop l) { return loop_type == l.loop_type; });
+                             ^
+src\parser\tree.cc:868:49: performance: Function parameter 'line' should be passed by const reference. [passedByValue]
+std::ostream& operator<<(std::ostream& os, Line line) {
+                                                ^
+src\Fixation.cpp:201:3: warning: Member variable 'Fixation::display_position' is not initialized in the constructor. [uninitMemberVar]
+  Fixation() {
+  ^
+src\Fixation.cpp:201:3: warning: Member variable 'Fixation::position_for_restart' is not initialized in the constructor. [uninitMemberVar]
+  Fixation() {
+  ^
+src\Fixation.cpp:201:3: warning: Member variable 'Fixation::length_in_samples' is not initialized in the constructor. [uninitMemberVar]
+  Fixation() {
+  ^
+src\Fixation.cpp:201:3: warning: Member variable 'Fixation::repeat_count' is not initialized in the constructor. [uninitMemberVar]
+  Fixation() {
+  ^
+src\Memory.cpp:64:3: warning: Member variable 'PrepareTask::seconds' is not initialized in the constructor. [uninitMemberVar]
+  PrepareTask(const Type the_type)
+  ^
+src\Memory.cpp:64:3: warning: Member variable 'PrepareTask::result_sample_count' is not initialized in the constructor. [uninitMemberVar]
+  PrepareTask(const Type the_type)
+  ^
+src\Memory.cpp:64:3: warning: Member variable 'PrepareTask::mru_type' is not initialized in the constructor. [uninitMemberVar]
+  PrepareTask(const Type the_type)
+  ^
+src\Memory.cpp:1585:9: warning: %u in format string (no. 1) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+        snprintf(text_buffer, 10, "%02u.%02u", (value / 100), value % 100);
+        ^
+src\Memory.cpp:1585:9: warning: %u in format string (no. 2) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+        snprintf(text_buffer, 10, "%02u.%02u", (value / 100), value % 100);
+        ^
+src\Memory.cpp:1588:9: warning: %u in format string (no. 1) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+        snprintf(text_buffer, 10, "%u:%02u", value / 60, value % 60);
+        ^
+src\Memory.cpp:1588:9: warning: %u in format string (no. 2) requires 'unsigned int' but the argument type is 'signed int'. [invalidPrintfArgType_uint]
+        snprintf(text_buffer, 10, "%u:%02u", value / 60, value % 60);
+        ^
+src\AudioFile.h:330:38: performance: Function parameter 'filePath' should be passed by const reference. [passedByValue]
+AudioFile<T>::AudioFile (std::string filePath)
+                                     ^
+src\AudioFile.h:938:38: performance: Function parameter 'filePath' should be passed by const reference. [passedByValue]
+bool AudioFile<T>::save (std::string filePath, AudioFileFormat format)
+                                     ^
+src\AudioFile.h:953:48: performance: Function parameter 'filePath' should be passed by const reference. [passedByValue]
+bool AudioFile<T>::saveToWaveFile (std::string filePath)
+                                               ^
+src\AudioFile.h:1117:47: performance: Function parameter 'filePath' should be passed by const reference. [passedByValue]
+bool AudioFile<T>::saveToCSVFile (std::string filePath) {
+                                              ^
+src\AudioFile.h:1139:48: performance: Function parameter 'filePath' should be passed by const reference. [passedByValue]
+bool AudioFile<T>::saveToAiffFile (std::string filePath)
+                                               ^
+src\AudioFile.h:1253:85: performance: Function parameter 's' should be passed by const reference. [passedByValue]
+void AudioFile<T>::addStringToFileData (std::vector<uint8_t>& fileData, std::string s)
+                                                                                    ^
+src\AudioFile.h:1386:79: performance: Function parameter 'stringToSearchFor' should be passed by const reference. [passedByValue]
+int AudioFile<T>::getIndexOfString (std::vector<uint8_t>& source, std::string stringToSearchFor)
+                                                                              ^
+src\AudioFile.h:1480:45: performance: Function parameter 'errorMessage' should be passed by const reference. [passedByValue]
+void AudioFile<T>::reportError (std::string errorMessage)
+                                            ^
+src\Memory.cpp:1095:32: warning: Expression 'parsed_int' can have a negative value. That is converted to an unsigned value and used in an unsigned calculation. [signConversionCond]
+                  parsed_int = parsed_int % loadable_files.size();
+                               ^
+src\Memory.cpp:1082:65: note: Assuming that condition 'parsed_long<(-2147483647-1)' is not redundant
+                } else if (parsed_long > INT_MAX || parsed_long < INT_MIN) {
+                                                                ^
+src\Memory.cpp:1090:34: note: parsed_int is assigned 'static_cast<int>(parsed_long)' here.
+                  int parsed_int = static_cast<int>(
+                                 ^
+src\Memory.cpp:1095:32: note: Negative value is converted to an unsigned value
+                  parsed_int = parsed_int % loadable_files.size();
+                               ^

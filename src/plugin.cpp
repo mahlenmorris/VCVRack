@@ -1,13 +1,14 @@
 #include "plugin.hpp"
 
-Plugin* pluginInstance;
+Plugin *pluginInstance;
 
-void init(Plugin* p) {
+void init(Plugin *p) {
   pluginInstance = p;
 
   // Add modules here
   p->addModel(modelBasically);
   p->addModel(modelBrainwash);
+  p->addModel(modelChances);
   p->addModel(modelDepict);
   p->addModel(modelDistribute);
   p->addModel(modelDrifter);
@@ -22,5 +23,6 @@ void init(Plugin* p) {
   p->addModel(modelVenn);
 
   // Any other plugin initialization may go here.
-  // As an alternative, consider lazy-loading assets and lookup tables when your module is created to reduce startup times of Rack.
+  // As an alternative, consider lazy-loading assets and lookup tables when your
+  // module is created to reduce startup times of Rack.
 }

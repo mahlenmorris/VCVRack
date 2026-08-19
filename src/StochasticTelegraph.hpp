@@ -4,7 +4,8 @@
 
 namespace StochasticTelegraph {
 
-// Shared utility structures and classes used by multiple modules in this plugin.
+// Shared utility structures and classes used by multiple modules in this
+// plugin.
 
 /////////////////////
 // A shared set of configuration available to multiple modules.
@@ -18,23 +19,24 @@ enum MRUType {
 };
 
 class PluginConfig {
-public:
+ public:
   // Public static method to access the single instance
   static PluginConfig& getInstance() {
-      // The static local variable is created only once, on the first call.
-      // This initialization is guaranteed to be thread-safe in C++11 and later.
-      static PluginConfig instance;
-      return instance;
+    // The static local variable is created only once, on the first call.
+    // This initialization is guaranteed to be thread-safe in C++11 and later.
+    static PluginConfig instance;
+    return instance;
   }
 
   // Clear and fill "list" with the MRU entries of the given type.
   std::vector<std::string>* getMRUList(MRUType type);
 
   // Place the given entry at the top of the list of the given type.
-  // May cause the config to be saved to disk, so DO NOT call in the process() loop.
+  // May cause the config to be saved to disk, so DO NOT call in the process()
+  // loop.
   void putMRUEntry(const std::string& entry, MRUType type);
 
-private:
+ private:
   // Private constructor to prevent direct instantiation from outside
   PluginConfig();
 
@@ -44,7 +46,7 @@ private:
   // Delete copy constructor and assignment operator to prevent cloning
   PluginConfig(const PluginConfig&) = delete;
   PluginConfig& operator=(const PluginConfig&) = delete;
-  
+
   // Optional: Delete move constructor and move assignment operator
   PluginConfig(PluginConfig&&) = delete;
   PluginConfig& operator=(PluginConfig&&) = delete;
@@ -65,15 +67,14 @@ struct STResizeHandle : OpaqueWidget {
   // Limits on size.
   int min_holes, max_holes;
 
-  STResizeHandle(bool is_right, int min_h, int max_h) : 
-      right(is_right), min_holes(min_h), max_holes(max_h) {
+  STResizeHandle(bool is_right, int min_h, int max_h)
+      : module{nullptr}, right(is_right), min_holes(min_h), max_holes(max_h) {
     // One hole wide and full length tall.
     box.size = Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
   }
 
   void onDragStart(const DragStartEvent& e) override {
-    if (e.button != GLFW_MOUSE_BUTTON_LEFT)
-      return;
+    if (e.button != GLFW_MOUSE_BUTTON_LEFT) return;
 
     dragPos = APP->scene->rack->getMousePos();
     ModuleWidget* mw = getAncestorOfType<ModuleWidget>();
@@ -98,12 +99,14 @@ struct STResizeHandle : OpaqueWidget {
       newBox.size.x += deltaX;
       newBox.size.x = std::fmax(newBox.size.x, minWidth);
       newBox.size.x = std::fmin(newBox.size.x, maxWidth);
-      newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
+      newBox.size.x =
+          std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
     } else {
       newBox.size.x -= deltaX;
       newBox.size.x = std::fmax(newBox.size.x, minWidth);
       newBox.size.x = std::fmin(newBox.size.x, maxWidth);
-      newBox.size.x = std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
+      newBox.size.x =
+          std::round(newBox.size.x / RACK_GRID_WIDTH) * RACK_GRID_WIDTH;
       newBox.pos.x = originalBox.pos.x + originalBox.size.x - newBox.size.x;
     }
     // Set box and test whether it's valid.
@@ -116,18 +119,18 @@ struct STResizeHandle : OpaqueWidget {
       // Make this resizing an undo/redo action. If I don't do this, undoing a
       // different module's move may cause them to overlap (aka, a
       // transporter malfunction).
-      APP->history->push(
-        new U(module->id, original_width, module->width,
-                oldBox.pos.x, mw->box.pos.x));
+      APP->history->push(new U(module->id, original_width, module->width,
+                               oldBox.pos.x, mw->box.pos.x));
       // Also need to tell FramebufferWidget to update the appearance.
       module->RedrawText();
     }
   }
 
   void drawLayer(const DrawArgs& args, int layer) override {
-    // TODO: Should this be a FrameBuffer widget, instead of redrawing every frame?
-    // Or maybe an illustration, although then I have to think about scaling? Maybe.
-    // Drawing once into a buffer seems pretty cheap and a smaller leap.
+    // TODO: Should this be a FrameBuffer widget, instead of redrawing every
+    // frame? Or maybe an illustration, although then I have to think about
+    // scaling? Maybe. Drawing once into a buffer seems pretty cheap and a
+    // smaller leap.
     if (layer == 1) {
       // Draw two lines to give people something to grab for.
       // Lifted from the VCV Blank module.
@@ -144,9 +147,8 @@ struct STResizeHandle : OpaqueWidget {
   }
 };
 
-
-// This struct written by @stoermelder to help me fix TTY and Fermata's zoomed-in bug.
-// https://github.com/mahlenmorris/VCVRack/issues/133
+// This struct written by @stoermelder to help me fix TTY and Fermata's
+// zoomed-in bug. https://github.com/mahlenmorris/VCVRack/issues/133
 // ThemedSvgPanel variant that keeps its internal FramebufferWidget sized to
 // the actually-visible portion of the panel (the ModuleWidget's box) instead
 // of the full SVG. At high zoom the full-SVG size in pixels can exceed the
@@ -179,7 +181,8 @@ struct RestrictedThemedSvgPanel : ThemedSvgPanel {
 
     float zoom = getAbsoluteZoom();
 
-    bool widthChanged = std::fabs(fb->box.size.x - mw->box.size.x) > widthChangeThreshold;
+    bool widthChanged =
+        std::fabs(fb->box.size.x - mw->box.size.x) > widthChangeThreshold;
     bool zoomChanged = std::fabs(zoom - lastRenderedZoom) > zoomChangeThreshold;
 
     if (widthChanged || zoomChanged) {
@@ -201,4 +204,4 @@ struct RestrictedThemedSvgPanel : ThemedSvgPanel {
   }
 };
 
-} // namespace StochasticTelegraph
+}  // namespace StochasticTelegraph

@@ -2,18 +2,24 @@
 Modules for use with VCV Rack 2.0, with an emphasis on generative and
 self-regulating structure. Exploring the region between random and static.
 
-![All Modules image](images/TheFamily.png)
-![Memory Modules image](images/TheFamilyRowTwo.png)
-
-* [Memory System](Memory.md): A set of seven interrelated recording/playback modules with [their own documentation](Memory.md).
-* [BASICally](#basically): A simple, likely familiar procedural programming language within the context of VCV Rack.
+![Stochastic Telegraph Modules](images/TheFamily.png)
+* [Chances](#chances): A random number generator where you select the desired values, their relative frequency, and how values are chosen (e.g., no repeats). Useful as both as a tightly constrained random number generator and as a quantizer for non-note values.
 * [Distribute](#distribute): A random number generator with flexible output ranges and unusually tunable probability distributions.
 * [Drifter](#drifter): Creates sequences of values that can slowly (or quickly) vary, like a series of points doing random walks connected into a series.
-* [Fermata](#fermata): A text editor and labeling module. Write much longer text notes. Resizable, scrolls, font choices, and more. Or just add some visual emphasis,
-Stochastic Telegraph-style.
+* [Fermata](#fermata): A text editor and labeling module. Write much longer text notes than the VCV Notes module. It's resizable, scrolls, has font choices, and more. Or just add some visual emphasis,
+Stochastic Telegraph slant-bang style.
 * [Fuse](#fuse): Block, allow, or attenuate a signal passing through, based on the number of triggers observed in a different signal.
 * [TTY](#tty): A scrolling text window that displays distinct values it gets, and also displays [Tipsy](https://github.com/baconpaul/tipsy-encoder) text messages sent by other modules (like BASICally).
+
+![Stochastic Telegraph Modules](images/TheFamilyRowTwo.png)
+* [BASICally](#basically): A simple, possibly familiar procedural programming language designed to work within the context of VCV Rack. 
 * [Venn](#venn): A 2D graphical signal generator consisting of up to sixteen visible Circles and a visible Point chosen by mouse or CV. Where the Point is in relation to a Circle determines five CV values per Circle. 
+
+![Memory Modules](images/MemoryFamilySameHeight.png)
+* [The Memory System](Memory.md): A set of seven interrelated recording/playback modules with [their own documentation](Memory.md).
+
+![Twixt Modules](images/TwixtFamily.png)
+Twixt and Mixt, a pair of premium modules, with [their own documentation](https://github.com/mahlenmorris/STPremium/blob/main/Twixt.md).
 
 ![Line Break image](images/Separator.png)
 
@@ -940,9 +946,10 @@ it can be useful (especially for debugging a script) to see the true value of
 a variable in an OUTn. You can clamp/unclamp each of the OUTn ports individually
 in this menu.
 
-Two modules that can usefully display the unclamped values are
-[ML Modules' Volt Meter](https://library.vcvrack.com/ML_modules/VoltMeter) and
-[NYSTHI's MultiVoltimetro](https://library.vcvrack.com/NYSTHI/MultiVoltimetro).
+Modules that can usefully display the unclamped values include:
+* [ML Modules' Volt Meter](https://library.vcvrack.com/ML_modules/VoltMeter),
+* [my own TTY](#tty), and
+* [NYSTHI's MultiVoltimetro](https://library.vcvrack.com/NYSTHI/MultiVoltimetro).
 
 #### Syntax/Math Hints
 Just in case you're in the middle of coding and you don't want to look up
@@ -978,10 +985,142 @@ VCV Rack version 1. But you can write code in Lua or Javascript (in an external 
 
 ![Line Break image](images/Separator.png)
 
+# Chances
+A random number generator where you select the desired values and their relative frequency. You also select how values are chosen; e.g., sampling with repetition, shuffled into an order, or sampled but with no repeats. You can also specify the allowed SPREAD of output values from your desired values, allowing as much or as little variation from the desired values as you like.
+
+![Chances Examples](images/Chances.png)
+
+### Uses
+* Create a random or *sort of* random stream of CV values with highly controlled constraints. These might be:
+* * A particular set of V/Oct notes.
+* * A set of note-like V/Oct values, but not in any known scale.
+* * Values that change the V/Oct octave (e.g., -2, -1, 0, 1), with the COUNT specifying the likelyhood of each octave being chosen.
+* * Use the values to specify particular amounts of an effect, like distortion or delay lengths. 
+* Choosing the "Input Selection" STYLE effectively quantizes an incoming signal to one of ten values, and here the COUNT dictates how much of the input range quantizes to any specific value. 
+### Controls
+#### Pairs of COUNT and VALUE Knobs
+There are ten pairs of COUNT and VALUE knobs. VALUE ranges from -10V to 10V, and COUNT ranges from 0 to 100. When the COUNT is zero (the default), then that pair will not contribute to the PDF (Probability Distribution Function) displayed at the top of Chances.
+
+When the COUNT is more than zero, the larger the COUNT, the greater the chance that value will be output. See the STYLE knob below for details about how COUNT's affect the chances of the value being output.
+
+Note that VCV Rack has [a number of ways to enter particular values](https://vcvrack.com/manual/KeyCommands#Parameter-commands) into a knob. For example, right-clicking a knob and typing "d#3v" will set the knob to the V/Oct value of the D#3 note.
+#### SORT Button
+It's often simpler to manipulate the PDF when the VALUEs are sorted from smallest to largest. Pressing this button will sort the knob pairs that way, with all of the COUNT==0 pairs at the end. This will not affect the PDF or output stream in any way.
+#### SPREAD
+Ranges from 0V to 2V, defaults to 0V. Turning this above zero allows Chances to output values that are SPREAD volts away from the value that was selected. As you turn the knob, you'll see on the display a blue outline of the PDF for a SPREAD of that value.
+
+The ways this works is:
+* A value is selected according to the COUNT+VALUE knobs and the setting of the STYLE knob.
+* If SPREAD is non-zero, then Chances will a select a voltage between zero and SPREAD and either add or subtract that. The selection is done according to the Kind of SPREAD switch.
+
+This allows you to allow and control small (or large) amounts of variance from the VALUEs, and greatly expands the variety of PDF's that Chances can follow.
+#### Kind of SPREAD Switch
+The default value for this (down) is a normal or Gaussian selection of SPREAD amounts (1).
+So most of the time, the result will still be close to the initial value chosen.
+
+The other value (up) is a uniform selection of SPREAD amounts. Thus any voltage N between (VALUE - SPREAD) and (VALUE + SPREAD) is equally likely.
+
+(1) OK, it's not *exactly* Gaussian, it's Irwin-Hall with N=3. Please do not use Chances for cryptographic or scientific purposes :)
+
+#### TRIG Input
+If CONT is off, then new random values will only be generated when TRIG receives a trigger. The value(s) at OUT will be held until the next trigger occurs. This TRIG signal can be polyphonic; if it has more than one channel, then OUT will have the same number of channels. This allows you to, for example, use the same Chances for multiple values, but at different times.
+See also the Menu Option that affects this. 
+
+If CONT is on, then TRIG will be largely ignored, except for how it affects the OUT channel count.
+#### CONT Button
+If set (light is lit), then Chances will continuously generate new random values on every sample.
+#### STYLE
+There are four different kinds of STYLE, each with a different effect on how values are chosen.
+
+To make this easier to visualize, imagine that you have three COUNT+VALUE pairs:
+
+| VALUE | COUNT |
+| ----- | ----- |
+| -1 | 1 |
+| 1.5 | 5 |
+| 3.14 | 2 |
+
+Now imagine laying these into a linear grid in order of VALUE, where each value is listed COUNT times:
+
+| Value |
+| ----- |
+| -1 |
+| 1.5 |
+| 1.5 |
+| 1.5 |
+| 1.5 |
+| 1.5 |
+| 3.14 |
+| 3.14 |
+
+Let's call this the **List**. The **List** is reconstructed each time the VALUE or COUNT knobs are changed. 
+
+Each STYLE selects values from the **List** in different ways. 
+
+**Sampling** - every time we need a new value, it picks from the **List** at random, with each item in the **List** being equally likely each time. This is what you likely expect from a random generator. VALUEs with higher COUNTs are, unsurprisingly, more likely to be output.
+
+**Shuffling** - When **Shuffling** is first selected, the **List** is shuffled into a random order, like a deck of cards. Whenever a value is needed, it deals from the top of this shuffled list; when it runs out, Chances then shuffles the current **List** again. This is less purely random than **Sampling** is, since the run of a shuffled list always contains all of the VALUES, and in exactly the COUNTs you specified.
+
+Note that each OUT channel has its own, separate shuffled list that it draws from.
+
+**No Repeats** - This is just like **Sampling**, except the value that was previously chosen is not allowed to be chosen. If there are only two distinct VALUE's, then Chances will just alternate values. If there is only one distinct value, it will keep picking that one value. This is even "less random".
+
+Each OUT channel has its own, separate idea of what value it just output.
+
+**Input Selection** - This STYLE is a bit different, and requires voltage(s) to be entering Chances via the IN port. It acts like a quantizer, mapping the IN values to positions in the **List**. This mapping depends on the range selected in the module's menu.
+
+Supposing that you have **[0V, 10V]** selected in the menu. Since the **List** has eight items in it, then the mapping of IN to Value would be:
+
+| IN | Value |
+|----| ----- |
+| 0, 1.25| -1 |
+| 1.25 - 2.5| 1.5 |
+| 2.5 - 3.75| 1.5 |
+| 3.75 - 5| 1.5 |
+| 5 - 6.25| 1.5 |
+| 6.25 - 7.5| 1.5 |
+| 7.5 - 8.75| 3.14 |
+| 8.75 - 10| 3.14 |
+
+Or more simply:
+
+| IN | Value |
+|----| ----- |
+| 0, 1.25| -1 |
+| 1.25 - 7.5| 1.5 |
+| 7.5 - 10| 3.14 |
+
+So a curious sort of quantizer, where you can give some values a wider part of the input domain than others. Unlike most quantizers, though, it has no notion of "octaves".
+
+Interesting sources of IN signals include LFO's and other random sources.
+
+#### IN Input
+Only used when STYLE is set to **Input Selection**. See the STYLE knob's **Input Selection** description for details about how IN uses Chances as a polyphonic quantizer.
+
+#### OUT Output
+Outputs a stream of random values based on the controls above. 
+### Menu Options
+
+#### Default number of OUT channels
+Sometimes you want multiple OUT channels (e.g., three different notes being generated on the same scale) but you want them synced to the same trigger. Instead of you having to create a polyphonic TRIG input, this menu option allows you to set the number of OUT channels whenever there is only a single TRIG channel.
+
+Note that OUT will not always have this many channels:
+* If TRIG has more than one channel, then OUT will have the same number of channels.
+* If STYLE is set to "Input Selection", then OUT will have the same number of channels as IN.
+
+### Bypass Behavior
+If this module is bypassed, then OUT will equal 0.0.
+
+### Related Modules
+Many modules tagged with "Random" will also produce random values. See also my [Distribute](#distribute) module for a different take on random numbers.
+If you'd like to use Chances to create sequences (like a Turing machine), using Count Modula's [16](https://library.vcvrack.com/CountModula/ShiftRegister16) and [32](https://library.vcvrack.com/CountModula/ShiftRegister32) value Shift Registers could likely get you there.
+
+![Line Break image](images/Separator.png)
+
 # Distribute
 Generates random values with flexible output ranges and unusually tunable probability distributions.
 
-![Distribute](images/DistributeHiLo.png)
+![Distribute Examples](images/Distribute.png)
 
 ### Uses
 * Create random CV values within a desired range.
@@ -1025,17 +1164,28 @@ will be held until the next trigger occurs.
 #### OUT Output
 Outputs a stream of random values based on the controls above. 
 
+### Menu Options
+
+#### Default number of OUT channels
+Sometimes you want multiple OUT channels (e.g., three different control voltages being generated with the same distribution) but you want them synced to one TRIG channel. Instead of you having to create a polyphonic TRIG input, this menu option allows you to set the number of OUT channels whenever there is only a single TRIG channel.
+
+Note that OUT will not always have this many channels:
+* If TRIG has more than one channel, then OUT will have the same number of channels.
+
 ### Bypass Behavior
 If this module is bypassed, then OUT will equal 0.0.
 
 ### Related Modules
-Many modules tagged with "Random" will also produce random values.
+Many modules tagged with "Random" will also produce random values. See also my [Chances](#chances) module for a different take on random numbers.
+If you'd like to use Chances to create sequences (like a Turing machine), using Count Modula's [16](https://library.vcvrack.com/CountModula/ShiftRegister16) and [32](https://library.vcvrack.com/CountModula/ShiftRegister32) value Shift Registers could likely get you there.
 
 ![Line Break image](images/Separator.png)
 
 # Drifter
 Creates sequences of values that can slowly (or quickly) vary, like a series of
 points doing random walks connected into a series.
+
+![Drifter Examples](images/Drifter.png)
 
 ### Examples
 ![Simple Example](images/DrifterSimplestExample.png)
