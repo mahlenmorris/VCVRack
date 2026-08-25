@@ -1127,6 +1127,12 @@ Generates random values with flexible output ranges and unusually tunable probab
 * Bias the output of random values in a variety of ways. For example, if you wanted a V/Oct source that usually stayed 
 in a small range of values, but occasionally produced a note outside that range.
 
+### Techniques
+Distribute creates single values, with no method of transitioning between values in any smooth way.
+Connecting the output to a slew limiter allows you to control the maximum rate of change.
+But if you want to have the change occur over a known period of time [this technique using the VCV Random module](https://community.vcvrack.com/t/constant-time-slew-limiter-with-shape-and-v-oct-control-over-time/26062/11)
+is quite handy.
+
 ### Controls
 #### Upper Limit Knob
 The maximum value of the range of OUT values. Defaults to 10.0V.
