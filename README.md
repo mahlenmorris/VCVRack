@@ -19,7 +19,7 @@ Stochastic Telegraph slant-bang style.
 * [The Memory System](Memory.md): A set of seven interrelated recording/playback modules with [their own documentation](Memory.md).
 
 ![Twixt Modules](images/TwixtFamily.png)
-Twixt and Mixt, a pair of premium modules, with [their own documentation](https://github.com/mahlenmorris/STPremium/blob/main/Twixt.md).
+Twixt and Mixt, a pair of premium modules, with [their own documentation](https://github.com/mahlenmorris/STPremium/blob/main/Twixt.md). You can [purchase this plugin here](https://library.vcvrack.com/StochasticTelegraphTwixt).
 
 ![Line Break image](images/Separator.png)
 
