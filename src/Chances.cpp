@@ -24,12 +24,13 @@ struct Chances : Module {
     ENUMS(COUNT_PARAM, PAIR_COUNT),
     PARAMS_LEN
   };
-  enum InputId { TRIG_INPUT, POSITION_INPUT, INPUTS_LEN };
+  enum InputId { TRIG_INPUT, POSITION_INPUT, RESET_INPUT, INPUTS_LEN };
   enum OutputId { OUT_OUTPUT, OUTPUTS_LEN };
   enum LightId { CONTINUOUS_BUTTON_LIGHT, SORT_LIGHT, LIGHTS_LEN };
 
   // For detecting input triggers (polyphonic).
   dsp::SchmittTrigger inputTrigger[PORT_MAX_CHANNELS];
+  dsp::SchmittTrigger resetTrigger[PORT_MAX_CHANNELS];
   float prev_values[PAIR_COUNT];
   int prev_counts[PAIR_COUNT];
   // A vector of possibilities. While doing this prohibits non-integral
@@ -61,7 +62,6 @@ struct Chances : Module {
 
   Chances() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-    // TODO: need to add a Trigger detector that means to reshuffle.
     configSwitch(STYLE_PARAM, 0, 3, 0, "Value Choosen by",
                  {"Sampling", "Shuffling", "No Repeats", "Input Selection"});
     // This has distinct values.
@@ -98,6 +98,9 @@ struct Chances : Module {
     configInput(POSITION_INPUT,
                 "(Only for Input Selection STYLE.) Voltages here will select "
                 "the appropriate output value");
+    configInput(RESET_INPUT,
+                "Triggers here reset sequence state (forces reshuffle in "
+                "Shuffling, clears repeat memory in No Repeats)");
     configOutput(OUT_OUTPUT,
                  "Emits values according to the relative chances set above");
     // Init with impossible values, to guarantee a refresh at the start.
@@ -115,6 +118,7 @@ struct Chances : Module {
     // Mark all channels as not having a shuffled_samples prepared yet.
     for (int c = 0; c < PORT_MAX_CHANNELS; ++c) {
       shuffled_index[c] = -1;
+      last_output_value[c] = -100.0f;
     }
   }
 
@@ -233,6 +237,7 @@ struct Chances : Module {
 
       samples.clear();
       block_map.clear();
+      // Build samples and block_map at the same time.
       for (const auto& pair : aggregated_counts) {
         block_map[pair.first] = {pair.second, samples.size()};
         for (int i = 0; i < pair.second; ++i) {
@@ -243,7 +248,6 @@ struct Chances : Module {
       // triggered? What if this is first entry?? Think more on what user
       // expects.
       // That decision might need to be a menu option.
-      // TODO: this should dirty the Framebuffer?
     }
 
     // Determine if we need to shuffle.
@@ -281,7 +285,35 @@ struct Chances : Module {
       universal_trigger = trig_was_low && inputTrigger[0].isHigh();
     }
 
+    int reset_channels = inputs[RESET_INPUT].getChannels();
+    bool universal_reset = false;
+    if (reset_channels == 1) {
+      bool reset_was_low = !resetTrigger[0].isHigh();
+      resetTrigger[0].process(
+          rescale(inputs[RESET_INPUT].getVoltage(0), 0.1f, 2.f, 0.f, 1.f));
+      universal_reset = reset_was_low && resetTrigger[0].isHigh();
+    }
+
     for (int curr_channel = 0; curr_channel < out_channels; ++curr_channel) {
+      // Check for reset trigger
+      bool reset_from_input = false;
+      if (universal_reset) {
+        reset_from_input = true;
+      } else if (reset_channels > 1) {
+        bool reset_was_low = !resetTrigger[curr_channel].isHigh();
+        resetTrigger[curr_channel].process(rescale(
+            inputs[RESET_INPUT].getVoltage(curr_channel), 0.1f, 2.f, 0.f, 1.f));
+        reset_from_input = reset_was_low && resetTrigger[curr_channel].isHigh();
+      }
+
+      if (reset_from_input) {
+        if (style == 1) {
+          perform_shuffle(curr_channel);
+        } else if (style == 2) {
+          last_output_value[curr_channel] = -100.0f;
+        }
+      }
+
       // Time to output new value?
       bool trig_from_input = false;
       if (universal_trigger) {
@@ -312,19 +344,25 @@ struct Chances : Module {
             --shuffled_index[curr_channel];
           }
         } else if (style == 2 && block_map.size() >= 2) {
-          // no repeats.
-          int n = 0;
-          int s = 0;
+          // No Repeats STYLE.
+          // In the span of samples, we block out a region of choices.
+          // For example:
+          // [n n n n n n n n n n n n n n n n]
+          //        x x x x x x
+          // Here. block_start is 3 and block_length = 6.
+          int block_length = 0;
+          int block_start = 0;
           auto it = block_map.find(last_output_value[curr_channel]);
           if (it != block_map.end()) {
-            n = it->second.first;
-            s = it->second.second;
+            block_length = it->second.first;
+            block_start = it->second.second;
           }
 
-          int valid_size = samples.size() - n;
+          int valid_size = samples.size() - block_length;
           if (valid_size > 0) {
             size_t r = (size_t)floor(rack::random::uniform() * valid_size);
-            size_t position = (r < (size_t)s) ? r : (r + n);
+            size_t position =
+                (r < (size_t)block_start) ? r : (r + block_length);
             out_val = samples.at(position);
             has_val = true;
           }
@@ -520,13 +558,11 @@ struct ChancesDisplay : Widget {
           int i_end = std::min(num_steps, static_cast<int>(std::ceil(max_x)));
 
           for (int i = i_start; i <= i_end; ++i) {
-            float voltage =
-                (i - (rect_width / 2.0f)) / drawable_width * range + min_val;
-
-            float curve_addition = 0.0f;
             if (fuzz_uniform) {
               curve_heights[i] += count;
             } else {
+              float voltage =
+                  (i - (rect_width / 2.0f)) / drawable_width * range + min_val;
               float distance = voltage - val;
               // Exact PDF of Irwin-Hall distribution for n=3 (sum of 3
               // uniforms): In process(), noise is:
@@ -536,6 +572,7 @@ struct ChancesDisplay : Widget {
               float s = (distance + fuzz) * (3.0f / (2.0f * fuzz));
               s = clamp(s, 0.0f,
                         3.0f);  // Guard against float rounding at edges.
+              float curve_addition = 0.0f;
               // Standard piecewise quadratic equation for Irwin-Hall (n=3):
               if (s <= 1.0f) {
                 // Left tail: [0, 1]
@@ -605,7 +642,6 @@ struct ChancesDisplay : Widget {
         if (range > 0.0f) {
           int start_v = std::floor(min_val);
           int end_v = std::ceil(max_val);
-          float drawable_width = bounding_box.x - rect_width;
           for (int v = start_v; v <= end_v; ++v) {
             float mapped_x =
                 (rect_width / 2.0f) + ((v - min_val) / range) * drawable_width;
@@ -652,7 +688,6 @@ struct ChancesDisplay : Widget {
           if (range > 0.0f) {
             // Map value from [min_val, max_val] to fit within the box width
             // We subtract rect_width from bounding box so the edges don't clip.
-            float drawable_width = bounding_box.x - rect_width;
             mapped_x = (rect_width / 2.0f) +
                        ((val - min_val) / range) * drawable_width;
           } else {
@@ -684,7 +719,6 @@ struct ChancesDisplay : Widget {
           // Only draw the line if it falls within our current min/max display
           // range.
           if (h_val >= min_val && h_val <= max_val) {
-            float drawable_width = bounding_box.x - rect_width;
             float h_mapped_x = (rect_width / 2.0f) +
                                ((h_val - min_val) / range) * drawable_width;
             nvgBeginPath(args.vg);
@@ -716,7 +750,6 @@ struct ChancesDisplay : Widget {
         for (float current_out : active_outs) {
           float out_mapped_x;
           if (range > 0.0f) {
-            float drawable_width = bounding_box.x - rect_width;
             out_mapped_x = (rect_width / 2.0f) +
                            ((current_out - min_val) / range) * drawable_width;
           } else {
@@ -755,7 +788,6 @@ struct ChancesDisplay : Widget {
         int start_v = std::floor(min_val);
         int end_v = std::ceil(max_val);
         for (int v = start_v; v <= end_v; ++v) {
-          float drawable_width = bounding_box.x - rect_width;
           float mapped_x =
               (rect_width / 2.0f) + ((v - min_val) / range) * drawable_width;
           nvgText(args.vg, mapped_x, 2, std::to_string(v).c_str(), NULL);
@@ -833,7 +865,7 @@ struct ChancesSmallKnob : RoundSmallBlackKnob {
 struct ChancesWidget : ModuleWidget {
   static constexpr float X_DIFF_MM = 11.5;
 
-  ChancesWidget(Chances* module) {
+  explicit ChancesWidget(Chances* module) {
     setModule(module);
     setPanel(
         createPanel(asset::plugin(pluginInstance, "res/Chances.svg"),
@@ -899,6 +931,9 @@ struct ChancesWidget : ModuleWidget {
     addParam(style_knob);
 
     addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(68.819, 92.0)), module, Chances::RESET_INPUT));
+
+    addInput(createInputCentered<ThemedPJ301MPort>(
         mm2px(Vec(8.032, 116.0)), module, Chances::TRIG_INPUT));
 
     addInput(createInputCentered<ThemedPJ301MPort>(
@@ -914,7 +949,7 @@ struct ChancesWidget : ModuleWidget {
 
     menu->addChild(new MenuSeparator);
 
-    std::pair<std::string, int> input_ranges[] = {
+    static const std::pair<std::string, int> input_ranges[] = {
         {"[-5V, 5V]", 0}, {"[0V, 10V]", 1}, {"[-10V, 10V]", 2}};
 
     menu->addChild(
