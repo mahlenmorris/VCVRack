@@ -4,12 +4,118 @@
 #include <set>
 #include <vector>
 
+#include "plugin.hpp"
+
 // #define MEASURE_FRAME_TIME 1
 #ifdef MEASURE_FRAME_TIME
 #include <chrono>
 #endif
 
-#include "plugin.hpp"
+// For "No Repeats 2" style, this remembers the relative weights of each
+// value as a result of picked previously.
+struct Recovery {
+  // All values start with a 1.0f. Being picked pushes the weight to 0.0f.
+  // Each subsequent picking moves up the weights until we're back at 1.0;
+  constexpr static float weights[4] = {1.0f, 0.67f, 0.33f, 0.0f};
+  constexpr static int JUST_PICKED_INDEX = 3;
+  // Maps a float's value to the index into weights.
+  std::map<float, int> weight_map;
+
+  Recovery() { weight_map.clear(); }
+
+  // Adjust the weight_map to match what this new set of values allows.
+  // We ignore the range of new_counts, only the domain (the float key)
+  // matters here.
+  //
+  // * If new_counts and weight_map have the same values, don't change
+  // weight_map.
+  // * If new_counts has values the same as weight_map, we carry them over.
+  void adjust(const std::map<float, int>& new_counts) {
+    // Instead of adjusting weight_map piecemeal, it's far simpler to
+    // just recreate it when needed.
+
+    // But one optimization - when the values are the same, do nothing.
+    if (weight_map.size() == new_counts.size()) {
+      // Iterate through both, see if all keys match.
+      bool differ = false;
+      auto weight_iter = weight_map.begin();
+      auto new_iter = new_counts.begin();
+      while (weight_iter != weight_map.end()) {
+        if (weight_iter->first != new_iter->first) {
+          differ = true;
+          break;
+        }
+        ++weight_iter;
+        ++new_iter;
+      }
+      if (!differ) {
+        return;
+      }
+    }
+    // Create new weight_map, but keep weights from previous.
+    std::map<float, int> new_map;
+    for (auto iter = new_counts.begin(); iter != new_counts.end(); ++iter) {
+      auto found = weight_map.find(iter->first);
+      if (found != weight_map.end()) {
+        new_map.emplace(iter->first, found->second);
+      } else {
+        new_map.emplace(iter->first, 0);
+      }
+    }
+    weight_map.swap(new_map);
+  }
+
+  // If RESET happens, we set all weights to full.
+  void reset() {
+    for (auto iter = weight_map.begin(); iter != weight_map.end(); ++iter) {
+      iter->second = 0;
+    }
+  }
+
+  // Picks the next value and adjusts the weights accordingly.
+  // Note that this starts by raising the weights of everything, including
+  // noting that 'previous' should now be at 0.0.
+  float next(float previous, const std::map<float, int>& counts) {
+    // To pick the next value, as we iterate through the weights, we count
+    // how many effective slots there are, and how many (possibly fractional)
+    // slots each value has.
+    double total_slots = 0.0;
+    std::vector<std::pair<float, double>> value_slots;
+    for (auto iter = weight_map.begin(); iter != weight_map.end(); ++iter) {
+      if (iter->first == previous) {
+        // This value now has the lowest chance (likely zero).
+        iter->second = JUST_PICKED_INDEX;
+      } else {
+        iter->second = std::max(iter->second - 1, 0);
+      }
+      auto found = counts.find(iter->first);
+      if (found == counts.end()) {
+        // This should not happen; means I didn't call adjust first.
+        assert(
+            "next() found value in weight_map but not in counts, code error.");
+      } else {
+        double slots = found->second * weights[iter->second];
+        total_slots += slots;
+        value_slots.push_back(std::make_pair(iter->first, slots));
+      }
+    }
+
+    // Now can pick a value.
+    double position = rack::random::uniform() * total_slots;
+    // See what value this is.
+    for (auto iter = value_slots.begin(); iter != value_slots.end(); ++iter) {
+      if (position <= iter->second) {
+        return iter->first;
+      } else {
+        position -= iter->second;
+      }
+    }
+    assert("next() failed to find a value!");
+    return 0.0;
+  }
+};
+
+constexpr float Recovery::weights[];
 
 struct Chances : Module {
   static constexpr int PAIR_COUNT = 10;
@@ -31,6 +137,13 @@ struct Chances : Module {
   // For detecting input triggers (polyphonic).
   dsp::SchmittTrigger inputTrigger[PORT_MAX_CHANNELS];
   dsp::SchmittTrigger resetTrigger[PORT_MAX_CHANNELS];
+
+  // Condensed version of the counts and values, aggregating
+  // equal values together, and sorted by value.
+  std::map<float, int> aggregated_counts;
+  // Stores the weights for each channel when using No Repeats 2.
+  Recovery recoveries[PORT_MAX_CHANNELS];
+
   float prev_values[PAIR_COUNT];
   int prev_counts[PAIR_COUNT];
   // A vector of possibilities. While doing this prohibits non-integral
@@ -46,7 +159,7 @@ struct Chances : Module {
   // Data for no repeats.
   std::map<float, std::pair<int, int>> block_map;
 
-  // Data for displaying the red triangles.
+  // Data for displaying the red triangles, and for the No Repeats styles.
   float last_output_value[PORT_MAX_CHANNELS] = {};
 
   // Data for input selection
@@ -62,9 +175,10 @@ struct Chances : Module {
 
   Chances() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-    configSwitch(STYLE_PARAM, 0, 3, 0, "Value Choosen by",
-                 {"Sampling", "Shuffling", "No Repeats", "Input Selection"});
-    // This has distinct values.
+    configSwitch(STYLE_PARAM, 0, 4, 0, "Value Choosen by",
+                 {"Sampling", "Shuffling", "No Repeats", "Input Selection",
+                  "No Repeats 2"});
+    // This has distinct integer values.
     getParamQuantity(STYLE_PARAM)->snapEnabled = true;
 
     for (int i = 0; i < PAIR_COUNT; ++i) {
@@ -224,7 +338,7 @@ struct Chances : Module {
       }
     }
     if (need_update) {
-      std::map<float, int> aggregated_counts;
+      aggregated_counts.clear();
       for (int pos = 0; pos < PAIR_COUNT; ++pos) {
         float value = params[VALUE_PARAM + pos].getValue();
         int count = params[COUNT_PARAM + pos].getValue();
@@ -244,6 +358,12 @@ struct Chances : Module {
           samples.push_back(pair.first);
         }
       }
+
+      // TODO: adjust the Recovery structures.
+      for (int i = 0; i < PORT_MAX_CHANNELS; ++i) {
+        recoveries[i].adjust(aggregated_counts);
+      }
+
       // TODO: if shuffling, arrange for that? Or not until shuffle is
       // triggered? What if this is first entry?? Think more on what user
       // expects.
@@ -310,6 +430,9 @@ struct Chances : Module {
         if (style == 1) {
           perform_shuffle(curr_channel);
         } else if (style == 2) {
+          last_output_value[curr_channel] = -100.0f;
+        } else if (style == 4) {
+          recoveries[curr_channel].reset();
           last_output_value[curr_channel] = -100.0f;
         }
       }
@@ -390,6 +513,11 @@ struct Chances : Module {
             out_val = samples.at(index);
             has_val = true;
           }
+        } else if (style == 4) {
+          out_val = recoveries[curr_channel].next(
+              last_output_value[curr_channel], aggregated_counts);
+          last_output_value[curr_channel] = out_val;
+          has_val = true;
         } else {
           // standard sampling.
           if (samples.size() > 0) {
