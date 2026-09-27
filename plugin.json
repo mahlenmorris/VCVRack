@@ -30,15 +30,6 @@
       ]
     },
     {
-      "slug": "Blinkenlights",
-      "name": "Blinkenlights",
-      "description": "Visual space filler.",
-      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#blinkenlights",
-      "tags": [
-        "Visual"
-      ]
-    },
-    {
       "slug": "Brainwash",
       "name": "Brainwash",
       "description": "Records input and then replaces the contents of a Memory or MemoryCV.",
