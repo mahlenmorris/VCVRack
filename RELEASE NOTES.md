@@ -2,7 +2,7 @@
 ### 2.0.29
 #### (Date unknown)
 * Some improvements to Chances:
-* * Added a new STYLE choice called "No Repeats 2". This style will also not repeat the last chosen value, but also lowers the probibility of other recently chosen values. See docs for details.
+* * Added a new STYLE choice called "No Repeats 2". This style will also not repeat the last chosen value, but also lowers the probability of other recently chosen values. See docs for details.
 * * Added RESET input to Chances. A trigger received by RESET does the following:
 * * * Sampling/Input Selection - no effect
 * * * Shuffling - forces an immediate reshuffle
@@ -291,7 +291,7 @@ Updates to BASICally:
 
 ### 2.0.3
 #### December 12, 2022
-Initial release of [BASICally](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#basically).
+Initial release of [BASICally](https://github.com/mahlenmorris/VCVRack/blob/main/BASICally.md).
 
 ### 2.0.1
 #### April 30, 2022
