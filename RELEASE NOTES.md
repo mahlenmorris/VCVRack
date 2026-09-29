@@ -1,7 +1,16 @@
 # Release Notes
+### 2.0.29
+#### (Date unknown)
+* Some improvements to Chances:
+* * Added a new STYLE choice called "No Repeats 2". This style will also not repeat the last chosen value, but also lowers the probibility of other recently chosen values. See docs for details.
+* * Added RESET input to Chances. A trigger received by RESET does the following:
+* * * Sampling/Input Selection - no effect
+* * * Shuffling - forces an immediate reshuffle
+* * * No Repeats - Chances forgets the most recently chosen value, allowing it to repeat on the next TRIG
+* * * No Repeats 2 - Chances clears the weighting table.
 
 ### 2.0.28
-#### (Date unknown)
+#### August 18, 2026
 * Another "random" module? It's like I'm trying to **earn** the "Stochastic" in my name! Meet [Chances](https://github.com/mahlenmorris/VCVRack/blob/main/README.md#chances), which lets you specify precise values to select and their relative frequency. It's like picking values from a highly stacked deck of cards.
 * * There's four different STYLE's of picking values, including one that makes Chances an unusual kind of Quantizer.
 * * The module also allows for a SPREAD of results at a distance from the precise values you pick.

@@ -1094,6 +1094,50 @@ So a curious sort of quantizer, where you can give some values a wider part of t
 
 Interesting sources of IN signals include LFO's and other random sources.
 
+**No Repeats 2** - Like **No Repeats**, as the value that was previously chosen is not allowed to be chosen. Unlike **No Repeats**, it also weights each value's likelihood of being chosen, meaning that, all else being equal, the number of TRIG's between repeated values tends to be longer. The COUNT's for each value are multiplied by it's respective weight.
+
+After being chosen, the weights for a value being chosen again move from 0.0 -> 0.33 -> 0.67 -> 1.0.
+Per our example above, let's move through a series of value choices and see how the weights are applied:
+
+When just starting (or after a RESET trig has been observed), we are here.
+
+| VALUE | COUNT | WEIGHT | SLOTS |
+| ----- | ----- | -----  | ----- |
+| -1 | 1 | 1.0 | 1 |
+| 1.5 | 5 | 1.0 | 5 |
+| 3.14 | 2 | 1.0 | 2 |
+
+A TRIG is observed, and we chose a value, and it is, say, **1.5**. Now the state is:
+
+| VALUE | COUNT | WEIGHT | SLOTS |
+| ----- | ----- | -----  | ----- |
+| -1 | 1 | 1.0 | 1 |
+| 1.5 | 5 | 0.0 | 0 |
+| 3.14 | 2 | 1.0 | 2 |
+
+A 2nd TRIG is observed, and we chose a value. It cannot be 1.5, because the WEIGHT and thus SLOTS is 0.0. Chances then picks, say, **-1**. Now the state is:
+
+| VALUE | COUNT | WEIGHT | SLOTS |
+| ----- | ----- | -----  | ----- |
+| -1 | 1 | 0.0 | 0 |
+| 1.5 | 5 | 0.33 | 5 * 0.33 = 1.65 |
+| 3.14 | 2 | 1.0 | 2 |
+
+A 2nd TRIG is observed, and we chose a value. It cannot be -1, because now *its* weight is 0.0. Chances then picks, say, **3.14**. Now the state is:
+
+| VALUE | COUNT | WEIGHT | SLOTS |
+| ----- | ----- | -----  | ----- |
+| -1 | 1 | 0.33 | 0.33 |
+| 1.5 | 5 | 0.67 | 3.35 |
+| 3.14 | 2 | 0.0 | 0 |
+
+#### RESET Input
+As the name implies, resets the state of the value selection algorithm, if it has any. A trigger received by RESET does the following:
+* Sampling/Input Selection - no effect
+* Shuffling - forces an immediate reshuffle
+* No Repeats - forgets the most recently chosen value, allowing it to repeat on the next TRIG
+* No Repeats 2 - clears all weights.
+
 #### IN Input
 Only used when STYLE is set to **Input Selection**. See the STYLE knob's **Input Selection** description for details about how IN uses Chances as a polyphonic quantizer.
 
