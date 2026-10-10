@@ -35,6 +35,7 @@
 %define parse.lac full
 
 %code {
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #include "driver.h"
 }
 

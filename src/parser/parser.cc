@@ -44,9 +44,10 @@
 // Unqualified %code blocks.
 #line 36 "parser.yy"
 
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #include "driver.hh"
 
-#line 50 "parser.cc"
+#line 51 "parser.cc"
 
 
 #ifndef YY_
@@ -138,7 +139,7 @@
 #define YYRECOVERING()  (!!yyerrstatus_)
 
 namespace yy {
-#line 142 "parser.cc"
+#line 143 "parser.cc"
 
   /// Build a parser object.
   Parser::Parser (Driver& drv_yyarg, void* yyscanner_yyarg, yy::location& loc_yyarg)
@@ -750,549 +751,549 @@ namespace yy {
         switch (yykind)
     {
       case symbol_kind::S_ABS: // "abs"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 756 "parser.cc"
+#line 757 "parser.cc"
         break;
 
       case symbol_kind::S_ALL: // "all"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 762 "parser.cc"
+#line 763 "parser.cc"
         break;
 
       case symbol_kind::S_ALSO: // "also"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 768 "parser.cc"
+#line 769 "parser.cc"
         break;
 
       case symbol_kind::S_AND: // "and"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 774 "parser.cc"
+#line 775 "parser.cc"
         break;
 
       case symbol_kind::S_ASSIGN: // "="
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 780 "parser.cc"
+#line 781 "parser.cc"
         break;
 
       case symbol_kind::S_CEILING: // "ceiling"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 786 "parser.cc"
+#line 787 "parser.cc"
         break;
 
       case symbol_kind::S_CHANNELS: // "channels"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 792 "parser.cc"
+#line 793 "parser.cc"
         break;
 
       case symbol_kind::S_CLEAR: // "clear"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 798 "parser.cc"
+#line 799 "parser.cc"
         break;
 
       case symbol_kind::S_CONNECTED: // "connected"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 804 "parser.cc"
+#line 805 "parser.cc"
         break;
 
       case symbol_kind::S_CONTINUE: // "continue"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 810 "parser.cc"
+#line 811 "parser.cc"
         break;
 
       case symbol_kind::S_DEBUG: // "debug"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 816 "parser.cc"
+#line 817 "parser.cc"
         break;
 
       case symbol_kind::S_ELSE: // "else"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 822 "parser.cc"
+#line 823 "parser.cc"
         break;
 
       case symbol_kind::S_ELSEIF: // "elseif"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 828 "parser.cc"
+#line 829 "parser.cc"
         break;
 
       case symbol_kind::S_END: // "end"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 834 "parser.cc"
+#line 835 "parser.cc"
         break;
 
       case symbol_kind::S_EXIT: // "exit"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 840 "parser.cc"
+#line 841 "parser.cc"
         break;
 
       case symbol_kind::S_FLOOR: // "floor"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 846 "parser.cc"
+#line 847 "parser.cc"
         break;
 
       case symbol_kind::S_FOR: // "for"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 852 "parser.cc"
+#line 853 "parser.cc"
         break;
 
       case symbol_kind::S_IF: // "if"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 858 "parser.cc"
+#line 859 "parser.cc"
         break;
 
       case symbol_kind::S_LOG2: // "log2"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 864 "parser.cc"
+#line 865 "parser.cc"
         break;
 
       case symbol_kind::S_LOGE: // "loge"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 870 "parser.cc"
+#line 871 "parser.cc"
         break;
 
       case symbol_kind::S_LOG10: // "log10"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 876 "parser.cc"
+#line 877 "parser.cc"
         break;
 
       case symbol_kind::S_MAX: // "max"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 882 "parser.cc"
+#line 883 "parser.cc"
         break;
 
       case symbol_kind::S_MIN: // "min"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 888 "parser.cc"
+#line 889 "parser.cc"
         break;
 
       case symbol_kind::S_NEXT: // "next"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 894 "parser.cc"
+#line 895 "parser.cc"
         break;
 
       case symbol_kind::S_NEXTHIGHCPU: // "nexthighcpu"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 900 "parser.cc"
+#line 901 "parser.cc"
         break;
 
       case symbol_kind::S_NOT: // "not"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 906 "parser.cc"
+#line 907 "parser.cc"
         break;
 
       case symbol_kind::S_OR: // "or"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 912 "parser.cc"
+#line 913 "parser.cc"
         break;
 
       case symbol_kind::S_POW: // "pow"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 918 "parser.cc"
+#line 919 "parser.cc"
         break;
 
       case symbol_kind::S_PRINT: // "print"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 924 "parser.cc"
+#line 925 "parser.cc"
         break;
 
       case symbol_kind::S_RESET: // "reset"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 930 "parser.cc"
+#line 931 "parser.cc"
         break;
 
       case symbol_kind::S_SAMPLE_RATE: // "sample_rate"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 936 "parser.cc"
+#line 937 "parser.cc"
         break;
 
       case symbol_kind::S_SET_CHANNELS: // "set_channels"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 942 "parser.cc"
+#line 943 "parser.cc"
         break;
 
       case symbol_kind::S_SIGN: // "sign"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 948 "parser.cc"
+#line 949 "parser.cc"
         break;
 
       case symbol_kind::S_SIN: // "sin"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 954 "parser.cc"
+#line 955 "parser.cc"
         break;
 
       case symbol_kind::S_START: // "start"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 960 "parser.cc"
+#line 961 "parser.cc"
         break;
 
       case symbol_kind::S_STEP: // "step"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 966 "parser.cc"
+#line 967 "parser.cc"
         break;
 
       case symbol_kind::S_THEN: // "then"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 972 "parser.cc"
+#line 973 "parser.cc"
         break;
 
       case symbol_kind::S_TIME: // "time"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 978 "parser.cc"
+#line 979 "parser.cc"
         break;
 
       case symbol_kind::S_TIME_MILLIS: // "time_millis"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 984 "parser.cc"
+#line 985 "parser.cc"
         break;
 
       case symbol_kind::S_TO: // "to"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 990 "parser.cc"
+#line 991 "parser.cc"
         break;
 
       case symbol_kind::S_TRIGGER: // "trigger"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 996 "parser.cc"
+#line 997 "parser.cc"
         break;
 
       case symbol_kind::S_WAIT: // "wait"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1002 "parser.cc"
+#line 1003 "parser.cc"
         break;
 
       case symbol_kind::S_WHEN: // "when"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1008 "parser.cc"
+#line 1009 "parser.cc"
         break;
 
       case symbol_kind::S_WHILE: // "while"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1014 "parser.cc"
+#line 1015 "parser.cc"
         break;
 
       case symbol_kind::S_MINUS: // "-"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1020 "parser.cc"
+#line 1021 "parser.cc"
         break;
 
       case symbol_kind::S_PLUS: // "+"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1026 "parser.cc"
+#line 1027 "parser.cc"
         break;
 
       case symbol_kind::S_STAR: // "*"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1032 "parser.cc"
+#line 1033 "parser.cc"
         break;
 
       case symbol_kind::S_SLASH: // "/"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1038 "parser.cc"
+#line 1039 "parser.cc"
         break;
 
       case symbol_kind::S_LPAREN: // "("
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1044 "parser.cc"
+#line 1045 "parser.cc"
         break;
 
       case symbol_kind::S_RPAREN: // ")"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1050 "parser.cc"
+#line 1051 "parser.cc"
         break;
 
       case symbol_kind::S_LBRACE: // "{"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1056 "parser.cc"
+#line 1057 "parser.cc"
         break;
 
       case symbol_kind::S_RBRACE: // "}"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1062 "parser.cc"
+#line 1063 "parser.cc"
         break;
 
       case symbol_kind::S_LBRACKET: // "["
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1068 "parser.cc"
+#line 1069 "parser.cc"
         break;
 
       case symbol_kind::S_RBRACKET: // "]"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1074 "parser.cc"
+#line 1075 "parser.cc"
         break;
 
       case symbol_kind::S_COMMA: // ","
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1080 "parser.cc"
+#line 1081 "parser.cc"
         break;
 
       case symbol_kind::S_DOLLAR: // "$"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1086 "parser.cc"
+#line 1087 "parser.cc"
         break;
 
       case symbol_kind::S_QUESTION: // "?"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1092 "parser.cc"
+#line 1093 "parser.cc"
         break;
 
       case symbol_kind::S_COLON: // ":"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1098 "parser.cc"
+#line 1099 "parser.cc"
         break;
 
       case symbol_kind::S_IDENTIFIER: // "identifier"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1104 "parser.cc"
+#line 1105 "parser.cc"
         break;
 
       case symbol_kind::S_QUOTED_STRING: // "quoted_string"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1110 "parser.cc"
+#line 1111 "parser.cc"
         break;
 
       case symbol_kind::S_NUMBER: // "number"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < float > (); }
-#line 1116 "parser.cc"
+#line 1117 "parser.cc"
         break;
 
       case symbol_kind::S_NOTE: // "note"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1122 "parser.cc"
+#line 1123 "parser.cc"
         break;
 
       case symbol_kind::S_IN_PORT: // "in_port"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1128 "parser.cc"
+#line 1129 "parser.cc"
         break;
 
       case symbol_kind::S_OUT_PORT: // "out_port"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1134 "parser.cc"
+#line 1135 "parser.cc"
         break;
 
       case symbol_kind::S_ZEROARGFUNC: // "zeroargfunc"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1140 "parser.cc"
+#line 1141 "parser.cc"
         break;
 
       case symbol_kind::S_ONEARGFUNC: // "oneargfunc"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1146 "parser.cc"
+#line 1147 "parser.cc"
         break;
 
       case symbol_kind::S_TWOARGFUNC: // "twoargfunc"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1152 "parser.cc"
+#line 1153 "parser.cc"
         break;
 
       case symbol_kind::S_COMPARISON: // "comparison"
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < std::string > (); }
-#line 1158 "parser.cc"
+#line 1159 "parser.cc"
         break;
 
       case symbol_kind::S_blocks: // blocks
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Blocks > (); }
-#line 1164 "parser.cc"
+#line 1165 "parser.cc"
         break;
 
       case symbol_kind::S_block: // block
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Block > (); }
-#line 1170 "parser.cc"
+#line 1171 "parser.cc"
         break;
 
       case symbol_kind::S_main_block: // main_block
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Block > (); }
-#line 1176 "parser.cc"
+#line 1177 "parser.cc"
         break;
 
       case symbol_kind::S_zero_or_more_statements: // zero_or_more_statements
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Statements > (); }
-#line 1182 "parser.cc"
+#line 1183 "parser.cc"
         break;
 
       case symbol_kind::S_one_or_more_statements: // one_or_more_statements
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Statements > (); }
-#line 1188 "parser.cc"
+#line 1189 "parser.cc"
         break;
 
       case symbol_kind::S_statement: // statement
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Line > (); }
-#line 1194 "parser.cc"
+#line 1195 "parser.cc"
         break;
 
       case symbol_kind::S_array_assignment: // array_assignment
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Line > (); }
-#line 1200 "parser.cc"
+#line 1201 "parser.cc"
         break;
 
       case symbol_kind::S_assignment: // assignment
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Line > (); }
-#line 1206 "parser.cc"
+#line 1207 "parser.cc"
         break;
 
       case symbol_kind::S_clear_statement: // clear_statement
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Line > (); }
-#line 1212 "parser.cc"
+#line 1213 "parser.cc"
         break;
 
       case symbol_kind::S_continue_statement: // continue_statement
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Line > (); }
-#line 1218 "parser.cc"
+#line 1219 "parser.cc"
         break;
 
       case symbol_kind::S_exit_statement: // exit_statement
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Line > (); }
-#line 1224 "parser.cc"
+#line 1225 "parser.cc"
         break;
 
       case symbol_kind::S_for_statement: // for_statement
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Line > (); }
-#line 1230 "parser.cc"
+#line 1231 "parser.cc"
         break;
 
       case symbol_kind::S_elseif_group: // elseif_group
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Statements > (); }
-#line 1236 "parser.cc"
+#line 1237 "parser.cc"
         break;
 
       case symbol_kind::S_elseif_clause: // elseif_clause
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Line > (); }
-#line 1242 "parser.cc"
+#line 1243 "parser.cc"
         break;
 
       case symbol_kind::S_if_statement: // if_statement
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Line > (); }
-#line 1248 "parser.cc"
+#line 1249 "parser.cc"
         break;
 
       case symbol_kind::S_procedure_call: // procedure_call
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Line > (); }
-#line 1254 "parser.cc"
+#line 1255 "parser.cc"
         break;
 
       case symbol_kind::S_reset_statement: // reset_statement
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Line > (); }
-#line 1260 "parser.cc"
+#line 1261 "parser.cc"
         break;
 
       case symbol_kind::S_wait_statement: // wait_statement
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Line > (); }
-#line 1266 "parser.cc"
+#line 1267 "parser.cc"
         break;
 
       case symbol_kind::S_while_statement: // while_statement
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Line > (); }
-#line 1272 "parser.cc"
+#line 1273 "parser.cc"
         break;
 
       case symbol_kind::S_expression_list: // expression_list
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < ExpressionList > (); }
-#line 1278 "parser.cc"
+#line 1279 "parser.cc"
         break;
 
       case symbol_kind::S_exp: // exp
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Expression > (); }
-#line 1284 "parser.cc"
+#line 1285 "parser.cc"
         break;
 
       case symbol_kind::S_string_list: // string_list
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < ExpressionList > (); }
-#line 1290 "parser.cc"
+#line 1291 "parser.cc"
         break;
 
       case symbol_kind::S_string_exp: // string_exp
-#line 136 "parser.yy"
+#line 137 "parser.yy"
                  { yyo << yysym.value.template as < Expression > (); }
-#line 1296 "parser.cc"
+#line 1297 "parser.cc"
         break;
 
       default:
@@ -1668,567 +1669,567 @@ namespace yy {
           switch (yyn)
             {
   case 2: // program: blocks $end
-#line 142 "parser.yy"
+#line 143 "parser.yy"
                                   { drv.blocks = yystack_[1].value.as < Blocks > ().block_list; }
-#line 1674 "parser.cc"
+#line 1675 "parser.cc"
     break;
 
   case 3: // blocks: main_block
-#line 145 "parser.yy"
+#line 146 "parser.yy"
                                   { yylhs.value.as < Blocks > () = Blocks(yystack_[0].value.as < Block > ()); }
-#line 1680 "parser.cc"
+#line 1681 "parser.cc"
     break;
 
   case 4: // blocks: block
-#line 146 "parser.yy"
+#line 147 "parser.yy"
                                   { yylhs.value.as < Blocks > () = Blocks(yystack_[0].value.as < Block > ()); }
-#line 1686 "parser.cc"
+#line 1687 "parser.cc"
     break;
 
   case 5: // blocks: blocks block
-#line 147 "parser.yy"
+#line 148 "parser.yy"
                                   { yylhs.value.as < Blocks > () = yystack_[1].value.as < Blocks > ().Add(yystack_[0].value.as < Block > ()); }
-#line 1692 "parser.cc"
+#line 1693 "parser.cc"
     break;
 
   case 6: // block: "also" one_or_more_statements "end" "also"
-#line 150 "parser.yy"
+#line 151 "parser.yy"
                                               { yylhs.value.as < Block > () = Block::MainBlock(yystack_[2].value.as < Statements > ()); }
-#line 1698 "parser.cc"
+#line 1699 "parser.cc"
     break;
 
   case 7: // block: "when" exp one_or_more_statements "end" "when"
-#line 151 "parser.yy"
+#line 152 "parser.yy"
                                                  { yylhs.value.as < Block > () = Block::WhenExpBlock(yystack_[3].value.as < Expression > (), yystack_[2].value.as < Statements > ()); }
-#line 1704 "parser.cc"
+#line 1705 "parser.cc"
     break;
 
   case 8: // main_block: one_or_more_statements
-#line 154 "parser.yy"
+#line 155 "parser.yy"
                                   { yylhs.value.as < Block > () = Block::MainBlock(yystack_[0].value.as < Statements > ()); }
-#line 1710 "parser.cc"
+#line 1711 "parser.cc"
     break;
 
   case 9: // zero_or_more_statements: %empty
-#line 157 "parser.yy"
+#line 158 "parser.yy"
                                      {}
-#line 1716 "parser.cc"
+#line 1717 "parser.cc"
     break;
 
   case 10: // zero_or_more_statements: zero_or_more_statements statement
-#line 158 "parser.yy"
+#line 159 "parser.yy"
                                      { yylhs.value.as < Statements > () = yystack_[1].value.as < Statements > ().add(yystack_[0].value.as < Line > ()); }
-#line 1722 "parser.cc"
+#line 1723 "parser.cc"
     break;
 
   case 11: // one_or_more_statements: statement
-#line 161 "parser.yy"
+#line 162 "parser.yy"
                                    { yylhs.value.as < Statements > ()  = Statements::FirstStatement(yystack_[0].value.as < Line > ()); }
-#line 1728 "parser.cc"
+#line 1729 "parser.cc"
     break;
 
   case 12: // one_or_more_statements: one_or_more_statements statement
-#line 162 "parser.yy"
+#line 163 "parser.yy"
                                    { yylhs.value.as < Statements > () = yystack_[1].value.as < Statements > ().add(yystack_[0].value.as < Line > ()); }
-#line 1734 "parser.cc"
+#line 1735 "parser.cc"
     break;
 
   case 13: // statement: array_assignment
-#line 165 "parser.yy"
+#line 166 "parser.yy"
                        { yylhs.value.as < Line > () = yystack_[0].value.as < Line > (); }
-#line 1740 "parser.cc"
+#line 1741 "parser.cc"
     break;
 
   case 14: // statement: assignment
-#line 166 "parser.yy"
+#line 167 "parser.yy"
                        { yylhs.value.as < Line > () = yystack_[0].value.as < Line > (); }
-#line 1746 "parser.cc"
+#line 1747 "parser.cc"
     break;
 
   case 15: // statement: clear_statement
-#line 167 "parser.yy"
+#line 168 "parser.yy"
                        { yylhs.value.as < Line > () = yystack_[0].value.as < Line > (); }
-#line 1752 "parser.cc"
+#line 1753 "parser.cc"
     break;
 
   case 16: // statement: continue_statement
-#line 168 "parser.yy"
+#line 169 "parser.yy"
                        { yylhs.value.as < Line > () = yystack_[0].value.as < Line > (); }
-#line 1758 "parser.cc"
+#line 1759 "parser.cc"
     break;
 
   case 17: // statement: exit_statement
-#line 169 "parser.yy"
+#line 170 "parser.yy"
                        { yylhs.value.as < Line > () = yystack_[0].value.as < Line > (); }
-#line 1764 "parser.cc"
+#line 1765 "parser.cc"
     break;
 
   case 18: // statement: for_statement
-#line 170 "parser.yy"
+#line 171 "parser.yy"
                        { yylhs.value.as < Line > () = yystack_[0].value.as < Line > (); }
-#line 1770 "parser.cc"
+#line 1771 "parser.cc"
     break;
 
   case 19: // statement: if_statement
-#line 171 "parser.yy"
+#line 172 "parser.yy"
                        { yylhs.value.as < Line > () = yystack_[0].value.as < Line > (); }
-#line 1776 "parser.cc"
+#line 1777 "parser.cc"
     break;
 
   case 20: // statement: procedure_call
-#line 172 "parser.yy"
+#line 173 "parser.yy"
                        { yylhs.value.as < Line > () = yystack_[0].value.as < Line > (); }
-#line 1782 "parser.cc"
+#line 1783 "parser.cc"
     break;
 
   case 21: // statement: reset_statement
-#line 173 "parser.yy"
+#line 174 "parser.yy"
                        { yylhs.value.as < Line > () = yystack_[0].value.as < Line > (); }
-#line 1788 "parser.cc"
+#line 1789 "parser.cc"
     break;
 
   case 22: // statement: wait_statement
-#line 174 "parser.yy"
+#line 175 "parser.yy"
                        { yylhs.value.as < Line > () = yystack_[0].value.as < Line > (); }
-#line 1794 "parser.cc"
+#line 1795 "parser.cc"
     break;
 
   case 23: // statement: while_statement
-#line 175 "parser.yy"
+#line 176 "parser.yy"
                        { yylhs.value.as < Line > () = yystack_[0].value.as < Line > (); }
-#line 1800 "parser.cc"
+#line 1801 "parser.cc"
     break;
 
   case 24: // array_assignment: "identifier" "[" exp "]" "=" exp
-#line 178 "parser.yy"
+#line 179 "parser.yy"
                                     { yylhs.value.as < Line > () = Line::ArrayAssignment(yystack_[5].value.as < std::string > (), yystack_[3].value.as < Expression > (), yystack_[0].value.as < Expression > (), &drv); }
-#line 1806 "parser.cc"
+#line 1807 "parser.cc"
     break;
 
   case 25: // array_assignment: "identifier" "[" exp "]" "=" "{" expression_list "}"
-#line 179 "parser.yy"
+#line 180 "parser.yy"
                                                         { yylhs.value.as < Line > () = Line::ArrayAssignment(yystack_[7].value.as < std::string > (), yystack_[5].value.as < Expression > (), yystack_[1].value.as < ExpressionList > (), &drv); }
-#line 1812 "parser.cc"
+#line 1813 "parser.cc"
     break;
 
   case 26: // array_assignment: "out_port" "[" exp "]" "=" exp
-#line 180 "parser.yy"
+#line 181 "parser.yy"
                                  { yylhs.value.as < Line > () = Line::ArrayAssignment(yystack_[5].value.as < std::string > (), yystack_[3].value.as < Expression > (), yystack_[0].value.as < Expression > (), &drv); }
-#line 1818 "parser.cc"
+#line 1819 "parser.cc"
     break;
 
   case 27: // array_assignment: "identifier" "$" "[" exp "]" "=" exp
-#line 181 "parser.yy"
+#line 182 "parser.yy"
                                         { yylhs.value.as < Line > () = Line::StringArrayAssignment(yystack_[6].value.as < std::string > (), yystack_[3].value.as < Expression > (), yystack_[0].value.as < Expression > (), &drv); }
-#line 1824 "parser.cc"
+#line 1825 "parser.cc"
     break;
 
   case 28: // array_assignment: "identifier" "$" "[" exp "]" "=" string_exp
-#line 182 "parser.yy"
+#line 183 "parser.yy"
                                                { yylhs.value.as < Line > () = Line::StringArrayAssignment(yystack_[6].value.as < std::string > (), yystack_[3].value.as < Expression > (), yystack_[0].value.as < Expression > (), &drv); }
-#line 1830 "parser.cc"
+#line 1831 "parser.cc"
     break;
 
   case 29: // array_assignment: "identifier" "$" "[" exp "]" "=" "{" string_list "}"
-#line 183 "parser.yy"
+#line 184 "parser.yy"
                                                         { yylhs.value.as < Line > () = Line::StringArrayAssignment(yystack_[8].value.as < std::string > (), yystack_[5].value.as < Expression > (), yystack_[1].value.as < ExpressionList > (), &drv); }
-#line 1836 "parser.cc"
+#line 1837 "parser.cc"
     break;
 
   case 30: // assignment: "identifier" "=" exp
-#line 186 "parser.yy"
+#line 187 "parser.yy"
                         { yylhs.value.as < Line > () = Line::Assignment(yystack_[2].value.as < std::string > (), yystack_[0].value.as < Expression > (), &drv); }
-#line 1842 "parser.cc"
+#line 1843 "parser.cc"
     break;
 
   case 31: // assignment: "in_port" "=" exp
-#line 187 "parser.yy"
+#line 188 "parser.yy"
                         { yylhs.value.as < Line > () = Line::Assignment(yystack_[2].value.as < std::string > (), yystack_[0].value.as < Expression > (), &drv); }
-#line 1848 "parser.cc"
+#line 1849 "parser.cc"
     break;
 
   case 32: // assignment: "out_port" "=" exp
-#line 188 "parser.yy"
+#line 189 "parser.yy"
                         { yylhs.value.as < Line > () = Line::Assignment(yystack_[2].value.as < std::string > (), yystack_[0].value.as < Expression > (), &drv); }
-#line 1854 "parser.cc"
+#line 1855 "parser.cc"
     break;
 
   case 33: // assignment: "identifier" "$" "=" exp
-#line 189 "parser.yy"
+#line 190 "parser.yy"
                             { yylhs.value.as < Line > () = Line::StringAssignment(yystack_[3].value.as < std::string > (), yystack_[0].value.as < Expression > (), &drv); }
-#line 1860 "parser.cc"
+#line 1861 "parser.cc"
     break;
 
   case 34: // assignment: "identifier" "$" "=" string_exp
-#line 190 "parser.yy"
+#line 191 "parser.yy"
                                    { yylhs.value.as < Line > () = Line::StringAssignment(yystack_[3].value.as < std::string > (), yystack_[0].value.as < Expression > (), &drv); }
-#line 1866 "parser.cc"
+#line 1867 "parser.cc"
     break;
 
   case 35: // clear_statement: "clear" "all"
-#line 193 "parser.yy"
+#line 194 "parser.yy"
                         { yylhs.value.as < Line > () = Line::ClearAll(); }
-#line 1872 "parser.cc"
+#line 1873 "parser.cc"
     break;
 
   case 36: // continue_statement: "continue" "for"
-#line 196 "parser.yy"
+#line 197 "parser.yy"
                         { yylhs.value.as < Line > () = Line::Continue(yystack_[0].value.as < std::string > ()); }
-#line 1878 "parser.cc"
+#line 1879 "parser.cc"
     break;
 
   case 37: // continue_statement: "continue" "while"
-#line 197 "parser.yy"
+#line 198 "parser.yy"
                         { yylhs.value.as < Line > () = Line::Continue(yystack_[0].value.as < std::string > ()); }
-#line 1884 "parser.cc"
+#line 1885 "parser.cc"
     break;
 
   case 38: // continue_statement: "continue" "all"
-#line 198 "parser.yy"
+#line 199 "parser.yy"
                         { yylhs.value.as < Line > () = Line::Continue(yystack_[0].value.as < std::string > ()); }
-#line 1890 "parser.cc"
+#line 1891 "parser.cc"
     break;
 
   case 39: // exit_statement: "exit" "for"
-#line 201 "parser.yy"
+#line 202 "parser.yy"
                         { yylhs.value.as < Line > () = Line::Exit(yystack_[0].value.as < std::string > ()); }
-#line 1896 "parser.cc"
+#line 1897 "parser.cc"
     break;
 
   case 40: // exit_statement: "exit" "while"
-#line 202 "parser.yy"
+#line 203 "parser.yy"
                         { yylhs.value.as < Line > () = Line::Exit(yystack_[0].value.as < std::string > ()); }
-#line 1902 "parser.cc"
+#line 1903 "parser.cc"
     break;
 
   case 41: // exit_statement: "exit" "all"
-#line 203 "parser.yy"
+#line 204 "parser.yy"
                         { yylhs.value.as < Line > () = Line::Exit(yystack_[0].value.as < std::string > ()); }
-#line 1908 "parser.cc"
+#line 1909 "parser.cc"
     break;
 
   case 42: // for_statement: "for" assignment "to" exp zero_or_more_statements "next"
-#line 206 "parser.yy"
+#line 207 "parser.yy"
                                                             { yylhs.value.as < Line > () = Line::ForNext(yystack_[4].value.as < Line > (), yystack_[2].value.as < Expression > (), drv.factory.Number(1.0), yystack_[1].value.as < Statements > (), true, &drv); }
-#line 1914 "parser.cc"
+#line 1915 "parser.cc"
     break;
 
   case 43: // for_statement: "for" assignment "to" exp "step" exp zero_or_more_statements "next"
-#line 207 "parser.yy"
+#line 208 "parser.yy"
                                                                       { yylhs.value.as < Line > () = Line::ForNext(yystack_[6].value.as < Line > (), yystack_[4].value.as < Expression > (), yystack_[2].value.as < Expression > (), yystack_[1].value.as < Statements > (), true, &drv); }
-#line 1920 "parser.cc"
+#line 1921 "parser.cc"
     break;
 
   case 44: // for_statement: "for" assignment "to" exp zero_or_more_statements "nexthighcpu"
-#line 208 "parser.yy"
+#line 209 "parser.yy"
                                                                    { yylhs.value.as < Line > () = Line::ForNext(yystack_[4].value.as < Line > (), yystack_[2].value.as < Expression > (), drv.factory.Number(1.0), yystack_[1].value.as < Statements > (), false, &drv); }
-#line 1926 "parser.cc"
+#line 1927 "parser.cc"
     break;
 
   case 45: // for_statement: "for" assignment "to" exp "step" exp zero_or_more_statements "nexthighcpu"
-#line 209 "parser.yy"
+#line 210 "parser.yy"
                                                                              { yylhs.value.as < Line > () = Line::ForNext(yystack_[6].value.as < Line > (), yystack_[4].value.as < Expression > (), yystack_[2].value.as < Expression > (), yystack_[1].value.as < Statements > (), false, &drv); }
-#line 1932 "parser.cc"
+#line 1933 "parser.cc"
     break;
 
   case 46: // elseif_group: %empty
-#line 212 "parser.yy"
+#line 213 "parser.yy"
                                   {}
-#line 1938 "parser.cc"
+#line 1939 "parser.cc"
     break;
 
   case 47: // elseif_group: elseif_group elseif_clause
-#line 213 "parser.yy"
+#line 214 "parser.yy"
                                   { yylhs.value.as < Statements > () = yystack_[1].value.as < Statements > ().add(yystack_[0].value.as < Line > ()); }
-#line 1944 "parser.cc"
+#line 1945 "parser.cc"
     break;
 
   case 48: // elseif_clause: "elseif" exp "then" zero_or_more_statements
-#line 216 "parser.yy"
+#line 217 "parser.yy"
                                                { yylhs.value.as < Line > () = Line::ElseIf(yystack_[2].value.as < Expression > (), yystack_[0].value.as < Statements > ()); }
-#line 1950 "parser.cc"
+#line 1951 "parser.cc"
     break;
 
   case 49: // if_statement: "if" exp "then" zero_or_more_statements elseif_group "end" "if"
-#line 219 "parser.yy"
+#line 220 "parser.yy"
                                                                         { yylhs.value.as < Line > () = Line::IfThen(yystack_[5].value.as < Expression > (), yystack_[3].value.as < Statements > (), yystack_[2].value.as < Statements > ()); }
-#line 1956 "parser.cc"
+#line 1957 "parser.cc"
     break;
 
   case 50: // if_statement: "if" exp "then" zero_or_more_statements elseif_group "else" zero_or_more_statements "end" "if"
-#line 220 "parser.yy"
+#line 221 "parser.yy"
                                                                                                   { yylhs.value.as < Line > () = Line::IfThenElse(yystack_[7].value.as < Expression > (), yystack_[5].value.as < Statements > (), yystack_[2].value.as < Statements > (), yystack_[4].value.as < Statements > ()); }
-#line 1962 "parser.cc"
+#line 1963 "parser.cc"
     break;
 
   case 51: // procedure_call: "print" "(" "out_port" "," string_list ")"
-#line 223 "parser.yy"
+#line 224 "parser.yy"
                                               {yylhs.value.as < Line > () = Line::Print(yystack_[3].value.as < std::string > (), yystack_[1].value.as < ExpressionList > (), &drv);}
-#line 1968 "parser.cc"
+#line 1969 "parser.cc"
     break;
 
   case 52: // procedure_call: "set_channels" "(" "out_port" "," exp ")"
-#line 224 "parser.yy"
+#line 225 "parser.yy"
                                               {yylhs.value.as < Line > () = Line::SetChannels(yystack_[3].value.as < std::string > (), yystack_[1].value.as < Expression > (), &drv);}
-#line 1974 "parser.cc"
+#line 1975 "parser.cc"
     break;
 
   case 53: // reset_statement: "reset"
-#line 227 "parser.yy"
+#line 228 "parser.yy"
                         { yylhs.value.as < Line > () = Line::Reset(); }
-#line 1980 "parser.cc"
+#line 1981 "parser.cc"
     break;
 
   case 54: // wait_statement: "wait" exp
-#line 230 "parser.yy"
+#line 231 "parser.yy"
                         { yylhs.value.as < Line > () = Line::Wait(yystack_[0].value.as < Expression > ()); }
-#line 1986 "parser.cc"
+#line 1987 "parser.cc"
     break;
 
   case 55: // while_statement: "while" exp zero_or_more_statements "end" "while"
-#line 233 "parser.yy"
+#line 234 "parser.yy"
                                                      { yylhs.value.as < Line > () = Line::While(yystack_[3].value.as < Expression > (), yystack_[2].value.as < Statements > (), &drv); }
-#line 1992 "parser.cc"
+#line 1993 "parser.cc"
     break;
 
   case 56: // expression_list: exp
-#line 244 "parser.yy"
+#line 245 "parser.yy"
                               { yylhs.value.as < ExpressionList > () = ExpressionList(yystack_[0].value.as < Expression > ()); }
-#line 1998 "parser.cc"
+#line 1999 "parser.cc"
     break;
 
   case 57: // expression_list: expression_list "," exp
-#line 245 "parser.yy"
+#line 246 "parser.yy"
                               { yylhs.value.as < ExpressionList > () = yystack_[2].value.as < ExpressionList > ().add(yystack_[0].value.as < Expression > ()); }
-#line 2004 "parser.cc"
+#line 2005 "parser.cc"
     break;
 
   case 58: // exp: "number"
-#line 248 "parser.yy"
+#line 249 "parser.yy"
                 { yylhs.value.as < Expression > () = drv.factory.Number((float) yystack_[0].value.as < float > ()); }
-#line 2010 "parser.cc"
+#line 2011 "parser.cc"
     break;
 
   case 59: // exp: "note"
-#line 249 "parser.yy"
+#line 250 "parser.yy"
                 { yylhs.value.as < Expression > () = drv.factory.Note(yystack_[0].value.as < std::string > ()); }
-#line 2016 "parser.cc"
+#line 2017 "parser.cc"
     break;
 
   case 60: // exp: "-" "number"
-#line 250 "parser.yy"
+#line 251 "parser.yy"
                            { yylhs.value.as < Expression > () = drv.factory.Number(-1 * (float) yystack_[0].value.as < float > ());}
-#line 2022 "parser.cc"
+#line 2023 "parser.cc"
     break;
 
   case 61: // exp: "not" exp
-#line 251 "parser.yy"
+#line 252 "parser.yy"
                       { yylhs.value.as < Expression > () = drv.factory.Not(yystack_[0].value.as < Expression > ());}
-#line 2028 "parser.cc"
+#line 2029 "parser.cc"
     break;
 
   case 62: // exp: "in_port"
-#line 252 "parser.yy"
+#line 253 "parser.yy"
                 { yylhs.value.as < Expression > () = drv.factory.Variable(yystack_[0].value.as < std::string > (), &drv); }
-#line 2034 "parser.cc"
+#line 2035 "parser.cc"
     break;
 
   case 63: // exp: "in_port" "[" exp "]"
-#line 253 "parser.yy"
+#line 254 "parser.yy"
                         { yylhs.value.as < Expression > () = drv.factory.ArrayVariable(yystack_[3].value.as < std::string > (), yystack_[1].value.as < Expression > (), &drv); }
-#line 2040 "parser.cc"
+#line 2041 "parser.cc"
     break;
 
   case 64: // exp: "out_port"
-#line 254 "parser.yy"
+#line 255 "parser.yy"
                 { yylhs.value.as < Expression > () = drv.factory.Variable(yystack_[0].value.as < std::string > (), &drv); }
-#line 2046 "parser.cc"
+#line 2047 "parser.cc"
     break;
 
   case 65: // exp: "out_port" "[" exp "]"
-#line 255 "parser.yy"
+#line 256 "parser.yy"
                          { yylhs.value.as < Expression > () = drv.factory.ArrayVariable(yystack_[3].value.as < std::string > (), yystack_[1].value.as < Expression > (), &drv); }
-#line 2052 "parser.cc"
+#line 2053 "parser.cc"
     break;
 
   case 66: // exp: "identifier"
-#line 256 "parser.yy"
+#line 257 "parser.yy"
                 { yylhs.value.as < Expression > () = drv.factory.Variable(yystack_[0].value.as < std::string > (), &drv); }
-#line 2058 "parser.cc"
+#line 2059 "parser.cc"
     break;
 
   case 67: // exp: "identifier" "[" exp "]"
-#line 257 "parser.yy"
+#line 258 "parser.yy"
                            { yylhs.value.as < Expression > () = drv.factory.ArrayVariable(yystack_[3].value.as < std::string > (), yystack_[1].value.as < Expression > (), &drv); }
-#line 2064 "parser.cc"
+#line 2065 "parser.cc"
     break;
 
   case 68: // exp: exp "+" exp
-#line 258 "parser.yy"
+#line 259 "parser.yy"
                 { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
-#line 2070 "parser.cc"
+#line 2071 "parser.cc"
     break;
 
   case 69: // exp: exp "-" exp
-#line 259 "parser.yy"
+#line 260 "parser.yy"
                 { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
-#line 2076 "parser.cc"
+#line 2077 "parser.cc"
     break;
 
   case 70: // exp: exp "*" exp
-#line 260 "parser.yy"
+#line 261 "parser.yy"
                 { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
-#line 2082 "parser.cc"
+#line 2083 "parser.cc"
     break;
 
   case 71: // exp: exp "/" exp
-#line 261 "parser.yy"
+#line 262 "parser.yy"
                 { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
-#line 2088 "parser.cc"
+#line 2089 "parser.cc"
     break;
 
   case 72: // exp: exp "comparison" exp
-#line 262 "parser.yy"
+#line 263 "parser.yy"
                        { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
-#line 2094 "parser.cc"
+#line 2095 "parser.cc"
     break;
 
   case 73: // exp: exp "and" exp
-#line 263 "parser.yy"
+#line 264 "parser.yy"
                 { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
-#line 2100 "parser.cc"
+#line 2101 "parser.cc"
     break;
 
   case 74: // exp: exp "or" exp
-#line 264 "parser.yy"
+#line 265 "parser.yy"
                 { yylhs.value.as < Expression > () = drv.factory.CreateBinOp(yystack_[2].value.as < Expression > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < Expression > ()); }
-#line 2106 "parser.cc"
+#line 2107 "parser.cc"
     break;
 
   case 75: // exp: "zeroargfunc" "(" ")"
-#line 265 "parser.yy"
+#line 266 "parser.yy"
                                  {yylhs.value.as < Expression > () = drv.factory.ZeroArgFunc(yystack_[2].value.as < std::string > ());}
-#line 2112 "parser.cc"
+#line 2113 "parser.cc"
     break;
 
   case 76: // exp: "channels" "(" "in_port" ")"
-#line 266 "parser.yy"
+#line 267 "parser.yy"
                                 {yylhs.value.as < Expression > () = drv.factory.OnePortFunc(yystack_[3].value.as < std::string > (), yystack_[1].value.as < std::string > (), &drv);}
-#line 2118 "parser.cc"
+#line 2119 "parser.cc"
     break;
 
   case 77: // exp: "connected" "(" "in_port" ")"
-#line 267 "parser.yy"
+#line 268 "parser.yy"
                                  {yylhs.value.as < Expression > () = drv.factory.OnePortFunc(yystack_[3].value.as < std::string > (), yystack_[1].value.as < std::string > (), &drv);}
-#line 2124 "parser.cc"
+#line 2125 "parser.cc"
     break;
 
   case 78: // exp: "connected" "(" "out_port" ")"
-#line 268 "parser.yy"
+#line 269 "parser.yy"
                                  {yylhs.value.as < Expression > () = drv.factory.OnePortFunc(yystack_[3].value.as < std::string > (), yystack_[1].value.as < std::string > (), &drv);}
-#line 2130 "parser.cc"
+#line 2131 "parser.cc"
     break;
 
   case 79: // exp: "trigger" "(" "in_port" ")"
-#line 269 "parser.yy"
+#line 270 "parser.yy"
                                  {yylhs.value.as < Expression > () = drv.factory.OnePortFunc(yystack_[3].value.as < std::string > (), yystack_[1].value.as < std::string > (), &drv);}
-#line 2136 "parser.cc"
+#line 2137 "parser.cc"
     break;
 
   case 80: // exp: "oneargfunc" "(" exp ")"
-#line 270 "parser.yy"
+#line 271 "parser.yy"
                                  {yylhs.value.as < Expression > () = drv.factory.OneArgFunc(yystack_[3].value.as < std::string > (), yystack_[1].value.as < Expression > ());}
-#line 2142 "parser.cc"
+#line 2143 "parser.cc"
     break;
 
   case 81: // exp: "twoargfunc" "(" exp "," exp ")"
-#line 271 "parser.yy"
+#line 272 "parser.yy"
                                    {yylhs.value.as < Expression > () = drv.factory.TwoArgFunc(yystack_[5].value.as < std::string > (), yystack_[3].value.as < Expression > (), yystack_[1].value.as < Expression > ());}
-#line 2148 "parser.cc"
+#line 2149 "parser.cc"
     break;
 
   case 82: // exp: exp "?" exp ":" exp
-#line 272 "parser.yy"
+#line 273 "parser.yy"
                                  {yylhs.value.as < Expression > () = drv.factory.TernaryFunc(yystack_[4].value.as < Expression > (), yystack_[2].value.as < Expression > (), yystack_[0].value.as < Expression > ());}
-#line 2154 "parser.cc"
+#line 2155 "parser.cc"
     break;
 
   case 83: // exp: "(" exp ")"
-#line 273 "parser.yy"
+#line 274 "parser.yy"
                 { yylhs.value.as < Expression > () = yystack_[1].value.as < Expression > (); }
-#line 2160 "parser.cc"
+#line 2161 "parser.cc"
     break;
 
   case 84: // string_list: string_exp
-#line 277 "parser.yy"
+#line 278 "parser.yy"
                              { ExpressionList foo = ExpressionList::StringList();
                                yylhs.value.as < ExpressionList > () = foo.add(yystack_[0].value.as < Expression > ()); }
-#line 2167 "parser.cc"
+#line 2168 "parser.cc"
     break;
 
   case 85: // string_list: exp
-#line 279 "parser.yy"
+#line 280 "parser.yy"
                              { ExpressionList foo = ExpressionList::StringList();
                                yylhs.value.as < ExpressionList > () = foo.add(yystack_[0].value.as < Expression > ()); }
-#line 2174 "parser.cc"
+#line 2175 "parser.cc"
     break;
 
   case 86: // string_list: string_list "," string_exp
-#line 281 "parser.yy"
+#line 282 "parser.yy"
                              { yylhs.value.as < ExpressionList > () = yystack_[2].value.as < ExpressionList > ().add(yystack_[0].value.as < Expression > ()); }
-#line 2180 "parser.cc"
+#line 2181 "parser.cc"
     break;
 
   case 87: // string_list: string_list "," exp
-#line 282 "parser.yy"
+#line 283 "parser.yy"
                              { yylhs.value.as < ExpressionList > () = yystack_[2].value.as < ExpressionList > ().add(yystack_[0].value.as < Expression > ()); }
-#line 2186 "parser.cc"
+#line 2187 "parser.cc"
     break;
 
   case 88: // string_exp: "quoted_string"
-#line 285 "parser.yy"
+#line 286 "parser.yy"
                                    { yylhs.value.as < Expression > () = drv.factory.Quoted(yystack_[0].value.as < std::string > ()); }
-#line 2192 "parser.cc"
+#line 2193 "parser.cc"
     break;
 
   case 89: // string_exp: "identifier" "$"
-#line 286 "parser.yy"
+#line 287 "parser.yy"
                                    { yylhs.value.as < Expression > () = drv.factory.StringVariable(yystack_[1].value.as < std::string > (), &drv); }
-#line 2198 "parser.cc"
+#line 2199 "parser.cc"
     break;
 
   case 90: // string_exp: "identifier" "$" "[" exp "]"
-#line 287 "parser.yy"
+#line 288 "parser.yy"
                                    { yylhs.value.as < Expression > () = drv.factory.StringArrayVariable(yystack_[4].value.as < std::string > (), yystack_[1].value.as < Expression > (), &drv); }
-#line 2204 "parser.cc"
+#line 2205 "parser.cc"
     break;
 
   case 91: // string_exp: "debug" "(" "identifier" ")"
-#line 288 "parser.yy"
+#line 289 "parser.yy"
                                    { yylhs.value.as < Expression > () = drv.factory.DebugId(yystack_[1].value.as < std::string > (), &drv); }
-#line 2210 "parser.cc"
+#line 2211 "parser.cc"
     break;
 
   case 92: // string_exp: "debug" "(" "identifier" "$" ")"
-#line 289 "parser.yy"
+#line 290 "parser.yy"
                                    { yylhs.value.as < Expression > () = drv.factory.DebugIdString(yystack_[2].value.as < std::string > (), &drv); }
-#line 2216 "parser.cc"
+#line 2217 "parser.cc"
     break;
 
   case 93: // string_exp: "debug" "(" "identifier" "[" "]" "," exp "," exp ")"
-#line 290 "parser.yy"
+#line 291 "parser.yy"
                                                        { yylhs.value.as < Expression > () = drv.factory.DebugId(yystack_[7].value.as < std::string > (), yystack_[3].value.as < Expression > (), yystack_[1].value.as < Expression > (), &drv); }
-#line 2222 "parser.cc"
+#line 2223 "parser.cc"
     break;
 
   case 94: // string_exp: "debug" "(" "identifier" "$" "[" "]" "," exp "," exp ")"
-#line 291 "parser.yy"
+#line 292 "parser.yy"
                                                            { yylhs.value.as < Expression > () = drv.factory.DebugIdString(yystack_[8].value.as < std::string > (), yystack_[3].value.as < Expression > (), yystack_[1].value.as < Expression > (), &drv); }
-#line 2228 "parser.cc"
+#line 2229 "parser.cc"
     break;
 
 
-#line 2232 "parser.cc"
+#line 2233 "parser.cc"
 
             default:
               break;
@@ -3023,16 +3024,16 @@ namespace yy {
   const short
   Parser::yyrline_[] =
   {
-       0,   142,   142,   145,   146,   147,   150,   151,   154,   157,
-     158,   161,   162,   165,   166,   167,   168,   169,   170,   171,
-     172,   173,   174,   175,   178,   179,   180,   181,   182,   183,
-     186,   187,   188,   189,   190,   193,   196,   197,   198,   201,
-     202,   203,   206,   207,   208,   209,   212,   213,   216,   219,
-     220,   223,   224,   227,   230,   233,   244,   245,   248,   249,
-     250,   251,   252,   253,   254,   255,   256,   257,   258,   259,
-     260,   261,   262,   263,   264,   265,   266,   267,   268,   269,
-     270,   271,   272,   273,   277,   279,   281,   282,   285,   286,
-     287,   288,   289,   290,   291
+       0,   143,   143,   146,   147,   148,   151,   152,   155,   158,
+     159,   162,   163,   166,   167,   168,   169,   170,   171,   172,
+     173,   174,   175,   176,   179,   180,   181,   182,   183,   184,
+     187,   188,   189,   190,   191,   194,   197,   198,   199,   202,
+     203,   204,   207,   208,   209,   210,   213,   214,   217,   220,
+     221,   224,   225,   228,   231,   234,   245,   246,   249,   250,
+     251,   252,   253,   254,   255,   256,   257,   258,   259,   260,
+     261,   262,   263,   264,   265,   266,   267,   268,   269,   270,
+     271,   272,   273,   274,   278,   280,   282,   283,   286,   287,
+     288,   289,   290,   291,   292
   };
 
   void
@@ -3064,9 +3065,9 @@ namespace yy {
 
 
 } // yy
-#line 3068 "parser.cc"
+#line 3069 "parser.cc"
 
-#line 293 "parser.yy"
+#line 294 "parser.yy"
 
 
 void
