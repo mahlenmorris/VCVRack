@@ -106,7 +106,7 @@ The display above the port is the length of the buffer in seconds and hundreths 
 Gets rid of the previous audio buffer, creates a new one of LENGTH seconds, then sets it to 0.0V.
 #### LOAD Tipsy Input
 **The LOAD input takes *only* [Tipsy](https://github.com/baconpaul/tipsy-encoder) inputs. Tipsy is a way to send text over a VCV Rack cable; currently, the only module that can send controllable Tipsy text is
-[BASICally](README.md#basically) (see the "print()" command).**
+[BASICally](BASICally.md) (see the "print()" command).**
 
 The LOAD input can accept two different types of textual messages:
 * A file name, or path and a filename
@@ -129,7 +129,7 @@ Any time that a file load is completed, no matter how it was started (via the me
 file doesn't exist or isn't a readable .wav file), when it has completed, a trigger will come out of this output.
 #### SAVE Tipsy Input
 **The SAVE input takes *only* Tipsy inputs. Tipsy is a way to send text over a VCV Rack cable; currently, the only module that can send useful Tipsy data is
-[BASICally](README.md#basically) (see the "print()" command).**
+[BASICally](BASICally.md) (see the "print()" command).**
 
 The SAVE input can accept:
 * A file name, or path and a filename
@@ -212,12 +212,12 @@ The display above the port is the length of the buffer in seconds and hundreths 
 Gets rid of the previous buffer, creates a new one of LENGTH seconds, then sets it to 0.0V.
 #### LOAD Tipsy Input
 **The LOAD input takes *only* [Tipsy](https://github.com/baconpaul/tipsy-encoder) inputs. Tipsy is a way to send text over a VCV Rack cable; currently, the only module that can send controllable Tipsy text is
-[BASICally](README.md#basically) (see the "print()" command).**
+[BASICally](BASICally.md) (see the "print()" command).**
 
 Like the Memory module, MemoryCV can load CV as WAV or [CSV](#csv-files) files. See more explanation in the [Memory section](#load-tipsy-input).
 #### SAVE Tipsy Input
 **The SAVE input takes *only* Tipsy inputs. Tipsy is a way to send text over a VCV Rack cable; currently, the only module that can send useful Tipsy data is
-[BASICally](README.md#basically) (see the "print()" command).**
+[BASICally](BASICally.md) (see the "print()" command).**
 
 Like the Memory module, MemoryCV can save CV as WAV or [CSV](#csv-files) files. See more explanation in the [Memory section](#save-tipsy-input).
 
