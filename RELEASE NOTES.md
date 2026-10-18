@@ -1,6 +1,6 @@
 # Release Notes
 ### 2.0.29
-#### (Date unknown)
+#### October 18, 2026
 * Some improvements to Chances:
 * * Added a new STYLE choice called "No Repeats 2". This style will also not repeat the last chosen value, but also lowers the probability of other recently chosen values. See docs for details.
 * * Added RESET input to Chances. A trigger received by RESET does the following:
