@@ -4,6 +4,7 @@
 #include <utility>  // pair
 #include <vector>
 
+#include "PitchNote.hpp"
 #include "StochasticTelegraph.hpp"
 #include "plugin.hpp"
 #include "st_textfield.hpp"
@@ -86,6 +87,9 @@ struct TTY : Module {
   bool preserve_output = false;
   // What timestamp to use, if any.
   TimeStamp time_stamp_format = NONE;
+  // Modes.
+  enum Modes { DECIMAL_VALUE, NOTE_VALUE_SHARPS, NOTE_VALUE_FLATS };
+  Modes mode = DECIMAL_VALUE;
 
   // Black on yellow paper color (by my memory, at least).
   long long int screen_colors = 0x000000edc672;
@@ -133,6 +137,7 @@ struct TTY : Module {
     json_t* rootJ = json_object();
     json_object_set_new(rootJ, "width", json_integer(width));
     json_object_set_new(rootJ, "timestamp", json_integer(time_stamp_format));
+    json_object_set_new(rootJ, "mode", json_integer(mode));
 
     json_object_set_new(rootJ, "screen_colors", json_integer(screen_colors));
     if (font_choice.length() > 0) {
@@ -156,9 +161,14 @@ struct TTY : Module {
     json_t* widthJ = json_object_get(rootJ, "width");
     if (widthJ) width = json_integer_value(widthJ);
     json_t* timestampJ = json_object_get(rootJ, "timestamp");
-    if (timestampJ)
+    if (timestampJ) {
       time_stamp_format =
           static_cast<TimeStamp>(json_integer_value(timestampJ));
+    }
+    json_t* modeJ = json_object_get(rootJ, "mode");
+    if (modeJ) {
+      mode = static_cast<Modes>(json_integer_value(modeJ));
+    }
     json_t* screenJ = json_object_get(rootJ, "screen_colors");
     if (screenJ) screen_colors = json_integer_value(screenJ);
     json_t* font_choiceJ = json_object_get(rootJ, "font_choice");
@@ -273,6 +283,29 @@ struct TTY : Module {
     return std::fabs(f1 - f2) <= epsilon * fmax(std::fabs(f1), std::fabs(f2));
   }
 
+  // Render value depending on Mode.
+  std::string makeValueString(float value) {
+    switch (mode) {
+      case TTY::DECIMAL_VALUE:
+        return std::to_string(value);
+      case TTY::NOTE_VALUE_SHARPS:
+      case TTY::NOTE_VALUE_FLATS: {
+        std::string result;
+        // we assume inputs are in +/-10V
+        auto in_v =
+            clamp(value, Chinenual::PITCH_VOCT_MIN, Chinenual::PITCH_VOCT_MAX);
+        auto n = Chinenual::voltageToPitch(in_v);
+        auto fn = Chinenual::voltageToMicroPitch(in_v);
+        Chinenual::pitchToText(result, n, fn - ((float)n),
+                               (mode == TTY::NOTE_VALUE_SHARPS)
+                                   ? Chinenual::SHARP
+                                   : Chinenual::FLAT);
+        return result;
+      }
+    }
+    return "";
+  }
+
   void process(const ProcessArgs& args) override {
     bool paused = params[PAUSE_PARAM].getValue() > 0;
 
@@ -295,7 +328,7 @@ struct TTY : Module {
           float v1 = inputs[V1_INPUT].getVoltage();
           if (!float_equal(v1, previous_v1)) {
             previous_v1 = v1;
-            std::string str_value = std::to_string(v1);
+            std::string str_value = makeValueString(v1);
             // Hmmmm; should I be comparing the string values instead? It would
             // be odd to see the same string twice on a tightly changing
             // value....
@@ -312,7 +345,7 @@ struct TTY : Module {
           float v2 = inputs[V2_INPUT].getVoltage();
           if (!float_equal(v2, previous_v2)) {
             previous_v2 = v2;
-            std::string str_value = std::to_string(v2);
+            std::string str_value = makeValueString(v2);
             // Hmmmm; should I be comparing the string values instead? It would
             // be odd to see the same string twice on a tightly changing
             // value....
@@ -329,7 +362,7 @@ struct TTY : Module {
           float v3 = inputs[V3_INPUT].getVoltage();
           if (!float_equal(v3, previous_v3)) {
             previous_v3 = v3;
-            std::string str_value = std::to_string(v3);
+            std::string str_value = makeValueString(v3);
             // Hmmmm; should I be comparing the string values instead? It would
             // be odd to see the same string twice on a tightly changing
             // value....
@@ -680,6 +713,21 @@ struct TTYWidget : ModuleWidget {
           }
         });
     menu->addChild(time_menu);
+
+    // Select how values are displayed.
+    std::pair<std::string, TTY::Modes> mode_options[] = {
+        {"Decimal values", TTY::DECIMAL_VALUE},
+        {"Note values (#)", TTY::NOTE_VALUE_SHARPS},
+        {"Note values (b)", TTY::NOTE_VALUE_FLATS}};
+    MenuItem* mode_menu =
+        createSubmenuItem("Values are displayed as:", "", [=](Menu* menu) {
+          for (auto line : mode_options) {
+            menu->addChild(createCheckMenuItem(
+                line.first, "", [=]() { return line.second == module->mode; },
+                [=]() { module->mode = line.second; }));
+          }
+        });
+    menu->addChild(mode_menu);
 
     menu->addChild(
         createBoolPtrMenuItem("Keep recent output when patch is saved", "",
