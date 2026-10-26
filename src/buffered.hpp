@@ -269,9 +269,11 @@ struct LineRecord {
   ModuleType type;  // Set by module class. Read by Depict.
   // Number of modules away from Memory this is. One-indexed.
   int distance;  // Set by Memory, Read by Depict.
-  bool has_range;       // Set by module. Read by Depict.
-  double range_start;   // Set by module. Read by Depict.
-  double range_length;  // Set by module. Read by Depict. Signed displacement in buffer samples.
+  bool has_range;        // Set by module. Read by Depict.
+  double range_start;    // Set by module. Read by Depict.
+  double range_length;   // Set by module. Read by Depict.
+  double range_start2;   // Set by module. Read by Depict (second segment if wrapped).
+  double range_length2;  // Set by module. Read by Depict (second segment if wrapped).
 
   LineRecord()
       : position{0.0},
@@ -281,18 +283,23 @@ struct LineRecord {
         distance(0),
         has_range(false),
         range_start(0.0),
-        range_length(0.0) {}
+        range_length(0.0),
+        range_start2(0.0),
+        range_length2(0.0) {}
 
   LineRecord(double the_position, NVGcolor the_color, ModuleType the_type,
              int the_distance, bool the_has_range = false,
-             double the_range_start = 0.0, double the_range_length = 0.0)
+             double the_range_start = 0.0, double the_range_length = 0.0,
+             double the_range_start2 = 0.0, double the_range_length2 = 0.0)
       : position{the_position},
         color{the_color},
         type(the_type),
         distance{the_distance},
         has_range{the_has_range},
         range_start{the_range_start},
-        range_length{the_range_length} {}
+        range_length{the_range_length},
+        range_start2{the_range_start2},
+        range_length2{the_range_length2} {}
 };
 
 struct PositionedModule : Module {

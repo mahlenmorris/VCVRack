@@ -334,51 +334,19 @@ struct MemoryDepict : Widget {
           double rect_x = center - len / 2.0;
           double rect_w = len;
 
-          double start_pos = std::fmod(line.range_start, (double)buffer_length);
-          if (start_pos < 0.0) {
-            start_pos += buffer_length;
-          }
-          double disp = line.range_length;
-
           nvgBeginPath(args.vg);
-          if (std::abs(disp) >= buffer_length) {
-            // Covers the entire buffer.
-            nvgRect(args.vg, rect_x, 0.0, rect_w, bounding_box.y);
-          } else if (disp > 0.0) {
-            // Forward playback.
-            double y_bottom =
-                bounding_box.y * (1.0 - (start_pos / buffer_length));
-            if (start_pos + disp <= buffer_length) {
-              double y_top =
-                  bounding_box.y * (1.0 - ((start_pos + disp) / buffer_length));
-              nvgRect(args.vg, rect_x, y_top, rect_w, y_bottom - y_top);
-            } else {
-              // Wraps around the top boundary.
-              // Segment from start_pos to buffer_length (top edge).
-              nvgRect(args.vg, rect_x, 0.0, rect_w, y_bottom);
-              // Wrapped segment from bottom edge (0) to rem.
-              double rem = start_pos + disp - buffer_length;
-              double y_rem = bounding_box.y * (1.0 - (rem / buffer_length));
-              nvgRect(args.vg, rect_x, y_rem, rect_w, bounding_box.y - y_rem);
-            }
-          } else if (disp < 0.0) {
-            // Backward playback.
-            double y_top = bounding_box.y * (1.0 - (start_pos / buffer_length));
-            if (start_pos + disp >= 0.0) {
-              double y_bottom =
-                  bounding_box.y * (1.0 - ((start_pos + disp) / buffer_length));
-              nvgRect(args.vg, rect_x, y_top, rect_w, y_bottom - y_top);
-            } else {
-              // Wraps around the bottom boundary.
-              // Segment from 0 (bottom edge) to start_pos.
-              nvgRect(args.vg, rect_x, y_top, rect_w, bounding_box.y - y_top);
-              // Wrapped segment from wrapped_start to buffer_length (top edge).
-              double wrapped_start = buffer_length + (start_pos + disp);
-              double y_wrap =
-                  bounding_box.y * (1.0 - (wrapped_start / buffer_length));
-              nvgRect(args.vg, rect_x, 0.0, rect_w, y_wrap);
-            }
-          }
+          auto drawSegment = [&](double start, double length) {
+            if (length <= 0.0) return;
+            double p1 = std::max(0.0, std::min(start, (double)buffer_length));
+            double p2 =
+                std::max(0.0, std::min(start + length, (double)buffer_length));
+            double y_bottom = bounding_box.y * (1.0 - (p1 / buffer_length));
+            double y_top = bounding_box.y * (1.0 - (p2 / buffer_length));
+            nvgRect(args.vg, rect_x, y_top, rect_w, y_bottom - y_top);
+          };
+
+          drawSegment(line.range_start, line.range_length);
+          drawSegment(line.range_start2, line.range_length2);
           nvgFillColor(args.vg, nvgTransRGBAf(line.color, 0.5f));
           nvgFill(args.vg);
         }
