@@ -1,3 +1,4 @@
+#include <cmath>
 #include <thread>
 
 #include "buffered.hpp"
@@ -107,10 +108,11 @@ struct MemoryDepict : Widget {
   bool default_module_filled = false;
 
   // Only used when generating an image for the module browser.
-  std::vector<LineRecord> dummy_lines = {{2.34, SCHEME_RED, RUMINATE, 1},
-                                         {7.9, SCHEME_BLUE, RUMINATE, 2},
-                                         {5.5, SCHEME_ORANGE, FIXATION, 3},
-                                         {0.3, SCHEME_PURPLE, EMBELLISH, 4}};
+  std::vector<LineRecord> dummy_lines = {
+      {2.34, SCHEME_RED, RUMINATE, 1},
+      {7.9, SCHEME_BLUE, RUMINATE, 2},
+      {5.5, SCHEME_ORANGE, FIXATION, 3, true, 5.5, 2.0},
+      {0.3, SCHEME_PURPLE, EMBELLISH, 4}};
 
   MemoryDepict() : module{nullptr} {}
 
@@ -320,6 +322,66 @@ struct MemoryDepict : Widget {
         // Place on the line just off the left edge.
         nvgText(args.vg, zero_volt_right + 4, 10,
                 waveform->text_factor_right.c_str(), NULL);
+      }
+
+      // Draw pale rectangles for any heads that know what will be played (e.g.
+      // Fixation in Style 1 or 2).
+      for (int i = 0; i < line_record_size; i++) {
+        LineRecord line = module ? module->line_records[i] : dummy_lines[i];
+        if (line.type == FIXATION && line.has_range && buffer_length > 0) {
+          double center = bounding_box.x * line.distance / max_distance;
+          double len = bounding_box.x * 0.2;
+          double rect_x = center - len / 2.0;
+          double rect_w = len;
+
+          double start_pos = std::fmod(line.range_start, (double)buffer_length);
+          if (start_pos < 0.0) {
+            start_pos += buffer_length;
+          }
+          double disp = line.range_length;
+
+          nvgBeginPath(args.vg);
+          if (std::abs(disp) >= buffer_length) {
+            // Covers the entire buffer.
+            nvgRect(args.vg, rect_x, 0.0, rect_w, bounding_box.y);
+          } else if (disp > 0.0) {
+            // Forward playback.
+            double y_bottom =
+                bounding_box.y * (1.0 - (start_pos / buffer_length));
+            if (start_pos + disp <= buffer_length) {
+              double y_top =
+                  bounding_box.y * (1.0 - ((start_pos + disp) / buffer_length));
+              nvgRect(args.vg, rect_x, y_top, rect_w, y_bottom - y_top);
+            } else {
+              // Wraps around the top boundary.
+              // Segment from start_pos to buffer_length (top edge).
+              nvgRect(args.vg, rect_x, 0.0, rect_w, y_bottom);
+              // Wrapped segment from bottom edge (0) to rem.
+              double rem = start_pos + disp - buffer_length;
+              double y_rem = bounding_box.y * (1.0 - (rem / buffer_length));
+              nvgRect(args.vg, rect_x, y_rem, rect_w, bounding_box.y - y_rem);
+            }
+          } else if (disp < 0.0) {
+            // Backward playback.
+            double y_top = bounding_box.y * (1.0 - (start_pos / buffer_length));
+            if (start_pos + disp >= 0.0) {
+              double y_bottom =
+                  bounding_box.y * (1.0 - ((start_pos + disp) / buffer_length));
+              nvgRect(args.vg, rect_x, y_top, rect_w, y_bottom - y_top);
+            } else {
+              // Wraps around the bottom boundary.
+              // Segment from 0 (bottom edge) to start_pos.
+              nvgRect(args.vg, rect_x, y_top, rect_w, bounding_box.y - y_top);
+              // Wrapped segment from wrapped_start to buffer_length (top edge).
+              double wrapped_start = buffer_length + (start_pos + disp);
+              double y_wrap =
+                  bounding_box.y * (1.0 - (wrapped_start / buffer_length));
+              nvgRect(args.vg, rect_x, 0.0, rect_w, y_wrap);
+            }
+          }
+          nvgFillColor(args.vg, nvgTransRGBAf(line.color, 0.5f));
+          nvgFill(args.vg);
+        }
       }
 
       // Then draw the recording heads on top.

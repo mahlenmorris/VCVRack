@@ -255,6 +255,9 @@ struct Fixation : PositionedModule {
 
     line_record.position = 0.0;
     line_record.type = FIXATION;
+    line_record.has_range = false;
+    line_record.range_start = 0.0;
+    line_record.range_length = 0.0;
     playing = false;
     play_state = NO_PLAY;
     playback_position = -1;
@@ -690,6 +693,27 @@ struct Fixation : PositionedModule {
 
       line_record.position = display_position;
 
+      if (style == 1 || style == 2) {
+        double start_pos = GetPosition();
+        if (length > 0) {
+          while (start_pos >= length) {
+            start_pos -= length;
+          }
+          while (start_pos < 0.0) {
+            start_pos += length;
+          }
+        }
+        int duration_in_samples = GetLength(args);
+        double speed_movement = speed * (reverse_direction ? -1.0 : 1.0);
+        line_record.has_range = true;
+        line_record.range_start = start_pos;
+        line_record.range_length = (double)duration_in_samples * speed_movement;
+      } else {
+        line_record.has_range = false;
+        line_record.range_start = 0.0;
+        line_record.range_length = 0.0;
+      }
+
       if (play_state != NO_PLAY && play_state != WAITING) {  // These states are silent.
         // Determine values to emit.
         double closest_head_distance = buffer->NearHead(display_position);
@@ -727,6 +751,7 @@ struct Fixation : PositionedModule {
     } else {
       // Can only be playing if connected.
       lights[PLAY_BUTTON_LIGHT].setBrightness(0.0f);
+      line_record.has_range = false;
     }
     lights[CONNECTED_LIGHT].setBrightness(connected ? 1.0f : 0.0f);
 
