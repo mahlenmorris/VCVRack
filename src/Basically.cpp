@@ -1039,6 +1039,8 @@ struct BasicallyTextField : STTextField {
       color_ident = (text_lum < 0.65f) ? color : nvgRGB(35, 40, 45);
     }
 
+    // Tokens mirroring src/parser/scanner.ll. If keywords, ports, or functions
+    // are added or modified in the scanner, update these sets accordingly.
     static const std::unordered_set<std::string> keywords = {
         "all",          "also",     "and",   "channels", "clear",
         "connected",    "continue", "debug", "else",     "elseif",
@@ -1056,7 +1058,54 @@ struct BasicallyTextField : STTextField {
         "floor",       "log2",  "loge", "log10",       "sign", "sin",
         "max",         "min",   "mod",  "normal",      "pow",  "random"};
 
+    // Check if line_start is a continuation of a wrapped comment or string
+    // from earlier on the same logical line (between the previous '\n' and line_start).
+    const char* doc_start = (this->text) ? this->text->c_str() : nullptr;
+    const char* doc_end = doc_start ? doc_start + this->text->size() : nullptr;
+    bool in_comment = false;
+    bool in_string = false;
+
+    if (doc_start && line_start > doc_start) {
+      // Find the start of the logical line (after the previous '\n', or doc_start)
+      const char* logical_start = line_start;
+      while (logical_start > doc_start && *(logical_start - 1) != '\n') {
+        logical_start--;
+      }
+
+      // Scan from logical_start to line_start to determine state at line_start
+      const char* scan = logical_start;
+      while (scan < line_start) {
+        if (!in_string && *scan == '\'' && (scan + 1 < doc_end && *(scan + 1) == ' ')) {
+          in_comment = true;
+          break;  // Everything until '\n' is part of the comment
+        }
+        if (*scan == '"') {
+          in_string = !in_string;
+        }
+        scan++;
+      }
+    }
+
+    if (in_comment) {
+      // The entire visual row is inside a wrapped comment
+      spans.push_back({line_start, line_end, color_comment});
+      return true;
+    }
+
     const char* p = line_start;
+
+    // Handle continuation of a wrapped string
+    if (in_string) {
+      const char* p_start = p;
+      while (p < line_end && *p != '"') {
+        p++;
+      }
+      if (p < line_end && *p == '"') {
+        p++;  // include closing quote
+      }
+      spans.push_back({p_start, p, color_string});
+    }
+
     while (p < line_end) {
       // 1. Whitespace
       if (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') {
@@ -1070,7 +1119,7 @@ struct BasicallyTextField : STTextField {
       }
 
       // 2. Comments (starts with single quote ' followed by a space)
-      if ((*p == '\'') && (*(p + 1) == ' ')) {
+      if (*p == '\'' && (p + 1 < doc_end && *(p + 1) == ' ')) {
         spans.push_back({p, line_end, color_comment});
         p = line_end;
         break;
