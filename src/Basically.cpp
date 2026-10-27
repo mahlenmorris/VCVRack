@@ -995,15 +995,9 @@ struct BasicallyTextField : STTextField {
     return false;
   }
 
-  std::chrono::nanoseconds total_time_nanos = std::chrono::nanoseconds(0);
-  int frame_count = 0;
-
   bool getLineSpans(const char* line_start, const char* line_end,
                     int line_index, std::vector<TextSpan>& spans) override {
     if (line_start >= line_end) return false;
-
-    // DO NOT SUBMIT!!!
-    auto start_time = std::chrono::high_resolution_clock::now();
 
     // Palette adaptation based on background luminance
     float bg_lum = 0.299f * bgColor.r + 0.587f * bgColor.g + 0.114f * bgColor.b;
@@ -1181,19 +1175,6 @@ struct BasicallyTextField : STTextField {
       // 9. Any other character
       spans.push_back({p, p + 1, color_ident});
       p++;
-    }
-
-    auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
-    total_time_nanos = total_time_nanos + elapsed;
-    ++frame_count;
-    if (frame_count >= 50) {
-      double average_frame_time = total_time_nanos.count() /
-                                  (double)frame_count /
-                                  1000.0;  // Convert to microseconds.
-      WARN("Average frame time after %d frames: %f us", frame_count,
-           average_frame_time);
-      frame_count = 0;
-      total_time_nanos = std::chrono::nanoseconds(0);
     }
 
     return true;
