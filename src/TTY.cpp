@@ -90,6 +90,7 @@ struct TTY : Module {
   // Modes.
   enum Modes { DECIMAL_VALUE, NOTE_VALUE_SHARPS, NOTE_VALUE_FLATS };
   Modes mode = DECIMAL_VALUE;
+  bool color_by_cable = true;
 
   // Black on yellow paper color (by my memory, at least).
   long long int screen_colors = 0x000000edc672;
@@ -138,6 +139,7 @@ struct TTY : Module {
     json_object_set_new(rootJ, "width", json_integer(width));
     json_object_set_new(rootJ, "timestamp", json_integer(time_stamp_format));
     json_object_set_new(rootJ, "mode", json_integer(mode));
+    json_object_set_new(rootJ, "color_by_cable", json_boolean(color_by_cable));
 
     json_object_set_new(rootJ, "screen_colors", json_integer(screen_colors));
     if (font_choice.length() > 0) {
@@ -168,6 +170,10 @@ struct TTY : Module {
     json_t* modeJ = json_object_get(rootJ, "mode");
     if (modeJ) {
       mode = static_cast<Modes>(json_integer_value(modeJ));
+    }
+    json_t* cbcJ = json_object_get(rootJ, "color_by_cable");
+    if (cbcJ) {
+      color_by_cable = json_boolean_value(cbcJ);
     }
     json_t* screenJ = json_object_get(rootJ, "screen_colors");
     if (screenJ) screen_colors = json_integer_value(screenJ);
@@ -208,11 +214,11 @@ struct TTY : Module {
     }
   }
 
-  void add_string(const std::string& next_string) {
+  void add_string(const std::string& next_string, int8_t port_id = -1) {
     // We add to the queue, but we limit how large the pending queue
     // can get.
     if (additions.text_additions.size() < additions.text_additions.max_size()) {
-      additions.text_additions.push(next_string);
+      additions.text_additions.push(TTYItem(next_string, port_id));
     }
   }
 
@@ -231,7 +237,7 @@ struct TTY : Module {
           std::string next(prefix);
           next.append(str_value);
           next.append("\n");
-          add_string(next);
+          add_string(next, text_input->id);
         }
       }
     }
@@ -338,7 +344,7 @@ struct TTY : Module {
             std::string next(prefix);
             next.append(str_value);
             next.append("\n");
-            add_string(next);
+            add_string(next, V1_INPUT);
           }
         }
         if (inputs[V2_INPUT].isConnected()) {
@@ -355,7 +361,7 @@ struct TTY : Module {
             std::string next(prefix);
             next.append(str_value);
             next.append("\n");
-            add_string(next);
+            add_string(next, V2_INPUT);
           }
         }
         if (inputs[V3_INPUT].isConnected()) {
@@ -372,7 +378,7 @@ struct TTY : Module {
             std::string next(prefix);
             next.append(str_value);
             next.append("\n");
-            add_string(next);
+            add_string(next, V3_INPUT);
           }
         }
       }
@@ -497,9 +503,94 @@ struct TTYTextField : STTextField {
     }
   }
 
-  void setModule(TTY* module, FramebufferWidget* fb_widget) {
+  // We need to keep TTY's widget around so we can ask it about
+  // the cable colors.
+  ModuleWidget* widget = nullptr;
+  std::vector<NVGcolor> line_colors;
+
+  // Helper function to adjust contrast so text is readable.
+  // fg is the incoming text/cable color; bg is the background color.
+  // This darkens or lightens fg accordingly.
+  NVGcolor contrastAdjust(NVGcolor fg, NVGcolor bg) {
+    float fg_lum = 0.299f * fg.r + 0.587f * fg.g + 0.114f * fg.b;
+    float bg_lum = 0.299f * bg.r + 0.587f * bg.g + 0.114f * bg.b;
+    float diff = fg_lum - bg_lum;
+    if (std::fabs(diff) < 0.28f) {
+      // Only adjust if contrast is low.
+      if (bg_lum >= 0.5f) {
+        // Darken foreground on light background
+        return nvgRGBf(fg.r * 0.45f, fg.g * 0.45f, fg.b * 0.45f);
+      } else {
+        // Lighten foreground on dark background
+        return nvgRGBf(std::min(1.0f, fg.r * 1.8f + 0.35f),
+                       std::min(1.0f, fg.g * 1.8f + 0.35f),
+                       std::min(1.0f, fg.b * 1.8f + 0.35f));
+      }
+    }
+    return fg;
+  }
+
+  // Deals with the TTY-specific problem of remembering what color each line is.
+  void onLineAdded(const TTYItem& item) override {
+    NVGcolor line_color = color;
+    if (module && module->color_by_cable && item.port_id >= 0 && widget) {
+      // I would have thought that we would want to cache the cable color
+      // somewhere, but it seems that these calls have no measurable effect on
+      // load.
+      PortWidget* pw = widget->getInput(item.port_id);
+      if (pw && APP && APP->scene && APP->scene->rack) {
+        CableWidget* cw = APP->scene->rack->getTopCable(pw);
+        if (cw) {
+          line_color = contrastAdjust(cw->color, bgColor);
+        }
+      }
+    }
+    line_colors.push_back(line_color);
+  }
+
+  // When lines are dropped from the text buffer,
+  // we drop the colors for those lines as well.
+  void onLinesErased(int count) override {
+    if (count > 0 && count <= (int)line_colors.size()) {
+      line_colors.erase(line_colors.begin(), line_colors.begin() + count);
+    } else if (count > (int)line_colors.size()) {
+      line_colors.clear();
+    }
+  }
+
+  // Return true if there is a text color we should apply to this line.
+  bool getLineSpans(const char* line_start, const char* line_end,
+                    int line_index, std::vector<TextSpan>& spans) override {
+    if (line_start >= line_end) return false;
+    if (!module || !module->color_by_cable || line_colors.empty()) {
+      return false;
+    }
+
+    const char* doc_start = (this->text) ? this->text->c_str() : nullptr;
+    if (!doc_start || line_start < doc_start) return false;
+
+    int logical_line = 0;
+    for (const char* c = doc_start; c < line_start; ++c) {
+      if (*c == '\n') {
+        logical_line++;
+      }
+    }
+
+    // Protecting against out-of-bounds error.
+    if (logical_line < (int)line_colors.size()) {
+      // For TTY, a line only ever has one span, and that's for the whole line.
+      spans.push_back({line_start, line_end, line_colors[logical_line]});
+      return true;
+    }
+
+    return false;
+  }
+
+  void setModule(TTY* module, FramebufferWidget* fb_widget,
+                 ModuleWidget* widget = nullptr) {
     this->module = module;
-    frame_buffer = fb_widget;
+    this->frame_buffer = fb_widget;
+    this->widget = widget;
     // If this is the module browser, 'module' will be null!
     if (module != nullptr) {
       this->text = &(module->text);
@@ -509,6 +600,8 @@ struct TTYTextField : STTextField {
       this->text = &module_browser_text;
       set_visible_lines(
           20);  // Making this larger, so preview is more appealing.
+      // I'm tempted to add cable colors for the preview, but without the cables
+      // being visible, it would be confusing.
     }
     textUpdated();
   }
@@ -538,6 +631,9 @@ struct TTYTextField : STTextField {
 
   void step() override {
     STTextField::step();
+    if (text && text->empty() && !line_colors.empty()) {
+      line_colors.clear();
+    }
     if (module) {
       // At smaller sizes, hide the screen.
       if (module->width <= 4) {
@@ -639,7 +735,7 @@ struct TTYWidget : ModuleWidget {
     textDisplay->box.size = mm2px(Vec(60.0, 117.0));
     textDisplay->box.size.x =
         box.size.x - RACK_GRID_WIDTH * NON_SCREEN_WIDTH - mm2px(CONTROL_WIDTH);
-    textDisplay->setModule(module, main_text_framebuffer);
+    textDisplay->setModule(module, main_text_framebuffer, this);
     addChild(main_text_framebuffer);
     main_text_framebuffer->addChild(textDisplay);
     if (module) {
@@ -696,6 +792,13 @@ struct TTYWidget : ModuleWidget {
         [=]() { return module->preface_outputs; },
         [=](bool state) {
           module->preface_outputs = state;
+          module->RedrawText();
+        }));
+    menu->addChild(createBoolMenuItem(
+        "Color lines by cable color", "",
+        [=]() { return module->color_by_cable; },
+        [=](bool state) {
+          module->color_by_cable = state;
           module->RedrawText();
         }));
     // Select timestamp to show.

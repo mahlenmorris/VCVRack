@@ -5,9 +5,17 @@
 #include "NoLockQueue.h"
 #include "extended_text.h"
 
+struct TTYItem {
+  std::string text;
+  int8_t port_id = -1;
+
+  TTYItem() : text(""), port_id(-1) {}
+  TTYItem(const std::string& t, int8_t p = -1) : text(t), port_id(p) {}
+};
+
 struct TTYQueue {
   // TODO: instead of string, string pointers, that the consumer deletes?
-  SpScLockFreeQueue<std::string, 50> text_additions;
+  SpScLockFreeQueue<TTYItem, 50> text_additions;
 };
 
 struct TextSpan {
@@ -106,5 +114,7 @@ struct STTextField : OpaqueWidget {
   // For TTY. Adds the following lines to text, removes top lines if too long,
   // moves cursor if already at end.
   void make_additions(TTYQueue *additions);
+  virtual void onLineAdded(const TTYItem& item) {}
+  virtual void onLinesErased(int count) {}
   bool large_text_mode;
 };

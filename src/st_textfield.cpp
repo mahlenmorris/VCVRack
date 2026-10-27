@@ -632,16 +632,27 @@ void STTextField::make_additions(TTYQueue *additions) {
                              additions->text_additions.size();
   bool cursor_at_end = 
     (cursor + (large_text_mode ? 1 : 0) >= (int) text->size());
-  std::string item;
+  TTYItem item;
   while (additions->text_additions.pop(item)) {
-    text->append(item);
+    text->append(item.text);
+    onLineAdded(item);
   }
   // TODO: Shave off top lines if we're hitting the limit.
   if (likely_ending_length >= ST_MAX_ROWS) {
-    int diff = extended.line_map[(int) (ST_MAX_ROWS / 10)].start_position;
-    text->erase(0, extended.line_map[(int) (ST_MAX_ROWS / 10)].start_position);
-    cursor = std::max(0, cursor - diff);
-    selection = std::max(0, selection - diff);
+    int erased_rows = (int)(ST_MAX_ROWS / 10);
+    if (erased_rows < (int)extended.line_map.size()) {
+      int diff = extended.line_map[erased_rows].start_position;
+      int logical_lines_erased = 0;
+      for (int k = 0; k < diff && k < (int)text->size(); ++k) {
+        if ((*text)[k] == '\n') {
+          logical_lines_erased++;
+        }
+      }
+      text->erase(0, diff);
+      cursor = std::max(0, cursor - diff);
+      selection = std::max(0, selection - diff);
+      onLinesErased(logical_lines_erased);
+    }
   }
   if (cursor_at_end) {
     cursor = (int) text->size();
