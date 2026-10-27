@@ -97,11 +97,13 @@ void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
 
   w -= BND_TEXT_RADIUS + pleft;
 
+  float desc, lh;
+  nvgTextMetrics(ctx, NULL, &desc, &lh);
+
   // Draws the selection box/caret.
   if (cend >= cbegin) {
     int box_row_begin;
     float box_x_begin, box_y_begin;
-    float desc, lh;
     static NVGtextRow rows[BND_MAX_ROWS];
     // TODO: It certainly SEEMS like I should be able to replace rows with the
     // result of nvgTextBreakLines that I compute in extended_text, but in my
@@ -127,7 +129,6 @@ void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
 
     int nrows = nvgTextBreakLines(
       ctx, label, break_end, w, rows, BND_MAX_ROWS);
-    nvgTextMetrics(ctx, NULL, &desc, &lh);
 
     // Determines where to draw the highlight if any area is highlighted.
     bndCaretPosition(ctx, x, y, desc, lh, label + cbegin,
@@ -163,24 +164,28 @@ void STTextField::myBndIconLabelCaret(NVGcontext *ctx,
     nvgFill(ctx);
   }
 
-/*
-  // A silly experiment in changing text colors.
-  // When it looks correct, it's not bad...
-  for (int line = 0; line < std::min(nrows, 28); ++line) {
-    nvgBeginPath(ctx);
-    nvgFillColor(ctx, line % 2 ? SCHEME_RED : SCHEME_GREEN);
-    nvgTextBox(ctx, x, y + line * lh, w, rows[line].start, rows[line].end);
-
+  static NVGtextRow visible_rows[BND_MAX_ROWS];
+  int visible_nrows = nvgTextBreakLines(
+      ctx, label, label + extended.VisibleTextLength(), w, visible_rows, BND_MAX_ROWS);
+  std::vector<TextSpan> spans;
+  int base_line_idx = std::max(0, extended.lines_above);
+  for (int i = 0; i < visible_nrows; i++) {
+    spans.clear();
+    float line_y = y + i * lh;
+    if (getLineSpans(visible_rows[i].start, visible_rows[i].end, base_line_idx + i, spans) && !spans.empty()) {
+      float cur_x = x;
+      for (const auto& span : spans) {
+        if (span.start >= span.end) continue;
+        nvgBeginPath(ctx);
+        nvgFillColor(ctx, span.color);
+        cur_x = nvgText(ctx, cur_x, line_y, span.start, span.end);
+      }
+    } else {
+      nvgBeginPath(ctx);
+      nvgFillColor(ctx, color);
+      nvgText(ctx, x, line_y, visible_rows[i].start, visible_rows[i].end);
+    }
   }
-*/
-
-  nvgBeginPath(ctx);
-  nvgFillColor(ctx, color);
-  // The original implementation left the last argument as NULL. This means
-  // that any text below the bottom margin is still computed, even though it
-  // is never seen, meaning that being at the top of a long text would take
-  // far longer than being at the bottom.
-  nvgTextBox(ctx, x, y, w, label, label + extended.VisibleTextLength());
 }
 
 void STTextField::draw(const DrawArgs& args) {

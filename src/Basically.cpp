@@ -3,6 +3,7 @@
 #include <cmath>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>  // pair
 #include <vector>
 
@@ -851,7 +852,10 @@ struct TextEditAction : history::ModuleAction {
   // STResizeHandle.
   TextEditAction(int64_t id, int old_width, int new_width,
                  float unused_1 = 0.0f, float unused_2 = 0.0f)
-      : old_cursor{-1}, new_cursor{-1}, old_width{old_width}, new_width{new_width} {
+      : old_cursor{-1},
+        new_cursor{-1},
+        old_width{old_width},
+        new_width{new_width} {
     moduleId = id;
     name = "module width change";
   }
@@ -970,6 +974,229 @@ struct BasicallyTextField : STTextField {
 
   NVGcolor int_to_color(int color) {
     return nvgRGB(color >> 16, (color & 0xff00) >> 8, color & 0xff);
+  }
+
+  static bool isMusicalNote(const char* s, int len) {
+    if (len < 2 || len > 4) return false;
+    char note = std::tolower((unsigned char)s[0]);
+    if (note < 'a' || note > 'g') return false;
+    int idx = 1;
+    char acc = std::tolower((unsigned char)s[idx]);
+    if (acc == '#' || acc == 'b') {
+      idx++;
+    }
+    int rem_len = len - idx;
+    if (rem_len == 1) {
+      return s[idx] >= '0' && s[idx] <= '9';
+    } else if (rem_len == 2) {
+      if (s[idx] == '-' && s[idx + 1] == '1') return true;
+      if (s[idx] == '1' && s[idx + 1] == '0') return true;
+    }
+    return false;
+  }
+
+  std::chrono::nanoseconds total_time_nanos = std::chrono::nanoseconds(0);
+  int frame_count = 0;
+
+  bool getLineSpans(const char* line_start, const char* line_end,
+                    int line_index, std::vector<TextSpan>& spans) override {
+    if (line_start >= line_end) return false;
+
+    // DO NOT SUBMIT!!!
+    auto start_time = std::chrono::high_resolution_clock::now();
+
+    // Palette adaptation based on background luminance
+    float bg_lum = 0.299f * bgColor.r + 0.587f * bgColor.g + 0.114f * bgColor.b;
+    bool is_dark = (bg_lum < 0.5f);
+
+    NVGcolor color_keyword;
+    NVGcolor color_port;
+    NVGcolor color_func;
+    NVGcolor color_string;
+    NVGcolor color_comment;
+    NVGcolor color_number;
+    NVGcolor color_note;
+    NVGcolor color_op;
+    NVGcolor color_ident;
+
+    if (is_dark) {
+      // Dark theme palette (One Dark / VS Code inspired)
+      color_keyword = nvgRGB(198, 120, 221);  // Vivid violet
+      color_port = nvgRGB(229, 192, 123);     // Warm gold
+      color_func = nvgRGB(97, 175, 239);      // Sky blue
+      color_string = nvgRGB(152, 195, 121);   // Fresh green
+      color_comment = nvgRGB(127, 132, 142);  // Muted gray
+      color_number = nvgRGB(209, 154, 102);   // Warm peach / orange
+      color_note = nvgRGB(224, 108, 117);     // Soft coral / rose
+      color_op = nvgRGB(171, 178, 191);       // Light slate
+      float text_lum = 0.299f * color.r + 0.587f * color.g + 0.114f * color.b;
+      color_ident = (text_lum > 0.35f) ? color : nvgRGB(230, 237, 243);
+    } else {
+      // Light theme palette (GitHub / Light theme inspired)
+      color_keyword = nvgRGB(136, 0, 160);    // Deep purple
+      color_port = nvgRGB(180, 90, 0);        // Dark amber
+      color_func = nvgRGB(0, 90, 190);        // Strong blue
+      color_string = nvgRGB(30, 130, 50);     // Forest green
+      color_comment = nvgRGB(110, 115, 125);  // Slate gray
+      color_number = nvgRGB(170, 80, 0);      // Brown / amber
+      color_note = nvgRGB(200, 30, 60);       // Crimson
+      color_op = nvgRGB(70, 80, 90);          // Dark slate
+      float text_lum = 0.299f * color.r + 0.587f * color.g + 0.114f * color.b;
+      color_ident = (text_lum < 0.65f) ? color : nvgRGB(35, 40, 45);
+    }
+
+    static const std::unordered_set<std::string> keywords = {
+        "all",          "also",     "and",   "channels", "clear",
+        "connected",    "continue", "debug", "else",     "elseif",
+        "end",          "exit",     "for",   "if",       "next",
+        "nexthighcpu",  "not",      "or",    "print",    "reset",
+        "set_channels", "step",     "then",  "to",       "trigger",
+        "wait",         "when",     "while"};
+
+    static const std::unordered_set<std::string> ports = {
+        "in1", "in2",  "in3",  "in4",  "in5",  "in6",  "in7", "in8",
+        "in9", "out1", "out2", "out3", "out4", "out5", "out6"};
+
+    static const std::unordered_set<std::string> funcs = {
+        "sample_rate", "start", "time", "time_millis", "abs",  "ceiling",
+        "floor",       "log2",  "loge", "log10",       "sign", "sin",
+        "max",         "min",   "mod",  "normal",      "pow",  "random"};
+
+    const char* p = line_start;
+    while (p < line_end) {
+      // 1. Whitespace
+      if (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') {
+        const char* p_start = p;
+        while (p < line_end &&
+               (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')) {
+          p++;
+        }
+        spans.push_back({p_start, p, color_ident});
+        continue;
+      }
+
+      // 2. Comments (starts with single quote ' followed by a space)
+      if ((*p == '\'') && (*(p + 1) == ' ')) {
+        spans.push_back({p, line_end, color_comment});
+        p = line_end;
+        break;
+      }
+
+      // 3. Quoted strings ("...")
+      if (*p == '"') {
+        const char* p_start = p;
+        p++;
+        while (p < line_end && *p != '"') {
+          p++;
+        }
+        if (p < line_end && *p == '"') {
+          p++;
+        }
+        spans.push_back({p_start, p, color_string});
+        continue;
+      }
+
+      // 4. Numbers (e.g. 123, 3.14159, .5)
+      if (isdigit((unsigned char)*p) ||
+          (*p == '.' && p + 1 < line_end && isdigit((unsigned char)*(p + 1)))) {
+        const char* p_start = p;
+        bool has_dot = false;
+        while (p < line_end) {
+          if (isdigit((unsigned char)*p)) {
+            p++;
+          } else if (*p == '.' && !has_dot) {
+            has_dot = true;
+            p++;
+          } else {
+            break;
+          }
+        }
+        spans.push_back({p_start, p, color_number});
+        continue;
+      }
+
+      // 5. Musical notes (e.g. c4, c#3, bb1, a-1, f10)
+      char c_low = std::tolower((unsigned char)*p);
+      if (c_low >= 'a' && c_low <= 'g') {
+        int matched_note_len = 0;
+        for (int l = 4; l >= 2; l--) {
+          if (p + l <= line_end && isMusicalNote(p, l)) {
+            if (p + l == line_end ||
+                (!isalnum((unsigned char)p[l]) && p[l] != '_' && p[l] != '#' &&
+                 p[l] != '-')) {
+              matched_note_len = l;
+              break;
+            }
+          }
+        }
+        if (matched_note_len > 0) {
+          spans.push_back({p, p + matched_note_len, color_note});
+          p += matched_note_len;
+          continue;
+        }
+      }
+
+      // 6. Identifiers, keywords, ports, functions
+      if (isalpha((unsigned char)*p) || *p == '_') {
+        const char* p_start = p;
+        while (p < line_end && (isalnum((unsigned char)*p) || *p == '_')) {
+          p++;
+        }
+        std::string token(p_start, p);
+        for (char& ch : token) {
+          ch = std::tolower((unsigned char)ch);
+        }
+        NVGcolor token_color = color_ident;
+        if (keywords.find(token) != keywords.end()) {
+          token_color = color_keyword;
+        } else if (ports.find(token) != ports.end()) {
+          token_color = color_port;
+        } else if (funcs.find(token) != funcs.end()) {
+          token_color = color_func;
+        }
+        spans.push_back({p_start, p, token_color});
+        continue;
+      }
+
+      // 7. Operators & Comparisons: <=, >=, ==, !=
+      if (p + 1 < line_end) {
+        if ((*p == '<' && *(p + 1) == '=') || (*p == '>' && *(p + 1) == '=') ||
+            (*p == '=' && *(p + 1) == '=') || (*p == '!' && *(p + 1) == '=')) {
+          spans.push_back({p, p + 2, color_op});
+          p += 2;
+          continue;
+        }
+      }
+
+      // 8. Single-character operators & punctuation
+      if (*p == '<' || *p == '>' || *p == '=' || *p == '+' || *p == '-' ||
+          *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '[' ||
+          *p == ']' || *p == '{' || *p == '}' || *p == ',' || *p == '$' ||
+          *p == '?' || *p == ':') {
+        spans.push_back({p, p + 1, color_op});
+        p++;
+        continue;
+      }
+
+      // 9. Any other character
+      spans.push_back({p, p + 1, color_ident});
+      p++;
+    }
+
+    auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
+    total_time_nanos = total_time_nanos + elapsed;
+    ++frame_count;
+    if (frame_count >= 50) {
+      double average_frame_time = total_time_nanos.count() /
+                                  (double)frame_count /
+                                  1000.0;  // Convert to microseconds.
+      WARN("Average frame time after %d frames: %f us", frame_count,
+           average_frame_time);
+      frame_count = 0;
+      total_time_nanos = std::chrono::nanoseconds(0);
+    }
+
+    return true;
   }
 
   // Setting the font.
@@ -1096,7 +1323,8 @@ struct ErrorTooltip : ui::Tooltip {
   ErrorWidget* errorWidget;
   std::string error_text;
 
-  ErrorTooltip(const std::string& text) : errorWidget{nullptr}, error_text{text} {}
+  ErrorTooltip(const std::string& text)
+      : errorWidget{nullptr}, error_text{text} {}
 
   void step() override;
 };
