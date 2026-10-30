@@ -30,6 +30,16 @@
       ]
     },
     {
+      "slug": "Blinkenlights",
+      "name": "Blinkenlights",
+      "description": "Placed in a patch, it makes light patterns reminiscent of classic physical movie props.",
+      "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/README.md#blinkenlights",
+      "tags": [
+        "Blank",
+        "Visual"
+      ]
+    },
+    {
       "slug": "Brainwash",
       "name": "Brainwash",
       "description": "Records input and then replaces the contents of a Memory or MemoryCV.",
