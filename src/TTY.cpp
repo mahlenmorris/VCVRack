@@ -90,10 +90,12 @@ struct TTY : Module {
   // Modes.
   enum Modes { DECIMAL_VALUE, NOTE_VALUE_SHARPS, NOTE_VALUE_FLATS };
   Modes mode = DECIMAL_VALUE;
+  // If set, use the cable colors for the resulting text.
   bool color_by_cable = true;
 
-  // Black on yellow paper color (by my memory, at least).
-  long long int screen_colors = 0x000000edc672;
+  // Green on Black. Since by default we now set color_by_cable, my nostalgia
+  // for teletype paper should not be the default.
+  long long int screen_colors = 0x00ff00000000;
   int visible_lines = 28;
   // width (in "holes") of the whole module. Changed by the resize bar on the
   // right (within limits), and informs the size of the display and text field.
