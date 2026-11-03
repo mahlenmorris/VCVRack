@@ -69,12 +69,13 @@ with a maximum of 16 channels each.
 * You can pick from a (small) number of screen color schemes in the menu.
 * [Scientific pitch notation](https://en.m.wikipedia.org/wiki/Scientific_pitch_notation) is supported (e.g., c4, Db2, d#8). They are turned into V/OCT values.
 * Using the [Tipsy text protocol](https://github.com/baconpaul/tipsy-encoder),
-BASICally can [send messages](#text-functions) to modules that accept Tipsy text messages, such as
+BASICally can [send textual messages](#text-functions) to modules that accept Tipsy text messages, such as
 [TTY](#tty). This can be useful for debugging and other situations where mere graphs
 are not as informative as text, and one may expect future modules that accept
 Tipsy text messages.
 * Easily allows for [multitasking](#multitasking-also-and-when-blocks) within
 the same BASICally module.
+* BASICally colors the text depending on whether it is keywords, comments, strings, variables, numbers, etc, making it easier to understand what you are reading and typing.
 
 ## The Language
 ### Setting and Using Variables (Assignment and Math)

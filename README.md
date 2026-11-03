@@ -649,6 +649,13 @@ Tipsy MIME type "text/plain", then they will be added to the log.
 #### Preface lines with source port
 If set, then each message will be proceeded by the port that the message
 came from, e.g., from "1.23456" to "V1> 1.23456".
+#### Preface lines with timestamp?
+This can be one of "No", "Time since patch started" or "Local time".
+#### Color lines by cable color
+If set, then the text color set by "Screen Colors" will be ignored, and instead lines will be colored the same color as the cable they came in on.
+#### Values are displayed as:
+The default is "Decimal values", which displays V1/V2/V3 as numbers.
+If "Note values (#)" or "Note values (b)", then values will be shown as their V/Oct note.
 #### Keep recent output when patch is saved
 If set, then the text currently visible in the buffer will be saved into the
 patch, and will be restored when the patch is loaded. If not set, then
