@@ -795,13 +795,6 @@ struct TTYWidget : ModuleWidget {
           module->preface_outputs = state;
           module->RedrawText();
         }));
-    menu->addChild(createBoolMenuItem(
-        "Color lines by cable color", "",
-        [=]() { return module->color_by_cable; },
-        [=](bool state) {
-          module->color_by_cable = state;
-          module->RedrawText();
-        }));
     // Select timestamp to show.
     std::pair<std::string, TTY::TimeStamp> time_options[] = {
         {"No", TTY::NONE},
@@ -817,6 +810,13 @@ struct TTYWidget : ModuleWidget {
           }
         });
     menu->addChild(time_menu);
+    menu->addChild(createBoolMenuItem(
+        "Color lines by cable color", "",
+        [=]() { return module->color_by_cable; },
+        [=](bool state) {
+          module->color_by_cable = state;
+          module->RedrawText();
+        }));
 
     // Select how values are displayed.
     std::pair<std::string, TTY::Modes> mode_options[] = {
