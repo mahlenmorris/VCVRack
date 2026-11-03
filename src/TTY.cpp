@@ -8,7 +8,7 @@
 #include "StochasticTelegraph.hpp"
 #include "plugin.hpp"
 #include "st_textfield.hpp"
-#include "tipsy_utils.h"
+#include "tipsy_utils.h"  // including this way keeps the assert() definition the library needs.
 
 /*
   TODO's:
@@ -654,8 +654,7 @@ struct TTYTextField : STTextField {
         color = int_to_color(color_scheme >> 24);
         bgColor = int_to_color(color_scheme & 0xffffff);
       }
-      if (module &&
-          (fabs(previous_visible_lines - module->visible_lines) > 0.1)) {
+      if (previous_visible_lines != module->visible_lines) {
         set_visible_lines(module->visible_lines);
         frame_buffer->setDirty();
       }
