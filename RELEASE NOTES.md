@@ -1,4 +1,13 @@
 # Release Notes
+
+### 2.0.30
+#### [date unknown]
+* Added syntax highlighting to BASICally. So much more readable!
+* Added optional line coloring to TTY, where each line of output picks up the color from the cable that sent that value or text to TTY. This makes it far easier to follow multiple inputs in a TTY.
+* TTY also now has a menu option to display V1, V2, and V3 as note values.
+* Depict will, for Fixation styles that pick a length of time to play, show the next region to be played in color.
+* Fixed bug in Memory where it would incorrectly output the length when loading a CSV file.
+
 ### 2.0.29
 #### October 18, 2026
 * Some improvements to Chances:

@@ -1,3 +1,4 @@
+#include <cmath>
 #include <thread>
 
 #include "buffered.hpp"
@@ -107,10 +108,11 @@ struct MemoryDepict : Widget {
   bool default_module_filled = false;
 
   // Only used when generating an image for the module browser.
-  std::vector<LineRecord> dummy_lines = {{2.34, SCHEME_RED, RUMINATE, 1},
-                                         {7.9, SCHEME_BLUE, RUMINATE, 2},
-                                         {5.5, SCHEME_ORANGE, FIXATION, 3},
-                                         {0.3, SCHEME_PURPLE, EMBELLISH, 4}};
+  std::vector<LineRecord> dummy_lines = {
+      {2.34, SCHEME_RED, RUMINATE, 1},
+      {7.9, SCHEME_BLUE, RUMINATE, 2},
+      {5.5, SCHEME_ORANGE, FIXATION, 3, true, 5.5, 2.0},
+      {0.3, SCHEME_PURPLE, EMBELLISH, 4}};
 
   MemoryDepict() : module{nullptr} {}
 
@@ -320,6 +322,34 @@ struct MemoryDepict : Widget {
         // Place on the line just off the left edge.
         nvgText(args.vg, zero_volt_right + 4, 10,
                 waveform->text_factor_right.c_str(), NULL);
+      }
+
+      // Draw pale rectangles for any heads that know what will be played (e.g.
+      // Fixation in Style 1 or 2).
+      for (int i = 0; i < line_record_size; i++) {
+        LineRecord line = module ? module->line_records[i] : dummy_lines[i];
+        if (line.type == FIXATION && line.has_range && buffer_length > 0) {
+          double center = bounding_box.x * line.distance / max_distance;
+          double len = bounding_box.x * 0.2;
+          double rect_x = center - len / 2.0;
+          double rect_w = len;
+
+          nvgBeginPath(args.vg);
+          auto drawSegment = [&](double start, double length) {
+            if (length <= 0.0) return;
+            double p1 = std::max(0.0, std::min(start, (double)buffer_length));
+            double p2 =
+                std::max(0.0, std::min(start + length, (double)buffer_length));
+            double y_bottom = bounding_box.y * (1.0 - (p1 / buffer_length));
+            double y_top = bounding_box.y * (1.0 - (p2 / buffer_length));
+            nvgRect(args.vg, rect_x, y_top, rect_w, y_bottom - y_top);
+          };
+
+          drawSegment(line.range_start, line.range_length);
+          drawSegment(line.range_start2, line.range_length2);
+          nvgFillColor(args.vg, nvgTransRGBAf(line.color, 0.5f));
+          nvgFill(args.vg);
+        }
       }
 
       // Then draw the recording heads on top.

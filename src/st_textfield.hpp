@@ -1,10 +1,27 @@
 #pragma once
-#include "extended_text.h"
+#include <string>
+#include <vector>
+
 #include "NoLockQueue.h"
+#include "extended_text.h"
+
+struct TTYItem {
+  std::string text;
+  int8_t port_id = -1;
+
+  TTYItem() : text(""), port_id(-1) {}
+  TTYItem(const std::string& t, int8_t p = -1) : text(t), port_id(p) {}
+};
 
 struct TTYQueue {
   // TODO: instead of string, string pointers, that the consumer deletes?
-  SpScLockFreeQueue<std::string, 50> text_additions;
+  SpScLockFreeQueue<TTYItem, 50> text_additions;
+};
+
+struct TextSpan {
+  const char* start;
+  const char* end;
+  NVGcolor color;
 };
 
 // An expansion of the VCV TextField class, but allowing for features I wish
@@ -13,7 +30,6 @@ struct TTYQueue {
 // * undo/redo
 // * highlighting of error line(s)
 // * scrolling without a scroll bar
-// And perhaps someday:
 // * Text coloring
 // Initial code pulled from VCV on December 8, 2022.
 struct STTextField : OpaqueWidget {
@@ -63,6 +79,13 @@ struct STTextField : OpaqueWidget {
       NVGcolor color, float fontsize, int font_handle, const char *label,
       NVGcolor caretcolor, int cbegin, int cend);
 
+  // Hook for line-level and token-level text coloring.
+  // Return true if spans are populated, or false to use default single-color drawing.
+  virtual bool getLineSpans(const char* line_start, const char* line_end,
+                            int line_index, std::vector<TextSpan>& spans) {
+    return false;
+  }
+
   void draw(const DrawArgs& args) override;
 
   void onDragHover(const DragHoverEvent& e) override;
@@ -91,5 +114,7 @@ struct STTextField : OpaqueWidget {
   // For TTY. Adds the following lines to text, removes top lines if too long,
   // moves cursor if already at end.
   void make_additions(TTYQueue *additions);
+  virtual void onLineAdded(const TTYItem& item) {}
+  virtual void onLinesErased(int count) {}
   bool large_text_mode;
 };

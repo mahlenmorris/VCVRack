@@ -602,29 +602,20 @@ struct PrepareThread {
 
               // If worked, need to fill buffer.
               if (worked) {
+                bool is_csv = rack::string::endsWith(
+                    rack::string::lowercase(task->str1), ".csv");
+                double seconds =
+                    is_csv ? audio_file.getNumSamplesPerChannel() / sample_rate
+                           : audio_file.getLengthInSeconds();
                 task->status->log_messages.lines.push("Completed read of '" +
                                                       task->str1 + "'.");
-                if (rack::string::endsWith(rack::string::lowercase(task->str1),
-                                           ".csv")) {
-                  task->status->log_messages.lines.push(
-                      "It is " +
-                      std::to_string(audio_file.getNumSamplesPerChannel() /
-                                     sample_rate) +
-                      " seconds long.");
-                } else {
-                  task->status->log_messages.lines.push(
-                      "It is " +
-                      std::to_string(audio_file.getLengthInSeconds()) +
-                      " seconds long.");
-                }
+                task->status->log_messages.lines.push(
+                    "It is " + std::to_string(seconds) + " seconds long.");
 
                 // This part can also be slow, since it walks over every sample.
                 busy = true;
-                bool is_csv = rack::string::endsWith(
-                    rack::string::lowercase(task->str1), ".csv");
                 ConvertFileToSamples(task, audio_file, is_csv);
                 busy = false;
-                double seconds = audio_file.getLengthInSeconds();
                 // Done with the audio_file.
 
                 // Send task to BufferChangeThread.
