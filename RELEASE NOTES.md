@@ -1,7 +1,7 @@
 # Release Notes
 
 ### 2.0.30
-#### [date unknown]
+#### November 7, 2026
 * Added syntax highlighting to BASICally. So much more readable!
 * Added optional line coloring to TTY, where each line of output picks up the color from the cable that sent that value or text to TTY. This makes it far easier to follow multiple inputs in a TTY.
 * TTY also now has a menu option to display V1, V2, and V3 as note values.
