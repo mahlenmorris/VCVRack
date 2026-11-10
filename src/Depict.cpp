@@ -146,12 +146,12 @@ struct MemoryDepict : Widget {
         out_l = (out + bias) * std::max(z, z2);
         out_r = (out - bias) * std::max(z, z2);
 
-        waveform->points[i][0] = abs(out_l);
-        waveform->points[i][1] = abs(out_r);
+        waveform->points[i][0][0] = abs(out_l);
+        waveform->points[i][1][0] = abs(out_r);
       } else {
         // Just zeros for left and right.
-        waveform->points[i][0] = 0.0;
-        waveform->points[i][1] = 0.0;
+        waveform->points[i][0][0] = 0.0;
+        waveform->points[i][1][0] = 0.0;
       }
     }
   }
@@ -216,42 +216,58 @@ struct MemoryDepict : Widget {
         // if doing CV, zero is the middle of the left or right side.
         double zero_volt_mid_left = bounding_box.x * 0.25;
         double zero_volt_mid_right = bounding_box.x * 0.75;
+        int l_chans = buffer ? std::max(1, buffer->left_channels) : 1;
+        int r_chans = buffer ? std::max(1, buffer->right_channels) : 1;
         // We draw vertical oscilliscope signals for CV, since positive and
         // negative values matter more than amplitude.
-        // Left side:
-        // Make half-white.
-        nvgStrokeColor(args.vg, SCHEME_WHITE);
+        // Overlay all active channels in the narrow view for now.
         nvgStrokeWidth(args.vg, 1);
 
         // Draw left points on the left of the midline.
-        nvgBeginPath(args.vg);
-        for (int i = 0; i < WAVEFORM_SIZE; i++) {
-          float max = waveform->points[i][0] * waveform->normalize_factor;
-          float x = zero_volt_mid_left - (max * x_per_volt / 2);
-          float y = (WAVEFORM_SIZE - i) * y_per_point;
-          if (i == 0) {
-            nvgMoveTo(args.vg, x, y);
-          } else {
-            nvgLineTo(args.vg, x, y);
+        // When we're drawing many probably overlapping lines, we don't
+        // want them all at full brightness. So we lower
+        // the brightness of each line as we draw more channels.
+        float l_alpha = (l_chans > 1)
+                            ? std::max(0.25f, 1.0f / std::sqrt((float)l_chans))
+                            : 1.0f;
+        nvgStrokeColor(args.vg, nvgTransRGBAf(SCHEME_WHITE, l_alpha));
+        for (int c = 0; c < l_chans; ++c) {
+          nvgBeginPath(args.vg);
+          for (int i = 0; i < WAVEFORM_SIZE; i++) {
+            float max = waveform->points[i][0][c] * waveform->normalize_factor;
+            float x = zero_volt_mid_left - (max * x_per_volt / 2);
+            float y = (WAVEFORM_SIZE - i) * y_per_point;
+            if (i == 0) {
+              nvgMoveTo(args.vg, x, y);
+            } else {
+              nvgLineTo(args.vg, x, y);
+            }
           }
+          nvgStroke(args.vg);
+          nvgClosePath(args.vg);
         }
-        nvgStroke(args.vg);
-        nvgClosePath(args.vg);
 
         // Draw right points on the right of the midline.
-        nvgBeginPath(args.vg);
-        for (int i = 0; i < WAVEFORM_SIZE; i++) {
-          float max = waveform->points[i][1] * waveform->normalize_factor_right;
-          float x = zero_volt_mid_right - (max * x_per_volt / 2);
-          float y = (WAVEFORM_SIZE - i) * y_per_point;
-          if (i == 0) {
-            nvgMoveTo(args.vg, x, y);
-          } else {
-            nvgLineTo(args.vg, x, y);
+        float r_alpha = (r_chans > 1)
+                            ? std::max(0.25f, 1.0f / std::sqrt((float)r_chans))
+                            : 1.0f;
+        nvgStrokeColor(args.vg, nvgTransRGBAf(SCHEME_WHITE, r_alpha));
+        for (int c = 0; c < r_chans; ++c) {
+          nvgBeginPath(args.vg);
+          for (int i = 0; i < WAVEFORM_SIZE; i++) {
+            float max =
+                waveform->points[i][1][c] * waveform->normalize_factor_right;
+            float x = zero_volt_mid_right - (max * x_per_volt / 2);
+            float y = (WAVEFORM_SIZE - i) * y_per_point;
+            if (i == 0) {
+              nvgMoveTo(args.vg, x, y);
+            } else {
+              nvgLineTo(args.vg, x, y);
+            }
           }
+          nvgStroke(args.vg);
+          nvgClosePath(args.vg);
         }
-        nvgStroke(args.vg);
-        nvgClosePath(args.vg);
         // Draw center line downs the middle of L and R.
         nvgBeginPath(args.vg);
         nvgRect(args.vg, zero_volt_mid_left, 0, 0.5f, bounding_box.y);
@@ -270,7 +286,7 @@ struct MemoryDepict : Widget {
         nvgBeginPath(args.vg);
         // Draw left points on the left of the mid.
         for (int i = 0; i < WAVEFORM_SIZE; i++) {
-          float max = waveform->points[i][0] * waveform->normalize_factor;
+          float max = waveform->points[i][0][0] * waveform->normalize_factor;
           float x = zero_volt_left - (max * x_per_volt);
           float y = (WAVEFORM_SIZE - i) * y_per_point;
           if (i == 0) {
@@ -282,7 +298,7 @@ struct MemoryDepict : Widget {
 
         // Now do the right channel.
         for (int i = WAVEFORM_SIZE - 1; i >= 0; i--) {
-          float max = waveform->points[i][1] * waveform->normalize_factor;
+          float max = waveform->points[i][1][0] * waveform->normalize_factor;
           float x = zero_volt_right + (max * x_per_volt);
           float y = (WAVEFORM_SIZE - 1 - i) * y_per_point;
           nvgLineTo(args.vg, x, y);

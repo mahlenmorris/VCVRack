@@ -56,6 +56,8 @@ struct PrepareTask {
   float* new_left_array;
   float* new_right_array;
   int result_sample_count;
+  int left_channels;
+  int right_channels;
   std::vector<std::string>* loadable_files;
   StochasticTelegraph::MRUType mru_type;
   bool update_mru;
@@ -65,6 +67,9 @@ struct PrepareTask {
       : type{the_type},
         new_left_array{nullptr},
         new_right_array{nullptr},
+        result_sample_count{0},
+        left_channels{1},
+        right_channels{1},
         loadable_files{nullptr},
         update_mru{false},
         status{nullptr} {}
@@ -174,6 +179,8 @@ struct BufferChangeThread {
     float sector_size = (double)buffer->true_length / WAVEFORM_SIZE;
     float peak_amplitude_left = 0.0f, peak_amplitude_right = 0.0f;
     bool full_scan = buffer->full_scan;
+    int l_chans = buffer->cv_rate ? std::max(1, buffer->left_channels) : 1;
+    int r_chans = buffer->cv_rate ? std::max(1, buffer->right_channels) : 1;
 
     if (full_scan) {
       buffer->full_scan = false;  // I'm doing the scan now.
@@ -193,17 +200,19 @@ struct BufferChangeThread {
             right_amplitude =
                 std::max(right_amplitude, std::fabs(buffer->right_array[i]));
           }
-          buffer->waveform.points[p][0] = left_amplitude;
-          buffer->waveform.points[p][1] = right_amplitude;
+          buffer->waveform.points[p][0][0] = left_amplitude;
+          buffer->waveform.points[p][1][0] = right_amplitude;
         } else {
           FloatPair pair;
           buffer->Get(&pair, ((double)p) * buffer->length / WAVEFORM_SIZE);
           if (buffer->cv_rate) {
-            buffer->waveform.points[p][0] = pair.left;
-            buffer->waveform.points[p][1] = pair.right;
+            for (int c = 0; c < PORT_MAX_CHANNELS; ++c) {
+              buffer->waveform.points[p][0][c] = pair.left[c];
+              buffer->waveform.points[p][1][c] = pair.right[c];
+            }
           } else {
-            buffer->waveform.points[p][0] = std::fabs(pair.left);
-            buffer->waveform.points[p][1] = std::fabs(pair.right);
+            buffer->waveform.points[p][0][0] = std::fabs(pair.left[0]);
+            buffer->waveform.points[p][1][0] = std::fabs(pair.right[0]);
           }
         }
         // Not stricly speaking correct (the sector may have been written
@@ -212,10 +221,14 @@ struct BufferChangeThread {
         // which, since writes are sequential, is quite likely.
         buffer->dirty[p] = false;
       }
-      peak_amplitude_left = std::max(peak_amplitude_left,
-                                     std::fabs(buffer->waveform.points[p][0]));
-      peak_amplitude_right = std::max(peak_amplitude_right,
-                                      std::fabs(buffer->waveform.points[p][1]));
+      for (int c = 0; c < l_chans; ++c) {
+        peak_amplitude_left = std::max(
+            peak_amplitude_left, std::fabs(buffer->waveform.points[p][0][c]));
+      }
+      for (int c = 0; c < r_chans; ++c) {
+        peak_amplitude_right = std::max(
+            peak_amplitude_right, std::fabs(buffer->waveform.points[p][1][c]));
+      }
     }
     if (buffer->cv_rate) {
       AssignNormalizationFactor(peak_amplitude_left, true, buffer);
@@ -261,13 +274,18 @@ struct BufferChangeThread {
       // TODO: perhaps better to delay these deletions a bit?
       // Might help protect threads unaware that buffer is invalid
       // from accessing freed RAM.
-      delete buffer->left_array;
+      delete[] buffer->left_array;
     }
     buffer->left_array = task->new_left_array;
     if (buffer->right_array != nullptr) {
-      delete buffer->right_array;
+      delete[] buffer->right_array;
     }
     buffer->right_array = task->new_right_array;
+
+    buffer->left_channels =
+        buffer->cv_rate ? std::max(1, task->left_channels) : 1;
+    buffer->right_channels =
+        buffer->cv_rate ? std::max(1, task->right_channels) : 1;
 
     buffer->true_length = task->sample_count;
     if (buffer->cv_rate) {
@@ -345,18 +363,35 @@ struct BufferChangeThread {
                 // less RAM-intensive.
                 audio_file.setMemoryBuffer(buffer);
 
+                int l_chans =
+                    buffer->cv_rate ? std::max(1, buffer->left_channels) : 1;
+                int r_chans =
+                    buffer->cv_rate ? std::max(1, buffer->right_channels) : 1;
+                int total_chans = l_chans + r_chans;
+
                 // Do a fair bit of setup, so it can save properly.
                 // Set both the number of channels and number of samples per
                 // channel
-                audio_file.setAudioBufferSize(2, buffer->true_length);
+                audio_file.setAudioBufferSize(total_chans, buffer->true_length);
 
                 // Set the number of samples per channel
                 audio_file.setNumSamplesPerChannel(buffer->true_length);
 
-                // Set the number of channels. Memory is always stereo.
-                audio_file.setNumChannels(2);
+                // Set the number of channels.
+                audio_file.setNumChannels(total_chans);
                 audio_file.setBitDepth(32);  // This is what Audacity produces.
                 audio_file.setSampleRate(memory_sample_rate);
+                if (l_chans > 1 || r_chans > 1) {
+                  audio_file.iXMLChunk =
+                      "<BWFXML><MEMORYCV><LEFT_CHANNELS>" +
+                      std::to_string(l_chans) +
+                      "</LEFT_CHANNELS><RIGHT_CHANNELS>" +
+                      std::to_string(r_chans) +
+                      "</RIGHT_CHANNELS></MEMORYCV></BWFXML>";
+                  if (audio_file.iXMLChunk.size() % 2 != 0) {
+                    audio_file.iXMLChunk += " ";
+                  }
+                }
 
                 // SLOW: this call can take many seconds.
                 bool worked = false;
@@ -463,6 +498,7 @@ struct PrepareThread {
   PrepareToBufferQueue* prepare_buffer_queue = nullptr;
 
   float sample_rate = 1.0;
+  bool cv_rate = false;
 
   // Indicator to UI that File I/O is happening.
   bool busy;
@@ -477,7 +513,10 @@ struct PrepareThread {
 
   void Halt() { shutdown = true; }
 
-  void SetRate(float rate) { sample_rate = rate; }
+  void SetRate(float rate, bool is_cv = false) {
+    sample_rate = rate;
+    cv_rate = is_cv;
+  }
 
   void DoDirectoryRead(const std::string& load_folder,
                        std::vector<std::string>* loadable_files,
@@ -530,8 +569,29 @@ struct PrepareThread {
             ? audio_file.getNumSamplesPerChannel()
             : std::round(audio_file.getLengthInSeconds() * sample_rate);
     int file_samples = audio_file.getNumSamplesPerChannel();
-    float* new_left_array = new float[samples];
-    float* new_right_array = new float[samples];
+    int stride = cv_rate ? PORT_MAX_CHANNELS : 1;
+    float* new_left_array = new float[samples * stride]();
+    float* new_right_array = new float[samples * stride]();
+
+    int total_chans = audio_file.getNumChannels();
+    bool file_is_mono = (total_chans == 1);
+    int l_chans = 1;
+    int r_chans = 1;
+    if (cv_rate) {
+      int from_metadata_l_chans = audio_file.getLeftChannels();
+      int from_metadata_r_chans = audio_file.getRightChannels();
+      if (from_metadata_l_chans > 0 && from_metadata_r_chans > 0 &&
+          (from_metadata_l_chans + from_metadata_r_chans) <= total_chans) {
+        l_chans = std::min(from_metadata_l_chans, PORT_MAX_CHANNELS);
+        r_chans = std::min(from_metadata_r_chans, PORT_MAX_CHANNELS);
+      } else if (file_is_mono) {
+        l_chans = 1;
+        r_chans = 1;
+      } else {
+        l_chans = std::min(total_chans / 2, PORT_MAX_CHANNELS);
+        r_chans = std::min(total_chans - (total_chans / 2), PORT_MAX_CHANNELS);
+      }
+    }
 
     // Now fill from the audio_file. Transforms we need to apply are:
     // * Sample rate may be different from the file and VCV.
@@ -539,12 +599,12 @@ struct PrepareThread {
     // to 1.0.
     // * File might have been in mono. The norm seems to be to put a mono signal
     //   on both channels.
-    bool file_is_mono = audio_file.getNumChannels() == 1;
     // TODO: put in an optimization if sample rates are the same. Less math to
     // do.
     double sample_rate_ratio =
         has_no_sample_rate ? 1.0
                            : 1.0 * audio_file.getSampleRate() / sample_rate;
+    int r_offset = file_is_mono ? 0 : (cv_rate ? l_chans : 1);
     // This can take a while; definitely let a Halt() call interrupt it.
     for (int i = 0; !shutdown && i < samples; ++i) {
       // Use the linear interpolation that I also use in Buffer::Get().
@@ -557,23 +617,36 @@ struct PrepareThread {
         playback_end = 0;
       }
 
-      float start_fraction = position - playback_start;
-      new_left_array[i] =
-          10.0 *
-          (audio_file.samples[0][playback_start] * (1.0 - start_fraction) +
-           audio_file.samples[0][playback_end] * (start_fraction));
+      float start_fraction = cv_rate ? 0.0f : (position - playback_start);
+      int base = i * stride;
+      for (int c = 0; c < l_chans; ++c) {
+        if (c < total_chans) {
+          new_left_array[base + c] =
+              10.0 *
+              (audio_file.samples[c][playback_start] * (1.0 - start_fraction) +
+               audio_file.samples[c][playback_end] * (start_fraction));
+        }
+      }
       if (file_is_mono) {
-        new_right_array[i] = new_left_array[i];
+        new_right_array[base] = new_left_array[base];
       } else {
-        new_right_array[i] =
-            10.0 *
-            (audio_file.samples[1][playback_start] * (1.0 - start_fraction) +
-             audio_file.samples[1][playback_end] * (start_fraction));
+        for (int c = 0; c < r_chans; ++c) {
+          int src_chan = r_offset + c;
+          if (src_chan < total_chans) {
+            new_right_array[base + c] =
+                10.0 *
+                (audio_file.samples[src_chan][playback_start] *
+                     (1.0 - start_fraction) +
+                 audio_file.samples[src_chan][playback_end] * (start_fraction));
+          }
+        }
       }
     }
     task->new_left_array = new_left_array;
     task->new_right_array = new_right_array;
     task->result_sample_count = samples;
+    task->left_channels = l_chans;
+    task->right_channels = r_chans;
   }
 
   void Work() {
@@ -621,10 +694,11 @@ struct PrepareThread {
                 // Send task to BufferChangeThread.
                 BufferTask* replace_task = BufferTask::ReplaceTask(
                     task->new_left_array, task->new_right_array, task->status,
-                    task->result_sample_count, seconds, !is_csv);
+                    task->result_sample_count, seconds, !is_csv,
+                    task->left_channels, task->right_channels);
                 if (!prepare_buffer_queue->tasks.push(replace_task)) {
-                  delete task->new_left_array;
-                  delete task->new_right_array;
+                  delete[] task->new_left_array;
+                  delete[] task->new_right_array;
                   delete replace_task;  // Queue is full, shed load.
                 }
               } else {
@@ -646,21 +720,19 @@ struct PrepareThread {
             case PrepareTask::MAKE_BLANK: {
               assert(sample_rate > 1.0);
               int sample_count = std::round(task->seconds * sample_rate);
-              float* new_left_array = new float[sample_count];
-              float* new_right_array = new float[sample_count];
-
-              for (int i = 0; i < sample_count && !shutdown; ++i) {
-                new_left_array[i] = 0.0f;
-                new_right_array[i] = 0.0f;
-              }
+              int stride = cv_rate ? PORT_MAX_CHANNELS : 1;
+              float* new_left_array = new float[sample_count * stride]();
+              float* new_right_array = new float[sample_count * stride]();
 
               // Send task to BufferChangeThread.
               // No reason to smooth an already blank file, so smooth_ends is
               // false.
               BufferTask* replace_task = BufferTask::ReplaceTask(
                   new_left_array, new_right_array, nullptr, sample_count,
-                  task->seconds, false);
+                  task->seconds, false, 1, 1);
               if (!prepare_buffer_queue->tasks.push(replace_task)) {
+                delete[] new_left_array;
+                delete[] new_right_array;
                 delete replace_task;  // Queue is full, shed load.
               }
               delete task;
@@ -993,7 +1065,8 @@ struct Memory : BufferedModule {
         if (sample_rate > 1.0) {
           buffer_change_worker->SetRates(
               sample_rate, cv_rate ? CV_SAMPLE_RATE : sample_rate);
-          prepare_worker->SetRate(cv_rate ? CV_SAMPLE_RATE : sample_rate);
+          prepare_worker->SetRate(cv_rate ? CV_SAMPLE_RATE : sample_rate,
+                                  cv_rate);
           PrepareTask* task =
               PrepareTask::MakeBlank(params[SECONDS_PARAM].getValue());
           if (!module_prepare_queue.tasks.push(task)) {

@@ -436,23 +436,40 @@ struct Ruminate : PositionedModule {
         FloatPair gotten;
         buffer->Get(&gotten, display_position);
 
+        int l_chans = buffer->cv_rate ? std::max(1, buffer->left_channels) : 1;
+        int r_chans = buffer->cv_rate ? std::max(1, buffer->right_channels) : 1;
+        outputs[LEFT_OUTPUT].setChannels(l_chans);
+        outputs[RIGHT_OUTPUT].setChannels(r_chans);
+
+        float max_abs = 0.0f;
+        for (int c = 0; c < l_chans; ++c) {
+          float left = fade * play_fade * gotten.left[c];
+          outputs[LEFT_OUTPUT].setVoltage(left, c);
+          max_abs = std::max(max_abs, std::fabs(left));
+        }
+        for (int c = 0; c < r_chans; ++c) {
+          float right = fade * play_fade * gotten.right[c];
+          outputs[RIGHT_OUTPUT].setVoltage(right, c);
+          max_abs = std::max(max_abs, std::fabs(right));
+        }
+
         // If the values we're outputting here are at or very close to zero,
         // we could end a fade_out immediately.
-        double left = fade * play_fade * gotten.left;
-        double right = fade * play_fade * gotten.right;
-        if (play_state == FADE_DOWN && fabs(left) < 0.1 && fabs(right) < 0.1) {
+        if (play_state == FADE_DOWN && max_abs < 0.1f) {
           play_state = NO_PLAY;
           play_fade = 0.0;
         }
         // Sadly, no simple equivalent for FADE_UP -> PLAYING transition.
 
-        outputs[LEFT_OUTPUT].setVoltage(left);
-        outputs[RIGHT_OUTPUT].setVoltage(right);
         lights[PLAY_BUTTON_LIGHT].setBrightness(1.0f);
       } else {
         if (outputs_zero) {
-          outputs[LEFT_OUTPUT].setVoltage(0.0f);
-          outputs[RIGHT_OUTPUT].setVoltage(0.0f);
+          int l_chans = buffer->cv_rate ? std::max(1, buffer->left_channels) : 1;
+          int r_chans = buffer->cv_rate ? std::max(1, buffer->right_channels) : 1;
+          outputs[LEFT_OUTPUT].setChannels(l_chans);
+          outputs[RIGHT_OUTPUT].setChannels(r_chans);
+          outputs[LEFT_OUTPUT].clearVoltages();
+          outputs[RIGHT_OUTPUT].clearVoltages();
         }
         lights[PLAY_BUTTON_LIGHT].setBrightness(0.0f);
       }

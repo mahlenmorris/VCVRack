@@ -828,21 +828,32 @@ struct Fixation : PositionedModule {
         FloatPair gotten;
         buffer->Get(&gotten, display_position);
 
-        double left = fade * play_fade * gotten.left;
-        double right = fade * play_fade * gotten.right;
-
         if (play_state == PLAYING) {
           // Not sure when this can happen, but bad if it did.
           play_fade = 1.0;
         }
 
-        outputs[LEFT_OUTPUT].setVoltage(left);
-        outputs[RIGHT_OUTPUT].setVoltage(right);
+        int l_chans = buffer->cv_rate ? std::max(1, buffer->left_channels) : 1;
+        int r_chans = buffer->cv_rate ? std::max(1, buffer->right_channels) : 1;
+        outputs[LEFT_OUTPUT].setChannels(l_chans);
+        outputs[RIGHT_OUTPUT].setChannels(r_chans);
+
+        for (int c = 0; c < l_chans; ++c) {
+          outputs[LEFT_OUTPUT].setVoltage(fade * play_fade * gotten.left[c], c);
+        }
+        for (int c = 0; c < r_chans; ++c) {
+          outputs[RIGHT_OUTPUT].setVoltage(fade * play_fade * gotten.right[c],
+                                           c);
+        }
         lights[PLAY_BUTTON_LIGHT].setBrightness(1.0f);
       } else {
         if (outputs_zero) {
-          outputs[LEFT_OUTPUT].setVoltage(0.0f);
-          outputs[RIGHT_OUTPUT].setVoltage(0.0f);
+          int l_chans = buffer->cv_rate ? std::max(1, buffer->left_channels) : 1;
+          int r_chans = buffer->cv_rate ? std::max(1, buffer->right_channels) : 1;
+          outputs[LEFT_OUTPUT].setChannels(l_chans);
+          outputs[RIGHT_OUTPUT].setChannels(r_chans);
+          outputs[LEFT_OUTPUT].clearVoltages();
+          outputs[RIGHT_OUTPUT].clearVoltages();
         }
         lights[PLAY_BUTTON_LIGHT].setBrightness(0.0f);
       }

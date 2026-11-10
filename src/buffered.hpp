@@ -17,10 +17,10 @@ const float CV_SAMPLE_RATE = 1000.0f;
 
 // Just to make transmiting data easier, but might not need?
 struct FloatPair {
-  float left;
-  float right;
+  float left[PORT_MAX_CHANNELS];
+  float right[PORT_MAX_CHANNELS];
 
-  FloatPair() : left{0.0f}, right{0.0f} {}
+  FloatPair() : left{}, right{} {}
 };
 
 // A record of a moment that a record head called Set(). Used by Play heads
@@ -86,6 +86,20 @@ struct FileOperationReporting {
   FileOperationReporting() : completed{IN_PROGRESS} {}
 };
 
+// NOTA BENE: For MemoryCV, we interleave the channels together in the array.
+// And that we need to always allow for PORT_MAX_CHANNELS channels, since
+// Embellish could suddenly add more channels than we'd previously had. Thus
+// left_array starts as: first float of channel 1. first float of channel 2.
+// first float of channel 3.
+// ...
+// first float of channel 16.
+// second float of channel 1.
+// second float of channel 2.
+// ...
+
+// THUS, left_array and right_array, as well as new_left_array and
+// new_right_array, must have this structure.
+
 // Class for scheduling large changes to the Buffer.
 struct BufferTask {
   enum Type {
@@ -100,6 +114,8 @@ struct BufferTask {
   int sample_count;
   double seconds;
   bool smooth_endpoints;
+  int left_channels;
+  int right_channels;
   FileOperationReporting* status;  // Owned by module.
 
   explicit BufferTask(const Type the_type)
@@ -109,6 +125,8 @@ struct BufferTask {
         sample_count{0},
         seconds{0.0},
         smooth_endpoints{false},
+        left_channels{1},
+        right_channels{1},
         status{nullptr} {}
 
   ~BufferTask();
@@ -119,7 +137,8 @@ struct BufferTask {
   static BufferTask* ReplaceTask(float* new_left, float* new_right,
                                  FileOperationReporting* status,
                                  int sample_count, double seconds,
-                                 bool smooth_ends);
+                                 bool smooth_ends, int left_channels = 1,
+                                 int right_channels = 1);
 };
 
 struct BufferTaskQueue {
@@ -136,7 +155,7 @@ struct PointBuffer {
   // symmetric. I.e., we are closer to SoundCloud than Scope. For a MemoryCV, we
   // want to be a Scope, since CV is typically far less noisy then an audio
   // signal.
-  float points[WAVEFORM_SIZE][2];
+  float points[WAVEFORM_SIZE][2][PORT_MAX_CHANNELS];
   // For a Memory, we normalize both L and R the same amount.
   double normalize_factor = 1000;
   std::string text_factor;
@@ -157,6 +176,11 @@ struct Buffer {
   // modules.
   int length = 0;  // Length in audio rate samples (what the modules work in.)
   int true_length = 0;  // Actually array length.
+
+  // Highest channel count recorded or loaded into L and R (1..16 for MemoryCV,
+  // always 1 for Memory).
+  int left_channels = 1;
+  int right_channels = 1;
 
   double seconds;
 
@@ -195,6 +219,8 @@ struct Buffer {
       : left_array{nullptr},
         right_array{nullptr},
         length{0},
+        left_channels{1},
+        right_channels{1},
         seconds{0.0},
         dirty{},
         full_scan{false},
@@ -232,7 +258,8 @@ struct Buffer {
   // Used by SAVE_FILE.
   void GetDirect(FloatPair* pair, double position);
   // Caller is responsible for only calling this when IsValid() is true.
-  void Set(int position, float left, float right, long long module_id);
+  void Set(int position, const float* left, int left_chans, const float* right,
+           int right_chans, long long module_id);
 };
 
 struct BufferHandle {
@@ -268,12 +295,14 @@ struct LineRecord {
   NVGcolor color;   // Set by Memory. Read by Depict and the module.
   ModuleType type;  // Set by module class. Read by Depict.
   // Number of modules away from Memory this is. One-indexed.
-  int distance;  // Set by Memory, Read by Depict.
+  int distance;          // Set by Memory, Read by Depict.
   bool has_range;        // Set by module. Read by Depict.
   double range_start;    // Set by module. Read by Depict.
   double range_length;   // Set by module. Read by Depict.
-  double range_start2;   // Set by module. Read by Depict (second segment if wrapped).
-  double range_length2;  // Set by module. Read by Depict (second segment if wrapped).
+  double range_start2;   // Set by module. Read by Depict (second segment if
+                         // wrapped).
+  double range_length2;  // Set by module. Read by Depict (second segment if
+                         // wrapped).
 
   LineRecord()
       : position{0.0},

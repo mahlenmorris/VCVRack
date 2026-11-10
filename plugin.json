@@ -36,6 +36,7 @@
       "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#brainwash",
       "tags": [
         "Expander",
+        "Polyphonic",
         "Recording",
         "Sampler"
       ]
@@ -91,6 +92,7 @@
       "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#embellish",
       "tags": [
         "Expander",
+        "Polyphonic",
         "Recording",
         "Sampler"
       ]
@@ -114,6 +116,7 @@
       "tags": [
         "Delay",
         "Expander",
+        "Polyphonic",
         "Sampler"
       ]
     },
@@ -145,6 +148,7 @@
       "manualUrl": "https://github.com/mahlenmorris/VCVRack/blob/main/Memory.md#memorycv",
       "tags": [
         "Recording",
+        "Polyphonic",
         "Sampler"
       ]
     },
@@ -156,6 +160,7 @@
       "tags": [
         "Delay",
         "Expander",
+        "Polyphonic",
         "Sampler"
       ]
     },

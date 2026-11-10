@@ -396,21 +396,48 @@ struct Embellish : PositionedModule {
         FloatPair gotten;
         buffer->Get(&gotten, display_position);
 
-        outputs[LEFT_OUTPUT].setVoltage(gotten.left);
-        outputs[RIGHT_OUTPUT].setVoltage(gotten.right);
+        int l_out_chans = buffer->cv_rate ? std::max(1, buffer->left_channels) : 1;
+        int r_out_chans = buffer->cv_rate ? std::max(1, buffer->right_channels) : 1;
+        outputs[LEFT_OUTPUT].setChannels(l_out_chans);
+        outputs[RIGHT_OUTPUT].setChannels(r_out_chans);
+        for (int c = 0; c < l_out_chans; ++c) {
+          outputs[LEFT_OUTPUT].setVoltage(gotten.left[c], c);
+        }
+        for (int c = 0; c < r_out_chans; ++c) {
+          outputs[RIGHT_OUTPUT].setVoltage(gotten.right[c], c);
+        }
 
-        buffer->Set(display_position, fade * inputs[LEFT_INPUT].getVoltage(),
-                    fade * inputs[RIGHT_INPUT].getVoltage(), getId());
+        int l_in_chans =
+            buffer->cv_rate ? std::max(1, inputs[LEFT_INPUT].getChannels()) : 1;
+        int r_in_chans = buffer->cv_rate
+                             ? std::max(1, inputs[RIGHT_INPUT].getChannels())
+                             : 1;
+        float left_in[PORT_MAX_CHANNELS];
+        float right_in[PORT_MAX_CHANNELS];
+        for (int c = 0; c < l_in_chans; ++c) {
+          left_in[c] = fade * inputs[LEFT_INPUT].getVoltage(c);
+        }
+        for (int c = 0; c < r_in_chans; ++c) {
+          right_in[c] = fade * inputs[RIGHT_INPUT].getVoltage(c);
+        }
+        buffer->Set(display_position, left_in, l_in_chans, right_in, r_in_chans,
+                    getId());
         lights[RECORD_BUTTON_LIGHT].setBrightness(1.0f);
       } else {
         if (outputs_zero) {
-          outputs[LEFT_OUTPUT].setVoltage(0.0f);
-          outputs[RIGHT_OUTPUT].setVoltage(0.0f);
+          int l_out_chans = buffer->cv_rate ? std::max(1, buffer->left_channels) : 1;
+          int r_out_chans = buffer->cv_rate ? std::max(1, buffer->right_channels) : 1;
+          outputs[LEFT_OUTPUT].setChannels(l_out_chans);
+          outputs[RIGHT_OUTPUT].setChannels(r_out_chans);
+          outputs[LEFT_OUTPUT].clearVoltages();
+          outputs[RIGHT_OUTPUT].clearVoltages();
         }
         lights[RECORD_BUTTON_LIGHT].setBrightness(0.0f);
       }
     } else {
       // Can only be recording if connected.
+      outputs[LEFT_OUTPUT].setChannels(1);
+      outputs[RIGHT_OUTPUT].setChannels(1);
       outputs[LEFT_OUTPUT].setVoltage(0.0f);
       outputs[RIGHT_OUTPUT].setVoltage(0.0f);
       lights[RECORD_BUTTON_LIGHT].setBrightness(0.0f);

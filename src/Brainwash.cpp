@@ -9,6 +9,8 @@ struct BrainwashThread {
   // If set,  we merge a millisecond's worth of signal into one sample.
   bool cv_rate = false;
   int max_sample_count;
+  int left_channels = 1;
+  int right_channels = 1;
 
   // These are the fixed-size buffers that get recorded to initially.
   float* static_left;
@@ -23,6 +25,8 @@ struct BrainwashThread {
       : shutdown{false},
         sample_rate{0.0f},
         max_sample_count{0},
+        left_channels{1},
+        right_channels{1},
         static_left{nullptr},
         static_right{nullptr},
         endpoint_position{-1} {}
@@ -47,6 +51,11 @@ struct BrainwashThread {
 
   void SetCV(bool cv) { cv_rate = cv; }
 
+  void ResetChannels() {
+    left_channels = 1;
+    right_channels = 1;
+  }
+
   void InitiateReplacement(int endpoint_position,
                            std::shared_ptr<Buffer> buffer) {
     int endpoint = std::min(endpoint_position, max_sample_count - 1);
@@ -55,7 +64,8 @@ struct BrainwashThread {
     this->buffer = buffer;
   }
 
-  void RecordSample(int position, float left, float right) {
+  void RecordSample(int position, const float* left, int left_chans,
+                    const float* right, int right_chans) {
     if (position >= max_sample_count || static_right == nullptr) {
       return;
     }
@@ -67,12 +77,19 @@ struct BrainwashThread {
       int writable_position =
           trunc((double)(cv_position + 0.5) * sample_rate / CV_SAMPLE_RATE);
       if (position == writable_position) {
-        static_left[cv_position] = left;
-        static_right[cv_position] = right;
+        int l_chans = std::min(std::max(left_chans, 0), PORT_MAX_CHANNELS);
+        int r_chans = std::min(std::max(right_chans, 0), PORT_MAX_CHANNELS);
+        left_channels = std::max(left_channels, std::max(1, l_chans));
+        right_channels = std::max(right_channels, std::max(1, r_chans));
+        int base = cv_position * PORT_MAX_CHANNELS;
+        for (int c = 0; c < PORT_MAX_CHANNELS; ++c) {
+          static_left[base + c] = (c < l_chans) ? left[c] : 0.0f;
+          static_right[base + c] = (c < r_chans) ? right[c] : 0.0f;
+        }
       }
     } else {
-      static_left[position] = left;
-      static_right[position] = right;
+      static_left[position] = (left_chans > 0) ? left[0] : 0.0f;
+      static_right[position] = (right_chans > 0) ? right[0] : 0.0f;
     }
   }
 
@@ -83,15 +100,20 @@ struct BrainwashThread {
           // We can make the fixed buffers now.
           // Defaulting to 1 minute maximum.
           int sample_count = std::round(60 * sample_rate);
+          int cv_max = std::round(60 * CV_SAMPLE_RATE) * PORT_MAX_CHANNELS;
+          int alloc_size = std::max(sample_count, cv_max);
           max_sample_count = sample_count;
-          static_left = new float[sample_count];
-          static_right = new float[sample_count];
+          static_left = new float[alloc_size]();
+          static_right = new float[alloc_size]();
         }
       } else if (endpoint_position > 0) {
         // Create new buffer to send to Memory.
         size_t length = endpoint_position + 1;
-        float* new_left = new float[length];
-        float* new_right = new float[length];
+        // Since MemoryCV modules have multiple channels per position,
+        // 'stride' is how many floats there are for each position.
+        size_t stride = cv_rate ? PORT_MAX_CHANNELS : 1;
+        float* new_left = new float[length * stride];
+        float* new_right = new float[length * stride];
         // These allocs can take a small bit of time, check that we aren't being
         // shut down.
         if (shutdown) {
@@ -100,8 +122,8 @@ struct BrainwashThread {
           return;
         }
         // Copies from zero to last position.
-        memcpy(new_left, static_left, sizeof(float) * length);
-        memcpy(new_right, static_right, sizeof(float) * length);
+        memcpy(new_left, static_left, sizeof(float) * length * stride);
+        memcpy(new_right, static_right, sizeof(float) * length * stride);
 
         // Now add to queue for Memory to consume.
         double seconds = cv_rate ? (endpoint_position + 1) / CV_SAMPLE_RATE
@@ -110,10 +132,11 @@ struct BrainwashThread {
         BufferTask* replace_task = BufferTask::ReplaceTask(
             new_left, new_right, nullptr,  // nullptr for status indicates we
                                            // don't need FileIO status info.
-            endpoint_position + 1, seconds, true);
+            endpoint_position + 1, seconds, true, left_channels,
+            right_channels);
         if (!(buffer->replacements.queue.push(replace_task))) {
-          delete replace_task->new_left_array;
-          delete replace_task->new_right_array;
+          delete[] replace_task->new_left_array;
+          delete[] replace_task->new_right_array;
           delete replace_task;  // Queue is full, shed load.
         }
         endpoint_position = -1;
@@ -300,6 +323,7 @@ struct Brainwash : Module {
           // Start recording now.
           timed_recording_state = RECORDING;
           recording_position = -1;
+          worker->ResetChannels();
           params[ARM_BUTTON_PARAM].setValue(
               0.0f);  // Not armed now that we've started.
           clocks_so_far =
@@ -326,9 +350,15 @@ struct Brainwash : Module {
                  (tempo_length_in_frames > 0 ? tempo_length_in_frames : 1))) {
           // Still recording.
           ++recording_position;
+          int l_chans = buffer->cv_rate
+                            ? std::max(1, inputs[LEFT_INPUT].getChannels())
+                            : 1;
+          int r_chans = buffer->cv_rate
+                            ? std::max(1, inputs[RIGHT_INPUT].getChannels())
+                            : 1;
           worker->RecordSample(recording_position,
-                               inputs[LEFT_INPUT].getVoltage(),
-                               inputs[RIGHT_INPUT].getVoltage());
+                               inputs[LEFT_INPUT].getVoltages(), l_chans,
+                               inputs[RIGHT_INPUT].getVoltages(), r_chans);
           lights[RECORD_BUTTON_LIGHT].setBrightness(1.0f);
         } else {
           // Done recording.
@@ -354,6 +384,7 @@ struct Brainwash : Module {
         if (recording && !was_recording) {
           // Starting from the top.
           recording_position = -1;
+          worker->ResetChannels();
         } else if (!recording && was_recording) {
           // Recording done, send it!
           // WARN("Initiated brainwash at position %d", recording_position);
@@ -362,9 +393,15 @@ struct Brainwash : Module {
         was_recording = recording;
         if (recording) {
           ++recording_position;
+          int l_chans = buffer->cv_rate
+                            ? std::max(1, inputs[LEFT_INPUT].getChannels())
+                            : 1;
+          int r_chans = buffer->cv_rate
+                            ? std::max(1, inputs[RIGHT_INPUT].getChannels())
+                            : 1;
           worker->RecordSample(recording_position,
-                               inputs[LEFT_INPUT].getVoltage(),
-                               inputs[RIGHT_INPUT].getVoltage());
+                               inputs[LEFT_INPUT].getVoltages(), l_chans,
+                               inputs[RIGHT_INPUT].getVoltages(), r_chans);
         }
         lights[RECORD_BUTTON_LIGHT].setBrightness(recording ? 1.0f : 0.0f);
         lights[ARM_BUTTON_LIGHT].setBrightness(
