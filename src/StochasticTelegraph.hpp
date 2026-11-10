@@ -126,23 +126,21 @@ struct STResizeHandle : OpaqueWidget {
     }
   }
 
-  void drawLayer(const DrawArgs& args, int layer) override {
+  void draw(const DrawArgs& args) override {
     // TODO: Should this be a FrameBuffer widget, instead of redrawing every
     // frame? Or maybe an illustration, although then I have to think about
     // scaling? Maybe. Drawing once into a buffer seems pretty cheap and a
     // smaller leap.
-    if (layer == 1) {
-      // Draw two lines to give people something to grab for.
-      // Lifted from the VCV Blank module.
-      for (float x = 5.0; x <= 10.0; x += 5.0) {
-        nvgBeginPath(args.vg);
-        const float margin = 5.0;
-        nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
-        nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
-        nvgStrokeWidth(args.vg, 1.0);
-        nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
-        nvgStroke(args.vg);
-      }
+    // Draw two lines to give people something to grab for.
+    // Lifted from the VCV Blank module.
+    for (float x = 5.0; x <= 10.0; x += 5.0) {
+      nvgBeginPath(args.vg);
+      const float margin = 5.0;
+      nvgMoveTo(args.vg, x + 0.5, margin + 0.5);
+      nvgLineTo(args.vg, x + 0.5, box.size.y - margin + 0.5);
+      nvgStrokeWidth(args.vg, 1.0);
+      nvgStrokeColor(args.vg, nvgRGBAf(0.5, 0.5, 0.5, 0.5));
+      nvgStroke(args.vg);
     }
   }
 };
