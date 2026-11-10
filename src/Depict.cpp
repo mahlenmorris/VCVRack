@@ -1,5 +1,4 @@
 #include <cmath>
-#include <thread>
 
 #include "buffered.hpp"
 #include "plugin.hpp"
