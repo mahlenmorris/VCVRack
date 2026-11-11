@@ -1,15 +1,26 @@
 #include <cmath>
 
+#include "StochasticTelegraph.hpp"
 #include "buffered.hpp"
 #include "plugin.hpp"
 
 struct Depict : Module {
+  static const int DEFAULT_WIDTH = 6;
+  static const int MAX_WIDTH = 50;
+  // Difference in width between current module size and the display size within
+  // it.
+  static constexpr double DISPLAY_MARGIN = 2 * 2.5;
+
   enum ParamId { PARAMS_LEN };
   enum InputId { INPUTS_LEN };
   enum OutputId { OUTPUTS_LEN };
   enum LightId { CONNECTED_LIGHT, LIGHTS_LEN };
 
   std::shared_ptr<Buffer> buffer;
+
+  // Width (in "holes") of the whole module. Changed by the resize bar on the
+  // right. Saved in the json for the module.
+  int width = Depict::DEFAULT_WIDTH;
 
   // Set by process(), read by drawLayer().
   // Tells the UI where to draw the moving lines representing the player and
@@ -28,6 +39,21 @@ struct Depict : Module {
   Depict() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     buffer = nullptr;
+  }
+
+  // Required by STResizeHandle; is called whenever the width changes.
+  // Since Depict redraws on every frame anyway, this is a no-op.
+  void RedrawText() {}
+
+  json_t* dataToJson() override {
+    json_t* rootJ = json_object();
+    json_object_set_new(rootJ, "width", json_integer(width));
+    return rootJ;
+  }
+
+  void dataFromJson(json_t* rootJ) override {
+    json_t* widthJ = json_object_get(rootJ, "width");
+    if (widthJ) width = json_integer_value(widthJ);
   }
 
   void process(const ProcessArgs& args) override {
@@ -100,6 +126,33 @@ struct Depict : Module {
   }
 };
 
+struct DepictUndoRedoAction : history::ModuleAction {
+  int old_width, new_width;
+
+  // This has two unused float parameters in order to match the signature of the
+  // ctor that STResizeHandle expects to call whenever the width changes.
+  // They aren't used here because we don't have a handle on the left side.
+  DepictUndoRedoAction(int64_t id, int old_width, int new_width,
+                       float unused_1 = 0.0f, float unused_2 = 0.0f)
+      : old_width{old_width}, new_width{new_width} {
+    moduleId = id;
+    name = "module width change";
+  }
+  void undo() override {
+    Depict* module = dynamic_cast<Depict*>(APP->engine->getModule(moduleId));
+    if (module) {
+      module->width = this->old_width;
+    }
+  }
+
+  void redo() override {
+    Depict* module = dynamic_cast<Depict*>(APP->engine->getModule(moduleId));
+    if (module) {
+      module->width = this->new_width;
+    }
+  }
+};
+
 struct MemoryDepict : Widget {
   Depict* module;
   PointBuffer module_browser, default_module;
@@ -153,6 +206,19 @@ struct MemoryDepict : Widget {
         waveform->points[i][1][0] = 0.0;
       }
     }
+  }
+
+  // Draw the black screen background in draw() so it expands cleanly as the
+  // module is widened past its default 6 HP SVG screen rect.
+  // Doing this here means it doesn't "glow" when the lights are turned down.
+  void draw(const DrawArgs& args) override {
+    nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+    nvgBeginPath(args.vg);
+    nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
+    nvgFillColor(args.vg, nvgRGB(0, 0, 0));
+    nvgFill(args.vg);
+    Widget::draw(args);
+    nvgResetScissor(args.vg);
   }
 
   // By using drawLayer() instead of draw(), this becomes a glowing Depict
@@ -212,29 +278,63 @@ struct MemoryDepict : Widget {
       nvgScissor(args.vg, RECT_ARGS(r));  // Not sure this is right?
 
       if (is_cv_rate) {
+        // Minimum display width at 6 HP in pixels minus the DISPLAY_MARGIN,
+        // so that a single channel amplitude stays at a consistent scale as
+        // Depict is widened to spread multiple channels apart.
+        double min_display_width =
+            mm2px(Depict::DEFAULT_WIDTH * 5.08 - Depict::DISPLAY_MARGIN);
+
+        double cv_x_per_volt = (min_display_width - 1.0) / 20.0;
+        // The extra space on half of the display from being wider than
+        // DEFAULT_WIDTH.
+        double extra_half_width =
+            std::max(0.0, (bounding_box.x - min_display_width) * 0.5);
+
         // if doing CV, zero is the middle of the left or right side.
         double zero_volt_mid_left = bounding_box.x * 0.25;
         double zero_volt_mid_right = bounding_box.x * 0.75;
         int l_chans = buffer ? std::max(1, buffer->left_channels) : 1;
         int r_chans = buffer ? std::max(1, buffer->right_channels) : 1;
+
+        auto get_left_zero = [&](int c) -> double {
+          if (l_chans <= 1) return zero_volt_mid_left;
+          double t = (double)c / (l_chans - 1) - 0.5;
+          return zero_volt_mid_left + t * extra_half_width;
+        };
+        auto get_right_zero = [&](int c) -> double {
+          if (r_chans <= 1) return zero_volt_mid_right;
+          double t = (double)c / (r_chans - 1) - 0.5;
+          return zero_volt_mid_right + t * extra_half_width;
+        };
+
         // We draw vertical oscilliscope signals for CV, since positive and
         // negative values matter more than amplitude.
-        // Overlay all active channels in the narrow view for now.
         nvgStrokeWidth(args.vg, 1);
 
+        // When we're drawing many (probably) overlapping lines, we don't
+        // want them all at full brightness. But as the width gets wider, the
+        // likelihood that they are overlapping goes down. So we lower the
+        // brightness of each line as we draw more channels, but brighten them
+        // back toward full white as the channels separate horizontally.
+        auto get_channel_alpha = [&](int chans) -> float {
+          if (chans <= 1) return 1.0f;  // One channel -> full bright.
+          float base_alpha = std::max(0.25f, 1.0f / std::sqrt((float)chans));
+          double spacing = extra_half_width / (chans - 1);
+          double full_swing = min_display_width * 0.25;
+          float sep = (float)std::min(
+              1.0, full_swing > 0.0 ? spacing / full_swing : 0.0);
+          return base_alpha + (1.0f - base_alpha) * sep;
+        };
+
         // Draw left points on the left of the midline.
-        // When we're drawing many probably overlapping lines, we don't
-        // want them all at full brightness. So we lower
-        // the brightness of each line as we draw more channels.
-        float l_alpha = (l_chans > 1)
-                            ? std::max(0.25f, 1.0f / std::sqrt((float)l_chans))
-                            : 1.0f;
+        float l_alpha = get_channel_alpha(l_chans);
         nvgStrokeColor(args.vg, nvgTransRGBAf(SCHEME_WHITE, l_alpha));
         for (int c = 0; c < l_chans; ++c) {
+          double chan_zero = get_left_zero(c);
           nvgBeginPath(args.vg);
           for (int i = 0; i < WAVEFORM_SIZE; i++) {
             float max = waveform->points[i][0][c] * waveform->normalize_factor;
-            float x = zero_volt_mid_left - (max * x_per_volt / 2);
+            float x = chan_zero - (max * cv_x_per_volt / 2);
             float y = (WAVEFORM_SIZE - i) * y_per_point;
             if (i == 0) {
               nvgMoveTo(args.vg, x, y);
@@ -247,16 +347,15 @@ struct MemoryDepict : Widget {
         }
 
         // Draw right points on the right of the midline.
-        float r_alpha = (r_chans > 1)
-                            ? std::max(0.25f, 1.0f / std::sqrt((float)r_chans))
-                            : 1.0f;
+        float r_alpha = get_channel_alpha(r_chans);
         nvgStrokeColor(args.vg, nvgTransRGBAf(SCHEME_WHITE, r_alpha));
         for (int c = 0; c < r_chans; ++c) {
+          double chan_zero = get_right_zero(c);
           nvgBeginPath(args.vg);
           for (int i = 0; i < WAVEFORM_SIZE; i++) {
             float max =
                 waveform->points[i][1][c] * waveform->normalize_factor_right;
-            float x = zero_volt_mid_right - (max * x_per_volt / 2);
+            float x = chan_zero - (max * cv_x_per_volt / 2);
             float y = (WAVEFORM_SIZE - i) * y_per_point;
             if (i == 0) {
               nvgMoveTo(args.vg, x, y);
@@ -267,12 +366,27 @@ struct MemoryDepict : Widget {
           nvgStroke(args.vg);
           nvgClosePath(args.vg);
         }
-        // Draw center line downs the middle of L and R.
+        // Draw zero-volt reference lines for L and R channels.
         nvgBeginPath(args.vg);
-        nvgRect(args.vg, zero_volt_mid_left, 0, 0.5f, bounding_box.y);
-        nvgRect(args.vg, zero_volt_mid_right, 0, 0.5f, bounding_box.y);
+        for (int c = 0; c < l_chans; ++c) {
+          nvgRect(args.vg, get_left_zero(c), 0, 0.5f, bounding_box.y);
+        }
+        for (int c = 0; c < r_chans; ++c) {
+          nvgRect(args.vg, get_right_zero(c), 0, 0.5f, bounding_box.y);
+        }
         nvgFillColor(args.vg, nvgRGBA(140, 140, 140, 128));
         nvgFill(args.vg);
+        // When wider than default, also draw a subtle divider line down the
+        // center between L and R.
+        if (extra_half_width > 0.0) {
+          nvgBeginPath(args.vg);
+          nvgRect(args.vg, bounding_box.x * 0.5 - 0.25f, 0, 0.5f,
+                  bounding_box.y);
+          // There's a lot of white-grey on the screen already, let's make this
+          // a blue.
+          nvgFillColor(args.vg, nvgRGBA(20, 20, 150, 200));
+          nvgFill(args.vg);
+        }
       } else {
         double zero_volt_left = bounding_box.x / 2 - 0.5;
         // Draw the wave forms.
@@ -410,21 +524,70 @@ struct MemoryDepict : Widget {
 };
 
 struct DepictWidget : ModuleWidget {
+  StochasticTelegraph::STResizeHandle<Depict, DepictUndoRedoAction>*
+      rightHandle;
+  MemoryDepict* display;
+
   DepictWidget(Depict* module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance, "res/Depict.svg"),
-                         asset::plugin(pluginInstance, "res/Depict-dark.svg")));
+    setPanel(createPanel<StochasticTelegraph::RestrictedThemedSvgPanel>(
+        asset::plugin(pluginInstance, "res/Depict.svg"),
+        asset::plugin(pluginInstance, "res/Depict-dark.svg")));
+
+    // Set reasonable initial size of module. Will likely get updated below.
+    box.size = Vec(RACK_GRID_WIDTH * Depict::DEFAULT_WIDTH, RACK_GRID_HEIGHT);
+    if (module) {
+      // Set box width from loaded Module when available.
+      box.size.x = module->width * RACK_GRID_WIDTH;
+    } else {
+      // Like when showing the module in the module browser.
+      box.size.x = Depict::DEFAULT_WIDTH * RACK_GRID_WIDTH;
+    }
 
     // Screen.
-    MemoryDepict* display =
-        createWidget<MemoryDepict>(mm2px(Vec(2.408, 14.023)));
-    display->box.size = mm2px(Vec(25.665, 109.141));
+    display = createWidget<MemoryDepict>(mm2px(Vec(1.0, 14.023)));
+    display->box.size =
+        Vec(box.size.x - mm2px(Depict::DISPLAY_MARGIN), mm2px(109.141));
     display->module = module;
     addChild(display);
 
-    // Our light is not colored, since we don't have a position in Depict.
+    // Resize bar on right. Minimum width is DEFAULT_WIDTH (6 HP), max is
+    // MAX_WIDTH (50 HP).
+    rightHandle =
+        new StochasticTelegraph::STResizeHandle<Depict, DepictUndoRedoAction>(
+            true, Depict::DEFAULT_WIDTH, Depict::MAX_WIDTH);
+    rightHandle->module = module;
+    // Make sure the handle is correctly placed if drawing for the module
+    // browser.
+    rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
+    addChild(rightHandle);
+
+    // Our light is not colored, since Depict doesn't have a position in Depict.
     addChild(createLightCentered<MediumLight<WhiteLight>>(
         mm2px(Vec(15.240, 3.0)), module, Depict::CONNECTED_LIGHT));
+  }
+
+  void step() override {
+    Depict* module = dynamic_cast<Depict*>(this->module);
+    if (module) {
+      if (box.size.x != module->width * RACK_GRID_WIDTH) {
+        // Module width has changed. Might be first time step() has been called,
+        // or undo/redo has happened. But we check for it because when STRIP
+        // creates a new instance of this module, it may not pick up the
+        // JSON-saved width until after Rack has placed the other modules,
+        // causing gaps or overlaps.
+        box.size.x = module->width * RACK_GRID_WIDTH;
+        // This forces the other modules to the right place if needed.
+        APP->scene->rack->setModulePosForce(this, box.pos);
+      }
+    } else {
+      // Like when showing the module in the module browser.
+      box.size.x = Depict::DEFAULT_WIDTH * RACK_GRID_WIDTH;
+    }
+    display->box.size.x = box.size.x - mm2px(Depict::DISPLAY_MARGIN);
+    rightHandle->box.pos.x = box.size.x - rightHandle->box.size.x;
+
+    ModuleWidget::step();
   }
 
   void appendContextMenu(Menu* menu) override {
