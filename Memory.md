@@ -256,18 +256,45 @@ A standard dialog box to save files will appear. The entire current contents of 
 # Brainwash
 Brainwash records audio (or CV, if attached to a MemoryCV) for a bounded length of time. When that length of time is complete, what was recorded becomes the new contents of the attached Memory/MemoryCV. A Brainwash can record no more than sixty seconds of audio; if RECORD is engaged for longer than that, then the Memory will become the last 60 seconds the Brainwash heard.
 
-More than one Brainwash can be used in the same ensemble, but ending recording in two or more Brainwash's at roughly the same time has *unpredictable* results.
+More than one Brainwash can be used in the same ensemble, but ending recording of two or more Brainwash's at roughly the same time has *unpredictable* results.
+
 ### Uses
 * To record audio (from the L and R inputs) onto the Memory, replacing the entire contents of the Memory (and changing the length of the Memory).
+* To record a polyphonic MIDI performance. Put the V/Oct on the R input, the Gates on the L. 
+* To record the path you are drawing with a Venn or Twixt module, allowing you to play it pack at different speeds and save it to disk.
+* Wiggle a knob or slider, then play it back as often as you like, however you like. 
 
-There are two ways to record:
+### Controls common to all three ways to record
 
-## 1. Record for COUNT CLOCK triggers.
+#### L & R Input
+The Left and Right inputs that are saved and sent to the Memory/MemoryCV. For MemoryCV, these can be polyphonic.
+
+#### CANCEL Button
+At the top of the module is a large red **CANCEL** button. It lights up whenever any of the three recording modes is actively recording. Pressing **CANCEL** while recording immediately stops the recording and discards the take without replacing the contents of the attached Memory/MemoryCV.
+
+There are three ways to record:
+
+## 1. Record during Gate or while button is lit
+
+The simplest way. Press RECORD, play, press RECORD again.
+
+### Controls
+#### RECORD Input
+Accepts a gate signal.
+* While the signal is high, Brainwash will record the audio entering through the L & R inputs.
+* When the signal goes low, whatever was recorded becomes the new contents of the Memory.
+#### RECORD Button
+A latched button to manually control recording.
+* Clicked the first time, the button will light up and any signal received from L and R will be stored inside Brainwash.
+* Clicked again, and the button will go dark. Whatever was recorded becomes the entire contents of Memory, and changes the length of Memory to be whatever the recorded length was.
+
+## 2. Record for COUNT CLOCK triggers.
 The sequence is as follows:
 * Arm the recording process using either a trigger to the ARM Input or pushing the ARM Button.
 * When the next trigger arrives at CLOCK Input, recording starts.
 * The recording stops when COUNT clock triggers have occurred. If COUNT is not an integer (e.g., 0.5), then recording will stop after 0.5 of the most recent CLOCK interval has completed. This can create some interesting polyrhythmic options.
 * Whatever was recorded becomes the new contents of the Memory/MemoryCV.
+* Clicking the ARM Button before the recording has finished cancels the recording.
 
 ### Controls
 #### COUNT Knob
@@ -282,21 +309,34 @@ A trigger to this Input will arm the recording, which will commence with the nex
 recording will start immediately.
 
 #### ARM Button
-Like the ARM Input, pressing this will arm the recording process, awaiting the next CLOCK trigger. If already armed, you can press this again to disarm the recorder.
+Like the ARM Input, pressing this will arm the recording process, awaiting the next CLOCK trigger. If already armed or recording, you can press this again to cancel.
 
-## 2. Record during Gate or while button is lit.
+## 3. Signal Activated Recording (SAR).
+The sequence is as follows:
+* Activate SAR using either a trigger to the SAR Input or pushing the SAR Button.
+* Brainwash waits until the signal on the L or R input exceeds the THRESH voltage (or, for MemoryCV when the menu option is enabled, changes by more than THRESH).
+* A 10ms pre-roll buffer is maintained while waiting so fast attack transients are preserved.
+* Once recording begins, it continues until the signal has remained silent (or unchanging) for STOP AFTER seconds.
+* When STOP AFTER seconds of silence have elapsed, that trailing silence is removed and the recorded signal becomes the new contents of the Memory/MemoryCV.
+* Clicking the SAR Button (or the CANCEL button) before the recording has finished cancels the take without replacing the Memory/MemoryCV contents.
+
 ### Controls
-#### RECORD Input
-Accepts a gate signal.
-* While the signal is high, Brainwash will record the audio entering through the L & R inputs.
-* When the signal goes low, whatever was recorded becomes the new contents of the Memory.
-#### RECORD Button
-A latched button to manually control recording.
-* Clicked the first time, the button will light up and any signal received from L and R will be stored inside Brainwash.
-* Clicked again, and the button will go dark. Whatever was recorded becomes the entire contents of Memory, and changes the length of Memory to be whatever the recorded length was.
+#### THRESH Knob
+The voltage threshold (0.0V to 1.0V) used to detect when the input signal starts and when it is considered silent (or unchanging).
 
-### L & R Input
-The Left and Right inputs that are saved and sent to the Memory/MemoryCV.
+#### STOP AFTER Knob
+The duration of silence (0.05s to 10.0s) required to end the recording. This ending silence is trimmed from the final recording.
+
+#### SAR Input
+A trigger to this Input activates Signal Activated Recording.
+
+#### SAR Button
+Pressing this activates Signal Activated Recording. Pressing it again while waiting for a signal or while recording cancels the recording without saving.
+
+### Menu Options
+#### Signal not changing ends SAR recording (MemoryCV)
+Enabled by default. When Brainwash is connected to a MemoryCV, SAR waits for any CV channel to move by more than THRESH from its resting voltage to start recording, and ends recording when all channels remain within THRESH for STOP AFTER seconds.
+
 
 ### Bypass Behavior
 If Bypass is enabled, Brainwash will stop recording internally.

@@ -4,17 +4,33 @@
 #include "plugin.hpp"
 
 struct BrainwashThread {
+  static constexpr double PREROLL_SECONDS = 0.010;
+  static constexpr int PREROLL_CV_FRAMES = 10;
+
   bool shutdown;
   float sample_rate = 0.0;
   // If set,  we merge a millisecond's worth of signal into one sample.
   bool cv_rate = false;
   int max_sample_count;
-  int left_channels = 1;
-  int right_channels = 1;
+  int max_left_channels_seen = 1;
+  int max_right_channels_seen = 1;
 
   // These are the fixed-size buffers that get recorded to initially.
   float* static_left;
   float* static_right;
+
+  // Pre-roll ring buffer for Signal Activated Recording (SAR).
+  // While waiting for the signal to commence, we record into this small buffer.
+  // Once signal has actually started, we place this at the front of the
+  // recording.
+  int preroll_capacity;
+  int preroll_write_index;
+  int preroll_count;
+  int preroll_audio_steps;
+  float* preroll_left;
+  float* preroll_right;
+  float preroll_cv_left[PREROLL_CV_FRAMES * PORT_MAX_CHANNELS];
+  float preroll_cv_right[PREROLL_CV_FRAMES * PORT_MAX_CHANNELS];
 
   // Setting this to a number above zero initiates a transfer.
   // The 0-offset of the last sample to copy.
@@ -25,10 +41,18 @@ struct BrainwashThread {
       : shutdown{false},
         sample_rate{0.0f},
         max_sample_count{0},
-        left_channels{1},
-        right_channels{1},
+        max_left_channels_seen{1},
+        max_right_channels_seen{1},
         static_left{nullptr},
         static_right{nullptr},
+        preroll_capacity{0},
+        preroll_write_index{0},
+        preroll_count{0},
+        preroll_audio_steps{0},
+        preroll_left{nullptr},
+        preroll_right{nullptr},
+        preroll_cv_left{},
+        preroll_cv_right{},
         endpoint_position{-1} {}
 
   ~BrainwashThread() {
@@ -38,6 +62,12 @@ struct BrainwashThread {
     }
     if (static_right != nullptr) {
       delete[] static_right;
+    }
+    if (preroll_left != nullptr) {
+      delete[] preroll_left;
+    }
+    if (preroll_right != nullptr) {
+      delete[] preroll_right;
     }
   }
 
@@ -52,8 +82,113 @@ struct BrainwashThread {
   void SetCV(bool cv) { cv_rate = cv; }
 
   void ResetChannels() {
-    left_channels = 1;
-    right_channels = 1;
+    max_left_channels_seen = 1;
+    max_right_channels_seen = 1;
+  }
+
+  void ResetPreRoll() {
+    preroll_write_index = 0;
+    preroll_count = 0;
+    preroll_audio_steps = 0;
+  }
+
+  void RecordPreRollSample(const float* left_voltages, int left_chans,
+                           const float* right_voltages, int right_chans) {
+    if (static_right == nullptr) {
+      return;
+    }
+    if (cv_rate) {
+      if (sample_rate <= 1.0f) {
+        // Not set yet, don't try to record anything.
+        return;
+      }
+      int position = preroll_audio_steps++;
+      // For CV, we only write when the fine-grained 'position' is at the center
+      // of each millisecond portion of the memory. This is how we determine if
+      // we are there.
+      int cv_position = trunc((double)position * CV_SAMPLE_RATE / sample_rate);
+      int writable_position =
+          trunc((double)(cv_position + 0.5) * sample_rate / CV_SAMPLE_RATE);
+      if (position == writable_position) {
+        // Defensive clamping.
+        left_chans = clamp(left_chans, 0, PORT_MAX_CHANNELS);
+        right_chans = clamp(right_chans, 0, PORT_MAX_CHANNELS);
+        max_left_channels_seen = std::max(max_left_channels_seen, left_chans);
+        max_right_channels_seen =
+            std::max(max_right_channels_seen, right_chans);
+        int base = preroll_write_index * PORT_MAX_CHANNELS;
+        for (int c = 0; c < PORT_MAX_CHANNELS; ++c) {
+          preroll_cv_left[base + c] =
+              (c < left_chans) ? left_voltages[c] : 0.0f;
+          preroll_cv_right[base + c] =
+              (c < right_chans) ? right_voltages[c] : 0.0f;
+        }
+        preroll_write_index = (preroll_write_index + 1) % PREROLL_CV_FRAMES;
+        if (preroll_count < PREROLL_CV_FRAMES) {
+          ++preroll_count;
+        }
+      }
+    } else {
+      // Don't store preroll if I have nowhere to put it.
+      if (preroll_left == nullptr || preroll_right == nullptr ||
+          preroll_capacity <= 0) {
+        return;
+      }
+      preroll_left[preroll_write_index] =
+          (left_chans > 0) ? left_voltages[0] : 0.0f;
+      preroll_right[preroll_write_index] =
+          (right_chans > 0) ? right_voltages[0] : 0.0f;
+      // Circular buffer.
+      preroll_write_index = (preroll_write_index + 1) % preroll_capacity;
+      if (preroll_count < preroll_capacity) {
+        ++preroll_count;
+      }
+    }
+  }
+
+  // Copies the buffered pre-roll into static_left/static_right starting at 0,
+  // and returns the recording_position of the last pre-roll sample (-1 if
+  // empty).
+  int FlushPreRollToStatic() {
+    if (static_left == nullptr || static_right == nullptr ||
+        preroll_count <= 0) {
+      ResetPreRoll();
+      return -1;
+    }
+    if (cv_rate) {
+      int count = std::min(preroll_count, PREROLL_CV_FRAMES);
+      int start_idx =
+          (preroll_write_index - count + PREROLL_CV_FRAMES) % PREROLL_CV_FRAMES;
+      for (int i = 0; i < count; ++i) {
+        int src_base =
+            ((start_idx + i) % PREROLL_CV_FRAMES) * PORT_MAX_CHANNELS;
+        int dst_base = i * PORT_MAX_CHANNELS;
+        memcpy(&static_left[dst_base], &preroll_cv_left[src_base],
+               sizeof(float) * PORT_MAX_CHANNELS);
+        memcpy(&static_right[dst_base], &preroll_cv_right[src_base],
+               sizeof(float) * PORT_MAX_CHANNELS);
+      }
+      ResetPreRoll();
+      return std::max(
+          0, (int)std::round(count * sample_rate / CV_SAMPLE_RATE) - 1);
+    } else {
+      if (preroll_left == nullptr || preroll_right == nullptr ||
+          preroll_capacity <= 0) {
+        ResetPreRoll();
+        return -1;
+      }
+      int count =
+          std::min(preroll_count, std::min(preroll_capacity, max_sample_count));
+      int start_idx =
+          (preroll_write_index - count + preroll_capacity) % preroll_capacity;
+      for (int i = 0; i < count; ++i) {
+        int src_idx = (start_idx + i) % preroll_capacity;
+        static_left[i] = preroll_left[src_idx];
+        static_right[i] = preroll_right[src_idx];
+      }
+      ResetPreRoll();
+      return count - 1;
+    }
   }
 
   void InitiateReplacement(int endpoint_position,
@@ -77,14 +212,15 @@ struct BrainwashThread {
       int writable_position =
           trunc((double)(cv_position + 0.5) * sample_rate / CV_SAMPLE_RATE);
       if (position == writable_position) {
-        int l_chans = std::min(std::max(left_chans, 0), PORT_MAX_CHANNELS);
-        int r_chans = std::min(std::max(right_chans, 0), PORT_MAX_CHANNELS);
-        left_channels = std::max(left_channels, std::max(1, l_chans));
-        right_channels = std::max(right_channels, std::max(1, r_chans));
+        left_chans = clamp(left_chans, 0, PORT_MAX_CHANNELS);
+        right_chans = clamp(right_chans, 0, PORT_MAX_CHANNELS);
+        max_left_channels_seen = std::max(max_left_channels_seen, left_chans);
+        max_right_channels_seen =
+            std::max(max_right_channels_seen, right_chans);
         int base = cv_position * PORT_MAX_CHANNELS;
         for (int c = 0; c < PORT_MAX_CHANNELS; ++c) {
-          static_left[base + c] = (c < l_chans) ? left[c] : 0.0f;
-          static_right[base + c] = (c < r_chans) ? right[c] : 0.0f;
+          static_left[base + c] = (c < left_chans) ? left[c] : 0.0f;
+          static_right[base + c] = (c < right_chans) ? right[c] : 0.0f;
         }
       }
     } else {
@@ -105,6 +241,10 @@ struct BrainwashThread {
           max_sample_count = sample_count;
           static_left = new float[alloc_size]();
           static_right = new float[alloc_size]();
+          preroll_capacity =
+              std::max(1, (int)std::round(PREROLL_SECONDS * sample_rate));
+          preroll_left = new float[preroll_capacity]();
+          preroll_right = new float[preroll_capacity]();
         }
       } else if (endpoint_position > 0) {
         // Create new buffer to send to Memory.
@@ -132,8 +272,8 @@ struct BrainwashThread {
         BufferTask* replace_task = BufferTask::ReplaceTask(
             new_left, new_right, nullptr,  // nullptr for status indicates we
                                            // don't need FileIO status info.
-            endpoint_position + 1, seconds, true, left_channels,
-            right_channels);
+            endpoint_position + 1, seconds, true, max_left_channels_seen,
+            max_right_channels_seen);
         if (!(buffer->replacements.queue.push(replace_task))) {
           delete[] replace_task->new_left_array;
           delete[] replace_task->new_right_array;
@@ -159,6 +299,10 @@ struct Brainwash : Module {
     RECORD_BUTTON_PARAM,
     CLOCK_COUNT_PARAM,
     ARM_BUTTON_PARAM,
+    THRESH_PARAM,
+    STOP_AFTER_PARAM,
+    SAR_BUTTON_PARAM,
+    CANCEL_BUTTON_PARAM,
     PARAMS_LEN
   };
   enum InputId {
@@ -167,6 +311,7 @@ struct Brainwash : Module {
     RIGHT_INPUT,
     CLOCK_TRIGGER_INPUT,
     ARM_TRIGGER_INPUT,
+    SAR_TRIGGER_INPUT,
     INPUTS_LEN
   };
   enum OutputId { OUTPUTS_LEN };
@@ -174,6 +319,8 @@ struct Brainwash : Module {
     CONNECTED_LIGHT,
     RECORD_BUTTON_LIGHT,
     ARM_BUTTON_LIGHT,
+    SAR_BUTTON_LIGHT,
+    CANCEL_BUTTON_LIGHT,
     LIGHTS_LEN
   };
 
@@ -182,6 +329,12 @@ struct Brainwash : Module {
     WAITING_FOR_CLOCK,  // Armed and waiting for the next clock to start
                         // recording.
     RECORDING
+  };
+
+  enum SARRecordingState {
+    SAR_NOT_RECORDING,       // Not armed.
+    SAR_WAITING_FOR_SIGNAL,  // Armed and waiting for signal above threshold.
+    SAR_RECORDING            // Recording until STOP_AFTER seconds of silence.
   };
 
   // We look for the nearest Memory every NN samples. This saves CPU time.
@@ -201,7 +354,10 @@ struct Brainwash : Module {
   dsp::SchmittTrigger recordTrigger;
 
   // Set if we were recording in the previous process() call.
+  // TODO: make this an enum to parallel the other recording states.
   bool was_recording;
+  // Set if a gate-driven manual recording was canceled while the gate was high.
+  bool gate_recording_canceled = false;
 
   dsp::SchmittTrigger arm_trigger;
   TimedRecordingState timed_recording_state;
@@ -210,13 +366,43 @@ struct Brainwash : Module {
   int clocks_so_far;
   int fractional_samples_so_far;
 
+  // For Signal Activated Recording (SAR).
+  dsp::SchmittTrigger sar_trigger;
+  SARRecordingState sar_recording_state;
+  int silent_samples_so_far;
+  bool unchanging_means_silent = true;
+  // The "SAR Anchors" are the set of voltages our inputs need to stay near to
+  // be considered "unchanged".
+  bool sar_anchor_initialized = false;
+  float sar_anchor_left[PORT_MAX_CHANNELS] = {};
+  float sar_anchor_right[PORT_MAX_CHANNELS] = {};
+
   // For tracking the tempo of CLOCK.
   dsp::SchmittTrigger tempo_trigger;
   int64_t last_tempo_trigger_frame = -1;
   int64_t tempo_length_in_frames = -1;
 
-  Brainwash() : clocks_so_far{0}, fractional_samples_so_far{0} {
+  Brainwash()
+      : clocks_so_far{0},
+        fractional_samples_so_far{0},
+        sar_recording_state{SAR_NOT_RECORDING},
+        silent_samples_so_far{0} {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
+    configParam(THRESH_PARAM, 0.0f, 1.0f, 0.02f,
+                "Silence threshold for Signal Activated Recording", "V");
+    configParam(STOP_AFTER_PARAM, 0.05f, 10.0f, 1.0f,
+                "Length of silence needed to end Signal Activated Recording",
+                " s");
+    configSwitch(SAR_BUTTON_PARAM, 0, 1, 0,
+                 "Press to activate Signal Activated Recording; press again "
+                 "before completion to cancel",
+                 {"Inactive", "Active"});
+    configButton(CANCEL_BUTTON_PARAM,
+                 "Press while recording to cancel and discard the current "
+                 "recording");
+    configInput(SAR_TRIGGER_INPUT,
+                "Trigger received here will activate Signal Activated "
+                "Recording");
     configInput(CLOCK_TRIGGER_INPUT,
                 "Clock for recording length; Arm recording and will record for "
                 "COUNT clocks");
@@ -239,9 +425,10 @@ struct Brainwash : Module {
     was_recording = false;
     timed_recording_state = NOT_RECORDING;
 
-    // I'm using the state of the arm button to indicate if we are armed, but we
-    // don't want armed state to get saved.
+    // I'm using the state of the arm/SAR buttons to indicate if we are armed,
+    // but we don't want armed state to get saved.
     params[ARM_BUTTON_PARAM].setValue(0.0f);
+    params[SAR_BUTTON_PARAM].setValue(0.0f);
 
     worker = new BrainwashThread();
     thread = new std::thread(&BrainwashThread::Work, worker);
@@ -258,7 +445,82 @@ struct Brainwash : Module {
     }
   }
 
+  json_t* dataToJson() override {
+    json_t* rootJ = json_object();
+    json_object_set_new(rootJ, "cv_change_detection",
+                        json_boolean(unchanging_means_silent));
+    return rootJ;
+  }
+
+  void dataFromJson(json_t* rootJ) override {
+    json_t* cv_changeJ = json_object_get(rootJ, "cv_change_detection");
+    if (cv_changeJ) {
+      unchanging_means_silent = json_is_true(cv_changeJ);
+    }
+    // In case the button states were saved while any of these were triggered.
+    params[RECORD_BUTTON_PARAM].setValue(0.0f);
+    params[ARM_BUTTON_PARAM].setValue(0.0f);
+    params[SAR_BUTTON_PARAM].setValue(0.0f);
+  }
+
+  // Business logic determining if signals being received in L+R mean that SAR
+  // recording is currently considered "active".
+  // Returns 'true' when definitely active, returns 'false' when *possibly* the
+  // signal has become inactive.
+  bool isSignalActive(const float* left_v, int l_chans, const float* right_v,
+                      int r_chans, float threshold, bool is_cv) {
+    if (is_cv && unchanging_means_silent) {
+      if (!sar_anchor_initialized) {
+        // Set the anchor voltages.
+        for (int c = 0; c < PORT_MAX_CHANNELS; ++c) {
+          sar_anchor_left[c] = (c < l_chans) ? left_v[c] : 0.0f;
+          sar_anchor_right[c] = (c < r_chans) ? right_v[c] : 0.0f;
+        }
+        sar_anchor_initialized = true;
+        return false;
+      }
+      bool changed = false;
+      // Check left side.
+      for (int c = 0; c < l_chans; ++c) {
+        if (std::fabs(left_v[c] - sar_anchor_left[c]) > threshold) {
+          changed = true;
+          break;
+        }
+      }
+      if (!changed) {
+        // Check right side.
+        for (int c = 0; c < r_chans; ++c) {
+          if (std::fabs(right_v[c] - sar_anchor_right[c]) > threshold) {
+            changed = true;
+            break;
+          }
+        }
+      }
+      if (changed) {
+        // If either side changed, reset the anchor voltages.
+        for (int c = 0; c < PORT_MAX_CHANNELS; ++c) {
+          sar_anchor_left[c] = (c < l_chans) ? left_v[c] : 0.0f;
+          sar_anchor_right[c] = (c < r_chans) ? right_v[c] : 0.0f;
+        }
+      }
+      return changed;
+    } else {
+      for (int c = 0; c < l_chans; ++c) {
+        if (std::fabs(left_v[c]) > threshold) {
+          return true;
+        }
+      }
+      for (int c = 0; c < r_chans; ++c) {
+        if (std::fabs(right_v[c]) > threshold) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
   void process(const ProcessArgs& args) override {
+    // Confirm we're still talking to a Memory.
     // Only call this only every N samples, since the vast majority of
     // the time this won't change.
     // The number of modules it needs to go through does seem to increase the
@@ -301,6 +563,14 @@ struct Brainwash : Module {
     if (connected) {
       worker->SetCV(buffer->cv_rate);
 
+      int l_chan_count =
+          buffer->cv_rate ? std::max(1, inputs[LEFT_INPUT].getChannels()) : 1;
+      int r_chan_count =
+          buffer->cv_rate ? std::max(1, inputs[RIGHT_INPUT].getChannels()) : 1;
+
+      // Process trigger inputs. For some, we save the result in the button
+      // itself.
+      //
       // Are we armed to start recording on the next clock trigger?
       bool arm_was_triggered = arm_trigger.isHigh();
       arm_trigger.process(
@@ -309,7 +579,43 @@ struct Brainwash : Module {
         params[ARM_BUTTON_PARAM].setValue(1.0f);
       }
 
-      // Handle timed recording state machine.
+      // Are we armed for Signal Activated Recording (SAR)?
+      bool sar_was_triggered = sar_trigger.isHigh();
+      sar_trigger.process(
+          rescale(inputs[SAR_TRIGGER_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+      if (!sar_was_triggered && sar_trigger.isHigh()) {
+        params[SAR_BUTTON_PARAM].setValue(1.0f);
+      }
+
+      // Always keep recordTrigger updated so gate state is tracked accurately.
+      recordTrigger.process(
+          rescale(inputs[RECORD_GATE_INPUT].getVoltage(), 0.1f, 2.f, 0.f, 1.f));
+      if (!recordTrigger.isHigh()) {
+        gate_recording_canceled = false;
+      }
+
+      // Check if the user pressed red CANCEL button to abort any recording in
+      // progress.
+      if (params[CANCEL_BUTTON_PARAM].getValue() > 0.1f) {
+        if (timed_recording_state != NOT_RECORDING) {
+          timed_recording_state = NOT_RECORDING;
+          params[ARM_BUTTON_PARAM].setValue(0.0f);
+        }
+        if (sar_recording_state != SAR_NOT_RECORDING) {
+          sar_recording_state = SAR_NOT_RECORDING;
+          params[SAR_BUTTON_PARAM].setValue(0.0f);
+          worker->ResetPreRoll();
+        }
+        if (was_recording || params[RECORD_BUTTON_PARAM].getValue() > 0.1f) {
+          params[RECORD_BUTTON_PARAM].setValue(0.0f);
+          if (recordTrigger.isHigh()) {
+            gate_recording_canceled = true;
+          }
+          was_recording = false;
+        }
+      }
+
+      // Handle CLOCK-timed recording state machine.
       // May pass through multiple states in a single process() call, as this
       // makes for less repetition of the logic.
       if (timed_recording_state == NOT_RECORDING) {
@@ -317,6 +623,9 @@ struct Brainwash : Module {
           // We are now armed.
           timed_recording_state = WAITING_FOR_CLOCK;
         }
+      } else if (params[ARM_BUTTON_PARAM].getValue() <= 0.1f) {
+        // User un-clicked ARM while waiting or recording: cancel!
+        timed_recording_state = NOT_RECORDING;
       }
       if (timed_recording_state == WAITING_FOR_CLOCK) {
         if (clock_event) {
@@ -324,13 +633,38 @@ struct Brainwash : Module {
           timed_recording_state = RECORDING;
           recording_position = -1;
           worker->ResetChannels();
-          params[ARM_BUTTON_PARAM].setValue(
-              0.0f);  // Not armed now that we've started.
           clocks_so_far =
               -1;  // Will be bumped to zero on this clock in next block.
           fractional_samples_so_far = 0;
         }
       }
+
+      // Handle SAR state machine transitions.
+      if (sar_recording_state == SAR_NOT_RECORDING) {
+        if (params[SAR_BUTTON_PARAM].getValue() > 0.1f &&
+            timed_recording_state != RECORDING) {
+          sar_recording_state = SAR_WAITING_FOR_SIGNAL;
+          worker->ResetChannels();
+          worker->ResetPreRoll();
+          sar_anchor_initialized = false;
+          silent_samples_so_far = 0;
+        }
+      } else if (params[SAR_BUTTON_PARAM].getValue() <= 0.1f) {
+        // User un-clicked SAR button before recording ended: cancel without
+        // saving!
+        sar_recording_state = SAR_NOT_RECORDING;
+        worker->ResetPreRoll();
+      }
+
+      // Work through all of the states where we are or might be actually
+      // recording.
+      //
+      // manual_recording is true when RECORD button or gate is invoked.
+      bool manual_recording = false;
+      // A small array of voltages.
+      const float* left_voltages = inputs[LEFT_INPUT].getVoltages();
+      const float* right_voltages = inputs[RIGHT_INPUT].getVoltages();
+      // CLOCK-based recording.
       if (timed_recording_state == RECORDING) {
         if (clock_event) {
           ++clocks_so_far;
@@ -350,36 +684,62 @@ struct Brainwash : Module {
                  (tempo_length_in_frames > 0 ? tempo_length_in_frames : 1))) {
           // Still recording.
           ++recording_position;
-          int l_chans = buffer->cv_rate
-                            ? std::max(1, inputs[LEFT_INPUT].getChannels())
-                            : 1;
-          int r_chans = buffer->cv_rate
-                            ? std::max(1, inputs[RIGHT_INPUT].getChannels())
-                            : 1;
-          worker->RecordSample(recording_position,
-                               inputs[LEFT_INPUT].getVoltages(), l_chans,
-                               inputs[RIGHT_INPUT].getVoltages(), r_chans);
-          lights[RECORD_BUTTON_LIGHT].setBrightness(1.0f);
+          worker->RecordSample(recording_position, left_voltages, l_chan_count,
+                               right_voltages, r_chan_count);
         } else {
-          // Done recording.
+          // CLOCK-based is done recording.
           worker->InitiateReplacement(recording_position, buffer);
           timed_recording_state = NOT_RECORDING;
-          lights[RECORD_BUTTON_LIGHT].setBrightness(0.0f);
+          params[ARM_BUTTON_PARAM].setValue(0.0f);
+        }
+      } else if (sar_recording_state != SAR_NOT_RECORDING) {
+        // SAR-based recording.
+        bool signal_active = isSignalActive(
+            left_voltages, l_chan_count, right_voltages, r_chan_count,
+            params[THRESH_PARAM].getValue(), buffer->cv_rate);
+        if (sar_recording_state == SAR_WAITING_FOR_SIGNAL) {
+          if (signal_active) {
+            // Stop waiting, we have signal.
+            recording_position = worker->FlushPreRollToStatic();
+            sar_recording_state = SAR_RECORDING;
+            silent_samples_so_far = 0;
+          } else {
+            worker->RecordPreRollSample(left_voltages, l_chan_count,
+                                        right_voltages, r_chan_count);
+          }
+        }
+        if (sar_recording_state == SAR_RECORDING) {
+          ++recording_position;
+          worker->RecordSample(recording_position, left_voltages, l_chan_count,
+                               right_voltages, r_chan_count);
+          if (signal_active) {
+            silent_samples_so_far = 0;
+          } else {
+            ++silent_samples_so_far;
+          }
+          int max_silent_samples =
+              std::max(1, (int)std::round(params[STOP_AFTER_PARAM].getValue() *
+                                          args.sampleRate));
+          bool hit_max_length =
+              (worker->max_sample_count > 0) &&
+              (recording_position >= worker->max_sample_count - 1);
+          if (silent_samples_so_far >= max_silent_samples || hit_max_length) {
+            int endpoint =
+                std::max(0, recording_position - silent_samples_so_far);
+            worker->InitiateReplacement(endpoint, buffer);
+            sar_recording_state = SAR_NOT_RECORDING;
+            params[SAR_BUTTON_PARAM].setValue(0.0f);
+          }
         }
       } else {
-        // The logic for recording via COUNT and CLOCK is different enough that
-        // it makes sense to handle it separately from the gate/button
+        // The logic for recording via COUNT/CLOCK and SAR is different enough
+        // that it makes sense to handle it separately from the gate/button
         // recording.
-        // TODO: What if both are used at the same time?
 
-        // Are we recording or not?
-        recordTrigger.process(rescale(inputs[RECORD_GATE_INPUT].getVoltage(),
-                                      0.1f, 2.f, 0.f, 1.f));
-
-        // If we're not already recording due to timed recording, see if
+        // If we're not already recording due to timed or SAR recording, see if
         // 'recording' just reflects the state of the button and the gate input.
         bool recording = (params[RECORD_BUTTON_PARAM].getValue() > 0.1f) ||
-                         recordTrigger.isHigh();
+                         (recordTrigger.isHigh() && !gate_recording_canceled);
 
         if (recording && !was_recording) {
           // Starting from the top.
@@ -391,25 +751,46 @@ struct Brainwash : Module {
           worker->InitiateReplacement(recording_position, buffer);
         }
         was_recording = recording;
+        manual_recording = recording;
         if (recording) {
           ++recording_position;
-          int l_chans = buffer->cv_rate
-                            ? std::max(1, inputs[LEFT_INPUT].getChannels())
-                            : 1;
-          int r_chans = buffer->cv_rate
-                            ? std::max(1, inputs[RIGHT_INPUT].getChannels())
-                            : 1;
-          worker->RecordSample(recording_position,
-                               inputs[LEFT_INPUT].getVoltages(), l_chans,
-                               inputs[RIGHT_INPUT].getVoltages(), r_chans);
+          worker->RecordSample(recording_position, left_voltages, l_chan_count,
+                               right_voltages, r_chan_count);
         }
-        lights[RECORD_BUTTON_LIGHT].setBrightness(recording ? 1.0f : 0.0f);
-        lights[ARM_BUTTON_LIGHT].setBrightness(
-            params[ARM_BUTTON_PARAM].getValue() > 0.1f ? 1.0f : 0.0f);
       }
+
+      bool any_recording = (timed_recording_state == RECORDING) ||
+                           (sar_recording_state == SAR_RECORDING) ||
+                           manual_recording;
+      lights[CANCEL_BUTTON_LIGHT].setBrightness(any_recording ? 1.0f : 0.0f);
+      lights[RECORD_BUTTON_LIGHT].setBrightness(manual_recording ? 1.0f : 0.0f);
+      lights[ARM_BUTTON_LIGHT].setBrightness(
+          params[ARM_BUTTON_PARAM].getValue() > 0.1f ? 1.0f : 0.0f);
+      lights[SAR_BUTTON_LIGHT].setBrightness(
+          params[SAR_BUTTON_PARAM].getValue() > 0.1f ? 1.0f : 0.0f);
+    } else {
+      lights[CANCEL_BUTTON_LIGHT].setBrightness(0.0f);
+      lights[RECORD_BUTTON_LIGHT].setBrightness(0.0f);
+      lights[ARM_BUTTON_LIGHT].setBrightness(0.0f);
+      lights[SAR_BUTTON_LIGHT].setBrightness(0.0f);
     }
     lights[CONNECTED_LIGHT].setBrightness(connected ? 1.0f : 0.0f);
   }
+};
+
+// For the big red cancel button.
+template <typename TLightBase = RedLight>
+struct LightPB61303 : PB61303 {
+  app::ModuleLightWidget* light;
+
+  LightPB61303() {
+    light = new PB61303Light<TLightBase>;
+    // Move center of light to center of box.
+    light->box.pos = box.size.div(2).minus(light->box.size.div(2));
+    addChild(light);
+  }
+
+  app::ModuleLightWidget* getLight() { return light; }
 };
 
 struct BrainwashWidget : ModuleWidget {
@@ -421,19 +802,36 @@ struct BrainwashWidget : ModuleWidget {
         createPanel(asset::plugin(pluginInstance, "res/Brainwash.svg"),
                     asset::plugin(pluginInstance, "res/Brainwash-dark.svg")));
 
+    // Big red CANCEL button at the top.
+    addParam(createLightParamCentered<LightPB61303<RedLight>>(
+        mm2px(Vec(12.7, 20.0)), module, Brainwash::CANCEL_BUTTON_PARAM,
+        Brainwash::CANCEL_BUTTON_LIGHT));
+
+    // Signal Activated Recording (SAR): THRESH, STOP AFTER, SAR trigger/button.
+    addParam(createParamCentered<RoundSmallBlackKnob>(
+        mm2px(Vec(6.35, 41.0)), module, Brainwash::THRESH_PARAM));
+    addParam(createParamCentered<RoundSmallBlackKnob>(
+        mm2px(Vec(19.05, 41.0)), module, Brainwash::STOP_AFTER_PARAM));
+    addParam(
+        createLightParamCentered<VCVLightLatch<MediumSimpleLight<WhiteLight>>>(
+            mm2px(Vec(19.05, 53.0)), module, Brainwash::SAR_BUTTON_PARAM,
+            Brainwash::SAR_BUTTON_LIGHT));
+    addInput(createInputCentered<ThemedPJ301MPort>(
+        mm2px(Vec(6.35, 53.0)), module, Brainwash::SAR_TRIGGER_INPUT));
+
     // CLOCK and clock counting.
     addParam(createParamCentered<RoundSmallBlackKnob>(
-        mm2px(Vec(6.35, 63.0)), module, Brainwash::CLOCK_COUNT_PARAM));
+        mm2px(Vec(6.35, 65.745)), module, Brainwash::CLOCK_COUNT_PARAM));
     addInput(createInputCentered<ThemedPJ301MPort>(
-        mm2px(Vec(19.05, 63.0)), module, Brainwash::CLOCK_TRIGGER_INPUT));
+        mm2px(Vec(19.05, 65.745)), module, Brainwash::CLOCK_TRIGGER_INPUT));
 
     // ARM button and trigger.
     addParam(
         createLightParamCentered<VCVLightLatch<MediumSimpleLight<WhiteLight>>>(
-            mm2px(Vec(19.05, 75.0)), module, Brainwash::ARM_BUTTON_PARAM,
+            mm2px(Vec(19.05, 77.745)), module, Brainwash::ARM_BUTTON_PARAM,
             Brainwash::ARM_BUTTON_LIGHT));
     addInput(createInputCentered<ThemedPJ301MPort>(
-        mm2px(Vec(6.35, 75.0)), module, Brainwash::ARM_TRIGGER_INPUT));
+        mm2px(Vec(6.35, 77.745)), module, Brainwash::ARM_TRIGGER_INPUT));
 
     // Record button and trigger.
     addParam(
@@ -455,6 +853,13 @@ struct BrainwashWidget : ModuleWidget {
   }
 
   void appendContextMenu(Menu* menu) override {
+    Brainwash* module = dynamic_cast<Brainwash*>(this->module);
+    if (module) {
+      menu->addChild(new MenuSeparator);
+      menu->addChild(createBoolPtrMenuItem(
+          "SAR recording ends when all signals stop changing (for MemoryCV)",
+          "", &module->unchanging_means_silent));
+    }
     // Be a little clearer how to make this module do anything.
     menu->addChild(new MenuSeparator);
     menu->addChild(
